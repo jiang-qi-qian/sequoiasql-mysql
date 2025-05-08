@@ -1,0 +1,227 @@
+drop database if exists db_comment_sequoiadb;
+create database db_comment_sequoiadb;
+drop database db_comment_sequoiadb;
+create database db_comment_sequoiadb;
+use db_comment_sequoiadb;
+CREATE TABLE t1(a INT, b TINYINT) comment="sequoiadb:{table_options:{ShardingKey:{a:1},ShardingType:\"hash\",Partition:1024,Compressed:true,CompressionType:\"lzw\",ReplSize:2,AutoSplit:true,AutoIndexId:true,EnsureShardingIndex:true,StrictDataMode:true}}";
+SHOW CREATE TABLE t1;
+Table	Create Table
+t1	CREATE TABLE `t1` (
+  `a` int(11) DEFAULT NULL,
+  `b` tinyint(4) DEFAULT NULL
+) ENGINE=SequoiaDB DEFAULT CHARSET=latin1 COMMENT='sequoiadb:{table_options:{ShardingKey:{a:1},ShardingType:"hash",Partition:1024,Compressed:true,CompressionType:"lzw",ReplSize:2,AutoSplit:true,AutoIndexId:true,EnsureShardingIndex:true,StrictDataMode:true}}'
+INSERT INTO t1 VALUES (1, 1),(2, 2),(3, 3),(10, 10),(-1, -1);
+SELECT * FROM t1;
+a	b
+-1	-1
+1	1
+10	10
+2	2
+3	3
+UPDATE t1 SET b = -101 WHERE b = 2;
+SELECT * FROM t1;
+a	b
+-1	-1
+1	1
+10	10
+2	-101
+3	3
+DELETE FROM t1 WHERE a > 2;
+SELECT * FROM t1;
+a	b
+-1	-1
+1	1
+2	-101
+DROP TABLE t1;
+CREATE TABLE t1(a INT, b TINYINT) comment="sequoiadb:{table_options:{ShardingKey:{a:-1},ShardingType:\"range\"}}";
+SHOW CREATE TABLE t1;
+Table	Create Table
+t1	CREATE TABLE `t1` (
+  `a` int(11) DEFAULT NULL,
+  `b` tinyint(4) DEFAULT NULL
+) ENGINE=SequoiaDB DEFAULT CHARSET=latin1 COMMENT='sequoiadb:{table_options:{ShardingKey:{a:-1},ShardingType:"range"}}'
+INSERT INTO t1 VALUES (1, 1),(2, 2),(0, 0),(-109, -109),(12, 12);
+SELECT * FROM t1;
+a	b
+-109	-109
+0	0
+1	1
+12	12
+2	2
+UPDATE t1 SET b = -101 WHERE b = 2;
+SELECT * FROM t1;
+a	b
+-109	-109
+0	0
+1	1
+12	12
+2	-101
+DELETE FROM t1 WHERE a > 2;
+SELECT * FROM t1;
+a	b
+-109	-109
+0	0
+1	1
+2	-101
+DROP TABLE t1;
+CREATE TABLE t1(a INT, b TINYINT) comment="sequoiadb:{table_options:{ShardingKey:{a:1}, IsMainCL:true}}";
+SHOW CREATE TABLE t1;
+Table	Create Table
+t1	CREATE TABLE `t1` (
+  `a` int(11) DEFAULT NULL,
+  `b` tinyint(4) DEFAULT NULL
+) ENGINE=SequoiaDB DEFAULT CHARSET=latin1 COMMENT='sequoiadb:{table_options:{ShardingKey:{a:1}, IsMainCL:true}}'
+DROP TABLE t1;
+CREATE TABLE t1(a INT NOT NULL AUTO_INCREMENT, KEY(a)) comment="abc|string";
+SHOW CREATE TABLE t1;
+Table	Create Table
+t1	CREATE TABLE `t1` (
+  `a` int(11) NOT NULL AUTO_INCREMENT,
+  KEY `a` (`a`)
+) ENGINE=SequoiaDB DEFAULT CHARSET=latin1 COMMENT='abc|string'
+INSERT INTO t1 VALUES ();
+SELECT * FROM t1;
+a
+1
+DROP TABLE t1;
+CREATE TABLE t1(a INT);
+SHOW CREATE TABLE t1;
+Table	Create Table
+t1	CREATE TABLE `t1` (
+  `a` int(11) DEFAULT NULL
+) ENGINE=SequoiaDB DEFAULT CHARSET=latin1
+DROP TABLE t1;
+CREATE TABLE t1(a SMALLINT) comment="sequoiadb:{table_options:{Compressed:false}}";
+SHOW CREATE TABLE t1;
+Table	Create Table
+t1	CREATE TABLE `t1` (
+  `a` smallint(6) DEFAULT NULL
+) ENGINE=SequoiaDB DEFAULT CHARSET=latin1 COMMENT='sequoiadb:{table_options:{Compressed:false}}'
+INSERT INTO t1 VALUES (1);
+SELECT * FROM t1;
+a
+1
+DROP TABLE t1;
+CREATE TABLE t1(a SMALLINT) engine = sequoiadb comment="sequoiadb:{table_options:{Compressed:false, CompressionType:'snappy'}}";
+ERROR HY000: Ambiguous compression
+CREATE TABLE t1(a SMALLINT) engine = sequoiadb comment="sequoiadb:{table_options:{Compressed:true, CompressionType:'snappy'}}";
+SHOW CREATE TABLE t1;
+Table	Create Table
+t1	CREATE TABLE `t1` (
+  `a` smallint(6) DEFAULT NULL
+) ENGINE=SequoiaDB DEFAULT CHARSET=latin1 COMMENT='sequoiadb:{table_options:{Compressed:true, CompressionType:''snappy''}}'
+INSERT INTO t1 VALUES (1);
+SELECT * FROM t1;
+a
+1
+DROP TABLE t1;
+CREATE TABLE t1(ordrdt VARCHAR(8)) engine = sequoiadb comment="sequoiadb:{table_options:{ShardingKey:{ordrdt:1},ShardingType:'range',IsMainCL:true,EnsureShardingIndex:false,Compressed:true,ReplSize:-1,CompressionType:'lzw'}}";
+SHOW CREATE TABLE t1;
+Table	Create Table
+t1	CREATE TABLE `t1` (
+  `ordrdt` varchar(8) DEFAULT NULL
+) ENGINE=SequoiaDB DEFAULT CHARSET=latin1 COMMENT='sequoiadb:{table_options:{ShardingKey:{ordrdt:1},ShardingType:''range'',IsMainCL:true,EnsureShardingIndex:false,Compressed:true,ReplSize:-1,CompressionType:''lzw''}}'
+DROP TABLE t1;
+CREATE TABLE t1 ( 
+id INT PRIMARY KEY 
+) 
+COMMENT = "a strictly increasing sequence, sequoiadb:{ table_options: { AutoIncrement: { Field: \"id\", AcquireSize: 1 } } }";
+ERROR HY000: The AUTO_INCREMENT keyword is required
+CREATE TABLE t1 ( id INT PRIMARY KEY AUTO_INCREMENT, name VARCHAR(16)) 
+COMMENT = "a strictly increasing sequence, sequoiadb:{ table_options: { AutoIncrement: { Field: \"id\", AcquireSize: 1, CacheSize:1 } } }";
+SHOW CREATE TABLE t1;
+Table	Create Table
+t1	CREATE TABLE `t1` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `name` varchar(16) DEFAULT NULL,
+  PRIMARY KEY (`id`)
+) ENGINE=SequoiaDB DEFAULT CHARSET=latin1 COMMENT='a strictly increasing sequence, sequoiadb:{ table_options: { AutoIncrement: { Field: "id", AcquireSize: 1, CacheSize:1 } } }'
+INSERT INTO t1(name) VALUES ('Joe'),('Mary'),('Bob');
+SELECT * FROM t1 ORDER BY id;
+id	name
+1	Joe
+2	Mary
+3	Bob
+DROP TABLE t1;
+CREATE TABLE t1 ( id INT PRIMARY KEY AUTO_INCREMENT) 
+COMMENT = "a strictly increasing sequence, sequoiadb:{ table_options: { AutoIncrement: { Field: \"id1\", AcquireSize: 1, CacheSize:1 } } }";
+ERROR HY000: Ambiguous auto increment field
+CREATE TABLE t1 ( id INT PRIMARY KEY AUTO_INCREMENT, name VARCHAR(16)) 
+COMMENT = "a strictly increasing sequence, sequoiadb:{ table_options: { AutoIncrement: { Field: \"id,name\", AcquireSize: 1, CacheSize:1 } } }";
+ERROR HY000: Ambiguous auto increment field
+CREATE TABLE t1 ( id INT PRIMARY KEY AUTO_INCREMENT, name VARCHAR(16))
+COMMENT = "a strictly increasing sequence, sequoiadb:{ table_options: { AutoIncrement: { AcquireSize: 1, CacheSize:1, Increment:5, StartValue:5, MinValue:5, Cycled:true } } }";
+SHOW CREATE TABLE t1;
+Table	Create Table
+t1	CREATE TABLE `t1` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `name` varchar(16) DEFAULT NULL,
+  PRIMARY KEY (`id`)
+) ENGINE=SequoiaDB AUTO_INCREMENT=5 DEFAULT CHARSET=latin1 COMMENT='a strictly increasing sequence, sequoiadb:{ table_options: { AutoIncrement: { AcquireSize: 1, CacheSize:1, Increment:5, StartValue:5, MinValue:5, Cycled:true } } }'
+INSERT INTO t1(name) VALUES ('Joe'),('Mary'),('Bob');
+SELECT * FROM t1 ORDER BY id;
+id	name
+5	Joe
+10	Mary
+15	Bob
+DROP TABLE t1;
+CREATE TABLE t1 ( id INT PRIMARY KEY AUTO_INCREMENT) ENGINE = sequoiadb COMMENT = "a strictly increasing sequence, sequoiadb:{ table_options: { AutoIncrement: { Fielda: \"id\", AcquireSize: 1, CacheSize:1 } } }";
+ERROR HY000: Invalid Argument
+CREATE TABLE t1 ( id INT PRIMARY KEY AUTO_INCREMENT) ENGINE = sequoiadb COMMENT = "a strictly increasing sequence, sequoiadb:{ table_options: { AutoIncrement: { Increments:1 } } }";
+ERROR HY000: Invalid Argument
+CREATE TABLE t1 ( id INT PRIMARY KEY AUTO_INCREMENT) ENGINE = sequoiadb COMMENT = "a strictly increasing sequence, sequoiadb:{ table_options: { AutoIncrement: { StartValues:1 } } }";
+ERROR HY000: Invalid Argument
+CREATE TABLE t1 ( id INT PRIMARY KEY AUTO_INCREMENT) ENGINE = sequoiadb COMMENT = "a strictly increasing sequence, sequoiadb:{ table_options: { AutoIncrement: { MinValues:1 } } }";
+ERROR HY000: Invalid Argument
+CREATE TABLE t1 ( id INT PRIMARY KEY AUTO_INCREMENT) ENGINE = sequoiadb COMMENT = "a strictly increasing sequence, sequoiadb:{ table_options: { AutoIncrement: { MaxValues:1 } } }";
+ERROR HY000: Invalid Argument
+CREATE TABLE t1 ( id INT PRIMARY KEY AUTO_INCREMENT) ENGINE = sequoiadb COMMENT = "a strictly increasing sequence, sequoiadb:{ table_options: { AutoIncrement: { CacheSizes:10 } } }";
+ERROR HY000: Invalid Argument
+CREATE TABLE t1 ( id INT PRIMARY KEY AUTO_INCREMENT) ENGINE = sequoiadb COMMENT = "a strictly increasing sequence, sequoiadb:{ table_options: { AutoIncrement: { AcquireSizes:2 } } }";
+ERROR HY000: Invalid Argument
+CREATE TABLE t1 ( id INT PRIMARY KEY AUTO_INCREMENT) ENGINE = sequoiadb COMMENT = "a strictly increasing sequence, sequoiadb:{ table_options: { AutoIncrement: { Cycleds:true } } }";
+ERROR HY000: Invalid Argument
+CREATE TABLE t1 ( id INT PRIMARY KEY AUTO_INCREMENT) ENGINE = sequoiadb COMMENT = "a strictly increasing sequence, sequoiadb:{ table_options: { AutoIncrement: { Generateds:'default' } } }";
+ERROR HY000: Invalid Argument
+create table t1 ( id INT PRIMARY KEY AUTO_INCREMENT) ENGINE = sequoiadb COMMENT = "a strictly increasing sequence, sequoiadb:{ table_options: { AutoIncrement: { Field: \"id\" } } }";
+show create table t1;
+Table	Create Table
+t1	CREATE TABLE `t1` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  PRIMARY KEY (`id`)
+) ENGINE=SequoiaDB DEFAULT CHARSET=latin1 COMMENT='a strictly increasing sequence, sequoiadb:{ table_options: { AutoIncrement: { Field: "id" } } }'
+alter table t1 COMMENT = "a strictly increasing sequence, sequoiadb:{ table_options: { AutoIncrement: {AcquireSizes: 1, CacheSize:1 } } }";
+ERROR HY000: Invalid Argument
+alter table t1 COMMENT = "a strictly increasing sequence, sequoiadb:{ table_options: { AutoIncrement: { Field:\"a\" } } }";
+ERROR HY000: Autoincrement field does not exist on collection
+alter table t1 COMMENT = "a strictly increasing sequence, sequoiadb:{ table_options: { AutoIncrement:{CacheSize:1, AcquireSize: 1, Increment:2, StartValue:2, MinValue:2, MaxValue:1000, Cycled:true,Generated:\"always\"} } }";
+show create table t1;
+Table	Create Table
+t1	CREATE TABLE `t1` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  PRIMARY KEY (`id`)
+) ENGINE=SequoiaDB AUTO_INCREMENT=2 DEFAULT CHARSET=latin1 COMMENT='a strictly increasing sequence, sequoiadb:{ table_options: { AutoIncrement:{CacheSize:1, AcquireSize: 1, Increment:2, StartValue:2, MinValue:2, MaxValue:1000, Cycled:true,Generated:"always"} } }'
+insert into t1 values(),(),();
+select * from t1 order by id;
+id
+2
+4
+6
+alter table t1 COMMENT = "a strictly increasing sequence, sequoiadb:{ table_options: { AutoIncrement:{ Field: \"id\",Increment:1 } } }";
+show create table t1;
+Table	Create Table
+t1	CREATE TABLE `t1` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  PRIMARY KEY (`id`)
+) ENGINE=SequoiaDB AUTO_INCREMENT=7 DEFAULT CHARSET=latin1 COMMENT='a strictly increasing sequence, sequoiadb:{ table_options: { AutoIncrement:{ Field: "id",Increment:1 } } }'
+insert into t1 values(),(),();
+select * from t1 order by id;
+id
+2
+4
+6
+7
+8
+9
+drop table t1;
+drop database db_comment_sequoiadb;

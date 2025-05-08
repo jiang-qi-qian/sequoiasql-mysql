@@ -1,0 +1,176 @@
+#Case 23058#Case 23467#Case 23497
+
+--source include/have_sequoiadb.inc
+--source suite/metadata_sync_sequoiadb/inc/insts_connect_sequoiadb.inc
+
+# connect to conn1, clear servers in the beginning
+connection conn1;
+--disable_warnings
+DROP DATABASE IF EXISTS metasync_seq;
+--enable_warnings
+
+# connect to conn2, check servers are cleaned in the beginning
+connection conn2;
+--error ER_BAD_DB_ERROR
+SHOW CREATE DATABASE metasync_seq; 
+
+# seqDB-23058
+# begin testing
+# create sequence
+connection conn1;
+#SEQUOIASQLMAINSTREAM-949
+set server_ha_wait_sync_timeout = 10;
+CREATE DATABASE metasync_seq;
+USE metasync_seq;
+DELIMITER |;
+CREATE PROCEDURE sp1_nextval( dotime int )
+WHILE dotime DO
+   SET dotime = dotime - 1;
+   SELECT nextval(metasync_seq.s1);
+END WHILE|
+CREATE PROCEDURE sp2_nextval( dotime int )
+WHILE dotime DO
+   SET dotime = dotime - 1;
+   SELECT nextval(metasync_seq.s2);
+END WHILE|
+DELIMITER ;|
+CREATE SEQUENCE s1 MAXVALUE 4000;
+# check metadatas after create
+connection conn2;
+#SEQUOIASQLMAINSTREAM-949
+set server_ha_wait_sync_timeout = 10;
+SHOW CREATE SEQUENCE metasync_seq.s1;
+SELECT * FROM metasync_seq.s1;
+USE metasync_seq;
+SHOW CREATE PROCEDURE sp1_nextval;
+SHOW CREATE PROCEDURE sp2_nextval;
+# get next value of these instances
+connection conn1;
+call sp1_nextval(10);
+SELECT * FROM s1;
+connection conn2;
+call sp1_nextval(10);
+SELECT * FROM s1;
+#BUG #SEQUOIASQLMAINSTREAM-877
+# alter restart value/rename sequence between these instances at the same time
+connection conn1;
+ALTER SEQUENCE s1 RESTART 999;
+connection conn2;
+ALTER TABLE s1 RENAME TO s2;
+# check metadatas after alter
+connection conn1;
+SHOW CREATE SEQUENCE s2;
+SELECT * FROM s2;
+connection conn2;
+SHOW CREATE SEQUENCE s2;
+SELECT * FROM s2;
+# get next value of these instances
+connection conn1;
+call sp2_nextval(10);
+SELECT * FROM s2;
+connection conn2;
+call sp2_nextval(10);
+SELECT * FROM s2;
+# alter restart value/attributes of sequence between these instances at the same time
+connection conn1;
+ALTER SEQUENCE s2 RESTART 500;
+connection conn2;
+ALTER SEQUENCE s2
+   increment by 10
+   minvalue = 1
+   maxvalue = 2000
+   start with 500
+   cache 100 cycle;
+# check metadatas after alter
+connection conn1;
+SHOW CREATE SEQUENCE s2;
+SELECT * FROM s2;
+connection conn2;
+SHOW CREATE SEQUENCE s2;
+SELECT * FROM s2;
+# get next value of these instances
+connection conn1;
+call sp2_nextval(1);
+SELECT * FROM s2;
+connection conn2;
+call sp2_nextval(1);
+SELECT * FROM s2;
+# get large numbers of next value, and enter the next cycle
+connection conn1;
+--disable_result_log
+call sp2_nextval(999);
+--enable_result_log
+call sp2_nextval(1);
+SELECT * FROM s2;
+connection conn2;
+--disable_result_log
+call sp2_nextval(999);
+--enable_result_log
+call sp2_nextval(1);
+SELECT * FROM s2;
+#BUG #SEQUOIASQLMAINSTREAM-878
+# alter rename sequence/attributes of sequence between these instances at the same time
+connection conn1;
+ALTER SEQUENCE s2
+   minvalue = 501 
+   start with 501;
+connection conn2;
+ALTER TABLE s2 RENAME TO s1;
+connection conn1;
+call sp1_nextval(1);
+SELECT * FROM s1;
+connection conn2;
+call sp1_nextval(1);
+SELECT * FROM s1;
+# seqDB-23467
+# drop sequence
+--error ER_UNKNOWN_SEQUENCES
+DROP SEQUENCE s2,s11,s1;
+# check metadatas after drop
+connection conn1;
+--error ER_NO_SUCH_TABLE
+SHOW CREATE TABLE s1;
+--error ER_NO_SUCH_TABLE
+SHOW CREATE TABLE s2;
+
+
+#seqDB-23497
+# begin testing
+# create sequence
+connection conn1;
+CREATE SEQUENCE s1;
+connection conn2;
+SELECT nextval(s1);
+connection conn1;
+ALTER SEQUENCE s1 increment by 2;
+connection conn2;
+SELECT nextval(s1);
+connection conn1;
+#SEQUOIASQLMAINSTREAM-949
+ALTER SEQUENCE s1 RESTART 1;
+connection conn2;
+SELECT nextval(s1);
+connection conn1;
+RENAME TABLE s1 TO s2;
+connection conn2;
+SELECT nextval(s2);
+connection conn1;
+DROP SEQUENCE s2;
+set server_ha_wait_sync_timeout = 0;
+connection conn2;
+#BUG #SEQUOIASQLMAINSTREAM-870
+#BUG #SEQUOIASQLMAINSTREAM-830
+--error ER_NO_SUCH_TABLE
+SELECT nextval(s2);
+set server_ha_wait_sync_timeout = 0;
+
+# clear databases in the ending
+connection conn1;
+DROP DATABASE metasync_seq;
+# check databases are cleaned in the ending
+connection conn2;
+--error ER_BAD_DB_ERROR
+SHOW CREATE DATABASE metasync_seq;
+
+--source include/uninstall_sequoiadb.inc
+--source suite/metadata_sync_sequoiadb/inc/insts_disconnect_sequoiadb.inc

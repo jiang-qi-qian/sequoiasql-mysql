@@ -1,0 +1,219 @@
+#sequence test
+#Case 23055#Case 23056#Case 23414#Case 23472
+
+#seqDB-23055, #seqDB-23472
+# create sequence
+CREATE SEQUENCE seq1;
+#BUG #SEQUOIASQLMAINSTREAM-860
+#BUG #SEQUOIASQLMAINSTREAM-881
+--error 131
+CREATE SEQUENCE seq2 increment by 0;
+CREATE SEQUENCE seq2 increment by 1;
+CREATE OR REPLACE SEQUENCE seq3
+   increment by -10 
+   minvalue = 0 
+   maxvalue 50 
+   start with 10
+   cache 5 cycle
+   comment "create or replace sequence, sequoiadb:{ table_options: { ShardingKey: { next_not_cached_value: 1 } } }";
+CREATE TABLE seq4 (
+  `next_not_cached_value` bigint(21) NOT NULL,
+  `minimum_value` bigint(21) NOT NULL,
+  `maximum_value` bigint(21) NOT NULL,
+  `start_value` bigint(21) NOT NULL,
+  `increment` bigint(21) NOT NULL,
+  `cache_size` bigint(21) unsigned NOT NULL,
+  `cycle_option` tinyint(1) unsigned NOT NULL,
+  `cycle_count` bigint(21) NOT NULL
+) sequence=1;
+SHOW CREATE SEQUENCE seq1;
+SHOW CREATE SEQUENCE seq2;
+SHOW CREATE SEQUENCE seq3;
+SHOW CREATE SEQUENCE seq4;
+# get sequence
+SET sql_mode = ORACLE;
+SELECT next value for seq1;
+SELECT nextval(seq2);
+SELECT seq3.nextval;
+CREATE TABLE t1 ( id int primary key default (next value for seq4), name char(16) );
+INSERT INTO t1(name) VALUES ('Jack'),('Bob'),('Zhangsan'),('Tom');
+SELECT previous value for seq1;
+SELECT lastval(seq2);
+SELECT seq3.currval;
+SELECT seq4.currval;
+SELECT * FROM seq1;
+SELECT * FROM seq2;
+SELECT * FROM seq3;
+SELECT * FROM seq4;
+SELECT * FROM t1 ORDER BY id;
+# alter next value for sequence
+SELECT setval( seq1,100 );
+SELECT next value for seq1;
+SELECT setval( seq2,1000 );
+SELECT next value for seq2;
+#BUG #SEQUOIASQLMAINSTREAM-861
+SELECT nextval(seq3);
+ALTER SEQUENCE seq3 RESTART 25;
+SELECT nextval(seq3);
+SELECT nextval(seq3);
+SELECT setval( seq4,3 );
+SELECT seq4.nextval;
+ALTER SEQUENCE seq4 RESTART 2000;
+SELECT next value for seq4;
+INSERT INTO t1(name) VALUES ('Lisi');
+#BUG #SEQUOIASQLMAINSTREAM-871
+ALTER SEQUENCE seq4 RESTART 1;
+SELECT nextval(seq4);
+SELECT nextval(seq4);
+SELECT previous value for seq1;
+SELECT lastval(seq2);
+SELECT seq3.currval;
+SELECT seq4.currval;
+SELECT * FROM seq1;
+SELECT * FROM seq2;
+SELECT * FROM seq3;
+SELECT * FROM seq4;
+SELECT * FROM t1 ORDER BY id;
+drop table t1;
+
+# alter sequence attributes
+ALTER SEQUENCE seq1 
+   increment by 50
+   minvalue = 5
+   maxvalue 10000
+   start with 5
+   cache 10 cycle;
+ALTER SEQUENCE seq3
+   increment by 50
+   minvalue = -100
+   maxvalue = 50000
+   start with -50
+   cache 1001 cycle;
+#BUG #SEQUOIASQLMAINSTREAM-881
+--error 131
+ALTER SEQUENCE seq2 INCREMENT BY 0;
+--error 131
+INSERT INTO seq2 VALUES (1,1,1000,1,0,1000,0,0);
+INSERT INTO seq4 VALUES (1500,100,15000,101,10,999,1,2);
+SHOW CREATE SEQUENCE seq1;
+SHOW CREATE SEQUENCE seq3;
+SHOW CREATE SEQUENCE seq4;
+SELECT * FROM seq1;
+SELECT * FROM seq2;
+SELECT * FROM seq3;
+SELECT * FROM seq4;
+let $dotime = 200;
+while ($dotime)
+{
+  --disable_query_log
+  --disable_result_log
+  SELECT nextval(seq1);
+  SELECT nextval(seq3);
+  --enable_query_log
+  --enable_result_log
+  dec $dotime;
+}
+SELECT nextval(seq1);
+SELECT next value for seq3;
+SELECT seq4.nextval;
+SELECT * FROM seq1;
+SELECT * FROM seq3;
+SELECT * FROM seq4;
+# rename sequence
+#BUG #SEQUOIASQLMAINSTREAM-859
+ALTER TABLE seq1 RENAME TO seq1_new;
+RENAME TABLE seq2 TO seq2_new;
+SELECT nextval(seq1_new);
+SELECT nextval(seq2_new);
+SHOW CREATE SEQUENCE seq1_new;
+SHOW CREATE SEQUENCE seq2_new;
+SELECT * FROM seq1_new;
+SELECT * FROM seq2_new;
+--replace_regex /test_parallel_[0-9]/X/
+--error ER_NO_SUCH_TABLE
+SHOW CREATE SEQUENCE seq1;
+--replace_regex /test_parallel_[0-9]/X/
+--error ER_NO_SUCH_TABLE
+SHOW CREATE SEQUENCE seq2;
+# drop sequence
+DROP SEQUENCE seq1_new;
+DROP SEQUENCE seq2_new;
+DROP TABLE seq3;
+DROP TABLE seq4;
+--replace_regex /test_parallel_[0-9]/X/
+--error ER_NO_SUCH_TABLE
+SHOW CREATE SEQUENCE seq1_new;
+--replace_regex /test_parallel_[0-9]/X/
+--error ER_NO_SUCH_TABLE
+SHOW CREATE SEQUENCE seq2_new;
+--replace_regex /test_parallel_[0-9]/X/
+--error ER_NO_SUCH_TABLE
+SHOW CREATE SEQUENCE seq3;
+--replace_regex /test_parallel_[0-9]/X/
+--error ER_NO_SUCH_TABLE
+SHOW CREATE SEQUENCE seq4;
+SET sql_mode = DEFAULT;
+
+
+#seqDB-23056
+# create temporary sequence
+CREATE TEMPORARY SEQUENCE seq_tmp INCREMENT BY 10 MAXVALUE 20000 cycle;
+SHOW CREATE SEQUENCE seq_tmp;
+# get sequence
+SELECT next value for seq_tmp;
+SELECT previous value for seq_tmp;
+# alter next value for sequence
+SELECT setval( seq_tmp, 100 );
+SELECT next value for seq_tmp;
+# alter sequence attributes, but innodb not support for temporary sequence
+#ALTER SEQUENCE seq_tmp
+#   increment by 50
+#   minvalue = 10
+#   maxvalue 5000
+#   start with 10
+#   restart 50
+#   cache 10 cycle;
+#SHOW CREATE SEQUENCE seq_tmp;
+SELECT * FROM seq_tmp;
+let $dotime = 2000;
+while ($dotime)
+{
+  --disable_query_log
+  --disable_result_log
+  SELECT nextval(seq_tmp);
+  --enable_query_log
+  --enable_result_log
+  dec $dotime;
+}
+SELECT nextval(seq_tmp);
+# rename sequence
+ALTER TABLE seq_tmp RENAME TO seq_tmp_new;
+SELECT nextval(seq_tmp_new);
+SHOW CREATE SEQUENCE seq_tmp_new;
+SELECT * FROM seq_tmp_new;
+--replace_regex /test_parallel_[0-9]/X/
+--error ER_NO_SUCH_TABLE
+SHOW CREATE SEQUENCE seq_tmp;
+# drop sequence
+DROP SEQUENCE seq_tmp_new;
+--replace_regex /test_parallel_[0-9]/X/
+--error ER_NO_SUCH_TABLE
+SHOW CREATE SEQUENCE seq_tmp_new;
+
+#seqDB-23414
+# create view
+CREATE SEQUENCE seq1;
+CREATE VIEW v1 AS SELECT next value for seq1;
+CREATE VIEW v2 AS SELECT previous value for seq1;
+CREATE VIEW v3 AS SELECT setval(seq1, 2);
+CREATE VIEW v4 AS SELECT setval(seq1, 100);
+SELECT * FROM v1;
+SELECT * FROM v1;
+SELECT * FROM v1;
+SELECT * FROM v2;
+SELECT * FROM v3;
+SELECT * FROM v4;
+SELECT * FROM v2;
+SELECT * FROM v1;
+DROP SEQUENCE seq1;
+DROP VIEW v1,v2,v3,v4;

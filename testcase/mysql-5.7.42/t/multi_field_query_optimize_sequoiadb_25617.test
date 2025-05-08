@@ -1,0 +1,27 @@
+#seqDB-25617 单表多字段等值in查询
+--source include/have_sequoiadb.inc
+--disable_warnings
+drop database if exists multi_field_query_optimize_25617;
+--enable_warnings
+create database multi_field_query_optimize_25617;
+drop database multi_field_query_optimize_25617;
+create database multi_field_query_optimize_25617;
+
+use multi_field_query_optimize_25617;
+set session optimizer_switch='mrr=on,mrr_cost_based=off';
+set session sequoiadb_debug_log=on;
+--disable_warnings
+drop table if exists t1,t2;
+--enable_warnings
+create table t1(a int,b int,key union_ab1(a,b));
+insert into t1 values(1,1),(1,2),(2,3),(2,1),(1,3),(2,3);
+explain select * from t1 where (a,b) in((1,2),(2,3));
+--sorted_result
+let $query = select * from t1 where (a,b) in((1,2),(2,3));
+--source include/query_without_sorted_and_get_mysqld_note_log_sequoiadb.inc
+drop table t1;
+
+set session optimizer_switch=default;
+set session sequoiadb_debug_log=off;
+drop database multi_field_query_optimize_25617;
+--source include/uninstall_sequoiadb.inc

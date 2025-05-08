@@ -1,0 +1,95 @@
+# case 29789
+
+--source include/have_sequoiadb.inc
+
+show variables like '%tcp%';
+
+set global tcp_keepalive_probes=1;
+set global tcp_keepalive_time=1;
+set global tcp_keepalive_interval=1;
+show variables like '%tcp%';
+
+set global tcp_keepalive_probes=0;
+set global tcp_keepalive_time=0;
+set global tcp_keepalive_interval=0;
+show variables like '%tcp%';
+
+set global tcp_keepalive_probes=1000;
+set global tcp_keepalive_time=1000;
+set global tcp_keepalive_interval=1000;
+show variables like '%tcp%';
+
+set global tcp_keepalive_probes=2147483;
+set global tcp_keepalive_time=2147483;
+set global tcp_keepalive_interval=2147483;
+show variables like '%tcp%';
+
+set global tcp_keepalive_probes=-1;
+set global tcp_keepalive_time=-1;
+set global tcp_keepalive_interval=-1;
+show variables like '%tcp%';
+
+set global tcp_keepalive_probes=2147484;
+set global tcp_keepalive_time=2147484;
+set global tcp_keepalive_interval=2147484;
+show variables like '%tcp%';
+
+--error 1232
+set global tcp_keepalive_probes=null;
+--error 1232
+set global tcp_keepalive_time=nill;
+--error 1232
+set global tcp_keepalive_interval=nill;
+show variables like '%tcp%';
+
+--error 1232
+set global tcp_keepalive_probes="";
+--error 1232
+set global tcp_keepalive_time="";
+--error 1232
+set global tcp_keepalive_interval="";
+show variables like '%tcp%';
+
+--error 1064
+set global tcp_keepalive_probes=$%;
+--error 1064
+set global tcp_keepalive_time=$%;
+--error 1064
+set global tcp_keepalive_interval=$%;
+show variables like '%tcp%';
+
+set global tcp_keepalive_probes=default;
+set global tcp_keepalive_time=default;
+set global tcp_keepalive_interval=default;
+show variables like '%tcp%';
+
+--error 1229
+set tcp_keepalive_probes=1000;
+--error 1229
+set tcp_keepalive_time=1000;
+--error 1229
+set tcp_keepalive_interval=1000;
+show variables like '%tcp%';
+
+--error 1229
+set session tcp_keepalive_probes=1000;
+--error 1229
+set session tcp_keepalive_time=1000;
+--error 1229
+set session tcp_keepalive_interval=1000;
+show variables like '%tcp%';
+
+--error 1064
+set $% tcp_keepalive_probes=1000;
+--error 1064
+set $% tcp_keepalive_time=1000;
+--error 1064
+set $% tcp_keepalive_interval=1000;
+show variables like '%tcp%';
+
+set global tcp_keepalive_probes=default;
+set global tcp_keepalive_time=default;
+set global tcp_keepalive_interval=default;
+show variables like '%tcp%';
+
+--source include/uninstall_sequoiadb.inc

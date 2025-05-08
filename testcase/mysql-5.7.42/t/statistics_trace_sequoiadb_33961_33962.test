@@ -1,0 +1,43 @@
+--source include/restart_mysqld.inc
+--source include/have_sequoiadb.inc
+
+--disable_warnings
+drop database if exists statistics_trace_sequoiadb_33961_33962;
+--enable_warnings
+create database statistics_trace_sequoiadb_33961_33962;
+drop database statistics_trace_sequoiadb_33961_33962;
+create database statistics_trace_sequoiadb_33961_33962;
+use statistics_trace_sequoiadb_33961_33962;
+
+set session sequoiadb_debug_log = on;
+set session sequoiadb_secure_log = off;
+set session sequoiadb_share_log_output = on;
+
+create table t1 (a int);
+insert into t1 values (1),(2);
+create table t2 like t1;
+create table t3 like t1;
+
+flush tables;
+# 确保几个表已有统计信息
+--disable_result_log
+select * from t1;
+select * from t2;
+select * from t3;
+--enable_result_log
+
+show status like "sdb_share_updated";
+
+# 刷新单个表
+let $query = refresh tables t1 stats;
+--source include/query_without_sorted_and_get_mysqld_note_log_sequoiadb.inc
+
+show status like "sdb_share_updated";
+
+# 刷新多个表
+let $query = refresh tables t2,t3 stats;
+--source include/query_without_sorted_and_get_mysqld_note_log_sequoiadb.inc
+
+show status like "sdb_share_updated";
+
+drop database statistics_trace_sequoiadb_33961_33962;

@@ -1,0 +1,59 @@
+connection conn1;
+DROP DATABASE IF EXISTS metaSync_Enable_24157;
+connection conn2;
+SHOW CREATE DATABASE metaSync_Enable_24157;
+ERROR 42000: Unknown database 'metasync_enable_24157'
+connection conn1;
+CREATE DATABASE metaSync_Enable_24157;
+connection conn2;
+USE metaSync_Enable_24157;
+connection conn1;
+CREATE TABLE metaSync_Enable_24157.Test1 ( ID int, age int );
+INSERT INTO metaSync_Enable_24157.Test1 VALUES (1,10),(2,20),(3,30);
+connection conn2;
+SHOW CREATE TABLE metasync_enable_24157.test1;
+Table	Create Table
+test1	CREATE TABLE `test1` (
+  `ID` int(11) DEFAULT NULL,
+  `age` int(11) DEFAULT NULL
+) ENGINE=SequoiaDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin
+SELECT * FROM metaSync_Enable_24157.Test1 ORDER BY id;
+ID	age
+1	10
+2	20
+3	30
+connection conn1;
+USE metasync_enable_24157;
+CREATE VIEW View1 AS SELECT * FROM Test1 WHERE AGE > 20;
+connection conn2;
+SHOW CREATE VIEW View1;
+View	Create View	character_set_client	collation_connection
+view1	CREATE ALGORITHM=UNDEFINED DEFINER=`sdbadmin`@`%` SQL SECURITY DEFINER VIEW `view1` AS select `test1`.`ID` AS `ID`,`test1`.`age` AS `age` from `test1` where `test1`.`age` > 20	latin1	latin1_swedish_ci
+SELECT * FROM view1;
+ID	age
+3	30
+connection conn1;
+CREATE SEQUENCE Seq_Tab1;
+connection conn2;
+SHOW CREATE SEQUENCE Seq_Tab1;
+Table	Create Table
+Seq_Tab1	CREATE SEQUENCE `seq_tab1` start with 1 minvalue 1 maxvalue 9223372036854775806 increment by 1 cache 1000 nocycle ENGINE=SequoiaDB
+SELECT nextval(seq_tab1);
+nextval(seq_tab1)
+1
+connection conn1;
+DROP TABLE Test1;
+DROP VIEW View1;
+DROP SEQUENCE Seq_Tab1;
+connection conn2;
+SHOW CREATE TABLE Test1;
+ERROR 42S02: Table 'metasync_enable_24157.test1' doesn't exist
+SHOW CREATE VIEW View1;
+ERROR 42S02: Table 'metasync_enable_24157.view1' doesn't exist
+SHOW CREATE SEQUENCE Seq_Tab1;
+ERROR 42S02: Table 'metasync_enable_24157.seq_tab1' doesn't exist
+connection conn1;
+DROP DATABASE metaSync_Enable_24157;
+connection conn2;
+SHOW CREATE DATABASE metaSync_Enable_24157;
+ERROR 42000: Unknown database 'metasync_enable_24157'

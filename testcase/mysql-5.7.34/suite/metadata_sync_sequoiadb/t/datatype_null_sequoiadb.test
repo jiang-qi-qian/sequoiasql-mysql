@@ -1,0 +1,63 @@
+#seqDB-24687
+--source include/have_sequoiadb.inc
+--source suite/metadata_sync_sequoiadb/inc/insts_connect_sequoiadb.inc
+connection conn1;
+--disable_warnings
+drop database if exists datatype_null_sequoiadb;
+--enable_warnings
+create database datatype_null_sequoiadb;
+drop database datatype_null_sequoiadb;
+create database datatype_null_sequoiadb;
+use datatype_null_sequoiadb;
+#创建测试表，用于测试字段默认值可以为NULL的数据类型
+create table test_type(
+id int auto_increment primary key,
+field1 bit,
+field2 bool,
+field3 tinyint,
+field4 smallint,
+field5 mediumint,
+field6 int,
+field7 bigint,
+field8 float,
+field9 double,
+field10 decimal,
+field11 year,
+field12 date,
+field13 time,
+field14 datetime,
+field15 char(10),
+field16 varchar(10),
+field17 binary(200),
+field18 varbinary(300),
+field19 tinyblob,
+field20 blob,
+field21 mediumblob,
+field22 longblob,
+field23 tinytext,
+field24 text,
+field25 mediumtext,
+field26 longtext,
+field27 json,
+field28 geometry);
+show create table test_type;
+#连接conn1，向test_type表id字段插入数值，其余字段不指定，数据插入成功
+insert into test_type(id) values(1);
+connection conn2;
+#连接conn2，向test_type表id字段插入数值，其余字段不指定，数据插入成功
+use datatype_null_sequoiadb;
+insert into test_type(id) values(2);
+connection conn1;
+#连接conn1，查询数据,test_type表中除id字段外，其余字段默认值均为NULL
+use datatype_null_sequoiadb;
+select * from test_type;
+connection conn2;
+#连接conn2，查询数据,test_type表中除id字段外，其余字段默认值均为NULL
+use datatype_null_sequoiadb;
+select * from test_type;
+# clear databases in the ending
+connection conn1;
+drop database datatype_null_sequoiadb;
+
+--source include/uninstall_sequoiadb.inc
+--source suite/metadata_sync_sequoiadb/inc/insts_disconnect_sequoiadb.inc

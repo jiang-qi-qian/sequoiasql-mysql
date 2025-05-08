@@ -1,0 +1,413 @@
+ #Case 28276 #Case 28277 #Case 28278 #Case 28279 #Case 28280 
+ #Case 28281 #Case 28282 #Case 28283 #Case 28284 #Case 28285
+--source include/have_sequoiadb.inc
+
+--disable_warnings
+DROP DATABASE IF EXISTS db_28276;
+--enable_warnings
+create database db_28276;
+use db_28276;
+create table t1(a int, b int);
+truncate t1;
+insert into t1 values(1,1),(2,2),(3,3),(4,4),(NULL,5),(6,6),(7,NULL),(8,8),(9,NULL),(10,10);
+create table t2 as select * from t1;
+create view v1 as select * from t2 where a>4;
+
+set session sequoiadb_debug_log= on;
+--disable_warnings
+set session sql_mode="STRICT_TRANS_TABLES,ERROR_FOR_DIVISION_BY_ZERO,NO_AUTO_CREATE_USER,NO_ENGINE_SUBSTITUTION";
+--enable_warnings
+
+#测试一:测试单表逻辑修改后，limit、order by、group by能下压
+#Case 28276、seqDB-28280:mergeable derived table
+select * from (select * from t1 where a>2) t2 limit 3;
+--source include/query_pushdown_condition_sequoiadb.inc
+explain select * from (select * from t1 where a>2) t2 limit 3;
+
+select * from (select * from t1 where a>2) t2 order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+explain select * from (select * from t1 where a>2) t2 order by a;
+
+select * from (select * from t1 where a>2) t2 group by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+explain select * from (select * from t1 where a>2) t2 group by a;
+
+select * from (select * from t1 where a>2) t2 group by a order by a limit 3;
+--source include/query_pushdown_condition_sequoiadb.inc
+explain select * from (select * from t1 where a>2) t2 group by a order by a limit 3;
+
+select * from (select * from t1 where a>2) t2 group by concat(a,"") order by a limit 3;
+--source include/query_pushdown_condition_sequoiadb.inc
+explain select * from (select * from t1 where a>2) t2 group by concat(a,"") order by a limit 3;
+
+select * from (select * from t1 where a>rand()) t2 where b>rand() group by a order by a limit 3;
+--source include/query_pushdown_condition_sequoiadb.inc
+explain select * from (select * from t1 where a>rand()) t2 where b>rand() group by a order by a limit 3;
+
+select * from (select * from t1 where a>2 order by a DESC) t2; 
+--source include/query_pushdown_condition_sequoiadb.inc
+explain select * from (select * from t1 where a>2 order by a DESC) t2; 
+
+select * from (select 1 from t1 where a>2 order by a) t2 limit 3; 
+--source include/query_pushdown_condition_sequoiadb.inc
+explain select * from (select 1 from t1 where a>2 order by a) t2 limit 3; 
+
+#Case 28277:mergeable view
+select * from v1;
+--source include/query_pushdown_condition_sequoiadb.inc
+explain select * from v1;
+
+select * from v1 limit 3;
+--source include/query_pushdown_condition_sequoiadb.inc
+explain select * from v1 limit 3;
+
+select * from v1 order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+explain select * from v1 order by a;
+
+select * from v1 group by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+explain select * from v1 group by a;
+
+select * from v1 group by a order by a limit 3;
+--source include/query_pushdown_condition_sequoiadb.inc
+explain select * from v1 group by a order by a limit 3;
+
+select * from v1 group by concat(a,"") order by a limit 3;
+--source include/query_pushdown_condition_sequoiadb.inc
+explain select * from v1 group by concat(a,"") order by a limit 3;
+
+select * from v1 where b>rand() group by a order by a limit 3;
+--source include/query_pushdown_condition_sequoiadb.inc
+explain select * from v1 where b>rand() group by a order by a limit 3;
+
+#Case 28277:not mergable derived table, limit 均不下压
+select * from (select * from t1 where a>2 limit 3) t2 limit 3;
+--source include/query_pushdown_condition_sequoiadb.inc
+explain select * from (select * from t1 where a>2 limit 3) t2 limit 3;
+
+select * from (select * from t1 where a>2 group by a) t2 limit 3;
+--source include/query_pushdown_condition_sequoiadb.inc
+explain select * from (select * from t1 where a>2 group by a) t2 limit 3;
+
+select * from (select * from t1 where a>2 group by a order by a limit 3) t2 limit 3;
+--source include/query_pushdown_condition_sequoiadb.inc
+explain select * from (select * from t1 where a>2 group by a order by a limit 3) t2 limit 3;
+
+select * from (select * from t1 where a>2 order by a DESC limit 3) t2 limit 3;
+--source include/query_pushdown_condition_sequoiadb.inc
+explain select * from (select * from t1 where a>2 order by a DESC limit 3) t2 limit 3;
+
+select * from (select 1 from t1 where a>2 limit 3) t2 limit 3;
+--source include/query_pushdown_condition_sequoiadb.inc
+explain select * from (select 1 from t1 where a>2 limit 3) t2 limit 3;
+
+#Case 28278:多表join, limit/order by/group by 均不下压
+#limit
+select * from (select t1.* from t1,t2 where t1.a>2) t2 limit 3;
+--source include/query_pushdown_condition_sequoiadb.inc
+explain select * from (select t1.* from t1,t2 where t1.a>2) t2 limit 3;
+
+select * from (select * from t1 where a>2) t3,t2 where t2.a=t3.a limit 3;
+--source include/query_pushdown_condition_sequoiadb.inc
+explain select * from (select * from t1 where a>2) t3,t2 where t2.a=t3.a limit 3;
+
+select * from (select * from t1 where a>2 limit 3) t3,t2 where t2.a=t3.a limit 3;
+--source include/query_pushdown_condition_sequoiadb.inc
+explain select * from (select * from t1 where a>2 limit 3) t3,t2 where t2.a=t3.a limit 3;
+
+#order by
+select * from (select t1.* from t1,t2 where t1.a>2) t2 order by t2.a,t2.b;
+--source include/query_pushdown_condition_sequoiadb.inc
+explain select * from (select t1.* from t1,t2 where t1.a>2) t2 order by t2.a,t2.b;
+
+select * from (select * from t1 where a>2) t3,t2 where t2.a=t3.a order by t2.a,t2.b;
+--source include/query_pushdown_condition_sequoiadb.inc
+explain select * from (select * from t1 where a>2) t3,t2 where t2.a=t3.a order by t2.a,t2.b;
+
+select * from (select * from t1 where a>2 limit 3) t3,t2 where t2.a=t3.a order by t2.a,t2.b;
+--source include/query_pushdown_condition_sequoiadb.inc
+explain select * from (select * from t1 where a>2 limit 3) t3,t2 where t2.a=t3.a order by t2.a,t2.b;
+
+#group by
+select * from (select t1.* from t1,t2 where t1.a>2) t2 group by t2.b;
+--source include/query_pushdown_condition_sequoiadb.inc
+explain select * from (select t1.* from t1,t2 where t1.a>2) t2 group by t2.b;
+
+select * from (select * from t1 where a>2) t3,t2 where t2.a=t3.a group by t2.b;
+--source include/query_pushdown_condition_sequoiadb.inc
+explain select * from (select * from t1 where a>2) t3,t2 where t2.a=t3.a group by t2.b;
+
+select * from (select * from t1 where a>2 limit 3) t3,t2 where t2.a=t3.a group by t2.b;
+--source include/query_pushdown_condition_sequoiadb.inc
+explain select * from (select * from t1 where a>2 limit 3) t3,t2 where t2.a=t3.a group by t2.b;
+
+#Case 28279:子查询，union在父/子查询块，inner join, outer join, natural join, view 多表 limit/order by/group by 不能下压
+#limit
+select * from t1 where a in (select a from t1 where b<5) limit 3;
+--source include/query_pushdown_condition_sequoiadb.inc
+explain select * from t1 where a in (select a from t1 where b<5) limit 3;
+
+select *,(select a from t2 limit 1) from t1 limit 3;
+--source include/query_pushdown_condition_sequoiadb.inc
+explain select *,(select a from t2 limit 1) from t1 limit 3;
+
+select * from t1 union select * from t2 limit 3;
+--source include/query_pushdown_condition_sequoiadb.inc
+explain select * from t1 union select * from t2 limit 3;
+
+select * from t1 where a in(select a from t2 where a=2 union select 1) limit 3;
+--source include/query_pushdown_condition_sequoiadb.inc
+explain select * from t1 where a in(select a from t2 where a=2 union select 1) limit 3;
+
+select * from t1,t2 limit 3;
+--source include/query_pushdown_condition_sequoiadb.inc
+explain select * from t1,t2 limit 3;
+
+select * from t1 left outer join t2 on t1.a=t2.a limit 3;
+--source include/query_pushdown_condition_sequoiadb.inc
+explain select * from t1 left outer join t2 on t1.a=t2.a limit 3;
+
+select * from t1 join t2 using(a) limit 3;
+--source include/query_pushdown_condition_sequoiadb.inc
+explain select * from t1 join t2 using(a) limit 3;
+
+#order by
+select * from t1 where a in (select a from t1 where b<5) order by b;
+--source include/query_pushdown_condition_sequoiadb.inc
+explain select * from t1 where a in (select a from t1 where b<5) order by b;
+
+select *,(select a from t2 limit 1) from t1 order by a,b;
+--source include/query_pushdown_condition_sequoiadb.inc
+explain select *,(select a from t2 limit 1) from t1 order by a,b;
+
+select * from t1 union select * from t2 order by a,b;
+--source include/query_pushdown_condition_sequoiadb.inc
+explain select * from t1 union select * from t2 order by a,b;
+
+select * from t1 where a in(select a from t2 where a=2 union select 1) order by b;
+--source include/query_pushdown_condition_sequoiadb.inc
+explain select * from t1 where a in(select a from t2 where a=2 union select 1) order by b;
+
+select * from t1,t2 order by t1.a,t2.a,t2.b;
+--source include/query_pushdown_condition_sequoiadb.inc
+explain select * from t1,t2 order by t1.a,t2.a,t2.b;
+
+select * from t1 left outer join t2 on t1.a=t2.a order by t2.a,t2.b;
+--source include/query_pushdown_condition_sequoiadb.inc
+explain select * from t1 left outer join t2 on t1.a=t2.a order by t2.a,t2.b;
+
+select * from t1 join t2 using(a);
+--source include/query_pushdown_condition_sequoiadb.inc
+explain select * from t1 join t2 using(a);
+
+#group by
+select * from t1 where a in (select a from t1 where b<5) group by b;
+--source include/query_pushdown_condition_sequoiadb.inc
+explain select * from t1 where a in (select a from t1 where b<5) group by b;
+
+select *,(select a from t2 limit 1) from t1 group by b;
+--source include/query_pushdown_condition_sequoiadb.inc
+explain select *,(select a from t2 limit 1) from t1 group by b;
+
+select * from t1 union select * from t2 group by b;
+--source include/query_pushdown_condition_sequoiadb.inc
+explain select * from t1 union select * from t2 group by b;
+
+select * from t1 where a in(select a from t2 where a=2 union select 1) group by b;
+--source include/query_pushdown_condition_sequoiadb.inc
+explain select * from t1 where a in(select a from t2 where a=2 union select 1) group by b;
+
+select * from t1,t2 group by t2.b;
+--source include/query_pushdown_condition_sequoiadb.inc
+explain select * from t1,t2 group by t2.b;
+
+select * from t1 left outer join t2 on t1.a=t2.a group by t2.b;
+--source include/query_pushdown_condition_sequoiadb.inc
+explain select * from t1 left outer join t2 on t1.a=t2.a group by t2.b;
+
+select * from t1 join t2 using(a) group by t2.b;
+--source include/query_pushdown_condition_sequoiadb.inc
+explain select * from t1 join t2 using(a) group by t2.b;
+
+#测试二:测试单表逻辑修改，以及 order by, group by 获取方式调整后，count 可以下压
+#direct_count 查询
+#Case 28281:mergable derived table
+select count(*) from (select * from t1 where a>2) t2;
+--source include/query_pushdown_condition_sequoiadb.inc
+explain select count(*) from (select * from t1 where a>2) t2;
+
+select count(*) from (select * from t1 where a>2) t2 limit 3;
+--source include/query_pushdown_condition_sequoiadb.inc
+explain select count(*) from (select * from t1 where a>2) t2 limit 3;
+
+select count(*) from (select * from t1 where a>2) t2 order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+explain select count(*) from (select * from t1 where a>2) t2 order by a;
+
+select count(*) from (select * from t1 where a>2) t2 group by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+explain select count(*) from (select * from t1 where a>2) t2 group by a;
+
+select count(*) from (select * from t1 where a>2) t2 group by a order by a limit 3; 
+--source include/query_pushdown_condition_sequoiadb.inc
+explain select count(*) from (select * from t1 where a>2) t2 group by a order by a limit 3;
+
+select count(*) from (select * from t1 where a>2 order by a DESC) t2;
+--source include/query_pushdown_condition_sequoiadb.inc
+explain select count(*) from (select * from t1 where a>2 order by a DESC) t2;
+
+#Case 28282:mergeable view
+select count(*) from v1;
+--source include/query_pushdown_condition_sequoiadb.inc
+explain select count(*) from v1;
+
+select count(*) from v1 limit 3;
+--source include/query_pushdown_condition_sequoiadb.inc
+explain select count(*) from v1 limit 3;
+
+select count(*) from v1 order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+explain select count(*) from v1 order by a;
+
+select count(*) from v1 group by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+explain select count(*) from v1 group by a;
+
+select count(*) from v1 group by a order by a limit 3;
+--source include/query_pushdown_condition_sequoiadb.inc
+explain select count(*) from v1 group by a order by a limit 3;
+
+#Case 28283:not mergable derived table, count/limit/order by/group by 均不下压
+#count
+select count(*) from (select * from t1 where a>2 limit 3) t2;
+--source include/query_pushdown_condition_sequoiadb.inc
+explain select count(*) from (select * from t1 where a>2 limit 3) t2;
+
+select count(*) from (select * from t1 where a>2 group by a) t2;
+--source include/query_pushdown_condition_sequoiadb.inc
+explain select count(*) from (select * from t1 where a>2 group by a) t2;
+
+select count(*) from (select * from t1 where a>2 group by a order by a limit 3) t2;
+--source include/query_pushdown_condition_sequoiadb.inc
+explain select count(*) from (select * from t1 where a>2 group by a order by a limit 3) t2;
+
+select count(*) from (select * from t1 where a>2 order by a DESC limit 3) t2;
+--source include/query_pushdown_condition_sequoiadb.inc
+explain select count(*) from (select * from t1 where a>2 order by a DESC limit 3) t2;
+
+select count(*) from (select 1 from t1 where a>2 limit 3) t2;
+--source include/query_pushdown_condition_sequoiadb.inc
+explain select count(*) from (select 1 from t1 where a>2 limit 3) t2;
+
+#limit
+select * from (select * from t1 where a>2 limit 3) t2 limit 3;
+--source include/query_pushdown_condition_sequoiadb.inc
+explain select * from (select * from t1 where a>2 limit 3) t2 limit 3;
+
+select * from (select * from t1 where a>2 group by a) t2 limit 3;
+--source include/query_pushdown_condition_sequoiadb.inc
+explain select * from (select * from t1 where a>2 group by a) t2 limit 3;
+
+select * from (select * from t1 where a>2 group by a order by a limit 3) t2 limit 3;
+--source include/query_pushdown_condition_sequoiadb.inc
+explain select * from (select * from t1 where a>2 group by a order by a limit 3) t2 limit 3;
+
+select * from (select * from t1 where a>2 order by a DESC limit 3) t2 limit 3;
+--source include/query_pushdown_condition_sequoiadb.inc
+explain select * from (select * from t1 where a>2 order by a DESC limit 3) t2 limit 3;
+
+select * from (select 1 from t1 where a>2 limit 3) t2 limit 3;
+--source include/query_pushdown_condition_sequoiadb.inc
+explain select * from (select 1 from t1 where a>2 limit 3) t2 limit 3;
+
+#order by
+select * from (select * from t1 where a>2 limit 3) t2 order by b;
+--source include/query_pushdown_condition_sequoiadb.inc
+explain select * from (select * from t1 where a>2 limit 3) t2 order by b;
+
+select * from (select * from t1 where a>2 group by a) t2 order by a,b;
+--source include/query_pushdown_condition_sequoiadb.inc
+explain select * from (select * from t1 where a>2 group by a) t2 order by a,b;
+
+select * from (select * from t1 where a>2 group by a order by a limit 3) t2 order by b;
+--source include/query_pushdown_condition_sequoiadb.inc
+explain select * from (select * from t1 where a>2 group by a order by a limit 3) t2 order by b;
+
+select * from (select * from t1 where a>2 order by a DESC limit 3) t2 order by b DESC;
+--source include/query_pushdown_condition_sequoiadb.inc
+explain select * from (select * from t1 where a>2 order by a DESC limit 3) t2 order by b DESC;
+
+select * from (select 1 from t1 where a>2 limit 3) t2 order by 1 DESC;
+--source include/query_pushdown_condition_sequoiadb.inc
+explain select * from (select 1 from t1 where a>2 limit 3) t2 order by 1 DESC;
+
+#group by
+select * from (select * from t1 where a>2 limit 3) t2 group by b;
+--source include/query_pushdown_condition_sequoiadb.inc
+explain select * from (select * from t1 where a>2 limit 3) t2 group by b;
+
+select * from (select * from t1 where a>2 group by a) t2 group by b;
+--source include/query_pushdown_condition_sequoiadb.inc
+explain select * from (select * from t1 where a>2 group by a) t2 group by b;
+
+select * from (select * from t1 where a>2 group by a order by a limit 3) t2 group by b;
+--source include/query_pushdown_condition_sequoiadb.inc
+explain select * from (select * from t1 where a>2 group by a order by a limit 3) t2 group by b;
+
+select * from (select * from t1 where a>2 order by a DESC limit 3) t2 group by b;
+--source include/query_pushdown_condition_sequoiadb.inc
+explain select * from (select * from t1 where a>2 order by a DESC limit 3) t2 group by b;
+
+select * from (select 1 from t1 where a>2 limit 3) t2 group by 1;
+--source include/query_pushdown_condition_sequoiadb.inc
+explain select * from (select 1 from t1 where a>2 limit 3) t2 group by 1;
+
+#Case 28283:多表join, count 均不下压
+select count(*) from (select t1.* from t1,t2 where t1.a>2) t2;
+--source include/query_pushdown_condition_sequoiadb.inc
+explain select count(*) from (select t1.* from t1,t2 where t1.a>2) t2;
+
+select count(*) from (select * from t1 where a>2) t3,t2 where t2.a=t3.a;
+--source include/query_pushdown_condition_sequoiadb.inc
+explain select count(*) from (select * from t1 where a>2) t3,t2 where t2.a=t3.a;
+
+select count(*) from (select * from t1 where a>2 limit 3) t3,t2 where t2.a=t3.a;
+--source include/query_pushdown_condition_sequoiadb.inc
+explain select count(*) from (select * from t1 where a>2 limit 3) t3,t2 where t2.a=t3.a;
+
+#Case 28284:子查询，union在父/子查询块，inner join, outer join, natural join, view, 多表 count 均不能下压
+select count(*) from t1 where a in (select a from t1 where b<5);
+--source include/query_pushdown_condition_sequoiadb.inc
+explain select count(*) from t1 where a in (select a from t1 where b<5);
+
+select count(*),(select a from t2 limit 1) from t1;
+--source include/query_pushdown_condition_sequoiadb.inc
+explain select count(*),(select a from t2 limit 1) from t1;
+
+select count(*) from t1 union select a from t2;
+--source include/query_pushdown_condition_sequoiadb.inc
+explain select count(*) from t1 union select a from t2;
+
+select count(*) from t1 where a in(select a from t2 where a=2 union select 1);
+--source include/query_pushdown_condition_sequoiadb.inc
+explain select count(*) from t1 where a in(select a from t2 where a=2 union select 1);
+
+select count(*) from t1,t2;
+--source include/query_pushdown_condition_sequoiadb.inc
+explain select count(*) from t1,t2;
+
+select count(*) from t1 left outer join t2 on t1.a=t2.a;
+--source include/query_pushdown_condition_sequoiadb.inc
+explain select count(*) from t1 left outer join t2 on t1.a=t2.a;
+
+select count(*) from t1 join t2 using(a);
+--source include/query_pushdown_condition_sequoiadb.inc
+explain select count(*) from t1 join t2 using(a);
+
+set session sequoiadb_debug_log=default;
+set session sql_mode=default;
+
+drop database db_28276;
+
+--source include/uninstall_sequoiadb.inc

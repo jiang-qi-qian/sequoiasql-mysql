@@ -1,0 +1,29 @@
+--source include/restart_mysqld.inc
+--source include/have_sequoiadb.inc
+
+--disable_warnings
+drop database if exists statistics_trace_sequoiadb_33967;
+--enable_warnings
+create database statistics_trace_sequoiadb_33967;
+drop database statistics_trace_sequoiadb_33967;
+create database statistics_trace_sequoiadb_33967;
+use statistics_trace_sequoiadb_33967;
+
+set session sequoiadb_debug_log = on;
+set session sequoiadb_secure_log = off;
+set session sequoiadb_share_log_output = on;
+
+CREATE TABLE t1 (a int,b varchar(4),key (a),key (b)) ENGINE=SequoiaDB;
+INSERT INTO t1 values (1,"a"),(2,"b"),(3,"c");
+create view v1 as select * from t1;
+
+flush tables;
+
+show status like "sdb_share_updated";
+
+let $query = explain select * from v1;
+--source include/query_without_sorted_and_get_mysqld_note_log_sequoiadb.inc
+
+show status like "sdb_share_updated";
+
+drop database statistics_trace_sequoiadb_33967;

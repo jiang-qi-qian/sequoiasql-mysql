@@ -1,0 +1,143 @@
+# Case 31054, Case 31055, Case 31056
+--source include/have_sequoiadb.inc
+
+set session sequoiadb_execute_only_in_mysql = on;
+--source include/execution_mode_sequoiadb.inc
+
+set session sequoiadb_execute_only_in_mysql = off;
+--source include/execution_mode_sequoiadb.inc
+
+set global sequoiadb_execute_only_in_mysql = on;
+--source include/execution_mode_sequoiadb.inc
+
+set sequoiadb_execute_only_in_mysql = on;
+--source include/execution_mode_sequoiadb.inc
+
+set sequoiadb_execute_only_in_mysql = default;
+--source include/execution_mode_sequoiadb.inc
+
+set sequoiadb_execute_only_in_mysql = off;
+--source include/execution_mode_sequoiadb.inc
+
+set sequoiadb_execute_only_in_mysql = default;
+--source include/execution_mode_sequoiadb.inc
+
+let $i = 30;
+--disable_warnings
+while ($i) {
+    set session sequoiadb_execute_only_in_mysql = on;
+    set session sequoiadb_execute_only_in_mysql = off;
+    dec $i;
+}
+--enable_warnings
+--source include/execution_mode_sequoiadb.inc
+
+
+set session sequoiadb_execution_mode = 0;
+--source include/execution_mode_sequoiadb.inc
+
+set session sequoiadb_execution_mode = 1;
+--source include/execution_mode_sequoiadb.inc
+
+set session sequoiadb_execution_mode = 2;
+--source include/execution_mode_sequoiadb.inc
+
+set global sequoiadb_execution_mode = 0;
+--source include/execution_mode_sequoiadb.inc
+
+set global sequoiadb_execution_mode = 1;
+--source include/execution_mode_sequoiadb.inc
+
+set global sequoiadb_execution_mode = 2;
+--source include/execution_mode_sequoiadb.inc
+
+set sequoiadb_execution_mode = 0;
+--source include/execution_mode_sequoiadb.inc
+
+set sequoiadb_execution_mode = 1;
+--source include/execution_mode_sequoiadb.inc
+
+set sequoiadb_execution_mode = 2;
+--source include/execution_mode_sequoiadb.inc
+
+set global sequoiadb_execution_mode = default;
+--source include/execution_mode_sequoiadb.inc
+
+set sequoiadb_execution_mode = default;
+--source include/execution_mode_sequoiadb.inc
+
+set session sequoiadb_execution_mode = default;
+--source include/execution_mode_sequoiadb.inc
+
+set sequoiadb_execution_mode = default;
+--source include/execution_mode_sequoiadb.inc
+
+let $i = 30;
+while ($i) {
+    set session sequoiadb_execution_mode = 0;
+    set session sequoiadb_execution_mode = 1;
+    set session sequoiadb_execution_mode = 2;
+    dec $i;
+}
+--source include/execution_mode_sequoiadb.inc
+
+set session sequoiadb_execution_mode = 3;
+--source include/execution_mode_sequoiadb.inc
+
+set session sequoiadb_execution_mode = -1;
+--source include/execution_mode_sequoiadb.inc
+
+--error 1064
+set session sequoiadb_execution_mode = ;
+
+--error 1064
+set $%& sequoiadb_execution_mode = 0;
+
+--error 1064
+set all sequoiadb_execution_mode = 0;
+
+
+set session sequoiadb_execution_mode = 0;
+--source include/execution_mode_sequoiadb.inc
+
+set session sequoiadb_execution_mode = 1;
+--source include/execution_mode_sequoiadb.inc
+
+set session sequoiadb_execution_mode = 0;
+set session sequoiadb_execution_mode = 2;
+--source include/execution_mode_sequoiadb.inc
+
+set session sequoiadb_execution_mode = 1;
+set session sequoiadb_execution_mode = 0;
+--source include/execution_mode_sequoiadb.inc
+
+set session sequoiadb_execution_mode = 1;
+--source include/execution_mode_sequoiadb.inc
+
+set session sequoiadb_execution_mode = 2;
+--source include/execution_mode_sequoiadb.inc
+
+set session sequoiadb_execution_mode = 0;
+--source include/execution_mode_sequoiadb.inc
+
+set session sequoiadb_execution_mode = 2;
+set session sequoiadb_execution_mode = 1;
+--source include/execution_mode_sequoiadb.inc
+
+set session sequoiadb_execution_mode = 2;
+set session sequoiadb_execution_mode = 2;
+--source include/execution_mode_sequoiadb.inc
+
+set session sequoiadb_execute_only_in_mysql = on;
+--source include/execution_mode_sequoiadb.inc
+
+set session sequoiadb_execute_only_in_mysql = off;
+--source include/execution_mode_sequoiadb.inc
+
+set session sequoiadb_execute_only_in_mysql = on;
+--source include/execution_mode_sequoiadb.inc
+
+set session sequoiadb_execute_only_in_mysql = off;
+--source include/execution_mode_sequoiadb.inc
+
+--source include/uninstall_sequoiadb.inc

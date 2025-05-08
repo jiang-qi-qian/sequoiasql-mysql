@@ -1,0 +1,70 @@
+#seqDB-27686 表查询时带有子查询子句
+--source include/have_sequoiadb.inc
+--disable_warnings
+drop database if exists explain_direct_sort_27686;
+--enable_warnings
+create database explain_direct_sort_27686;
+drop database explain_direct_sort_27686;
+create database explain_direct_sort_27686;
+
+use explain_direct_sort_27686;
+set session sequoiadb_debug_log=on;
+set session optimizer_switch='mrr=on';
+
+--disable_warnings
+drop table if exists t1;
+--enable_warnings
+create table t1(
+col1 int,
+col2 varchar(10),
+col3 varchar(10),
+col4 varchar(10),
+key idx_col1(col1),
+key idx_col2(col2),
+key idx_col12(col1,col2),
+unique key uniq_idx4(col4)
+);
+insert into t1 values(3,'abd','def','defg');
+insert into t1 values(4,'abc','abcdef','xyz');
+insert into t1 values(0,'abde','xyz','def');
+insert into t1 values(5,'xyz','abc','abd');
+insert into t1 values(2,'defg','abd','efg');
+insert into t1 values(6,'abcdef','abde','abc');
+insert into t1 values(1,'def','defg','abcdef');
+insert into t1 values(null,null,null,null);
+select * from t1 order by col1;
+select * from t1 order by col2;
+select * from t1 order by col3;
+select * from t1 order by col4;
+
+create table t2 like t1;
+insert into t2 select * from t1;
+
+#不带order by条件
+explain select * from t1 where col1 > (select max(col1) from t2 where col2 > 'abc' and col2 < 'def');
+let $query = select * from t1 where col1 > (select max(col1) from t2 where col2 > 'abc' and col2 < 'def');
+--source include/query_without_sorted_and_get_mysqld_note_log_sequoiadb.inc
+
+#带order by条件，字段类型分别为int和varhchar
+explain select * from t1 where col1 > (select max(col1) from t2 where col2 > 'abc' and col2 < 'def') order by col1;
+let $query = select * from t1 where col1 > (select max(col1) from t2 where col2 > 'abc' and col2 < 'def') order by col1;
+--source include/query_without_sorted_and_get_mysqld_note_log_sequoiadb.inc
+explain select * from t1 where col1 > (select max(col1) from t2 where col2 > 'abc' and col2 < 'def') order by col2;
+let $query = select * from t1 where col1 > (select max(col1) from t2 where col2 > 'abc' and col2 < 'def') order by col2;
+--source include/query_without_sorted_and_get_mysqld_note_log_sequoiadb.inc
+
+#order by字段为非索引字段
+explain select * from t1 where col1 > (select max(col1) from t2 where col2 > 'abc' and col2 < 'def') order by col3;
+let $query = select * from t1 where col1 > (select max(col1) from t2 where col2 > 'abc' and col2 < 'def') order by col3;
+--source include/query_without_sorted_and_get_mysqld_note_log_sequoiadb.inc
+
+#order by降序
+explain select * from t1 where col1 > (select max(col1) from t2 where col2 > 'abc' and col2 < 'def') order by col2 desc;
+let $query = select * from t1 where col1 > (select max(col1) from t2 where col2 > 'abc' and col2 < 'def') order by col2 desc;
+--source include/query_without_sorted_and_get_mysqld_note_log_sequoiadb.inc
+drop table t1,t2;
+
+set session sequoiadb_debug_log=off;
+set session optimizer_switch=default;
+drop database explain_direct_sort_27686;
+--source include/uninstall_sequoiadb.inc

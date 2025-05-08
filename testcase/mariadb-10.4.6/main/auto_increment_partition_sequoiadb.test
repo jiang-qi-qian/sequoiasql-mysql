@@ -1,0 +1,215 @@
+#check auto increment in partition-table
+#Case 18301
+
+--source include/have_sequoiadb.inc
+
+CREATE DATABASE test_auto_increment_partition;
+use test_auto_increment_partition;
+--disable_query_log
+create table reserved(a int primary key)ENGINE=sequoiadb COMMENT='sequoiadb:{ auto_partition: true }';
+--enable_query_log
+
+--disable_warnings
+DROP TABLE IF EXISTS t1,t2;
+--enable_warnings
+
+# insert normal records
+CREATE TABLE t1(a TINYINT NOT NULL AUTO_INCREMENT, b char(8), UNIQUE KEY(a,b));
+INSERT INTO t1(b) VALUES ('aaa');
+#BUG #SEQUOIADBMAINSTREAM-4391
+SELECT AUTO_INCREMENT FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = 'test_auto_increment_partition' AND TABLE_NAME = 't1';
+INSERT INTO t1 VALUES (1,'bbb'),(10,'ccc'),(-1,'ddd');
+#BUG #SEQUOIADBMAINSTREAM-4391
+SELECT AUTO_INCREMENT FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = 'test_auto_increment_partition' AND TABLE_NAME = 't1';
+--sorted_result
+SELECT * FROM t1;
+INSERT INTO t1 VALUES (NULL,'aaa');
+#BUG #SEQUOIADBMAINSTREAM-4391
+SELECT AUTO_INCREMENT FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = 'test_auto_increment_partition' AND TABLE_NAME = 't1';
+--sorted_result
+SELECT * FROM t1;
+SET sql_mode = 'NO_AUTO_VALUE_ON_ZERO';
+INSERT INTO t1 VALUES (0,'bbb');
+#BUG #SEQUOIADBMAINSTREAM-4391
+SELECT AUTO_INCREMENT FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = 'test_auto_increment_partition' AND TABLE_NAME = 't1';
+--sorted_result
+SELECT * FROM t1;
+INSERT INTO t1 VALUES (100,'ddd'),(101,'eee'),(102,'fff');
+#BUG #SEQUOIADBMAINSTREAM-4391
+SHOW CREATE TABLE t1;
+INSERT INTO t1 VALUES (NULL,'hhh');
+#BUG #SEQUOIADBMAINSTREAM-4391
+SHOW CREATE TABLE t1;
+--sorted_result
+SELECT * FROM t1;
+DROP TABLE t1;
+
+# insert duplicate records
+SET sql_mode = default;
+CREATE TABLE t1(a SMALLINT NOT NULL AUTO_INCREMENT, b varchar(16), PRIMARY KEY(a,b));
+INSERT INTO t1(b) VALUES ('test1'),('test2'),('test3'),('test10'),('test15');
+SELECT AUTO_INCREMENT FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = 'test_auto_increment_partition' AND TABLE_NAME = 't1';
+--sorted_result
+SELECT * FROM t1;
+# SEQUOIASQLMAINSTREAM-171
+--error 1062
+INSERT INTO t1 values (3,'test3');
+INSERT INTO t1(b) values ('abc');
+SELECT AUTO_INCREMENT FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = 'test_auto_increment_partition' AND TABLE_NAME = 't1';
+--sorted_result
+SELECT * FROM t1;
+# SEQUOIASQLMAINSTREAM-171
+--error 1062
+INSERT INTO t1 values (10,'abc'),(13,'abc'),(3,'test3'),(12,'abc');
+SELECT AUTO_INCREMENT FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = 'test_auto_increment_partition' AND TABLE_NAME = 't1';
+--sorted_result
+SELECT * FROM t1;
+INSERT INTO t1(b) values ('abc');
+SELECT AUTO_INCREMENT FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = 'test_auto_increment_partition' AND TABLE_NAME = 't1';
+--sorted_result
+SELECT * FROM t1;
+DROP TABLE t1;
+
+# update sharding-key fail
+CREATE TABLE t1(a MEDIUMINT NOT NULL AUTO_INCREMENT, b text, UNIQUE KEY(a));
+INSERT INTO t1(b) VALUES ('a'),('b'),('c');
+--error 40178
+UPDATE t1 SET a = 4 WHERE a = 3;
+INSERT INTO t1 VALUES (20, '20');
+INSERT INTO t1(b) VALUES ('a');
+SELECT AUTO_INCREMENT FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = 'test_auto_increment_partition' AND TABLE_NAME = 't1';
+--sorted_result
+SELECT * FROM t1;
+DROP TABLE t1;
+
+# replace
+CREATE TABLE t1(a INT NOT NULL AUTO_INCREMENT, b char(8), PRIMARY KEY(a,b));
+INSERT INTO t1(b) VALUES ('a'),('b'),('c');
+REPLACE INTO t1 VALUES (6, 'x'),(8, 'y');
+SELECT AUTO_INCREMENT FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = 'test_auto_increment_partition' AND TABLE_NAME = 't1';
+--sorted_result
+SELECT * FROM t1;
+REPLACE INTO t1 VALUES (1, 'a111'),(3, 'c333');
+INSERT INTO t1(b) VALUES ('abc');
+SELECT AUTO_INCREMENT FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = 'test_auto_increment_partition' AND TABLE_NAME = 't1';
+--sorted_result
+SELECT * FROM t1;
+DROP TABLE t1;
+
+# update ignore
+CREATE TABLE t1(a INT NOT NULL AUTO_INCREMENT, b varchar(8), UNIQUE KEY(a,b));
+INSERT INTO t1(b) VALUES ('aaa'),('bbb'),('ccc');
+#BUG #SEQUOIASQLMAINSTREAM-274
+#UPDATE IGNORE t1 SET a = 3 WHERE a = 10;
+INSERT INTO t1(b) VALUES ('aaa');
+SELECT AUTO_INCREMENT FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = 'test_auto_increment_partition' AND TABLE_NAME = 't1';
+--sorted_result
+SELECT * FROM t1;
+DROP TABLE t1;
+
+# insert .. on duplicate key update
+CREATE TABLE t1(a BIGINT NOT NULL AUTO_INCREMENT, b char(8), UNIQUE KEY(a,b));
+INSERT INTO t1(b) VALUES ('aaa'),('bbb'),('ccc');
+INSERT INTO t1 VALUES (6,'xxx'), (7,'yyy') ON DUPLICATE KEY UPDATE a = 3;
+SELECT AUTO_INCREMENT FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = 'test_auto_increment_partition' AND TABLE_NAME = 't1';
+--sorted_result
+SELECT * FROM t1;
+--error 40178
+INSERT INTO t1 VALUES (2,'bbb') ON DUPLICATE KEY UPDATE a = 3;
+INSERT INTO t1(b) VALUES ('bbb');
+SELECT AUTO_INCREMENT FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = 'test_auto_increment_partition' AND TABLE_NAME = 't1';
+--sorted_result
+SELECT * FROM t1;
+DROP TABLE t1;
+
+# assign values to insert
+CREATE TABLE t1(a BIGINT NOT NULL AUTO_INCREMENT, b char(16), PRIMARY KEY(a,b));
+INSERT INTO t1(b) VALUES ('aaa'),('bbb');
+INSERT INTO t1 VALUES (11,'aaa');
+SELECT AUTO_INCREMENT FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = 'test_auto_increment_partition' AND TABLE_NAME = 't1';
+--sorted_result
+SELECT * FROM t1;
+INSERT INTO t1 VALUES (101,'test1'),(90,'test1'),(121,'test1'),(99,'test1'),(100,'test1');
+SELECT AUTO_INCREMENT FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = 'test_auto_increment_partition' AND TABLE_NAME = 't1';
+--sorted_result
+SELECT * FROM t1;
+INSERT INTO t1 VALUES (101,'aaa');
+SELECT AUTO_INCREMENT FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = 'test_auto_increment_partition' AND TABLE_NAME = 't1';
+--sorted_result
+SELECT * FROM t1;
+INSERT INTO t1 VALUES (99,'abc'),(100,'abc');
+SELECT AUTO_INCREMENT FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = 'test_auto_increment_partition' AND TABLE_NAME = 't1';
+--sorted_result
+SELECT * FROM t1;
+DROP TABLE t1;
+
+# insert oversize
+CREATE TABLE t1(a TINYINT NOT NULL AUTO_INCREMENT, b varchar(8), PRIMARY KEY(a,b));
+CREATE TABLE t2(a TINYINT NOT NULL AUTO_INCREMENT, b varchar(8),  KEY(a,b));
+INSERT INTO t1(b) VALUES ('aaa'),('aaa');
+INSERT INTO t2(b) VALUES ('aaa'),('aaa');
+INSERT INTO t1 VALUES (127, 'aaa');
+INSERT INTO t2 VALUES (127, 'aaa');
+--error 1467 
+INSERT INTO t1(b) VALUES ('bbb');
+--error 1467 
+INSERT INTO t2(b) VALUES ('bbb');
+DROP TABLE t1,t2;
+
+# check float
+CREATE TABLE t1(a FLOAT NOT NULL AUTO_INCREMENT, b char(8), PRIMARY KEY(a,b));
+INSERT INTO t1(b) VALUES ('aaa');
+SELECT AUTO_INCREMENT FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = 'test_auto_increment_partition' AND TABLE_NAME = 't1';
+--sorted_result
+SELECT * FROM t1;
+INSERT INTO t1 VALUES (1.1, 'aaa');
+SELECT AUTO_INCREMENT FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = 'test_auto_increment_partition' AND TABLE_NAME = 't1';
+--sorted_result
+SELECT * FROM t1;
+INSERT INTO t1 VALUES (3, 'aaa'),(5, 'bbb'),(7, 'ccc');
+SELECT AUTO_INCREMENT FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = 'test_auto_increment_partition' AND TABLE_NAME = 't1';
+--sorted_result
+SELECT * FROM t1;
+INSERT INTO t1 VALUES (10, 'aaa'),(2.2, 'bbb');
+SELECT AUTO_INCREMENT FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = 'test_auto_increment_partition' AND TABLE_NAME = 't1';
+--sorted_result
+SELECT * FROM t1;
+DROP TABLE t1;
+
+# check LAST_INSERT_ID
+CREATE TABLE t1(a INT NOT NULL AUTO_INCREMENT, b CHAR(16), PRIMARY KEY(a));
+CREATE TABLE t2(a INT NOT NULL AUTO_INCREMENT, PRIMARY KEY(a));
+SELECT LAST_INSERT_ID();
+INSERT INTO t1 VALUES ();
+SELECT LAST_INSERT_ID();    
+INSERT INTO t1 VALUES (),(),();
+SELECT LAST_INSERT_ID(); 
+INSERT INTO t2 VALUES ();
+SELECT LAST_INSERT_ID();
+INSERT INTO t1 VALUES ();
+SELECT LAST_INSERT_ID();
+#BUG #SEQUOIASQLMAINSTREAM-171
+--error 1062
+INSERT INTO t1 VALUES (10, 'a'), (1, 'b'), (11, 'c');
+SELECT LAST_INSERT_ID();
+DROP TABLE t1;
+DROP TABLE t2;
+
+# check LAST_INSERT_ID(expr)
+CREATE TABLE t1(a INT NOT NULL);
+INSERT INTO t1 VALUES (0),(1),(2),(4),(6),(8),(12);
+--sorted_result
+SELECT * FROM t1; 
+UPDATE t1 SET a = LAST_INSERT_ID(a + 1); 
+SELECT LAST_INSERT_ID();
+--sorted_result
+SELECT * FROM t1; 
+DELETE FROM t1 WHERE 1 = LAST_INSERT_ID(a - 6); 
+select LAST_INSERT_ID();
+--sorted_result
+SELECT * FROM t1; 
+DROP TABLE t1; 
+
+DROP DATABASE test_auto_increment_partition;
+
+--source include/uninstall_sequoiadb.inc

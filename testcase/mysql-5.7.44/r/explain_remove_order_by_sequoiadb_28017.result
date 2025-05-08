@@ -1,0 +1,661 @@
+drop database if exists explain_remove_order_by_28017;
+create database explain_remove_order_by_28017;
+drop database explain_remove_order_by_28017;
+create database explain_remove_order_by_28017;
+use explain_remove_order_by_28017;
+set session optimizer_switch='mrr=on,mrr_cost_based=on,block_nested_loop=on,batched_key_access=on';
+set session sequoiadb_debug_log=on;
+drop table if exists t1,t2;
+create table t1(
+col1 int,
+col2 varchar(10),
+col3 char(10),
+col4 decimal(5,2),
+col5 float(5,2),
+col6 double(3,2),
+col7 datetime,
+col8 varchar(10),
+key idx_col1(col1),
+key idx_col2(col2),
+key idx_col3(col3),
+key idx_col4(col4),
+key idx_col5(col5),
+key idx_col6(col6),
+key idx_col7(col7),
+key idx_col12(col1,col2)
+);
+INSERT INTO t1 VALUES (320,'6c782c','f90a05',642.63,564.23,8.93,'2022-09-23 16:17:33','b3ec0e'),(621,'ddd753','c3218f',568.59,329.39,9.41,'2022-09-23 16:17:28','299803'),(672,'bbbbff','d4b326',339.68,778.59,8.74,'2022-09-23 16:16:19','99daa7'),(633,'44f333','f732ae',54.88,96.32,3.17,'2022-09-23 16:16:46','8b4af7'),(753,'e44027','e5e55b',677.44,455.81,2.47,'2022-09-23 16:17:43','3a6ca9'),(354,'b06bb7','659668',654.65,483.42,4.53,'2022-09-23 16:17:38','29cd07'),(144,'bb3dd0','b9308b',257.88,119.06,8.22,'2022-09-23 16:17:31','191f0e'),(200,'af46f0','7dcdad',805.32,914.05,1.54,'2022-09-23 16:16:19','cf3034'),(328,'255bb8','d05150',68.73,439.80,9.93,'2022-09-23 16:17:20','f7818e'),(291,'2f2517','7d407e',453.24,100.33,1.42,'2022-09-23 16:16:57','88a93f'),(864,'fa1259','7b4d9b',275.66,175.62,0.51,'2022-09-23 16:17:29','56f931'),(267,'b2fe40','daf06a',976.32,342.83,7.85,'2022-09-23 16:17:46','c4f64c'),(968,'ab343f','97800d',239.21,254.03,5.53,'2022-09-23 16:16:16','eb950b'),(725,'8071f5','5fb2d3',92.48,145.76,4.51,'2022-09-23 16:17:38','5008dc'),(258,'227b2a','e05ef2',444.19,647.07,9.03,'2022-09-23 16:17:13','45c70e'),(55,'1c2555','568498',24.48,447.31,1.63,'2022-09-23 16:17:03','645bd5'),(973,'a1c280','b09a0d',402.58,362.96,6.07,'2022-09-23 16:17:51','8450ad'),(716,'9fec7e','fe98ea',882.10,157.70,1.42,'2022-09-23 16:16:40','381094'),(104,'e0b316','c29b7a',461.89,821.71,7.23,'2022-09-23 16:16:31','1d14e8'),(441,'c1b6a7','e32a7e',733.54,581.31,7.06,'2022-09-23 16:17:35','114801'),(697,'536140','ad783d',677.09,886.91,4.03,'2022-09-23 16:16:52','f4de0d'),(776,'0f72c5','079ae9',177.21,267.64,8.07,'2022-09-23 16:16:39','ab3153'),(957,'d267eb','8b6cc7',801.60,650.32,8.47,'2022-09-23 16:16:45','849bef'),(524,'014f05','b37d85',56.22,54.22,1.02,'2022-09-23 16:16:52','842c71'),(154,'6e8882','352203',522.47,294.88,9.07,'2022-09-23 16:17:22','5ec9a0'),(701,'d1c3da','f909c8',595.74,575.79,0.92,'2022-09-23 16:17:30','96d331'),(710,'28a036','e8d294',329.56,915.31,5.88,'2022-09-23 16:16:36','dc44d7'),(434,'aa86f4','35a4d9',882.03,866.54,6.87,'2022-09-23 16:17:40','8ac629'),(36,'e89aa7','7581d9',369.17,276.81,2.77,'2022-09-23 16:17:12','fd2c61'),(3,'d74ebd','9c36e0',797.54,712.59,1.70,'2022-09-23 16:17:28','cfe83a'),(149,'92fe8e','fe0ece',345.60,490.94,4.18,'2022-09-23 16:17:19','bd2c56'),(298,'4c2081','428225',559.68,460.14,6.22,'2022-09-23 16:17:30','f7237b'),(686,'9b9f9d','9df11c',115.16,109.63,2.03,'2022-09-23 16:17:25','929260'),(18,'5a2dd9','118178',967.06,290.21,5.50,'2022-09-23 16:17:45','a7cb17'),(85,'ec1c4d','a5f308',931.91,556.53,9.87,'2022-09-23 16:16:44','fdd07d'),(28,'60b18e','611339',567.42,416.24,3.79,'2022-09-23 16:17:22','d5f7d9'),(527,'2bc499','299aea',930.36,52.48,4.71,'2022-09-23 16:16:37','6b1905'),(311,'2f6584','cdc668',185.78,556.45,2.25,'2022-09-23 16:17:03','af7c20'),(641,'b1aeaf','4a83a4',168.47,623.20,6.11,'2022-09-23 16:16:35','0a2545'),(875,'d43b6e','5b6f47',546.41,785.14,2.86,'2022-09-23 16:16:25','dd25c9'),(395,'0a2fa3','4810b7',828.17,728.37,1.57,'2022-09-23 16:17:17','0d7795'),(875,'f268a7','f99176',768.55,199.17,6.90,'2022-09-23 16:17:42','9ce1a4'),(422,'245c2c','accd99',87.25,450.36,9.90,'2022-09-23 16:17:17','cb2f7b'),(331,'bb8fee','dba99a',733.78,989.87,7.48,'2022-09-23 16:17:34','2c238d'),(731,'5325c1','abe841',256.57,438.46,4.23,'2022-09-23 16:17:37','356e3d'),(209,'5bdbcc','b4c37f',329.80,258.25,3.02,'2022-09-23 16:17:30','b9d6f9'),(631,'c152b1','ee7ede',340.33,558.66,7.72,'2022-09-23 16:16:36','0d56e8'),(499,'2db783','52146f',53.42,845.76,0.69,'2022-09-23 16:17:38','7f24f7'),(690,'7acde8','6af783',357.28,195.87,9.07,'2022-09-23 16:17:52','58f6ba'),(285,'019c49','036873',269.89,770.65,0.44,'2022-09-23 16:17:48','f93500'),(277,'85d53d','1c1e32',969.84,530.01,7.41,'2022-09-23 16:16:28','4688e8'),(371,'2b5a5d','61aa73',682.18,308.71,4.97,'2022-09-23 16:17:13','9c4c20'),(839,'750923','edb982',688.81,717.63,5.22,'2022-09-23 16:17:03','9b1369'),(200,'a8d1c2','06f63f',899.54,411.85,3.61,'2022-09-23 16:17:14','7f461c'),(79,'f0627f','0ee80b',614.93,876.10,5.36,'2022-09-23 16:16:22','b7deb0'),(69,'5d10f0','a49f60',82.35,815.97,8.33,'2022-09-23 16:17:29','7220e6'),(262,'599fe3','acc351',469.78,752.57,3.54,'2022-09-23 16:17:08','9a2d87'),(915,'3f81e3','227d0d',656.63,894.26,5.01,'2022-09-23 16:17:39','5e1056'),(616,'8d8eb8','62d9eb',732.32,815.49,8.81,'2022-09-23 16:17:53','2cff59'),(827,'a921a1','897012',385.20,602.98,8.59,'2022-09-23 16:17:06','8bd637'),(834,'58fd3b','c0b22b',558.66,388.26,2.65,'2022-09-23 16:16:33','cce37a'),(580,'51ab7b','7a3ec0',249.03,545.18,9.79,'2022-09-23 16:16:43','0b4a03'),(4,'1d6fbb','a78606',900.20,245.83,5.29,'2022-09-23 16:17:48','121416'),(986,'aae96c','b9076b',632.63,385.00,0.27,'2022-09-23 16:17:55','8f96c8'),(165,'74332b','69b526',477.85,451.70,8.25,'2022-09-23 16:17:34','d2e139'),(560,'920427','a2e3a7',486.99,325.34,1.66,'2022-09-23 16:17:42','bf601c'),(269,'a4ccc1','b1d3e7',85.11,82.24,1.56,'2022-09-23 16:17:10','d73948'),(379,'1329cb','d1992c',95.03,263.66,0.33,'2022-09-23 16:16:55','b38a18'),(753,'4ae161','9ce359',374.36,55.57,1.55,'2022-09-23 16:17:18','42e434'),(37,'897d82','f9eead',746.66,42.97,9.75,'2022-09-23 16:17:32','a2fb9d'),(778,'8e311e','066299',921.01,385.85,1.66,'2022-09-23 16:17:24','ddeda9'),(325,'f5beaa','0036f5',477.04,70.71,9.22,'2022-09-23 16:16:57','9f5457'),(965,'fe68e7','a49d76',289.86,249.21,3.76,'2022-09-23 16:16:30','6da28d'),(319,'5e4bbd','62118b',378.95,335.42,5.40,'2022-09-23 16:17:26','3c38cc'),(186,'28d5f5','4357f2',265.84,511.02,7.58,'2022-09-23 16:16:42','ac8a35'),(242,'85f377','076da9',915.25,655.05,5.30,'2022-09-23 16:17:25','5a3c8a'),(71,'cbec65','9a4412',373.87,254.73,1.52,'2022-09-23 16:17:57','b21ba9'),(629,'c6a51d','cadef3',219.06,128.49,9.85,'2022-09-23 16:17:11','1ae22c'),(121,'ef3baa','275a81',76.80,92.26,2.31,'2022-09-23 16:17:45','3d3c85'),(844,'d927f1','1d8842',252.43,872.92,6.07,'2022-09-23 16:16:59','163f05'),(81,'ca56d8','7c88bd',67.52,10.56,8.50,'2022-09-23 16:16:39','2fe5d8'),(76,'456b22','4e4f6d',148.10,318.60,1.49,'2022-09-23 16:17:36','d11689'),(98,'8759f6','ac505e',793.80,671.62,9.77,'2022-09-23 16:17:44','5b67f1'),(459,'a62019','5275a2',319.64,908.30,5.83,'2022-09-23 16:16:36','892549'),(397,'334d53','58b126',3.32,482.06,4.00,'2022-09-23 16:17:13','ca50ae'),(217,'81fd98','01c15c',528.57,289.22,8.60,'2022-09-23 16:17:00','b624a9'),(650,'8ed813','c9c9ac',736.84,384.57,7.12,'2022-09-23 16:16:58','1ae612'),(291,'913dc1','542eee',83.39,820.56,8.53,'2022-09-23 16:17:37','16a27e'),(845,'1e4dcb','19bd7c',557.41,279.38,7.25,'2022-09-23 16:17:36','802eaa'),(405,'e9c73d','3f0287',845.26,334.58,1.37,'2022-09-23 16:17:25','5b0e26'),(944,'7cfc4b','ec6c1b',845.91,811.99,5.22,'2022-09-23 16:16:35','6175c2'),(19,'77bc3a','96e568',398.89,654.04,0.74,'2022-09-23 16:16:58','a1629e'),(819,'ed3f31','332efa',526.87,906.48,9.52,'2022-09-23 16:16:21','964aa0'),(592,'78628e','b9ad44',652.26,590.20,9.94,'2022-09-23 16:16:37','0d6bda'),(495,'e21ee7','5e8b26',740.66,909.23,3.24,'2022-09-23 16:17:46','4aedbd'),(787,'d246a4','bd8574',213.79,320.85,9.63,'2022-09-23 16:17:42','a63146'),(299,'7a637e','421ecf',903.25,488.28,7.32,'2022-09-23 16:16:36','8896af'),(282,'3a126e','519bd8',769.83,24.17,8.11,'2022-09-23 16:17:55','2b5842'),(483,'62e3f4','76c754',723.58,668.28,1.71,'2022-09-23 16:17:42','df0767');
+insert into t1 values(null,null,null,null,null,null,null,null),(101,null,null,null,null,null,null,null),(null,'35dfg7',null,null,null,null,null,null);
+create table t2 like t1;
+insert into t2 select * from t1 order by col1 limit 70;
+explain select count(*) from t1 inner join t2 on t1.col1 = t2.col1;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t2	NULL	index	idx_col1,idx_col12	idx_col1	5	NULL	70	100.00	Using where with pushed condition (`explain_remove_order_by_28017`.`t2`.`col1` is not null); Using index
+1	SIMPLE	t1	NULL	ref	idx_col1,idx_col12	idx_col12	5	explain_remove_order_by_28017.t2.col1	11	100.00	Using index; Using join buffer (Batched Key Access)
+Warnings:
+Note	1003	/* select#1 */ select count(0) AS `count(*)` from `explain_remove_order_by_28017`.`t1` join `explain_remove_order_by_28017`.`t2` where (`explain_remove_order_by_28017`.`t1`.`col1` = `explain_remove_order_by_28017`.`t2`.`col1`)
+select count(*) from t1 inner join t2 on t1.col1 = t2.col1;
+count(*)
+72
+[Note] Testcase: Operation log begin
+[Note] SequoiaDB: Query message: condition[{ "col1": { "$isnull": 0 } }], selector[{ "_id": null, "col1": null }], order_by[{ "col1": 1 }], hint[{ "": "idx_col1" }], limit[-1], offset[0], table[explain_remove_order_by_28017.t2]
+[Note] SequoiaDB: Query message: Batched keys num[68], table[explain_remove_order_by_28017.t1]
+[Note] SequoiaDB: Query message: condition[{ "col1": { "$in": [ 3, 4, 18, 19, 28, 36, 37, 55, 69, 71, 76, 79, 81, 85, 98, 101, 104, 121, 144, 149, 154, 165, 186, 200, 200, 209, 217, 242, 258, 262, 267, 269, 277, 282, 285, 291, 291, 298, 299, 311, 319, 320, 325, 328, 331, 354, 371, 379, 395, 397, 405, 422, 434, 441, 459, 483, 495, 499, 524, 527, 560, 580, 592, 616, 621, 629, 631, 633 ] } }], selector[{ "_id": null, "col1": null }], order_by[{}], hint[{ "": "idx_col12" }], limit[-1], offset[0], table[explain_remove_order_by_28017.t1]
+explain select count(*) from t1 inner join t2 on t1.col2 = t2.col2;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t2	NULL	index	idx_col2	idx_col2	13	NULL	70	100.00	Using where with pushed condition (`explain_remove_order_by_28017`.`t2`.`col2` is not null); Using index
+1	SIMPLE	t1	NULL	ref	idx_col2	idx_col2	13	explain_remove_order_by_28017.t2.col2	13	100.00	Using index; Using join buffer (Batched Key Access)
+Warnings:
+Note	1003	/* select#1 */ select count(0) AS `count(*)` from `explain_remove_order_by_28017`.`t1` join `explain_remove_order_by_28017`.`t2` where (`explain_remove_order_by_28017`.`t1`.`col2` = `explain_remove_order_by_28017`.`t2`.`col2`)
+select count(*) from t1 inner join t2 on t1.col2 = t2.col2;
+count(*)
+68
+[Note] Testcase: Operation log begin
+[Note] SequoiaDB: Query message: condition[{ "col2": { "$isnull": 0 } }], selector[{ "_id": null, "col2": null }], order_by[{ "col2": 1 }], hint[{ "": "idx_col2" }], limit[-1], offset[0], table[explain_remove_order_by_28017.t2]
+[Note] SequoiaDB: Query message: Batched keys num[68], table[explain_remove_order_by_28017.t1]
+[Note] SequoiaDB: Query message: condition[{ "col2": { "$in": [ "014f05", "019c49", "0a2fa3", "1329cb", "1c2555", "1d6fbb", "227b2a", "245c2c", "255bb8", "28d5f5", "2b5a5d", "2bc499", "2db783", "2f2517", "2f6584", "334d53", "35dfg7", "3a126e", "44f333", "456b22", "4c2081", "51ab7b", "599fe3", "5a2dd9", "5bdbcc", "5d10f0", "5e4bbd", "60b18e", "62e3f4", "6c782c", "6e8882", "74332b", "77bc3a", "78628e", "7a637e", "81fd98", "85d53d", "85f377", "8759f6", "897d82", "8d8eb8", "913dc1", "920427", "92fe8e", "a4ccc1", "a62019", "a8d1c2", "aa86f4", "af46f0", "b06bb7", "b2fe40", "bb3dd0", "bb8fee", "c152b1", "c1b6a7", "c6a51d", "ca56d8", "cbec65", "d74ebd", "ddd753", "e0b316", "e21ee7", "e89aa7", "e9c73d", "ec1c4d", "ef3baa", "f0627f", "f5beaa" ] } }], selector[{ "_id": null, "col2": null }], order_by[{}], hint[{ "": "idx_col2" }], limit[-1], offset[0], table[explain_remove_order_by_28017.t1]
+explain select count(*) from t1 inner join t2 on t1.col3 = t2.col3;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t2	NULL	index	idx_col3	idx_col3	11	NULL	70	100.00	Using where with pushed condition (`explain_remove_order_by_28017`.`t2`.`col3` is not null); Using index
+1	SIMPLE	t1	NULL	ref	idx_col3	idx_col3	11	explain_remove_order_by_28017.t2.col3	14	100.00	Using index; Using join buffer (Batched Key Access)
+Warnings:
+Note	1003	/* select#1 */ select count(0) AS `count(*)` from `explain_remove_order_by_28017`.`t1` join `explain_remove_order_by_28017`.`t2` where (`explain_remove_order_by_28017`.`t1`.`col3` = `explain_remove_order_by_28017`.`t2`.`col3`)
+select count(*) from t1 inner join t2 on t1.col3 = t2.col3;
+count(*)
+67
+[Note] Testcase: Operation log begin
+[Note] SequoiaDB: Query message: condition[{ "col3": { "$isnull": 0 } }], selector[{ "_id": null, "col3": null }], order_by[{ "col3": 1 }], hint[{ "": "idx_col3" }], limit[-1], offset[0], table[explain_remove_order_by_28017.t2]
+[Note] SequoiaDB: Query message: Batched keys num[67], table[explain_remove_order_by_28017.t1]
+[Note] SequoiaDB: Query message: condition[{ "col3": { "$in": [ "0036f5", "01c15c", "036873", "06f63f", "076da9", "0ee80b", "118178", "1c1e32", "275a81", "299aea", "352203", "35a4d9", "3f0287", "421ecf", "428225", "4357f2", "4810b7", "4e4f6d", "519bd8", "52146f", "5275a2", "542eee", "568498", "58b126", "5e8b26", "611339", "61aa73", "62118b", "62d9eb", "659668", "69b526", "7581d9", "76c754", "7a3ec0", "7c88bd", "7d407e", "7dcdad", "96e568", "9a4412", "9c36e0", "a2e3a7", "a49f60", "a5f308", "a78606", "ac505e", "acc351", "accd99", "b1d3e7", "b37d85", "b4c37f", "b9308b", "b9ad44", "c29b7a", "c3218f", "cadef3", "cdc668", "d05150", "d1992c", "daf06a", "dba99a", "e05ef2", "e32a7e", "ee7ede", "f732ae", "f90a05", "f9eead", "fe0ece" ] } }], selector[{ "_id": null, "col3": null }], order_by[{}], hint[{ "": "idx_col3" }], limit[-1], offset[0], table[explain_remove_order_by_28017.t1]
+explain select count(*) from t1 inner join t2 on t1.col4 = t2.col4;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t2	NULL	index	idx_col4	idx_col4	4	NULL	70	100.00	Using where with pushed condition (`explain_remove_order_by_28017`.`t2`.`col4` is not null); Using index
+1	SIMPLE	t1	NULL	ref	idx_col4	idx_col4	4	explain_remove_order_by_28017.t2.col4	18	100.00	Using index; Using join buffer (Batched Key Access)
+Warnings:
+Note	1003	/* select#1 */ select count(0) AS `count(*)` from `explain_remove_order_by_28017`.`t1` join `explain_remove_order_by_28017`.`t2` where (`explain_remove_order_by_28017`.`t1`.`col4` = `explain_remove_order_by_28017`.`t2`.`col4`)
+select count(*) from t1 inner join t2 on t1.col4 = t2.col4;
+count(*)
+67
+[Note] Testcase: Operation log begin
+[Note] SequoiaDB: Query message: condition[{ "col4": { "$isnull": 0 } }], selector[{ "_id": null, "col4": null }], order_by[{ "col4": 1 }], hint[{ "": "idx_col4" }], limit[-1], offset[0], table[explain_remove_order_by_28017.t2]
+[Note] SequoiaDB: Query message: Batched keys num[67], table[explain_remove_order_by_28017.t1]
+[Note] SequoiaDB: Query message: condition[{ "col4": { "$in": [ { "$decimal": "3.32" }, { "$decimal": "24.48" }, { "$decimal": "53.42" }, { "$decimal": "54.88" }, { "$decimal": "56.22" }, { "$decimal": "67.52" }, { "$decimal": "68.73" }, { "$decimal": "76.80" }, { "$decimal": "82.35" }, { "$decimal": "83.39" }, { "$decimal": "85.11" }, { "$decimal": "87.25" }, { "$decimal": "95.03" }, { "$decimal": "148.10" }, { "$decimal": "185.78" }, { "$decimal": "219.06" }, { "$decimal": "249.03" }, { "$decimal": "257.88" }, { "$decimal": "265.84" }, { "$decimal": "269.89" }, { "$decimal": "319.64" }, { "$decimal": "329.80" }, { "$decimal": "340.33" }, { "$decimal": "345.60" }, { "$decimal": "369.17" }, { "$decimal": "373.87" }, { "$decimal": "378.95" }, { "$decimal": "398.89" }, { "$decimal": "444.19" }, { "$decimal": "453.24" }, { "$decimal": "461.89" }, { "$decimal": "469.78" }, { "$decimal": "477.04" }, { "$decimal": "477.85" }, { "$decimal": "486.99" }, { "$decimal": "522.47" }, { "$decimal": "528.57" }, { "$decimal": "559
+explain select count(*) from t1 inner join t2 on t1.col5 = t2.col5;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t2	NULL	index	idx_col5	idx_col5	5	NULL	70	100.00	Using where with pushed condition (`explain_remove_order_by_28017`.`t2`.`col5` is not null); Using index
+1	SIMPLE	t1	NULL	ref	idx_col5	idx_col5	5	explain_remove_order_by_28017.t2.col5	17	100.00	Using index; Using join buffer (Batched Key Access)
+Warnings:
+Note	1003	/* select#1 */ select count(0) AS `count(*)` from `explain_remove_order_by_28017`.`t1` join `explain_remove_order_by_28017`.`t2` where (`explain_remove_order_by_28017`.`t1`.`col5` = `explain_remove_order_by_28017`.`t2`.`col5`)
+select count(*) from t1 inner join t2 on t1.col5 = t2.col5;
+count(*)
+67
+[Note] Testcase: Operation log begin
+[Note] SequoiaDB: Query message: condition[{ "col5": { "$isnull": 0 } }], selector[{ "_id": null, "col5": null }], order_by[{ "col5": 1 }], hint[{ "": "idx_col5" }], limit[-1], offset[0], table[explain_remove_order_by_28017.t2]
+[Note] SequoiaDB: Query message: Batched keys num[67], table[explain_remove_order_by_28017.t1]
+[Note] SequoiaDB: Query message: condition[{ "col5": { "$in": [ 10.5600004196167, 24.17000007629395, 42.97000122070312, 52.47999954223633, 54.22000122070312, 70.70999908447266, 82.23999786376953, 92.26000213623047, 96.31999969482422, 100.3300018310547, 119.0599975585938, 128.4900054931641, 245.8300018310547, 254.7299957275391, 258.25, 263.6600036621094, 276.8099975585938, 289.2200012207031, 290.2099914550781, 294.8800048828125, 308.7099914550781, 318.6000061035156, 325.3399963378906, 329.3900146484375, 334.5799865722656, 335.4200134277344, 342.8299865722656, 411.8500061035156, 416.239990234375, 439.7999877929688, 447.3099975585938, 450.3599853515625, 451.7000122070312, 460.1400146484375, 482.0599975585938, 483.4200134277344, 488.2799987792969, 490.9400024414062, 511.0199890136719, 530.010009765625, 545.1799926757812, 556.4500122070312, 556.530029296875, 558.6599731445312, 564.22998046875, 581.3099975585938, 590.2000122070312, 647.0700073242188, 654.0399780273438, 655.0499877929688, 668.280029296875, 671.61999511718
+explain select count(*) from t1 inner join t2 on t1.col6 = t2.col6;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t2	NULL	index	idx_col6	idx_col6	9	NULL	70	100.00	Using where with pushed condition (`explain_remove_order_by_28017`.`t2`.`col6` is not null); Using index
+1	SIMPLE	t1	NULL	ref	idx_col6	idx_col6	9	explain_remove_order_by_28017.t2.col6	15	100.00	Using index; Using join buffer (Batched Key Access)
+Warnings:
+Note	1003	/* select#1 */ select count(0) AS `count(*)` from `explain_remove_order_by_28017`.`t1` join `explain_remove_order_by_28017`.`t2` where (`explain_remove_order_by_28017`.`t1`.`col6` = `explain_remove_order_by_28017`.`t2`.`col6`)
+select count(*) from t1 inner join t2 on t1.col6 = t2.col6;
+count(*)
+70
+[Note] Testcase: Operation log begin
+[Note] SequoiaDB: Query message: condition[{ "col6": { "$isnull": 0 } }], selector[{ "_id": null, "col6": null }], order_by[{ "col6": 1 }], hint[{ "": "idx_col6" }], limit[-1], offset[0], table[explain_remove_order_by_28017.t2]
+[Note] SequoiaDB: Query message: Batched keys num[67], table[explain_remove_order_by_28017.t1]
+[Note] SequoiaDB: Query message: condition[{ "col6": { "$in": [ 0.33, 0.44, 0.6899999999999999, 0.74, 1.02, 1.37, 1.42, 1.49, 1.52, 1.54, 1.56, 1.57, 1.63, 1.66, 1.7, 1.71, 2.25, 2.31, 2.77, 3.02, 3.17, 3.24, 3.54, 3.61, 3.79, 4.0, 4.18, 4.53, 4.71, 4.97, 5.29, 5.3, 5.36, 5.4, 5.5, 5.83, 6.22, 6.87, 7.06, 7.23, 7.32, 7.41, 7.48, 7.58, 7.72, 7.85, 8.109999999999999, 8.220000000000001, 8.25, 8.33, 8.5, 8.529999999999999, 8.6, 8.81, 8.93, 9.029999999999999, 9.07, 9.220000000000001, 9.41, 9.75, 9.77, 9.789999999999999, 9.85, 9.869999999999999, 9.9, 9.93, 9.94 ] } }], selector[{ "_id": null, "col6": null }], order_by[{}], hint[{ "": "idx_col6" }], limit[-1], offset[0], table[explain_remove_order_by_28017.t1]
+explain select count(*) from t1 inner join t2 on t1.col7 = t2.col7;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t2	NULL	index	idx_col7	idx_col7	6	NULL	70	100.00	Using where with pushed condition (`explain_remove_order_by_28017`.`t2`.`col7` is not null); Using index
+1	SIMPLE	t1	NULL	ref	idx_col7	idx_col7	6	explain_remove_order_by_28017.t2.col7	17	100.00	Using index; Using join buffer (Batched Key Access)
+Warnings:
+Note	1003	/* select#1 */ select count(0) AS `count(*)` from `explain_remove_order_by_28017`.`t1` join `explain_remove_order_by_28017`.`t2` where (`explain_remove_order_by_28017`.`t1`.`col7` = `explain_remove_order_by_28017`.`t2`.`col7`)
+select count(*) from t1 inner join t2 on t1.col7 = t2.col7;
+count(*)
+130
+[Note] Testcase: Operation log begin
+[Note] SequoiaDB: Query message: condition[{ "col7": { "$isnull": 0 } }], selector[{ "_id": null, "col7": null }], order_by[{ "col7": 1 }], hint[{ "": "idx_col7" }], limit[-1], offset[0], table[explain_remove_order_by_28017.t2]
+[Note] SequoiaDB: Query message: Batched keys num[67], table[explain_remove_order_by_28017.t1]
+[Note] SequoiaDB: Query message: condition[{ "col7": { "$in": [ "2022-09-23 16:16:19", "2022-09-23 16:16:22", "2022-09-23 16:16:28", "2022-09-23 16:16:31", "2022-09-23 16:16:36", "2022-09-23 16:16:36", "2022-09-23 16:16:36", "2022-09-23 16:16:37", "2022-09-23 16:16:37", "2022-09-23 16:16:39", "2022-09-23 16:16:42", "2022-09-23 16:16:43", "2022-09-23 16:16:44", "2022-09-23 16:16:46", "2022-09-23 16:16:52", "2022-09-23 16:16:55", "2022-09-23 16:16:57", "2022-09-23 16:16:57", "2022-09-23 16:16:58", "2022-09-23 16:17:00", "2022-09-23 16:17:03", "2022-09-23 16:17:03", "2022-09-23 16:17:08", "2022-09-23 16:17:10", "2022-09-23 16:17:11", "2022-09-23 16:17:12", "2022-09-23 16:17:13", "2022-09-23 16:17:13", "2022-09-23 16:17:13", "2022-09-23 16:17:14", "2022-09-23 16:17:17", "2022-09-23 16:17:17", "2022-09-23 16:17:19", "2022-09-23 16:17:20", "2022-09-23 16:17:22", "2022-09-23 16:17:22", "2022-09-23 16:17:25", "2022-09-23 16:17:25", "2022-09-23 16:17:26", "2022-09-23 16:17:28", "2022-09-23 16:17:28", "2022-09-23 16:17:29", 
+explain select t1.* from t1 inner join t2 on t1.col1 = t2.col1 order by t1.col1 limit 10;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	ALL	idx_col1,idx_col12	NULL	NULL	NULL	102	100.00	Using where with pushed condition (`explain_remove_order_by_28017`.`t1`.`col1` is not null); Using temporary; Using filesort
+1	SIMPLE	t2	NULL	ref	idx_col1,idx_col12	idx_col12	5	explain_remove_order_by_28017.t1.col1	8	100.00	Using index; Using join buffer (Batched Key Access)
+Warnings:
+Note	1003	/* select#1 */ select `explain_remove_order_by_28017`.`t1`.`col1` AS `col1`,`explain_remove_order_by_28017`.`t1`.`col2` AS `col2`,`explain_remove_order_by_28017`.`t1`.`col3` AS `col3`,`explain_remove_order_by_28017`.`t1`.`col4` AS `col4`,`explain_remove_order_by_28017`.`t1`.`col5` AS `col5`,`explain_remove_order_by_28017`.`t1`.`col6` AS `col6`,`explain_remove_order_by_28017`.`t1`.`col7` AS `col7`,`explain_remove_order_by_28017`.`t1`.`col8` AS `col8` from `explain_remove_order_by_28017`.`t1` join `explain_remove_order_by_28017`.`t2` where (`explain_remove_order_by_28017`.`t2`.`col1` = `explain_remove_order_by_28017`.`t1`.`col1`) order by `explain_remove_order_by_28017`.`t1`.`col1` limit 10
+select t1.* from t1 inner join t2 on t1.col1 = t2.col1 order by t1.col1 limit 10;
+col1	col2	col3	col4	col5	col6	col7	col8
+18	5a2dd9	118178	967.06	290.21	5.50	2022-09-23 16:17:45	a7cb17
+19	77bc3a	96e568	398.89	654.04	0.74	2022-09-23 16:16:58	a1629e
+28	60b18e	611339	567.42	416.24	3.79	2022-09-23 16:17:22	d5f7d9
+3	d74ebd	9c36e0	797.54	712.59	1.70	2022-09-23 16:17:28	cfe83a
+36	e89aa7	7581d9	369.17	276.81	2.77	2022-09-23 16:17:12	fd2c61
+37	897d82	f9eead	746.66	42.97	9.75	2022-09-23 16:17:32	a2fb9d
+4	1d6fbb	a78606	900.20	245.83	5.29	2022-09-23 16:17:48	121416
+55	1c2555	568498	24.48	447.31	1.63	2022-09-23 16:17:03	645bd5
+69	5d10f0	a49f60	82.35	815.97	8.33	2022-09-23 16:17:29	7220e6
+71	cbec65	9a4412	373.87	254.73	1.52	2022-09-23 16:17:57	b21ba9
+[Note] Testcase: Operation log begin
+[Note] SequoiaDB: Query message: condition[{ "col1": { "$isnull": 0 } }], selector[{}], order_by[{}], hint[{}], limit[-1], offset[0], table[explain_remove_order_by_28017.t1]
+[Note] SequoiaDB: Query message: Batched keys num[100], table[explain_remove_order_by_28017.t2]
+[Note] SequoiaDB: Query message: condition[{ "col1": { "$in": [ 320, 621, 672, 633, 753, 354, 144, 200, 328, 291, 864, 267, 968, 725, 258, 55, 973, 716, 104, 441, 697, 776, 957, 524, 154, 701, 710, 434, 36, 3, 149, 298, 686, 18, 85, 28, 527, 311, 641, 875, 395, 875, 422, 331, 731, 209, 631, 499, 690, 285, 277, 371, 839, 200, 79, 69, 262, 915, 616, 827, 834, 580, 4, 986, 165, 560, 269, 379, 753, 37, 778, 325, 965, 319, 186, 242, 71, 629, 121, 844, 81, 76, 98, 459, 397, 217, 650, 291, 845, 405, 944, 19, 819, 592, 495, 787, 299, 282, 483, 101 ] } }], selector[{ "col1": null }], order_by[{}], hint[{ "": "idx_col12" }], limit[-1], offset[0], table[explain_remove_order_by_28017.t2]
+explain select t1.* from t1 inner join t2 on t1.col2 = t2.col2 order by t1.col2 limit 10;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	ALL	idx_col2	NULL	NULL	NULL	102	100.00	Using where with pushed condition (`explain_remove_order_by_28017`.`t1`.`col2` is not null); Using temporary; Using filesort
+1	SIMPLE	t2	NULL	ref	idx_col2	idx_col2	13	explain_remove_order_by_28017.t1.col2	9	100.00	Using index; Using join buffer (Batched Key Access)
+Warnings:
+Note	1003	/* select#1 */ select `explain_remove_order_by_28017`.`t1`.`col1` AS `col1`,`explain_remove_order_by_28017`.`t1`.`col2` AS `col2`,`explain_remove_order_by_28017`.`t1`.`col3` AS `col3`,`explain_remove_order_by_28017`.`t1`.`col4` AS `col4`,`explain_remove_order_by_28017`.`t1`.`col5` AS `col5`,`explain_remove_order_by_28017`.`t1`.`col6` AS `col6`,`explain_remove_order_by_28017`.`t1`.`col7` AS `col7`,`explain_remove_order_by_28017`.`t1`.`col8` AS `col8` from `explain_remove_order_by_28017`.`t1` join `explain_remove_order_by_28017`.`t2` where (`explain_remove_order_by_28017`.`t2`.`col2` = `explain_remove_order_by_28017`.`t1`.`col2`) order by `explain_remove_order_by_28017`.`t1`.`col2` limit 10
+select t1.* from t1 inner join t2 on t1.col2 = t2.col2 order by t1.col2 limit 10;
+col1	col2	col3	col4	col5	col6	col7	col8
+186	28d5f5	4357f2	265.84	511.02	7.58	2022-09-23 16:16:42	ac8a35
+258	227b2a	e05ef2	444.19	647.07	9.03	2022-09-23 16:17:13	45c70e
+285	019c49	036873	269.89	770.65	0.44	2022-09-23 16:17:48	f93500
+328	255bb8	d05150	68.73	439.80	9.93	2022-09-23 16:17:20	f7818e
+379	1329cb	d1992c	95.03	263.66	0.33	2022-09-23 16:16:55	b38a18
+395	0a2fa3	4810b7	828.17	728.37	1.57	2022-09-23 16:17:17	0d7795
+4	1d6fbb	a78606	900.20	245.83	5.29	2022-09-23 16:17:48	121416
+422	245c2c	accd99	87.25	450.36	9.90	2022-09-23 16:17:17	cb2f7b
+524	014f05	b37d85	56.22	54.22	1.02	2022-09-23 16:16:52	842c71
+55	1c2555	568498	24.48	447.31	1.63	2022-09-23 16:17:03	645bd5
+[Note] Testcase: Operation log begin
+[Note] SequoiaDB: Query message: condition[{ "col2": { "$isnull": 0 } }], selector[{}], order_by[{}], hint[{}], limit[-1], offset[0], table[explain_remove_order_by_28017.t1]
+[Note] SequoiaDB: Query message: Batched keys num[100], table[explain_remove_order_by_28017.t2]
+[Note] SequoiaDB: Query message: condition[{ "col2": { "$in": [ "6c782c", "ddd753", "bbbbff", "44f333", "e44027", "b06bb7", "bb3dd0", "af46f0", "255bb8", "2f2517", "fa1259", "b2fe40", "ab343f", "8071f5", "227b2a", "1c2555", "a1c280", "9fec7e", "e0b316", "c1b6a7", "536140", "0f72c5", "d267eb", "014f05", "6e8882", "d1c3da", "28a036", "aa86f4", "e89aa7", "d74ebd", "92fe8e", "4c2081", "9b9f9d", "5a2dd9", "ec1c4d", "60b18e", "2bc499", "2f6584", "b1aeaf", "d43b6e", "0a2fa3", "f268a7", "245c2c", "bb8fee", "5325c1", "5bdbcc", "c152b1", "2db783", "7acde8", "019c49", "85d53d", "2b5a5d", "750923", "a8d1c2", "f0627f", "5d10f0", "599fe3", "3f81e3", "8d8eb8", "a921a1", "58fd3b", "51ab7b", "1d6fbb", "aae96c", "74332b", "920427", "a4ccc1", "1329cb", "4ae161", "897d82", "8e311e", "f5beaa", "fe68e7", "5e4bbd", "28d5f5", "85f377", "cbec65", "c6a51d", "ef3baa", "d927f1", "ca56d8", "456b22", "8759f6", "a62019", "334d53", "81fd98", "8ed813", "913dc1", "1e4dcb", "e9c73d", "7cfc4b", "77bc3a", "ed3f31", "78628e", "e21ee7", "d246a4", "7a637
+explain select t1.* from t1 inner join t2 on t1.col3 = t2.col3 order by t2.col3 limit 10;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t2	NULL	index	idx_col3	idx_col3	11	NULL	70	100.00	Using where with pushed condition (`explain_remove_order_by_28017`.`t2`.`col3` is not null); Using index; Using temporary; Using filesort
+1	SIMPLE	t1	NULL	ref	idx_col3	idx_col3	11	explain_remove_order_by_28017.t2.col3	14	100.00	Using join buffer (Batched Key Access)
+Warnings:
+Note	1003	/* select#1 */ select `explain_remove_order_by_28017`.`t1`.`col1` AS `col1`,`explain_remove_order_by_28017`.`t1`.`col2` AS `col2`,`explain_remove_order_by_28017`.`t1`.`col3` AS `col3`,`explain_remove_order_by_28017`.`t1`.`col4` AS `col4`,`explain_remove_order_by_28017`.`t1`.`col5` AS `col5`,`explain_remove_order_by_28017`.`t1`.`col6` AS `col6`,`explain_remove_order_by_28017`.`t1`.`col7` AS `col7`,`explain_remove_order_by_28017`.`t1`.`col8` AS `col8` from `explain_remove_order_by_28017`.`t1` join `explain_remove_order_by_28017`.`t2` where (`explain_remove_order_by_28017`.`t1`.`col3` = `explain_remove_order_by_28017`.`t2`.`col3`) order by `explain_remove_order_by_28017`.`t2`.`col3` limit 10
+select t1.* from t1 inner join t2 on t1.col3 = t2.col3 order by t2.col3 limit 10;
+col1	col2	col3	col4	col5	col6	col7	col8
+121	ef3baa	275a81	76.80	92.26	2.31	2022-09-23 16:17:45	3d3c85
+18	5a2dd9	118178	967.06	290.21	5.50	2022-09-23 16:17:45	a7cb17
+200	a8d1c2	06f63f	899.54	411.85	3.61	2022-09-23 16:17:14	7f461c
+217	81fd98	01c15c	528.57	289.22	8.60	2022-09-23 16:17:00	b624a9
+242	85f377	076da9	915.25	655.05	5.30	2022-09-23 16:17:25	5a3c8a
+277	85d53d	1c1e32	969.84	530.01	7.41	2022-09-23 16:16:28	4688e8
+285	019c49	036873	269.89	770.65	0.44	2022-09-23 16:17:48	f93500
+325	f5beaa	0036f5	477.04	70.71	9.22	2022-09-23 16:16:57	9f5457
+527	2bc499	299aea	930.36	52.48	4.71	2022-09-23 16:16:37	6b1905
+79	f0627f	0ee80b	614.93	876.10	5.36	2022-09-23 16:16:22	b7deb0
+[Note] Testcase: Operation log begin
+[Note] SequoiaDB: Query message: condition[{ "col3": { "$isnull": 0 } }], selector[{ "col3": null }], order_by[{ "col3": 1 }], hint[{ "": "idx_col3" }], limit[-1], offset[0], table[explain_remove_order_by_28017.t2]
+[Note] SequoiaDB: Query message: Batched keys num[67], table[explain_remove_order_by_28017.t1]
+[Note] SequoiaDB: Query message: condition[{ "col3": { "$in": [ "0036f5", "01c15c", "036873", "06f63f", "076da9", "0ee80b", "118178", "1c1e32", "275a81", "299aea", "352203", "35a4d9", "3f0287", "421ecf", "428225", "4357f2", "4810b7", "4e4f6d", "519bd8", "52146f", "5275a2", "542eee", "568498", "58b126", "5e8b26", "611339", "61aa73", "62118b", "62d9eb", "659668", "69b526", "7581d9", "76c754", "7a3ec0", "7c88bd", "7d407e", "7dcdad", "96e568", "9a4412", "9c36e0", "a2e3a7", "a49f60", "a5f308", "a78606", "ac505e", "acc351", "accd99", "b1d3e7", "b37d85", "b4c37f", "b9308b", "b9ad44", "c29b7a", "c3218f", "cadef3", "cdc668", "d05150", "d1992c", "daf06a", "dba99a", "e05ef2", "e32a7e", "ee7ede", "f732ae", "f90a05", "f9eead", "fe0ece" ] } }], selector[{}], order_by[{}], hint[{ "": "idx_col3" }], limit[-1], offset[0], table[explain_remove_order_by_28017.t1]
+explain select t1.* from t1 inner join t2 on t1.col4 = t2.col4 order by t1.col4 limit 10;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	ALL	idx_col4	NULL	NULL	NULL	102	100.00	Using where with pushed condition (`explain_remove_order_by_28017`.`t1`.`col4` is not null); Using temporary; Using filesort
+1	SIMPLE	t2	NULL	ref	idx_col4	idx_col4	4	explain_remove_order_by_28017.t1.col4	12	100.00	Using index; Using join buffer (Batched Key Access)
+Warnings:
+Note	1003	/* select#1 */ select `explain_remove_order_by_28017`.`t1`.`col1` AS `col1`,`explain_remove_order_by_28017`.`t1`.`col2` AS `col2`,`explain_remove_order_by_28017`.`t1`.`col3` AS `col3`,`explain_remove_order_by_28017`.`t1`.`col4` AS `col4`,`explain_remove_order_by_28017`.`t1`.`col5` AS `col5`,`explain_remove_order_by_28017`.`t1`.`col6` AS `col6`,`explain_remove_order_by_28017`.`t1`.`col7` AS `col7`,`explain_remove_order_by_28017`.`t1`.`col8` AS `col8` from `explain_remove_order_by_28017`.`t1` join `explain_remove_order_by_28017`.`t2` where (`explain_remove_order_by_28017`.`t2`.`col4` = `explain_remove_order_by_28017`.`t1`.`col4`) order by `explain_remove_order_by_28017`.`t1`.`col4` limit 10
+select t1.* from t1 inner join t2 on t1.col4 = t2.col4 order by t1.col4 limit 10;
+col1	col2	col3	col4	col5	col6	col7	col8
+121	ef3baa	275a81	76.80	92.26	2.31	2022-09-23 16:17:45	3d3c85
+291	913dc1	542eee	83.39	820.56	8.53	2022-09-23 16:17:37	16a27e
+328	255bb8	d05150	68.73	439.80	9.93	2022-09-23 16:17:20	f7818e
+397	334d53	58b126	3.32	482.06	4.00	2022-09-23 16:17:13	ca50ae
+499	2db783	52146f	53.42	845.76	0.69	2022-09-23 16:17:38	7f24f7
+524	014f05	b37d85	56.22	54.22	1.02	2022-09-23 16:16:52	842c71
+55	1c2555	568498	24.48	447.31	1.63	2022-09-23 16:17:03	645bd5
+633	44f333	f732ae	54.88	96.32	3.17	2022-09-23 16:16:46	8b4af7
+69	5d10f0	a49f60	82.35	815.97	8.33	2022-09-23 16:17:29	7220e6
+81	ca56d8	7c88bd	67.52	10.56	8.50	2022-09-23 16:16:39	2fe5d8
+[Note] Testcase: Operation log begin
+[Note] SequoiaDB: Query message: condition[{ "col4": { "$isnull": 0 } }], selector[{}], order_by[{}], hint[{}], limit[-1], offset[0], table[explain_remove_order_by_28017.t1]
+[Note] SequoiaDB: Query message: Batched keys num[99], table[explain_remove_order_by_28017.t2]
+[Note] SequoiaDB: Query message: condition[{ "col4": { "$in": [ { "$decimal": "642.63" }, { "$decimal": "568.59" }, { "$decimal": "339.68" }, { "$decimal": "54.88" }, { "$decimal": "677.44" }, { "$decimal": "654.65" }, { "$decimal": "257.88" }, { "$decimal": "805.32" }, { "$decimal": "68.73" }, { "$decimal": "453.24" }, { "$decimal": "275.66" }, { "$decimal": "976.32" }, { "$decimal": "239.21" }, { "$decimal": "92.48" }, { "$decimal": "444.19" }, { "$decimal": "24.48" }, { "$decimal": "402.58" }, { "$decimal": "882.10" }, { "$decimal": "461.89" }, { "$decimal": "733.54" }, { "$decimal": "677.09" }, { "$decimal": "177.21" }, { "$decimal": "801.60" }, { "$decimal": "56.22" }, { "$decimal": "522.47" }, { "$decimal": "595.74" }, { "$decimal": "329.56" }, { "$decimal": "882.03" }, { "$decimal": "369.17" }, { "$decimal": "797.54" }, { "$decimal": "345.60" }, { "$decimal": "559.68" }, { "$decimal": "115.16" }, { "$decimal": "967.06" }, { "$decimal": "931.91" }, { "$decimal": "567.42" }, { "$decimal": "930.36" }, { "$decim
+explain select t1.* from t1 inner join t2 on t1.col5 = t2.col5 order by t1.col5 limit 10;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	ALL	idx_col5	NULL	NULL	NULL	102	100.00	Using where with pushed condition (`explain_remove_order_by_28017`.`t1`.`col5` is not null); Using temporary; Using filesort
+1	SIMPLE	t2	NULL	ref	idx_col5	idx_col5	5	explain_remove_order_by_28017.t1.col5	12	100.00	Using index; Using join buffer (Batched Key Access)
+Warnings:
+Note	1003	/* select#1 */ select `explain_remove_order_by_28017`.`t1`.`col1` AS `col1`,`explain_remove_order_by_28017`.`t1`.`col2` AS `col2`,`explain_remove_order_by_28017`.`t1`.`col3` AS `col3`,`explain_remove_order_by_28017`.`t1`.`col4` AS `col4`,`explain_remove_order_by_28017`.`t1`.`col5` AS `col5`,`explain_remove_order_by_28017`.`t1`.`col6` AS `col6`,`explain_remove_order_by_28017`.`t1`.`col7` AS `col7`,`explain_remove_order_by_28017`.`t1`.`col8` AS `col8` from `explain_remove_order_by_28017`.`t1` join `explain_remove_order_by_28017`.`t2` where (`explain_remove_order_by_28017`.`t2`.`col5` = `explain_remove_order_by_28017`.`t1`.`col5`) order by `explain_remove_order_by_28017`.`t1`.`col5` limit 10
+select t1.* from t1 inner join t2 on t1.col5 = t2.col5 order by t1.col5 limit 10;
+col1	col2	col3	col4	col5	col6	col7	col8
+121	ef3baa	275a81	76.80	92.26	2.31	2022-09-23 16:17:45	3d3c85
+269	a4ccc1	b1d3e7	85.11	82.24	1.56	2022-09-23 16:17:10	d73948
+282	3a126e	519bd8	769.83	24.17	8.11	2022-09-23 16:17:55	2b5842
+291	2f2517	7d407e	453.24	100.33	1.42	2022-09-23 16:16:57	88a93f
+325	f5beaa	0036f5	477.04	70.71	9.22	2022-09-23 16:16:57	9f5457
+37	897d82	f9eead	746.66	42.97	9.75	2022-09-23 16:17:32	a2fb9d
+524	014f05	b37d85	56.22	54.22	1.02	2022-09-23 16:16:52	842c71
+527	2bc499	299aea	930.36	52.48	4.71	2022-09-23 16:16:37	6b1905
+633	44f333	f732ae	54.88	96.32	3.17	2022-09-23 16:16:46	8b4af7
+81	ca56d8	7c88bd	67.52	10.56	8.50	2022-09-23 16:16:39	2fe5d8
+[Note] Testcase: Operation log begin
+[Note] SequoiaDB: Query message: condition[{ "col5": { "$isnull": 0 } }], selector[{}], order_by[{}], hint[{}], limit[-1], offset[0], table[explain_remove_order_by_28017.t1]
+[Note] SequoiaDB: Query message: Batched keys num[99], table[explain_remove_order_by_28017.t2]
+[Note] SequoiaDB: Query message: condition[{ "col5": { "$in": [ 564.22998046875, 329.3900146484375, 778.5900268554688, 96.31999969482422, 455.8099975585938, 483.4200134277344, 119.0599975585938, 914.0499877929688, 439.7999877929688, 100.3300018310547, 175.6199951171875, 342.8299865722656, 254.0299987792969, 145.7599945068359, 647.0700073242188, 447.3099975585938, 362.9599914550781, 157.6999969482422, 821.7100219726562, 581.3099975585938, 886.9099731445312, 267.6400146484375, 650.3200073242188, 54.22000122070312, 294.8800048828125, 575.7899780273438, 915.3099975585938, 866.5399780273438, 276.8099975585938, 712.5900268554688, 490.9400024414062, 460.1400146484375, 109.629997253418, 290.2099914550781, 556.530029296875, 416.239990234375, 52.47999954223633, 556.4500122070312, 623.2000122070312, 785.1400146484375, 728.3699951171875, 199.1699981689453, 450.3599853515625, 989.8699951171875, 438.4599914550781, 258.25, 558.6599731445312, 845.760009765625, 195.8699951171875, 770.6500244140625, 530.010009765625, 308.70999145507
+explain select t1.* from t1 inner join t2 on t1.col6 = t2.col6 order by t1.col6 limit 10;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	ALL	idx_col6	NULL	NULL	NULL	102	100.00	Using where with pushed condition (`explain_remove_order_by_28017`.`t1`.`col6` is not null); Using temporary; Using filesort
+1	SIMPLE	t2	NULL	ref	idx_col6	idx_col6	9	explain_remove_order_by_28017.t1.col6	10	100.00	Using index; Using join buffer (Batched Key Access)
+Warnings:
+Note	1003	/* select#1 */ select `explain_remove_order_by_28017`.`t1`.`col1` AS `col1`,`explain_remove_order_by_28017`.`t1`.`col2` AS `col2`,`explain_remove_order_by_28017`.`t1`.`col3` AS `col3`,`explain_remove_order_by_28017`.`t1`.`col4` AS `col4`,`explain_remove_order_by_28017`.`t1`.`col5` AS `col5`,`explain_remove_order_by_28017`.`t1`.`col6` AS `col6`,`explain_remove_order_by_28017`.`t1`.`col7` AS `col7`,`explain_remove_order_by_28017`.`t1`.`col8` AS `col8` from `explain_remove_order_by_28017`.`t1` join `explain_remove_order_by_28017`.`t2` where (`explain_remove_order_by_28017`.`t2`.`col6` = `explain_remove_order_by_28017`.`t1`.`col6`) order by `explain_remove_order_by_28017`.`t1`.`col6` limit 10
+select t1.* from t1 inner join t2 on t1.col6 = t2.col6 order by t1.col6 limit 10;
+col1	col2	col3	col4	col5	col6	col7	col8
+19	77bc3a	96e568	398.89	654.04	0.74	2022-09-23 16:16:58	a1629e
+285	019c49	036873	269.89	770.65	0.44	2022-09-23 16:17:48	f93500
+291	2f2517	7d407e	453.24	100.33	1.42	2022-09-23 16:16:57	88a93f
+379	1329cb	d1992c	95.03	263.66	0.33	2022-09-23 16:16:55	b38a18
+405	e9c73d	3f0287	845.26	334.58	1.37	2022-09-23 16:17:25	5b0e26
+499	2db783	52146f	53.42	845.76	0.69	2022-09-23 16:17:38	7f24f7
+524	014f05	b37d85	56.22	54.22	1.02	2022-09-23 16:16:52	842c71
+71	cbec65	9a4412	373.87	254.73	1.52	2022-09-23 16:17:57	b21ba9
+716	9fec7e	fe98ea	882.10	157.70	1.42	2022-09-23 16:16:40	381094
+76	456b22	4e4f6d	148.10	318.60	1.49	2022-09-23 16:17:36	d11689
+[Note] Testcase: Operation log begin
+[Note] SequoiaDB: Query message: condition[{ "col6": { "$isnull": 0 } }], selector[{}], order_by[{}], hint[{}], limit[-1], offset[0], table[explain_remove_order_by_28017.t1]
+[Note] SequoiaDB: Query message: Batched keys num[99], table[explain_remove_order_by_28017.t2]
+[Note] SequoiaDB: Query message: condition[{ "col6": { "$in": [ 8.93, 9.41, 8.74, 3.17, 2.47, 4.53, 8.220000000000001, 1.54, 9.93, 1.42, 0.51, 7.85, 5.53, 4.51, 9.029999999999999, 1.63, 6.07, 1.42, 7.23, 7.06, 4.03, 8.07, 8.470000000000001, 1.02, 9.07, 0.92, 5.88, 6.87, 2.77, 1.7, 4.18, 6.22, 2.03, 5.5, 9.869999999999999, 3.79, 4.71, 2.25, 6.11, 2.86, 1.57, 6.9, 9.9, 7.48, 4.23, 3.02, 7.72, 0.6899999999999999, 9.07, 0.44, 7.41, 4.97, 5.22, 3.61, 5.36, 8.33, 3.54, 5.01, 8.81, 8.59, 2.65, 9.789999999999999, 5.29, 0.27, 8.25, 1.66, 1.56, 0.33, 1.55, 9.75, 1.66, 9.220000000000001, 3.76, 5.4, 7.58, 5.3, 1.52, 9.85, 2.31, 6.07, 8.5, 1.49, 9.77, 5.83, 4.0, 8.6, 7.12, 8.529999999999999, 7.25, 1.37, 5.22, 0.74, 9.52, 9.94, 3.24, 9.630000000000001, 7.32, 8.109999999999999, 1.71 ] } }], selector[{ "col6": null }], order_by[{}], hint[{ "": "idx_col6" }], limit[-1], offset[0], table[explain_remove_order_by_28017.t2]
+explain select t1.* from t1 inner join t2 on t1.col6 = t2.col7 order by t1.col7 limit 10;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	ALL	idx_col6	NULL	NULL	NULL	102	100.00	Using temporary; Using filesort
+1	SIMPLE	t2	NULL	index	idx_col7	idx_col7	6	NULL	70	10.00	Using where; Using index; Using join buffer (Block Nested Loop)
+Warnings:
+Warning	1739	Cannot use ref access on index 'idx_col7' due to type or collation conversion on field 'col7'
+Warning	1739	Cannot use range access on index 'idx_col7' due to type or collation conversion on field 'col7'
+Note	1003	/* select#1 */ select `explain_remove_order_by_28017`.`t1`.`col1` AS `col1`,`explain_remove_order_by_28017`.`t1`.`col2` AS `col2`,`explain_remove_order_by_28017`.`t1`.`col3` AS `col3`,`explain_remove_order_by_28017`.`t1`.`col4` AS `col4`,`explain_remove_order_by_28017`.`t1`.`col5` AS `col5`,`explain_remove_order_by_28017`.`t1`.`col6` AS `col6`,`explain_remove_order_by_28017`.`t1`.`col7` AS `col7`,`explain_remove_order_by_28017`.`t1`.`col8` AS `col8` from `explain_remove_order_by_28017`.`t1` join `explain_remove_order_by_28017`.`t2` where (`explain_remove_order_by_28017`.`t1`.`col6` = `explain_remove_order_by_28017`.`t2`.`col7`) order by `explain_remove_order_by_28017`.`t1`.`col7` limit 10
+select t1.* from t1 inner join t2 on t1.col6 = t2.col7 order by t1.col7 limit 10;
+col1	col2	col3	col4	col5	col6	col7	col8
+[Note] Testcase: Operation log begin
+[Note] SequoiaDB: Query message: condition[{}], selector[{}], order_by[{}], hint[{}], limit[-1], offset[0], table[explain_remove_order_by_28017.t1]
+[Note] SequoiaDB: Query message: condition[{}], selector[{ "col7": null }], order_by[{ "col7": 1 }], hint[{ "": "idx_col7" }], limit[-1], offset[0], table[explain_remove_order_by_28017.t2]
+explain select t1.* from t1 ignore index(idx_col1,idx_col12) inner join t2 ignore index(idx_col1,idx_col12) on t1.col1 = t2.col1 order by t1.col1 limit 5;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	ALL	NULL	NULL	NULL	NULL	102	100.00	Using temporary; Using filesort
+1	SIMPLE	t2	NULL	ALL	NULL	NULL	NULL	NULL	70	10.00	Using where; Using join buffer (Block Nested Loop)
+Warnings:
+Note	1003	/* select#1 */ select `explain_remove_order_by_28017`.`t1`.`col1` AS `col1`,`explain_remove_order_by_28017`.`t1`.`col2` AS `col2`,`explain_remove_order_by_28017`.`t1`.`col3` AS `col3`,`explain_remove_order_by_28017`.`t1`.`col4` AS `col4`,`explain_remove_order_by_28017`.`t1`.`col5` AS `col5`,`explain_remove_order_by_28017`.`t1`.`col6` AS `col6`,`explain_remove_order_by_28017`.`t1`.`col7` AS `col7`,`explain_remove_order_by_28017`.`t1`.`col8` AS `col8` from `explain_remove_order_by_28017`.`t1` IGNORE INDEX (`idx_col12`) IGNORE INDEX (`idx_col1`) join `explain_remove_order_by_28017`.`t2` IGNORE INDEX (`idx_col12`) IGNORE INDEX (`idx_col1`) where (`explain_remove_order_by_28017`.`t2`.`col1` = `explain_remove_order_by_28017`.`t1`.`col1`) order by `explain_remove_order_by_28017`.`t1`.`col1` limit 5
+select t1.* from t1 ignore index(idx_col1,idx_col12) inner join t2 ignore index(idx_col1,idx_col12) on t1.col1 = t2.col1 order by t1.col1 limit 5;
+col1	col2	col3	col4	col5	col6	col7	col8
+18	5a2dd9	118178	967.06	290.21	5.50	2022-09-23 16:17:45	a7cb17
+19	77bc3a	96e568	398.89	654.04	0.74	2022-09-23 16:16:58	a1629e
+28	60b18e	611339	567.42	416.24	3.79	2022-09-23 16:17:22	d5f7d9
+3	d74ebd	9c36e0	797.54	712.59	1.70	2022-09-23 16:17:28	cfe83a
+4	1d6fbb	a78606	900.20	245.83	5.29	2022-09-23 16:17:48	121416
+[Note] Testcase: Operation log begin
+[Note] SequoiaDB: Query message: condition[{}], selector[{}], order_by[{}], hint[{}], limit[-1], offset[0], table[explain_remove_order_by_28017.t1]
+[Note] SequoiaDB: Query message: condition[{}], selector[{ "_id": null, "col1": null }], order_by[{}], hint[{}], limit[-1], offset[0], table[explain_remove_order_by_28017.t2]
+explain select t1.* from t1 left join t2 on t1.col1 = t2.col1 order by t1.col1,t1.col2 limit 2;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	ALL	NULL	NULL	NULL	NULL	102	100.00	Using temporary; Using filesort
+1	SIMPLE	t2	NULL	ref	idx_col1,idx_col12	idx_col12	5	explain_remove_order_by_28017.t1.col1	8	100.00	Using index; Using join buffer (Batched Key Access)
+Warnings:
+Note	1003	/* select#1 */ select `explain_remove_order_by_28017`.`t1`.`col1` AS `col1`,`explain_remove_order_by_28017`.`t1`.`col2` AS `col2`,`explain_remove_order_by_28017`.`t1`.`col3` AS `col3`,`explain_remove_order_by_28017`.`t1`.`col4` AS `col4`,`explain_remove_order_by_28017`.`t1`.`col5` AS `col5`,`explain_remove_order_by_28017`.`t1`.`col6` AS `col6`,`explain_remove_order_by_28017`.`t1`.`col7` AS `col7`,`explain_remove_order_by_28017`.`t1`.`col8` AS `col8` from `explain_remove_order_by_28017`.`t1` left join `explain_remove_order_by_28017`.`t2` on((`explain_remove_order_by_28017`.`t2`.`col1` = `explain_remove_order_by_28017`.`t1`.`col1`)) where 1 order by `explain_remove_order_by_28017`.`t1`.`col1`,`explain_remove_order_by_28017`.`t1`.`col2` limit 2
+select t1.* from t1 left join t2 on t1.col1 = t2.col1 order by t1.col1,t1.col2 limit 2;
+col1	col2	col3	col4	col5	col6	col7	col8
+NULL	35dfg7	NULL	NULL	NULL	NULL	NULL	NULL
+NULL	NULL	NULL	NULL	NULL	NULL	NULL	NULL
+[Note] Testcase: Operation log begin
+[Note] SequoiaDB: Query message: condition[{}], selector[{}], order_by[{}], hint[{}], limit[-1], offset[0], table[explain_remove_order_by_28017.t1]
+[Note] SequoiaDB: Query message: Batched keys num[102], table[explain_remove_order_by_28017.t2]
+[Note] SequoiaDB: Query message: condition[{ "col1": { "$in": [ 320, 621, 672, 633, 753, 354, 144, 200, 328, 291, 864, 267, 968, 725, 258, 55, 973, 716, 104, 441, 697, 776, 957, 524, 154, 701, 710, 434, 36, 3, 149, 298, 686, 18, 85, 28, 527, 311, 641, 875, 395, 875, 422, 331, 731, 209, 631, 499, 690, 285, 277, 371, 839, 200, 79, 69, 262, 915, 616, 827, 834, 580, 4, 986, 165, 560, 269, 379, 753, 37, 778, 325, 965, 319, 186, 242, 71, 629, 121, 844, 81, 76, 98, 459, 397, 217, 650, 291, 845, 405, 944, 19, 819, 592, 495, 787, 299, 282, 483, 101 ] } }], selector[{ "col1": null }], order_by[{}], hint[{ "": "idx_col12" }], limit[-1], offset[0], table[explain_remove_order_by_28017.t2]
+explain select t1.* from t1 left join t2 on t1.col1 = t2.col1 order by t1.col2 limit 2;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	ALL	NULL	NULL	NULL	NULL	102	100.00	Using temporary; Using filesort
+1	SIMPLE	t2	NULL	ref	idx_col1,idx_col12	idx_col12	5	explain_remove_order_by_28017.t1.col1	8	100.00	Using index; Using join buffer (Batched Key Access)
+Warnings:
+Note	1003	/* select#1 */ select `explain_remove_order_by_28017`.`t1`.`col1` AS `col1`,`explain_remove_order_by_28017`.`t1`.`col2` AS `col2`,`explain_remove_order_by_28017`.`t1`.`col3` AS `col3`,`explain_remove_order_by_28017`.`t1`.`col4` AS `col4`,`explain_remove_order_by_28017`.`t1`.`col5` AS `col5`,`explain_remove_order_by_28017`.`t1`.`col6` AS `col6`,`explain_remove_order_by_28017`.`t1`.`col7` AS `col7`,`explain_remove_order_by_28017`.`t1`.`col8` AS `col8` from `explain_remove_order_by_28017`.`t1` left join `explain_remove_order_by_28017`.`t2` on((`explain_remove_order_by_28017`.`t2`.`col1` = `explain_remove_order_by_28017`.`t1`.`col1`)) where 1 order by `explain_remove_order_by_28017`.`t1`.`col2` limit 2
+select t1.* from t1 left join t2 on t1.col1 = t2.col1 order by t1.col2 limit 2;
+col1	col2	col3	col4	col5	col6	col7	col8
+101	NULL	NULL	NULL	NULL	NULL	NULL	NULL
+NULL	NULL	NULL	NULL	NULL	NULL	NULL	NULL
+[Note] Testcase: Operation log begin
+[Note] SequoiaDB: Query message: condition[{}], selector[{}], order_by[{}], hint[{}], limit[-1], offset[0], table[explain_remove_order_by_28017.t1]
+[Note] SequoiaDB: Query message: Batched keys num[102], table[explain_remove_order_by_28017.t2]
+[Note] SequoiaDB: Query message: condition[{ "col1": { "$in": [ 320, 621, 672, 633, 753, 354, 144, 200, 328, 291, 864, 267, 968, 725, 258, 55, 973, 716, 104, 441, 697, 776, 957, 524, 154, 701, 710, 434, 36, 3, 149, 298, 686, 18, 85, 28, 527, 311, 641, 875, 395, 875, 422, 331, 731, 209, 631, 499, 690, 285, 277, 371, 839, 200, 79, 69, 262, 915, 616, 827, 834, 580, 4, 986, 165, 560, 269, 379, 753, 37, 778, 325, 965, 319, 186, 242, 71, 629, 121, 844, 81, 76, 98, 459, 397, 217, 650, 291, 845, 405, 944, 19, 819, 592, 495, 787, 299, 282, 483, 101 ] } }], selector[{ "col1": null }], order_by[{}], hint[{ "": "idx_col12" }], limit[-1], offset[0], table[explain_remove_order_by_28017.t2]
+explain select t1.* from t1 left join t2 on t1.col1 = t2.col1 order by t1.col1,t1.col2 desc limit 2;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	ALL	NULL	NULL	NULL	NULL	102	100.00	Using temporary; Using filesort
+1	SIMPLE	t2	NULL	ref	idx_col1,idx_col12	idx_col12	5	explain_remove_order_by_28017.t1.col1	8	100.00	Using index; Using join buffer (Batched Key Access)
+Warnings:
+Note	1003	/* select#1 */ select `explain_remove_order_by_28017`.`t1`.`col1` AS `col1`,`explain_remove_order_by_28017`.`t1`.`col2` AS `col2`,`explain_remove_order_by_28017`.`t1`.`col3` AS `col3`,`explain_remove_order_by_28017`.`t1`.`col4` AS `col4`,`explain_remove_order_by_28017`.`t1`.`col5` AS `col5`,`explain_remove_order_by_28017`.`t1`.`col6` AS `col6`,`explain_remove_order_by_28017`.`t1`.`col7` AS `col7`,`explain_remove_order_by_28017`.`t1`.`col8` AS `col8` from `explain_remove_order_by_28017`.`t1` left join `explain_remove_order_by_28017`.`t2` on((`explain_remove_order_by_28017`.`t2`.`col1` = `explain_remove_order_by_28017`.`t1`.`col1`)) where 1 order by `explain_remove_order_by_28017`.`t1`.`col1`,`explain_remove_order_by_28017`.`t1`.`col2` desc limit 2
+select t1.* from t1 left join t2 on t1.col1 = t2.col1 order by t1.col1,t1.col2 desc limit 2;
+col1	col2	col3	col4	col5	col6	col7	col8
+NULL	35dfg7	NULL	NULL	NULL	NULL	NULL	NULL
+NULL	NULL	NULL	NULL	NULL	NULL	NULL	NULL
+[Note] Testcase: Operation log begin
+[Note] SequoiaDB: Query message: condition[{}], selector[{}], order_by[{}], hint[{}], limit[-1], offset[0], table[explain_remove_order_by_28017.t1]
+[Note] SequoiaDB: Query message: Batched keys num[102], table[explain_remove_order_by_28017.t2]
+[Note] SequoiaDB: Query message: condition[{ "col1": { "$in": [ 320, 621, 672, 633, 753, 354, 144, 200, 328, 291, 864, 267, 968, 725, 258, 55, 973, 716, 104, 441, 697, 776, 957, 524, 154, 701, 710, 434, 36, 3, 149, 298, 686, 18, 85, 28, 527, 311, 641, 875, 395, 875, 422, 331, 731, 209, 631, 499, 690, 285, 277, 371, 839, 200, 79, 69, 262, 915, 616, 827, 834, 580, 4, 986, 165, 560, 269, 379, 753, 37, 778, 325, 965, 319, 186, 242, 71, 629, 121, 844, 81, 76, 98, 459, 397, 217, 650, 291, 845, 405, 944, 19, 819, 592, 495, 787, 299, 282, 483, 101 ] } }], selector[{ "col1": null }], order_by[{}], hint[{ "": "idx_col12" }], limit[-1], offset[0], table[explain_remove_order_by_28017.t2]
+explain select t1.* from t1 left join t2 on t1.col1 = t2.col1 order by t1.col1,t1.col2 limit 1,2;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	ALL	NULL	NULL	NULL	NULL	102	100.00	Using temporary; Using filesort
+1	SIMPLE	t2	NULL	ref	idx_col1,idx_col12	idx_col12	5	explain_remove_order_by_28017.t1.col1	8	100.00	Using index; Using join buffer (Batched Key Access)
+Warnings:
+Note	1003	/* select#1 */ select `explain_remove_order_by_28017`.`t1`.`col1` AS `col1`,`explain_remove_order_by_28017`.`t1`.`col2` AS `col2`,`explain_remove_order_by_28017`.`t1`.`col3` AS `col3`,`explain_remove_order_by_28017`.`t1`.`col4` AS `col4`,`explain_remove_order_by_28017`.`t1`.`col5` AS `col5`,`explain_remove_order_by_28017`.`t1`.`col6` AS `col6`,`explain_remove_order_by_28017`.`t1`.`col7` AS `col7`,`explain_remove_order_by_28017`.`t1`.`col8` AS `col8` from `explain_remove_order_by_28017`.`t1` left join `explain_remove_order_by_28017`.`t2` on((`explain_remove_order_by_28017`.`t2`.`col1` = `explain_remove_order_by_28017`.`t1`.`col1`)) where 1 order by `explain_remove_order_by_28017`.`t1`.`col1`,`explain_remove_order_by_28017`.`t1`.`col2` limit 1,2
+select t1.* from t1 left join t2 on t1.col1 = t2.col1 order by t1.col1,t1.col2 limit 1,2;
+col1	col2	col3	col4	col5	col6	col7	col8
+3	d74ebd	9c36e0	797.54	712.59	1.70	2022-09-23 16:17:28	cfe83a
+NULL	35dfg7	NULL	NULL	NULL	NULL	NULL	NULL
+[Note] Testcase: Operation log begin
+[Note] SequoiaDB: Query message: condition[{}], selector[{}], order_by[{}], hint[{}], limit[-1], offset[0], table[explain_remove_order_by_28017.t1]
+[Note] SequoiaDB: Query message: Batched keys num[102], table[explain_remove_order_by_28017.t2]
+[Note] SequoiaDB: Query message: condition[{ "col1": { "$in": [ 320, 621, 672, 633, 753, 354, 144, 200, 328, 291, 864, 267, 968, 725, 258, 55, 973, 716, 104, 441, 697, 776, 957, 524, 154, 701, 710, 434, 36, 3, 149, 298, 686, 18, 85, 28, 527, 311, 641, 875, 395, 875, 422, 331, 731, 209, 631, 499, 690, 285, 277, 371, 839, 200, 79, 69, 262, 915, 616, 827, 834, 580, 4, 986, 165, 560, 269, 379, 753, 37, 778, 325, 965, 319, 186, 242, 71, 629, 121, 844, 81, 76, 98, 459, 397, 217, 650, 291, 845, 405, 944, 19, 819, 592, 495, 787, 299, 282, 483, 101 ] } }], selector[{ "col1": null }], order_by[{}], hint[{ "": "idx_col12" }], limit[-1], offset[0], table[explain_remove_order_by_28017.t2]
+explain select t2.* from t1 left join t2 on t1.col1 = t2.col1 order by t2.col1;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	index	NULL	idx_col1	5	NULL	102	100.00	Using index; Using temporary; Using filesort
+1	SIMPLE	t2	NULL	ref	idx_col1,idx_col12	idx_col12	5	explain_remove_order_by_28017.t1.col1	8	100.00	Using join buffer (Batched Key Access)
+Warnings:
+Note	1003	/* select#1 */ select `explain_remove_order_by_28017`.`t2`.`col1` AS `col1`,`explain_remove_order_by_28017`.`t2`.`col2` AS `col2`,`explain_remove_order_by_28017`.`t2`.`col3` AS `col3`,`explain_remove_order_by_28017`.`t2`.`col4` AS `col4`,`explain_remove_order_by_28017`.`t2`.`col5` AS `col5`,`explain_remove_order_by_28017`.`t2`.`col6` AS `col6`,`explain_remove_order_by_28017`.`t2`.`col7` AS `col7`,`explain_remove_order_by_28017`.`t2`.`col8` AS `col8` from `explain_remove_order_by_28017`.`t1` left join `explain_remove_order_by_28017`.`t2` on((`explain_remove_order_by_28017`.`t2`.`col1` = `explain_remove_order_by_28017`.`t1`.`col1`)) where 1 order by `explain_remove_order_by_28017`.`t2`.`col1`
+select t2.* from t1 left join t2 on t1.col1 = t2.col1 order by t2.col1;
+col1	col2	col3	col4	col5	col6	col7	col8
+101	NULL	NULL	NULL	NULL	NULL	NULL	NULL
+104	e0b316	c29b7a	461.89	821.71	7.23	2022-09-23 16:16:31	1d14e8
+121	ef3baa	275a81	76.80	92.26	2.31	2022-09-23 16:17:45	3d3c85
+144	bb3dd0	b9308b	257.88	119.06	8.22	2022-09-23 16:17:31	191f0e
+149	92fe8e	fe0ece	345.60	490.94	4.18	2022-09-23 16:17:19	bd2c56
+154	6e8882	352203	522.47	294.88	9.07	2022-09-23 16:17:22	5ec9a0
+165	74332b	69b526	477.85	451.70	8.25	2022-09-23 16:17:34	d2e139
+18	5a2dd9	118178	967.06	290.21	5.50	2022-09-23 16:17:45	a7cb17
+186	28d5f5	4357f2	265.84	511.02	7.58	2022-09-23 16:16:42	ac8a35
+19	77bc3a	96e568	398.89	654.04	0.74	2022-09-23 16:16:58	a1629e
+200	a8d1c2	06f63f	899.54	411.85	3.61	2022-09-23 16:17:14	7f461c
+200	a8d1c2	06f63f	899.54	411.85	3.61	2022-09-23 16:17:14	7f461c
+200	af46f0	7dcdad	805.32	914.05	1.54	2022-09-23 16:16:19	cf3034
+200	af46f0	7dcdad	805.32	914.05	1.54	2022-09-23 16:16:19	cf3034
+209	5bdbcc	b4c37f	329.80	258.25	3.02	2022-09-23 16:17:30	b9d6f9
+217	81fd98	01c15c	528.57	289.22	8.60	2022-09-23 16:17:00	b624a9
+242	85f377	076da9	915.25	655.05	5.30	2022-09-23 16:17:25	5a3c8a
+258	227b2a	e05ef2	444.19	647.07	9.03	2022-09-23 16:17:13	45c70e
+262	599fe3	acc351	469.78	752.57	3.54	2022-09-23 16:17:08	9a2d87
+267	b2fe40	daf06a	976.32	342.83	7.85	2022-09-23 16:17:46	c4f64c
+269	a4ccc1	b1d3e7	85.11	82.24	1.56	2022-09-23 16:17:10	d73948
+277	85d53d	1c1e32	969.84	530.01	7.41	2022-09-23 16:16:28	4688e8
+28	60b18e	611339	567.42	416.24	3.79	2022-09-23 16:17:22	d5f7d9
+282	3a126e	519bd8	769.83	24.17	8.11	2022-09-23 16:17:55	2b5842
+285	019c49	036873	269.89	770.65	0.44	2022-09-23 16:17:48	f93500
+291	2f2517	7d407e	453.24	100.33	1.42	2022-09-23 16:16:57	88a93f
+291	2f2517	7d407e	453.24	100.33	1.42	2022-09-23 16:16:57	88a93f
+291	913dc1	542eee	83.39	820.56	8.53	2022-09-23 16:17:37	16a27e
+291	913dc1	542eee	83.39	820.56	8.53	2022-09-23 16:17:37	16a27e
+298	4c2081	428225	559.68	460.14	6.22	2022-09-23 16:17:30	f7237b
+299	7a637e	421ecf	903.25	488.28	7.32	2022-09-23 16:16:36	8896af
+3	d74ebd	9c36e0	797.54	712.59	1.70	2022-09-23 16:17:28	cfe83a
+311	2f6584	cdc668	185.78	556.45	2.25	2022-09-23 16:17:03	af7c20
+319	5e4bbd	62118b	378.95	335.42	5.40	2022-09-23 16:17:26	3c38cc
+320	6c782c	f90a05	642.63	564.23	8.93	2022-09-23 16:17:33	b3ec0e
+325	f5beaa	0036f5	477.04	70.71	9.22	2022-09-23 16:16:57	9f5457
+328	255bb8	d05150	68.73	439.80	9.93	2022-09-23 16:17:20	f7818e
+331	bb8fee	dba99a	733.78	989.87	7.48	2022-09-23 16:17:34	2c238d
+354	b06bb7	659668	654.65	483.42	4.53	2022-09-23 16:17:38	29cd07
+36	e89aa7	7581d9	369.17	276.81	2.77	2022-09-23 16:17:12	fd2c61
+37	897d82	f9eead	746.66	42.97	9.75	2022-09-23 16:17:32	a2fb9d
+371	2b5a5d	61aa73	682.18	308.71	4.97	2022-09-23 16:17:13	9c4c20
+379	1329cb	d1992c	95.03	263.66	0.33	2022-09-23 16:16:55	b38a18
+395	0a2fa3	4810b7	828.17	728.37	1.57	2022-09-23 16:17:17	0d7795
+397	334d53	58b126	3.32	482.06	4.00	2022-09-23 16:17:13	ca50ae
+4	1d6fbb	a78606	900.20	245.83	5.29	2022-09-23 16:17:48	121416
+405	e9c73d	3f0287	845.26	334.58	1.37	2022-09-23 16:17:25	5b0e26
+422	245c2c	accd99	87.25	450.36	9.90	2022-09-23 16:17:17	cb2f7b
+434	aa86f4	35a4d9	882.03	866.54	6.87	2022-09-23 16:17:40	8ac629
+441	c1b6a7	e32a7e	733.54	581.31	7.06	2022-09-23 16:17:35	114801
+459	a62019	5275a2	319.64	908.30	5.83	2022-09-23 16:16:36	892549
+483	62e3f4	76c754	723.58	668.28	1.71	2022-09-23 16:17:42	df0767
+495	e21ee7	5e8b26	740.66	909.23	3.24	2022-09-23 16:17:46	4aedbd
+499	2db783	52146f	53.42	845.76	0.69	2022-09-23 16:17:38	7f24f7
+524	014f05	b37d85	56.22	54.22	1.02	2022-09-23 16:16:52	842c71
+527	2bc499	299aea	930.36	52.48	4.71	2022-09-23 16:16:37	6b1905
+55	1c2555	568498	24.48	447.31	1.63	2022-09-23 16:17:03	645bd5
+560	920427	a2e3a7	486.99	325.34	1.66	2022-09-23 16:17:42	bf601c
+580	51ab7b	7a3ec0	249.03	545.18	9.79	2022-09-23 16:16:43	0b4a03
+592	78628e	b9ad44	652.26	590.20	9.94	2022-09-23 16:16:37	0d6bda
+616	8d8eb8	62d9eb	732.32	815.49	8.81	2022-09-23 16:17:53	2cff59
+621	ddd753	c3218f	568.59	329.39	9.41	2022-09-23 16:17:28	299803
+629	c6a51d	cadef3	219.06	128.49	9.85	2022-09-23 16:17:11	1ae22c
+631	c152b1	ee7ede	340.33	558.66	7.72	2022-09-23 16:16:36	0d56e8
+633	44f333	f732ae	54.88	96.32	3.17	2022-09-23 16:16:46	8b4af7
+69	5d10f0	a49f60	82.35	815.97	8.33	2022-09-23 16:17:29	7220e6
+71	cbec65	9a4412	373.87	254.73	1.52	2022-09-23 16:17:57	b21ba9
+76	456b22	4e4f6d	148.10	318.60	1.49	2022-09-23 16:17:36	d11689
+79	f0627f	0ee80b	614.93	876.10	5.36	2022-09-23 16:16:22	b7deb0
+81	ca56d8	7c88bd	67.52	10.56	8.50	2022-09-23 16:16:39	2fe5d8
+85	ec1c4d	a5f308	931.91	556.53	9.87	2022-09-23 16:16:44	fdd07d
+98	8759f6	ac505e	793.80	671.62	9.77	2022-09-23 16:17:44	5b67f1
+NULL	NULL	NULL	NULL	NULL	NULL	NULL	NULL
+NULL	NULL	NULL	NULL	NULL	NULL	NULL	NULL
+NULL	NULL	NULL	NULL	NULL	NULL	NULL	NULL
+NULL	NULL	NULL	NULL	NULL	NULL	NULL	NULL
+NULL	NULL	NULL	NULL	NULL	NULL	NULL	NULL
+NULL	NULL	NULL	NULL	NULL	NULL	NULL	NULL
+NULL	NULL	NULL	NULL	NULL	NULL	NULL	NULL
+NULL	NULL	NULL	NULL	NULL	NULL	NULL	NULL
+NULL	NULL	NULL	NULL	NULL	NULL	NULL	NULL
+NULL	NULL	NULL	NULL	NULL	NULL	NULL	NULL
+NULL	NULL	NULL	NULL	NULL	NULL	NULL	NULL
+NULL	NULL	NULL	NULL	NULL	NULL	NULL	NULL
+NULL	NULL	NULL	NULL	NULL	NULL	NULL	NULL
+NULL	NULL	NULL	NULL	NULL	NULL	NULL	NULL
+NULL	NULL	NULL	NULL	NULL	NULL	NULL	NULL
+NULL	NULL	NULL	NULL	NULL	NULL	NULL	NULL
+NULL	NULL	NULL	NULL	NULL	NULL	NULL	NULL
+NULL	NULL	NULL	NULL	NULL	NULL	NULL	NULL
+NULL	NULL	NULL	NULL	NULL	NULL	NULL	NULL
+NULL	NULL	NULL	NULL	NULL	NULL	NULL	NULL
+NULL	NULL	NULL	NULL	NULL	NULL	NULL	NULL
+NULL	NULL	NULL	NULL	NULL	NULL	NULL	NULL
+NULL	NULL	NULL	NULL	NULL	NULL	NULL	NULL
+NULL	NULL	NULL	NULL	NULL	NULL	NULL	NULL
+NULL	NULL	NULL	NULL	NULL	NULL	NULL	NULL
+NULL	NULL	NULL	NULL	NULL	NULL	NULL	NULL
+NULL	NULL	NULL	NULL	NULL	NULL	NULL	NULL
+NULL	NULL	NULL	NULL	NULL	NULL	NULL	NULL
+NULL	NULL	NULL	NULL	NULL	NULL	NULL	NULL
+NULL	NULL	NULL	NULL	NULL	NULL	NULL	NULL
+NULL	NULL	NULL	NULL	NULL	NULL	NULL	NULL
+NULL	NULL	NULL	NULL	NULL	NULL	NULL	NULL
+NULL	NULL	NULL	NULL	NULL	NULL	NULL	NULL
+NULL	NULL	NULL	NULL	NULL	NULL	NULL	NULL
+[Note] Testcase: Operation log begin
+[Note] SequoiaDB: Query message: condition[{}], selector[{ "col1": null }], order_by[{ "col1": 1 }], hint[{ "": "idx_col1" }], limit[-1], offset[0], table[explain_remove_order_by_28017.t1]
+[Note] SequoiaDB: Query message: Batched keys num[102], table[explain_remove_order_by_28017.t2]
+[Note] SequoiaDB: Query message: condition[{ "col1": { "$in": [ 3, 4, 18, 19, 28, 36, 37, 55, 69, 71, 76, 79, 81, 85, 98, 101, 104, 121, 144, 149, 154, 165, 186, 200, 200, 209, 217, 242, 258, 262, 267, 269, 277, 282, 285, 291, 291, 298, 299, 311, 319, 320, 325, 328, 331, 354, 371, 379, 395, 397, 405, 422, 434, 441, 459, 483, 495, 499, 524, 527, 560, 580, 592, 616, 621, 629, 631, 633, 641, 650, 672, 686, 690, 697, 701, 710, 716, 725, 731, 753, 753, 776, 778, 787, 819, 827, 834, 839, 844, 845, 864, 875, 875, 915, 944, 957, 965, 968, 973, 986 ] } }], selector[{}], order_by[{}], hint[{ "": "idx_col12" }], limit[-1], offset[0], table[explain_remove_order_by_28017.t2]
+explain select t2.* from t1 left join t2 on t1.col1 = t2.col1 order by t2.col1 limit 2;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	index	NULL	idx_col1	5	NULL	102	100.00	Using index; Using temporary; Using filesort
+1	SIMPLE	t2	NULL	ref	idx_col1,idx_col12	idx_col12	5	explain_remove_order_by_28017.t1.col1	8	100.00	Using join buffer (Batched Key Access)
+Warnings:
+Note	1003	/* select#1 */ select `explain_remove_order_by_28017`.`t2`.`col1` AS `col1`,`explain_remove_order_by_28017`.`t2`.`col2` AS `col2`,`explain_remove_order_by_28017`.`t2`.`col3` AS `col3`,`explain_remove_order_by_28017`.`t2`.`col4` AS `col4`,`explain_remove_order_by_28017`.`t2`.`col5` AS `col5`,`explain_remove_order_by_28017`.`t2`.`col6` AS `col6`,`explain_remove_order_by_28017`.`t2`.`col7` AS `col7`,`explain_remove_order_by_28017`.`t2`.`col8` AS `col8` from `explain_remove_order_by_28017`.`t1` left join `explain_remove_order_by_28017`.`t2` on((`explain_remove_order_by_28017`.`t2`.`col1` = `explain_remove_order_by_28017`.`t1`.`col1`)) where 1 order by `explain_remove_order_by_28017`.`t2`.`col1` limit 2
+select t2.* from t1 left join t2 on t1.col1 = t2.col1 order by t2.col1 limit 2;
+col1	col2	col3	col4	col5	col6	col7	col8
+NULL	NULL	NULL	NULL	NULL	NULL	NULL	NULL
+NULL	NULL	NULL	NULL	NULL	NULL	NULL	NULL
+[Note] Testcase: Operation log begin
+[Note] SequoiaDB: Query message: condition[{}], selector[{ "col1": null }], order_by[{ "col1": 1 }], hint[{ "": "idx_col1" }], limit[-1], offset[0], table[explain_remove_order_by_28017.t1]
+[Note] SequoiaDB: Query message: Batched keys num[102], table[explain_remove_order_by_28017.t2]
+[Note] SequoiaDB: Query message: condition[{ "col1": { "$in": [ 3, 4, 18, 19, 28, 36, 37, 55, 69, 71, 76, 79, 81, 85, 98, 101, 104, 121, 144, 149, 154, 165, 186, 200, 200, 209, 217, 242, 258, 262, 267, 269, 277, 282, 285, 291, 291, 298, 299, 311, 319, 320, 325, 328, 331, 354, 371, 379, 395, 397, 405, 422, 434, 441, 459, 483, 495, 499, 524, 527, 560, 580, 592, 616, 621, 629, 631, 633, 641, 650, 672, 686, 690, 697, 701, 710, 716, 725, 731, 753, 753, 776, 778, 787, 819, 827, 834, 839, 844, 845, 864, 875, 875, 915, 944, 957, 965, 968, 973, 986 ] } }], selector[{}], order_by[{}], hint[{ "": "idx_col12" }], limit[-1], offset[0], table[explain_remove_order_by_28017.t2]
+explain select t2.* from t1 left join t2 on t1.col1 = t2.col1 order by t2.col2,t2.col1 limit 2;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	index	NULL	idx_col1	5	NULL	102	100.00	Using index; Using temporary; Using filesort
+1	SIMPLE	t2	NULL	ref	idx_col1,idx_col12	idx_col12	5	explain_remove_order_by_28017.t1.col1	8	100.00	Using join buffer (Batched Key Access)
+Warnings:
+Note	1003	/* select#1 */ select `explain_remove_order_by_28017`.`t2`.`col1` AS `col1`,`explain_remove_order_by_28017`.`t2`.`col2` AS `col2`,`explain_remove_order_by_28017`.`t2`.`col3` AS `col3`,`explain_remove_order_by_28017`.`t2`.`col4` AS `col4`,`explain_remove_order_by_28017`.`t2`.`col5` AS `col5`,`explain_remove_order_by_28017`.`t2`.`col6` AS `col6`,`explain_remove_order_by_28017`.`t2`.`col7` AS `col7`,`explain_remove_order_by_28017`.`t2`.`col8` AS `col8` from `explain_remove_order_by_28017`.`t1` left join `explain_remove_order_by_28017`.`t2` on((`explain_remove_order_by_28017`.`t2`.`col1` = `explain_remove_order_by_28017`.`t1`.`col1`)) where 1 order by `explain_remove_order_by_28017`.`t2`.`col2`,`explain_remove_order_by_28017`.`t2`.`col1` limit 2
+select t2.* from t1 left join t2 on t1.col1 = t2.col1 order by t2.col2,t2.col1 limit 2;
+col1	col2	col3	col4	col5	col6	col7	col8
+NULL	NULL	NULL	NULL	NULL	NULL	NULL	NULL
+NULL	NULL	NULL	NULL	NULL	NULL	NULL	NULL
+[Note] Testcase: Operation log begin
+[Note] SequoiaDB: Query message: condition[{}], selector[{ "col1": null }], order_by[{ "col1": 1 }], hint[{ "": "idx_col1" }], limit[-1], offset[0], table[explain_remove_order_by_28017.t1]
+[Note] SequoiaDB: Query message: Batched keys num[102], table[explain_remove_order_by_28017.t2]
+[Note] SequoiaDB: Query message: condition[{ "col1": { "$in": [ 3, 4, 18, 19, 28, 36, 37, 55, 69, 71, 76, 79, 81, 85, 98, 101, 104, 121, 144, 149, 154, 165, 186, 200, 200, 209, 217, 242, 258, 262, 267, 269, 277, 282, 285, 291, 291, 298, 299, 311, 319, 320, 325, 328, 331, 354, 371, 379, 395, 397, 405, 422, 434, 441, 459, 483, 495, 499, 524, 527, 560, 580, 592, 616, 621, 629, 631, 633, 641, 650, 672, 686, 690, 697, 701, 710, 716, 725, 731, 753, 753, 776, 778, 787, 819, 827, 834, 839, 844, 845, 864, 875, 875, 915, 944, 957, 965, 968, 973, 986 ] } }], selector[{}], order_by[{}], hint[{ "": "idx_col12" }], limit[-1], offset[0], table[explain_remove_order_by_28017.t2]
+explain select t2.* from t1 left join t2 on t1.col1 = t2.col1 order by t2.col1 desc limit 2;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	index	NULL	idx_col1	5	NULL	102	100.00	Using index; Using temporary; Using filesort
+1	SIMPLE	t2	NULL	ref	idx_col1,idx_col12	idx_col12	5	explain_remove_order_by_28017.t1.col1	8	100.00	Using join buffer (Batched Key Access)
+Warnings:
+Note	1003	/* select#1 */ select `explain_remove_order_by_28017`.`t2`.`col1` AS `col1`,`explain_remove_order_by_28017`.`t2`.`col2` AS `col2`,`explain_remove_order_by_28017`.`t2`.`col3` AS `col3`,`explain_remove_order_by_28017`.`t2`.`col4` AS `col4`,`explain_remove_order_by_28017`.`t2`.`col5` AS `col5`,`explain_remove_order_by_28017`.`t2`.`col6` AS `col6`,`explain_remove_order_by_28017`.`t2`.`col7` AS `col7`,`explain_remove_order_by_28017`.`t2`.`col8` AS `col8` from `explain_remove_order_by_28017`.`t1` left join `explain_remove_order_by_28017`.`t2` on((`explain_remove_order_by_28017`.`t2`.`col1` = `explain_remove_order_by_28017`.`t1`.`col1`)) where 1 order by `explain_remove_order_by_28017`.`t2`.`col1` desc limit 2
+select t2.* from t1 left join t2 on t1.col1 = t2.col1 order by t2.col1 desc limit 2;
+col1	col2	col3	col4	col5	col6	col7	col8
+631	c152b1	ee7ede	340.33	558.66	7.72	2022-09-23 16:16:36	0d56e8
+633	44f333	f732ae	54.88	96.32	3.17	2022-09-23 16:16:46	8b4af7
+[Note] Testcase: Operation log begin
+[Note] SequoiaDB: Query message: condition[{}], selector[{ "col1": null }], order_by[{ "col1": 1 }], hint[{ "": "idx_col1" }], limit[-1], offset[0], table[explain_remove_order_by_28017.t1]
+[Note] SequoiaDB: Query message: Batched keys num[102], table[explain_remove_order_by_28017.t2]
+[Note] SequoiaDB: Query message: condition[{ "col1": { "$in": [ 3, 4, 18, 19, 28, 36, 37, 55, 69, 71, 76, 79, 81, 85, 98, 101, 104, 121, 144, 149, 154, 165, 186, 200, 200, 209, 217, 242, 258, 262, 267, 269, 277, 282, 285, 291, 291, 298, 299, 311, 319, 320, 325, 328, 331, 354, 371, 379, 395, 397, 405, 422, 434, 441, 459, 483, 495, 499, 524, 527, 560, 580, 592, 616, 621, 629, 631, 633, 641, 650, 672, 686, 690, 697, 701, 710, 716, 725, 731, 753, 753, 776, 778, 787, 819, 827, 834, 839, 844, 845, 864, 875, 875, 915, 944, 957, 965, 968, 973, 986 ] } }], selector[{}], order_by[{}], hint[{ "": "idx_col12" }], limit[-1], offset[0], table[explain_remove_order_by_28017.t2]
+explain select t2.* from t1 left join t2 on t1.col1 = t2.col1 order by t2.col1 limit 1,2;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	index	NULL	idx_col1	5	NULL	102	100.00	Using index; Using temporary; Using filesort
+1	SIMPLE	t2	NULL	ref	idx_col1,idx_col12	idx_col12	5	explain_remove_order_by_28017.t1.col1	8	100.00	Using join buffer (Batched Key Access)
+Warnings:
+Note	1003	/* select#1 */ select `explain_remove_order_by_28017`.`t2`.`col1` AS `col1`,`explain_remove_order_by_28017`.`t2`.`col2` AS `col2`,`explain_remove_order_by_28017`.`t2`.`col3` AS `col3`,`explain_remove_order_by_28017`.`t2`.`col4` AS `col4`,`explain_remove_order_by_28017`.`t2`.`col5` AS `col5`,`explain_remove_order_by_28017`.`t2`.`col6` AS `col6`,`explain_remove_order_by_28017`.`t2`.`col7` AS `col7`,`explain_remove_order_by_28017`.`t2`.`col8` AS `col8` from `explain_remove_order_by_28017`.`t1` left join `explain_remove_order_by_28017`.`t2` on((`explain_remove_order_by_28017`.`t2`.`col1` = `explain_remove_order_by_28017`.`t1`.`col1`)) where 1 order by `explain_remove_order_by_28017`.`t2`.`col1` limit 1,2
+select t2.* from t1 left join t2 on t1.col1 = t2.col1 order by t2.col1 limit 1,2;
+col1	col2	col3	col4	col5	col6	col7	col8
+NULL	NULL	NULL	NULL	NULL	NULL	NULL	NULL
+NULL	NULL	NULL	NULL	NULL	NULL	NULL	NULL
+[Note] Testcase: Operation log begin
+[Note] SequoiaDB: Query message: condition[{}], selector[{ "col1": null }], order_by[{ "col1": 1 }], hint[{ "": "idx_col1" }], limit[-1], offset[0], table[explain_remove_order_by_28017.t1]
+[Note] SequoiaDB: Query message: Batched keys num[102], table[explain_remove_order_by_28017.t2]
+[Note] SequoiaDB: Query message: condition[{ "col1": { "$in": [ 3, 4, 18, 19, 28, 36, 37, 55, 69, 71, 76, 79, 81, 85, 98, 101, 104, 121, 144, 149, 154, 165, 186, 200, 200, 209, 217, 242, 258, 262, 267, 269, 277, 282, 285, 291, 291, 298, 299, 311, 319, 320, 325, 328, 331, 354, 371, 379, 395, 397, 405, 422, 434, 441, 459, 483, 495, 499, 524, 527, 560, 580, 592, 616, 621, 629, 631, 633, 641, 650, 672, 686, 690, 697, 701, 710, 716, 725, 731, 753, 753, 776, 778, 787, 819, 827, 834, 839, 844, 845, 864, 875, 875, 915, 944, 957, 965, 968, 973, 986 ] } }], selector[{}], order_by[{}], hint[{ "": "idx_col12" }], limit[-1], offset[0], table[explain_remove_order_by_28017.t2]
+explain select t1.* from t1 left join t2 on t1.col1 = t2.col1 order by t1.col4 desc limit 2;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	ALL	NULL	NULL	NULL	NULL	102	100.00	Using temporary; Using filesort
+1	SIMPLE	t2	NULL	ref	idx_col1,idx_col12	idx_col12	5	explain_remove_order_by_28017.t1.col1	8	100.00	Using index; Using join buffer (Batched Key Access)
+Warnings:
+Note	1003	/* select#1 */ select `explain_remove_order_by_28017`.`t1`.`col1` AS `col1`,`explain_remove_order_by_28017`.`t1`.`col2` AS `col2`,`explain_remove_order_by_28017`.`t1`.`col3` AS `col3`,`explain_remove_order_by_28017`.`t1`.`col4` AS `col4`,`explain_remove_order_by_28017`.`t1`.`col5` AS `col5`,`explain_remove_order_by_28017`.`t1`.`col6` AS `col6`,`explain_remove_order_by_28017`.`t1`.`col7` AS `col7`,`explain_remove_order_by_28017`.`t1`.`col8` AS `col8` from `explain_remove_order_by_28017`.`t1` left join `explain_remove_order_by_28017`.`t2` on((`explain_remove_order_by_28017`.`t2`.`col1` = `explain_remove_order_by_28017`.`t1`.`col1`)) where 1 order by `explain_remove_order_by_28017`.`t1`.`col4` desc limit 2
+select t1.* from t1 left join t2 on t1.col1 = t2.col1 order by t1.col4 desc limit 2;
+col1	col2	col3	col4	col5	col6	col7	col8
+267	b2fe40	daf06a	976.32	342.83	7.85	2022-09-23 16:17:46	c4f64c
+277	85d53d	1c1e32	969.84	530.01	7.41	2022-09-23 16:16:28	4688e8
+[Note] Testcase: Operation log begin
+[Note] SequoiaDB: Query message: condition[{}], selector[{}], order_by[{}], hint[{}], limit[-1], offset[0], table[explain_remove_order_by_28017.t1]
+[Note] SequoiaDB: Query message: Batched keys num[102], table[explain_remove_order_by_28017.t2]
+[Note] SequoiaDB: Query message: condition[{ "col1": { "$in": [ 320, 621, 672, 633, 753, 354, 144, 200, 328, 291, 864, 267, 968, 725, 258, 55, 973, 716, 104, 441, 697, 776, 957, 524, 154, 701, 710, 434, 36, 3, 149, 298, 686, 18, 85, 28, 527, 311, 641, 875, 395, 875, 422, 331, 731, 209, 631, 499, 690, 285, 277, 371, 839, 200, 79, 69, 262, 915, 616, 827, 834, 580, 4, 986, 165, 560, 269, 379, 753, 37, 778, 325, 965, 319, 186, 242, 71, 629, 121, 844, 81, 76, 98, 459, 397, 217, 650, 291, 845, 405, 944, 19, 819, 592, 495, 787, 299, 282, 483, 101 ] } }], selector[{ "col1": null }], order_by[{}], hint[{ "": "idx_col12" }], limit[-1], offset[0], table[explain_remove_order_by_28017.t2]
+explain select count(*) from t1 inner join t2 on t1.col1 = t2.col1;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t2	NULL	index	idx_col1,idx_col12	idx_col1	5	NULL	70	100.00	Using where with pushed condition (`explain_remove_order_by_28017`.`t2`.`col1` is not null); Using index
+1	SIMPLE	t1	NULL	ref	idx_col1,idx_col12	idx_col12	5	explain_remove_order_by_28017.t2.col1	11	100.00	Using index; Using join buffer (Batched Key Access)
+Warnings:
+Note	1003	/* select#1 */ select count(0) AS `count(*)` from `explain_remove_order_by_28017`.`t1` join `explain_remove_order_by_28017`.`t2` where (`explain_remove_order_by_28017`.`t1`.`col1` = `explain_remove_order_by_28017`.`t2`.`col1`)
+select count(*) from t1 inner join t2 on t1.col1 = t2.col1;
+count(*)
+72
+[Note] Testcase: Operation log begin
+[Note] SequoiaDB: Query message: condition[{ "col1": { "$isnull": 0 } }], selector[{ "_id": null, "col1": null }], order_by[{ "col1": 1 }], hint[{ "": "idx_col1" }], limit[-1], offset[0], table[explain_remove_order_by_28017.t2]
+[Note] SequoiaDB: Query message: Batched keys num[68], table[explain_remove_order_by_28017.t1]
+[Note] SequoiaDB: Query message: condition[{ "col1": { "$in": [ 3, 4, 18, 19, 28, 36, 37, 55, 69, 71, 76, 79, 81, 85, 98, 101, 104, 121, 144, 149, 154, 165, 186, 200, 200, 209, 217, 242, 258, 262, 267, 269, 277, 282, 285, 291, 291, 298, 299, 311, 319, 320, 325, 328, 331, 354, 371, 379, 395, 397, 405, 422, 434, 441, 459, 483, 495, 499, 524, 527, 560, 580, 592, 616, 621, 629, 631, 633 ] } }], selector[{ "_id": null, "col1": null }], order_by[{}], hint[{ "": "idx_col12" }], limit[-1], offset[0], table[explain_remove_order_by_28017.t1]
+explain select count(*) from t1 left join t2 on t1.col1 = t2.col1;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	index	NULL	idx_col1	5	NULL	102	100.00	Using index
+1	SIMPLE	t2	NULL	ref	idx_col1,idx_col12	idx_col12	5	explain_remove_order_by_28017.t1.col1	8	100.00	Using index; Using join buffer (Batched Key Access)
+Warnings:
+Note	1003	/* select#1 */ select count(0) AS `count(*)` from `explain_remove_order_by_28017`.`t1` left join `explain_remove_order_by_28017`.`t2` on((`explain_remove_order_by_28017`.`t2`.`col1` = `explain_remove_order_by_28017`.`t1`.`col1`)) where 1
+select count(*) from t1 left join t2 on t1.col1 = t2.col1;
+count(*)
+106
+[Note] Testcase: Operation log begin
+[Note] SequoiaDB: Query message: condition[{}], selector[{ "_id": null, "col1": null }], order_by[{ "col1": 1 }], hint[{ "": "idx_col1" }], limit[-1], offset[0], table[explain_remove_order_by_28017.t1]
+[Note] SequoiaDB: Query message: Batched keys num[102], table[explain_remove_order_by_28017.t2]
+[Note] SequoiaDB: Query message: condition[{ "col1": { "$in": [ 3, 4, 18, 19, 28, 36, 37, 55, 69, 71, 76, 79, 81, 85, 98, 101, 104, 121, 144, 149, 154, 165, 186, 200, 200, 209, 217, 242, 258, 262, 267, 269, 277, 282, 285, 291, 291, 298, 299, 311, 319, 320, 325, 328, 331, 354, 371, 379, 395, 397, 405, 422, 434, 441, 459, 483, 495, 499, 524, 527, 560, 580, 592, 616, 621, 629, 631, 633, 641, 650, 672, 686, 690, 697, 701, 710, 716, 725, 731, 753, 753, 776, 778, 787, 819, 827, 834, 839, 844, 845, 864, 875, 875, 915, 944, 957, 965, 968, 973, 986 ] } }], selector[{ "_id": null, "col1": null }], order_by[{}], hint[{ "": "idx_col12" }], limit[-1], offset[0], table[explain_remove_order_by_28017.t2]
+explain select t1.* from t1 left join t2 on t1.col1 = t2.col1 where t1.col1 is null or t1.col2 is null;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	index_merge	idx_col1,idx_col2,idx_col12	idx_col1,idx_col2	5,13	NULL	4	100.00	Using sdb_union(idx_col1,idx_col2); Using where with pushed condition (isnull(`explain_remove_order_by_28017`.`t1`.`col1`) or isnull(`explain_remove_order_by_28017`.`t1`.`col2`))
+1	SIMPLE	t2	NULL	ref	idx_col1,idx_col12	idx_col12	5	explain_remove_order_by_28017.t1.col1	8	100.00	Using index; Using join buffer (Batched Key Access)
+Warnings:
+Note	1003	/* select#1 */ select `explain_remove_order_by_28017`.`t1`.`col1` AS `col1`,`explain_remove_order_by_28017`.`t1`.`col2` AS `col2`,`explain_remove_order_by_28017`.`t1`.`col3` AS `col3`,`explain_remove_order_by_28017`.`t1`.`col4` AS `col4`,`explain_remove_order_by_28017`.`t1`.`col5` AS `col5`,`explain_remove_order_by_28017`.`t1`.`col6` AS `col6`,`explain_remove_order_by_28017`.`t1`.`col7` AS `col7`,`explain_remove_order_by_28017`.`t1`.`col8` AS `col8` from `explain_remove_order_by_28017`.`t1` left join `explain_remove_order_by_28017`.`t2` on((`explain_remove_order_by_28017`.`t2`.`col1` = `explain_remove_order_by_28017`.`t1`.`col1`)) where (isnull(`explain_remove_order_by_28017`.`t1`.`col1`) or isnull(`explain_remove_order_by_28017`.`t1`.`col2`))
+select t1.* from t1 left join t2 on t1.col1 = t2.col1 where t1.col1 is null or t1.col2 is null;
+col1	col2	col3	col4	col5	col6	col7	col8
+101	NULL	NULL	NULL	NULL	NULL	NULL	NULL
+NULL	35dfg7	NULL	NULL	NULL	NULL	NULL	NULL
+NULL	NULL	NULL	NULL	NULL	NULL	NULL	NULL
+[Note] Testcase: Operation log begin
+[Note] SequoiaDB: Query message: condition[{ "col1": { "$isnull": 1 } }], selector[{}], order_by[{ "col1": 1 }], hint[{ "": "idx_col1" }], limit[-1], offset[0], table[explain_remove_order_by_28017.t1]
+[Note] SequoiaDB: Query message: condition[{ "col2": { "$isnull": 1 } }], selector[{}], order_by[{ "col2": 1 }], hint[{ "": "idx_col2" }], limit[-1], offset[0], table[explain_remove_order_by_28017.t1]
+[Note] SequoiaDB: Query message: Batched keys num[3], table[explain_remove_order_by_28017.t2]
+[Note] SequoiaDB: Query message: condition[{ "col1": { "$in": [ 101 ] } }], selector[{ "col1": null }], order_by[{}], hint[{ "": "idx_col12" }], limit[-1], offset[0], table[explain_remove_order_by_28017.t2]
+explain select t1.* from t1 inner join t2 on t1.col1 = t2.col1 where t1.col1 > 10 and t1.col1 < 60;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	range	idx_col1,idx_col12	idx_col1	5	NULL	2	100.00	Using where with pushed condition ((`explain_remove_order_by_28017`.`t1`.`col1` > 10) and (`explain_remove_order_by_28017`.`t1`.`col1` < 60))
+1	SIMPLE	t2	NULL	range	idx_col1,idx_col12	idx_col1	5	NULL	2	100.00	Using where; Using index; Using join buffer (Block Nested Loop)
+Warnings:
+Note	1003	/* select#1 */ select `explain_remove_order_by_28017`.`t1`.`col1` AS `col1`,`explain_remove_order_by_28017`.`t1`.`col2` AS `col2`,`explain_remove_order_by_28017`.`t1`.`col3` AS `col3`,`explain_remove_order_by_28017`.`t1`.`col4` AS `col4`,`explain_remove_order_by_28017`.`t1`.`col5` AS `col5`,`explain_remove_order_by_28017`.`t1`.`col6` AS `col6`,`explain_remove_order_by_28017`.`t1`.`col7` AS `col7`,`explain_remove_order_by_28017`.`t1`.`col8` AS `col8` from `explain_remove_order_by_28017`.`t1` join `explain_remove_order_by_28017`.`t2` where ((`explain_remove_order_by_28017`.`t2`.`col1` = `explain_remove_order_by_28017`.`t1`.`col1`) and (`explain_remove_order_by_28017`.`t1`.`col1` > 10) and (`explain_remove_order_by_28017`.`t1`.`col1` < 60))
+select t1.* from t1 inner join t2 on t1.col1 = t2.col1 where t1.col1 > 10 and t1.col1 < 60;
+col1	col2	col3	col4	col5	col6	col7	col8
+18	5a2dd9	118178	967.06	290.21	5.50	2022-09-23 16:17:45	a7cb17
+19	77bc3a	96e568	398.89	654.04	0.74	2022-09-23 16:16:58	a1629e
+28	60b18e	611339	567.42	416.24	3.79	2022-09-23 16:17:22	d5f7d9
+36	e89aa7	7581d9	369.17	276.81	2.77	2022-09-23 16:17:12	fd2c61
+37	897d82	f9eead	746.66	42.97	9.75	2022-09-23 16:17:32	a2fb9d
+55	1c2555	568498	24.48	447.31	1.63	2022-09-23 16:17:03	645bd5
+[Note] Testcase: Operation log begin
+[Note] SequoiaDB: Query message: condition[{ "$and": [ { "col1": { "$gt": 10 } }, { "col1": { "$lt": 60 } } ] }], selector[{}], order_by[{ "col1": 1 }], hint[{ "": "idx_col1" }], limit[-1], offset[0], table[explain_remove_order_by_28017.t1]
+[Note] SequoiaDB: Query message: condition[{ "$and": [ { "col1": { "$gt": 10 } }, { "col1": { "$lt": 60 } } ] }], selector[{ "col1": null }], order_by[{ "col1": 1 }], hint[{ "": "idx_col1" }], limit[-1], offset[0], table[explain_remove_order_by_28017.t2]
+explain select t1.* from t1 inner join t2 on t1.col1 = t2.col1 where t1.col2 > '2c' and t1.col2 < '4d' order by t1.col2;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	range	idx_col1,idx_col2,idx_col12	idx_col2	13	NULL	2	100.00	Using where with pushed condition ((`explain_remove_order_by_28017`.`t1`.`col2` > '2c') and (`explain_remove_order_by_28017`.`t1`.`col2` < '4d') and (`explain_remove_order_by_28017`.`t1`.`col1` is not null)); Using temporary; Using filesort
+1	SIMPLE	t2	NULL	ref	idx_col1,idx_col12	idx_col12	5	explain_remove_order_by_28017.t1.col1	8	100.00	Using index; Using join buffer (Batched Key Access)
+Warnings:
+Note	1003	/* select#1 */ select `explain_remove_order_by_28017`.`t1`.`col1` AS `col1`,`explain_remove_order_by_28017`.`t1`.`col2` AS `col2`,`explain_remove_order_by_28017`.`t1`.`col3` AS `col3`,`explain_remove_order_by_28017`.`t1`.`col4` AS `col4`,`explain_remove_order_by_28017`.`t1`.`col5` AS `col5`,`explain_remove_order_by_28017`.`t1`.`col6` AS `col6`,`explain_remove_order_by_28017`.`t1`.`col7` AS `col7`,`explain_remove_order_by_28017`.`t1`.`col8` AS `col8` from `explain_remove_order_by_28017`.`t1` join `explain_remove_order_by_28017`.`t2` where ((`explain_remove_order_by_28017`.`t2`.`col1` = `explain_remove_order_by_28017`.`t1`.`col1`) and (`explain_remove_order_by_28017`.`t1`.`col2` > '2c') and (`explain_remove_order_by_28017`.`t1`.`col2` < '4d')) order by `explain_remove_order_by_28017`.`t1`.`col2`
+select t1.* from t1 inner join t2 on t1.col1 = t2.col1 where t1.col2 > '2c' and t1.col2 < '4d' order by t1.col2;
+col1	col2	col3	col4	col5	col6	col7	col8
+282	3a126e	519bd8	769.83	24.17	8.11	2022-09-23 16:17:55	2b5842
+291	2f2517	7d407e	453.24	100.33	1.42	2022-09-23 16:16:57	88a93f
+291	2f2517	7d407e	453.24	100.33	1.42	2022-09-23 16:16:57	88a93f
+298	4c2081	428225	559.68	460.14	6.22	2022-09-23 16:17:30	f7237b
+311	2f6584	cdc668	185.78	556.45	2.25	2022-09-23 16:17:03	af7c20
+397	334d53	58b126	3.32	482.06	4.00	2022-09-23 16:17:13	ca50ae
+499	2db783	52146f	53.42	845.76	0.69	2022-09-23 16:17:38	7f24f7
+633	44f333	f732ae	54.88	96.32	3.17	2022-09-23 16:16:46	8b4af7
+76	456b22	4e4f6d	148.10	318.60	1.49	2022-09-23 16:17:36	d11689
+[Note] Testcase: Operation log begin
+[Note] SequoiaDB: Query message: condition[{ "$and": [ { "col2": { "$gt": "2c" } }, { "col2": { "$lt": "4d" } }, { "col1": { "$isnull": 0 } } ] }], selector[{}], order_by[{ "col2": 1 }], hint[{ "": "idx_col2" }], limit[-1], offset[0], table[explain_remove_order_by_28017.t1]
+[Note] SequoiaDB: Query message: Batched keys num[10], table[explain_remove_order_by_28017.t2]
+[Note] SequoiaDB: Query message: condition[{ "col1": { "$in": [ 499, 291, 311, 397, 282, 915, 633, 76, 753, 298 ] } }], selector[{ "col1": null }], order_by[{}], hint[{ "": "idx_col12" }], limit[-1], offset[0], table[explain_remove_order_by_28017.t2]
+explain select * from t1 inner join t2 on t1.col1 = t2.col1 +1;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t2	NULL	ALL	NULL	NULL	NULL	NULL	70	100.00	NULL
+1	SIMPLE	t1	NULL	ref	idx_col1,idx_col12	idx_col12	5	func	11	100.00	Using index condition; Using join buffer (Batched Key Access)
+Warnings:
+Note	1003	/* select#1 */ select `explain_remove_order_by_28017`.`t1`.`col1` AS `col1`,`explain_remove_order_by_28017`.`t1`.`col2` AS `col2`,`explain_remove_order_by_28017`.`t1`.`col3` AS `col3`,`explain_remove_order_by_28017`.`t1`.`col4` AS `col4`,`explain_remove_order_by_28017`.`t1`.`col5` AS `col5`,`explain_remove_order_by_28017`.`t1`.`col6` AS `col6`,`explain_remove_order_by_28017`.`t1`.`col7` AS `col7`,`explain_remove_order_by_28017`.`t1`.`col8` AS `col8`,`explain_remove_order_by_28017`.`t2`.`col1` AS `col1`,`explain_remove_order_by_28017`.`t2`.`col2` AS `col2`,`explain_remove_order_by_28017`.`t2`.`col3` AS `col3`,`explain_remove_order_by_28017`.`t2`.`col4` AS `col4`,`explain_remove_order_by_28017`.`t2`.`col5` AS `col5`,`explain_remove_order_by_28017`.`t2`.`col6` AS `col6`,`explain_remove_order_by_28017`.`t2`.`col7` AS `col7`,`explain_remove_order_by_28017`.`t2`.`col8` AS `col8` from `explain_remove_order_by_28017`.`t1` join `explain_remove_order_by_28017`.`t2` where (`explain_remove_order_by_28017`.`t1`.`col1` = (`explain_remove_order_by_28017`.`t2`.`col1` + 1))
+select * from t1 inner join t2 on t1.col1 = t2.col1 +1;
+col1	col2	col3	col4	col5	col6	col7	col8	col1	col2	col3	col4	col5	col6	col7	col8
+19	77bc3a	96e568	398.89	654.04	0.74	2022-09-23 16:16:58	a1629e	18	5a2dd9	118178	967.06	290.21	5.50	2022-09-23 16:17:45	a7cb17
+299	7a637e	421ecf	903.25	488.28	7.32	2022-09-23 16:16:36	8896af	298	4c2081	428225	559.68	460.14	6.22	2022-09-23 16:17:30	f7237b
+320	6c782c	f90a05	642.63	564.23	8.93	2022-09-23 16:17:33	b3ec0e	319	5e4bbd	62118b	378.95	335.42	5.40	2022-09-23 16:17:26	3c38cc
+37	897d82	f9eead	746.66	42.97	9.75	2022-09-23 16:17:32	a2fb9d	36	e89aa7	7581d9	369.17	276.81	2.77	2022-09-23 16:17:12	fd2c61
+4	1d6fbb	a78606	900.20	245.83	5.29	2022-09-23 16:17:48	121416	3	d74ebd	9c36e0	797.54	712.59	1.70	2022-09-23 16:17:28	cfe83a
+[Note] Testcase: Operation log begin
+[Note] SequoiaDB: Query message: condition[{}], selector[{}], order_by[{}], hint[{}], limit[-1], offset[0], table[explain_remove_order_by_28017.t2]
+[Note] SequoiaDB: Query message: Batched keys num[70], table[explain_remove_order_by_28017.t1]
+[Note] SequoiaDB: Query message: condition[{}], selector[{}], order_by[{}], hint[{ "$Range": { "IsAllEqual": false, "IndexValueIncluded": [ [ true, true ], [ true, true ], [ true, true ], [ true, true ], [ true, true ], [ true, true ], [ true, true ], [ true, true ], [ true, true ], [ true, true ], [ true, true ], [ true, true ], [ true, true ], [ true, true ], [ true, true ], [ true, true ], [ true, true ], [ true, true ], [ true, true ], [ true, true ], [ true, true ], [ true, true ], [ true, true ], [ true, true ], [ true, true ], [ true, true ], [ true, true ], [ true, true ], [ true, true ], [ true, true ], [ true, true ], [ true, true ], [ true, true ], [ true, true ], [ true, true ], [ true, true ], [ true, true ], [ true, true ], [ true, true ], [ true, true ], [ true, true ], [ true, true ], [ true, true ], [ true, true ], [ true, true ], [ true, true ], [ true, true ], [ true, true ], [ true, true ], [ true, true ], [ true, true ], [ true, true ], [ true, true ], [ true, true ], [ true, true ], [ true, tr
+explain select * from t1 inner join t2 on t1.col1 = t2.col1 +1 order by t1.col1;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t2	NULL	ALL	NULL	NULL	NULL	NULL	70	100.00	Using temporary; Using filesort
+1	SIMPLE	t1	NULL	ref	idx_col1,idx_col12	idx_col12	5	func	11	100.00	Using index condition; Using join buffer (Batched Key Access)
+Warnings:
+Note	1003	/* select#1 */ select `explain_remove_order_by_28017`.`t1`.`col1` AS `col1`,`explain_remove_order_by_28017`.`t1`.`col2` AS `col2`,`explain_remove_order_by_28017`.`t1`.`col3` AS `col3`,`explain_remove_order_by_28017`.`t1`.`col4` AS `col4`,`explain_remove_order_by_28017`.`t1`.`col5` AS `col5`,`explain_remove_order_by_28017`.`t1`.`col6` AS `col6`,`explain_remove_order_by_28017`.`t1`.`col7` AS `col7`,`explain_remove_order_by_28017`.`t1`.`col8` AS `col8`,`explain_remove_order_by_28017`.`t2`.`col1` AS `col1`,`explain_remove_order_by_28017`.`t2`.`col2` AS `col2`,`explain_remove_order_by_28017`.`t2`.`col3` AS `col3`,`explain_remove_order_by_28017`.`t2`.`col4` AS `col4`,`explain_remove_order_by_28017`.`t2`.`col5` AS `col5`,`explain_remove_order_by_28017`.`t2`.`col6` AS `col6`,`explain_remove_order_by_28017`.`t2`.`col7` AS `col7`,`explain_remove_order_by_28017`.`t2`.`col8` AS `col8` from `explain_remove_order_by_28017`.`t1` join `explain_remove_order_by_28017`.`t2` where (`explain_remove_order_by_28017`.`t1`.`col1` = (`explain_remove_order_by_28017`.`t2`.`col1` + 1)) order by `explain_remove_order_by_28017`.`t1`.`col1`
+select * from t1 inner join t2 on t1.col1 = t2.col1 +1 order by t1.col1;
+col1	col2	col3	col4	col5	col6	col7	col8	col1	col2	col3	col4	col5	col6	col7	col8
+19	77bc3a	96e568	398.89	654.04	0.74	2022-09-23 16:16:58	a1629e	18	5a2dd9	118178	967.06	290.21	5.50	2022-09-23 16:17:45	a7cb17
+299	7a637e	421ecf	903.25	488.28	7.32	2022-09-23 16:16:36	8896af	298	4c2081	428225	559.68	460.14	6.22	2022-09-23 16:17:30	f7237b
+320	6c782c	f90a05	642.63	564.23	8.93	2022-09-23 16:17:33	b3ec0e	319	5e4bbd	62118b	378.95	335.42	5.40	2022-09-23 16:17:26	3c38cc
+37	897d82	f9eead	746.66	42.97	9.75	2022-09-23 16:17:32	a2fb9d	36	e89aa7	7581d9	369.17	276.81	2.77	2022-09-23 16:17:12	fd2c61
+4	1d6fbb	a78606	900.20	245.83	5.29	2022-09-23 16:17:48	121416	3	d74ebd	9c36e0	797.54	712.59	1.70	2022-09-23 16:17:28	cfe83a
+[Note] Testcase: Operation log begin
+[Note] SequoiaDB: Query message: condition[{}], selector[{}], order_by[{}], hint[{}], limit[-1], offset[0], table[explain_remove_order_by_28017.t2]
+[Note] SequoiaDB: Query message: Batched keys num[70], table[explain_remove_order_by_28017.t1]
+[Note] SequoiaDB: Query message: condition[{}], selector[{}], order_by[{}], hint[{ "$Range": { "IsAllEqual": false, "IndexValueIncluded": [ [ true, true ], [ true, true ], [ true, true ], [ true, true ], [ true, true ], [ true, true ], [ true, true ], [ true, true ], [ true, true ], [ true, true ], [ true, true ], [ true, true ], [ true, true ], [ true, true ], [ true, true ], [ true, true ], [ true, true ], [ true, true ], [ true, true ], [ true, true ], [ true, true ], [ true, true ], [ true, true ], [ true, true ], [ true, true ], [ true, true ], [ true, true ], [ true, true ], [ true, true ], [ true, true ], [ true, true ], [ true, true ], [ true, true ], [ true, true ], [ true, true ], [ true, true ], [ true, true ], [ true, true ], [ true, true ], [ true, true ], [ true, true ], [ true, true ], [ true, true ], [ true, true ], [ true, true ], [ true, true ], [ true, true ], [ true, true ], [ true, true ], [ true, true ], [ true, true ], [ true, true ], [ true, true ], [ true, true ], [ true, true ], [ true, tr
+explain select * from t1 inner join t2 on t1.col1 = t2.col1 +1 order by t2.col1;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t2	NULL	ALL	NULL	NULL	NULL	NULL	70	100.00	Using temporary; Using filesort
+1	SIMPLE	t1	NULL	ref	idx_col1,idx_col12	idx_col12	5	func	11	100.00	Using index condition; Using join buffer (Batched Key Access)
+Warnings:
+Note	1003	/* select#1 */ select `explain_remove_order_by_28017`.`t1`.`col1` AS `col1`,`explain_remove_order_by_28017`.`t1`.`col2` AS `col2`,`explain_remove_order_by_28017`.`t1`.`col3` AS `col3`,`explain_remove_order_by_28017`.`t1`.`col4` AS `col4`,`explain_remove_order_by_28017`.`t1`.`col5` AS `col5`,`explain_remove_order_by_28017`.`t1`.`col6` AS `col6`,`explain_remove_order_by_28017`.`t1`.`col7` AS `col7`,`explain_remove_order_by_28017`.`t1`.`col8` AS `col8`,`explain_remove_order_by_28017`.`t2`.`col1` AS `col1`,`explain_remove_order_by_28017`.`t2`.`col2` AS `col2`,`explain_remove_order_by_28017`.`t2`.`col3` AS `col3`,`explain_remove_order_by_28017`.`t2`.`col4` AS `col4`,`explain_remove_order_by_28017`.`t2`.`col5` AS `col5`,`explain_remove_order_by_28017`.`t2`.`col6` AS `col6`,`explain_remove_order_by_28017`.`t2`.`col7` AS `col7`,`explain_remove_order_by_28017`.`t2`.`col8` AS `col8` from `explain_remove_order_by_28017`.`t1` join `explain_remove_order_by_28017`.`t2` where (`explain_remove_order_by_28017`.`t1`.`col1` = (`explain_remove_order_by_28017`.`t2`.`col1` + 1)) order by `explain_remove_order_by_28017`.`t2`.`col1`
+select * from t1 inner join t2 on t1.col1 = t2.col1 +1 order by t2.col1;
+col1	col2	col3	col4	col5	col6	col7	col8	col1	col2	col3	col4	col5	col6	col7	col8
+19	77bc3a	96e568	398.89	654.04	0.74	2022-09-23 16:16:58	a1629e	18	5a2dd9	118178	967.06	290.21	5.50	2022-09-23 16:17:45	a7cb17
+299	7a637e	421ecf	903.25	488.28	7.32	2022-09-23 16:16:36	8896af	298	4c2081	428225	559.68	460.14	6.22	2022-09-23 16:17:30	f7237b
+320	6c782c	f90a05	642.63	564.23	8.93	2022-09-23 16:17:33	b3ec0e	319	5e4bbd	62118b	378.95	335.42	5.40	2022-09-23 16:17:26	3c38cc
+37	897d82	f9eead	746.66	42.97	9.75	2022-09-23 16:17:32	a2fb9d	36	e89aa7	7581d9	369.17	276.81	2.77	2022-09-23 16:17:12	fd2c61
+4	1d6fbb	a78606	900.20	245.83	5.29	2022-09-23 16:17:48	121416	3	d74ebd	9c36e0	797.54	712.59	1.70	2022-09-23 16:17:28	cfe83a
+[Note] Testcase: Operation log begin
+[Note] SequoiaDB: Query message: condition[{}], selector[{}], order_by[{}], hint[{}], limit[-1], offset[0], table[explain_remove_order_by_28017.t2]
+[Note] SequoiaDB: Query message: Batched keys num[70], table[explain_remove_order_by_28017.t1]
+[Note] SequoiaDB: Query message: condition[{}], selector[{}], order_by[{}], hint[{ "$Range": { "IsAllEqual": false, "IndexValueIncluded": [ [ true, true ], [ true, true ], [ true, true ], [ true, true ], [ true, true ], [ true, true ], [ true, true ], [ true, true ], [ true, true ], [ true, true ], [ true, true ], [ true, true ], [ true, true ], [ true, true ], [ true, true ], [ true, true ], [ true, true ], [ true, true ], [ true, true ], [ true, true ], [ true, true ], [ true, true ], [ true, true ], [ true, true ], [ true, true ], [ true, true ], [ true, true ], [ true, true ], [ true, true ], [ true, true ], [ true, true ], [ true, true ], [ true, true ], [ true, true ], [ true, true ], [ true, true ], [ true, true ], [ true, true ], [ true, true ], [ true, true ], [ true, true ], [ true, true ], [ true, true ], [ true, true ], [ true, true ], [ true, true ], [ true, true ], [ true, true ], [ true, true ], [ true, true ], [ true, true ], [ true, true ], [ true, true ], [ true, true ], [ true, true ], [ true, tr
+drop table t1,t2;
+set session optimizer_switch=default;
+set session sequoiadb_debug_log=off;
+drop database explain_remove_order_by_28017;

@@ -1,0 +1,2284 @@
+drop database if exists metadata_sync_sequoiadb;
+create database metadata_sync_sequoiadb;
+use metadata_sync_sequoiadb;
+set server_ha_wait_sync_timeout = 10;
+create table t1(id int, name varchar(35)) partition by list(id)
+(partition p0 values in(1,3,5,7,9),
+partition p1 values in(2,4,6,8,10));
+set server_ha_wait_sync_timeout = 10;
+use metadata_sync_sequoiadb;
+insert into t1 values(1,'a'),(2,'b'),(3,'c'),(4,'d'),(5,'e'),(6,'f'),(7,'g'),(8,'h'),(9,'i'),(10,'j');
+select * from t1 order by id;
+id	name
+1	a
+2	b
+3	c
+4	d
+5	e
+6	f
+7	g
+8	h
+9	i
+10	j
+alter table t1 add partition (partition p3 values in(11,12));
+insert into t1 values(11,'k'),(12,'l');
+select * from t1 order by id;
+id	name
+1	a
+2	b
+3	c
+4	d
+5	e
+6	f
+7	g
+8	h
+9	i
+10	j
+11	k
+12	l
+alter table t1 drop partition p0;
+insert into t1 values(1,'a'),(3,'c'),(5,'e'),(7,'g'),(9,'i');
+ERROR HY000: Table has no partition for value 1
+select * from t1 order by id;
+id	name
+2	b
+4	d
+6	f
+8	h
+10	j
+11	k
+12	l
+alter table t1 reorganize partition p1 into (partition n0 values in(2,4,6), partition n1 values in(8,10));
+insert into t1 partition (n0,n1) values(2,'x'),(8,'y'),(4,'z'),(10,'u'),(6,'v');
+select * from t1 order by id;
+id	name
+2	b
+2	x
+4	d
+4	z
+6	f
+6	v
+8	h
+8	y
+10	j
+10	u
+11	k
+12	l
+alter table t1 reorganize partition n0,n1 into (partition p0 values in(2,4));
+insert into t1 partition (p0) values(2,'w'),(4,'m');
+select * from t1 order by id;
+id	name
+2	b
+2	x
+2	w
+4	d
+4	z
+4	m
+11	k
+12	l
+alter table t1 rebuild partition p0;
+insert into t1 partition (p0) values(2,'o'),(4,'p');
+select * from t1 order by id;
+id	name
+2	b
+2	x
+2	w
+2	o
+4	d
+4	z
+4	m
+4	p
+11	k
+12	l
+alter table t1 truncate partition p3;
+insert into t1 values(11,'q'),(12,'r');
+select * from t1 order by id;
+id	name
+2	b
+2	x
+2	w
+2	o
+4	d
+4	z
+4	m
+4	p
+11	q
+12	r
+alter table t1 remove partitioning;
+insert into t1 values(2,'s'),(12,'t');
+select * from t1 order by id;
+id	name
+2	b
+2	x
+2	w
+2	o
+2	s
+4	d
+4	z
+4	m
+4	p
+11	q
+12	r
+12	t
+drop table t1;
+insert into t1 values(2,'s'),(12,'t');
+ERROR 42S02: Table 'metadata_sync_sequoiadb.t1' doesn't exist
+create table t2 (year_col int, some_data int);
+insert into t2 values(1990,1220),(1994,1120),(1996,1020),(2000,0920),(2005,0820);
+insert into t2 select year_col, some_data+1 from t2;
+insert into t2 select year_col, some_data+1 from t2;
+insert into t2 select year_col, some_data+1 from t2;
+create table t1(year_col int, some_data int) partition by range columns (year_col) 
+(partition p0 values less than (1991),
+partition p1 values less than (1995),
+partition p2 values less than (1999),
+partition p3 values less than (2002),
+partition p4 values less than (2006));
+insert into t1 select * from t2;
+select * from t1 order by year_col,some_data;
+year_col	some_data
+1990	1220
+1990	1221
+1990	1221
+1990	1221
+1990	1222
+1990	1222
+1990	1222
+1990	1223
+1994	1120
+1994	1121
+1994	1121
+1994	1121
+1994	1122
+1994	1122
+1994	1122
+1994	1123
+1996	1020
+1996	1021
+1996	1021
+1996	1021
+1996	1022
+1996	1022
+1996	1022
+1996	1023
+2000	920
+2000	921
+2000	921
+2000	921
+2000	922
+2000	922
+2000	922
+2000	923
+2005	820
+2005	821
+2005	821
+2005	821
+2005	822
+2005	822
+2005	822
+2005	823
+alter table t1 add partition (partition p5 values less than (2009));
+insert into t1 values(2006,0720);
+select * from t1 order by year_col,some_data;
+year_col	some_data
+1990	1220
+1990	1221
+1990	1221
+1990	1221
+1990	1222
+1990	1222
+1990	1222
+1990	1223
+1994	1120
+1994	1121
+1994	1121
+1994	1121
+1994	1122
+1994	1122
+1994	1122
+1994	1123
+1996	1020
+1996	1021
+1996	1021
+1996	1021
+1996	1022
+1996	1022
+1996	1022
+1996	1023
+2000	920
+2000	921
+2000	921
+2000	921
+2000	922
+2000	922
+2000	922
+2000	923
+2005	820
+2005	821
+2005	821
+2005	821
+2005	822
+2005	822
+2005	822
+2005	823
+2006	720
+alter table t1 truncate partition p5;
+insert into t1 select * from t2;
+select * from t1 order by year_col,some_data;
+year_col	some_data
+1990	1220
+1990	1220
+1990	1221
+1990	1221
+1990	1221
+1990	1221
+1990	1221
+1990	1221
+1990	1222
+1990	1222
+1990	1222
+1990	1222
+1990	1222
+1990	1222
+1990	1223
+1990	1223
+1994	1120
+1994	1120
+1994	1121
+1994	1121
+1994	1121
+1994	1121
+1994	1121
+1994	1121
+1994	1122
+1994	1122
+1994	1122
+1994	1122
+1994	1122
+1994	1122
+1994	1123
+1994	1123
+1996	1020
+1996	1020
+1996	1021
+1996	1021
+1996	1021
+1996	1021
+1996	1021
+1996	1021
+1996	1022
+1996	1022
+1996	1022
+1996	1022
+1996	1022
+1996	1022
+1996	1023
+1996	1023
+2000	920
+2000	920
+2000	921
+2000	921
+2000	921
+2000	921
+2000	921
+2000	921
+2000	922
+2000	922
+2000	922
+2000	922
+2000	922
+2000	922
+2000	923
+2000	923
+2005	820
+2005	820
+2005	821
+2005	821
+2005	821
+2005	821
+2005	821
+2005	821
+2005	822
+2005	822
+2005	822
+2005	822
+2005	822
+2005	822
+2005	823
+2005	823
+alter table t1 reorganize partition p0,p1 into (partition p0 values less than (1995));
+insert into t1 values(1994,0620);
+select * from t1 order by year_col,some_data;
+year_col	some_data
+1990	1220
+1990	1220
+1990	1221
+1990	1221
+1990	1221
+1990	1221
+1990	1221
+1990	1221
+1990	1222
+1990	1222
+1990	1222
+1990	1222
+1990	1222
+1990	1222
+1990	1223
+1990	1223
+1994	620
+1994	1120
+1994	1120
+1994	1121
+1994	1121
+1994	1121
+1994	1121
+1994	1121
+1994	1121
+1994	1122
+1994	1122
+1994	1122
+1994	1122
+1994	1122
+1994	1122
+1994	1123
+1994	1123
+1996	1020
+1996	1020
+1996	1021
+1996	1021
+1996	1021
+1996	1021
+1996	1021
+1996	1021
+1996	1022
+1996	1022
+1996	1022
+1996	1022
+1996	1022
+1996	1022
+1996	1023
+1996	1023
+2000	920
+2000	920
+2000	921
+2000	921
+2000	921
+2000	921
+2000	921
+2000	921
+2000	922
+2000	922
+2000	922
+2000	922
+2000	922
+2000	922
+2000	923
+2000	923
+2005	820
+2005	820
+2005	821
+2005	821
+2005	821
+2005	821
+2005	821
+2005	821
+2005	822
+2005	822
+2005	822
+2005	822
+2005	822
+2005	822
+2005	823
+2005	823
+alter table t1 reorganize partition p0 into (partition p0 values less than (1991),partition p1 values less than (1995));
+insert into t1 select * from t2;
+select * from t1 order by year_col,some_data;
+year_col	some_data
+1990	1220
+1990	1220
+1990	1220
+1990	1221
+1990	1221
+1990	1221
+1990	1221
+1990	1221
+1990	1221
+1990	1221
+1990	1221
+1990	1221
+1990	1222
+1990	1222
+1990	1222
+1990	1222
+1990	1222
+1990	1222
+1990	1222
+1990	1222
+1990	1222
+1990	1223
+1990	1223
+1990	1223
+1994	620
+1994	1120
+1994	1120
+1994	1120
+1994	1121
+1994	1121
+1994	1121
+1994	1121
+1994	1121
+1994	1121
+1994	1121
+1994	1121
+1994	1121
+1994	1122
+1994	1122
+1994	1122
+1994	1122
+1994	1122
+1994	1122
+1994	1122
+1994	1122
+1994	1122
+1994	1123
+1994	1123
+1994	1123
+1996	1020
+1996	1020
+1996	1020
+1996	1021
+1996	1021
+1996	1021
+1996	1021
+1996	1021
+1996	1021
+1996	1021
+1996	1021
+1996	1021
+1996	1022
+1996	1022
+1996	1022
+1996	1022
+1996	1022
+1996	1022
+1996	1022
+1996	1022
+1996	1022
+1996	1023
+1996	1023
+1996	1023
+2000	920
+2000	920
+2000	920
+2000	921
+2000	921
+2000	921
+2000	921
+2000	921
+2000	921
+2000	921
+2000	921
+2000	921
+2000	922
+2000	922
+2000	922
+2000	922
+2000	922
+2000	922
+2000	922
+2000	922
+2000	922
+2000	923
+2000	923
+2000	923
+2005	820
+2005	820
+2005	820
+2005	821
+2005	821
+2005	821
+2005	821
+2005	821
+2005	821
+2005	821
+2005	821
+2005	821
+2005	822
+2005	822
+2005	822
+2005	822
+2005	822
+2005	822
+2005	822
+2005	822
+2005	822
+2005	823
+2005	823
+2005	823
+alter table t1 rebuild partition p0;
+insert into t1 values(1990,0620);
+select * from t1 order by year_col,some_data;
+year_col	some_data
+1990	620
+1990	1220
+1990	1220
+1990	1220
+1990	1221
+1990	1221
+1990	1221
+1990	1221
+1990	1221
+1990	1221
+1990	1221
+1990	1221
+1990	1221
+1990	1222
+1990	1222
+1990	1222
+1990	1222
+1990	1222
+1990	1222
+1990	1222
+1990	1222
+1990	1222
+1990	1223
+1990	1223
+1990	1223
+1994	620
+1994	1120
+1994	1120
+1994	1120
+1994	1121
+1994	1121
+1994	1121
+1994	1121
+1994	1121
+1994	1121
+1994	1121
+1994	1121
+1994	1121
+1994	1122
+1994	1122
+1994	1122
+1994	1122
+1994	1122
+1994	1122
+1994	1122
+1994	1122
+1994	1122
+1994	1123
+1994	1123
+1994	1123
+1996	1020
+1996	1020
+1996	1020
+1996	1021
+1996	1021
+1996	1021
+1996	1021
+1996	1021
+1996	1021
+1996	1021
+1996	1021
+1996	1021
+1996	1022
+1996	1022
+1996	1022
+1996	1022
+1996	1022
+1996	1022
+1996	1022
+1996	1022
+1996	1022
+1996	1023
+1996	1023
+1996	1023
+2000	920
+2000	920
+2000	920
+2000	921
+2000	921
+2000	921
+2000	921
+2000	921
+2000	921
+2000	921
+2000	921
+2000	921
+2000	922
+2000	922
+2000	922
+2000	922
+2000	922
+2000	922
+2000	922
+2000	922
+2000	922
+2000	923
+2000	923
+2000	923
+2005	820
+2005	820
+2005	820
+2005	821
+2005	821
+2005	821
+2005	821
+2005	821
+2005	821
+2005	821
+2005	821
+2005	821
+2005	822
+2005	822
+2005	822
+2005	822
+2005	822
+2005	822
+2005	822
+2005	822
+2005	822
+2005	823
+2005	823
+2005	823
+alter table t1 drop partition p5;
+insert into t1 values(2006,0720);
+ERROR HY000: Table has no partition for value from column_list
+select * from t1 order by year_col,some_data;
+year_col	some_data
+1990	620
+1990	1220
+1990	1220
+1990	1220
+1990	1221
+1990	1221
+1990	1221
+1990	1221
+1990	1221
+1990	1221
+1990	1221
+1990	1221
+1990	1221
+1990	1222
+1990	1222
+1990	1222
+1990	1222
+1990	1222
+1990	1222
+1990	1222
+1990	1222
+1990	1222
+1990	1223
+1990	1223
+1990	1223
+1994	620
+1994	1120
+1994	1120
+1994	1120
+1994	1121
+1994	1121
+1994	1121
+1994	1121
+1994	1121
+1994	1121
+1994	1121
+1994	1121
+1994	1121
+1994	1122
+1994	1122
+1994	1122
+1994	1122
+1994	1122
+1994	1122
+1994	1122
+1994	1122
+1994	1122
+1994	1123
+1994	1123
+1994	1123
+1996	1020
+1996	1020
+1996	1020
+1996	1021
+1996	1021
+1996	1021
+1996	1021
+1996	1021
+1996	1021
+1996	1021
+1996	1021
+1996	1021
+1996	1022
+1996	1022
+1996	1022
+1996	1022
+1996	1022
+1996	1022
+1996	1022
+1996	1022
+1996	1022
+1996	1023
+1996	1023
+1996	1023
+2000	920
+2000	920
+2000	920
+2000	921
+2000	921
+2000	921
+2000	921
+2000	921
+2000	921
+2000	921
+2000	921
+2000	921
+2000	922
+2000	922
+2000	922
+2000	922
+2000	922
+2000	922
+2000	922
+2000	922
+2000	922
+2000	923
+2000	923
+2000	923
+2005	820
+2005	820
+2005	820
+2005	821
+2005	821
+2005	821
+2005	821
+2005	821
+2005	821
+2005	821
+2005	821
+2005	821
+2005	822
+2005	822
+2005	822
+2005	822
+2005	822
+2005	822
+2005	822
+2005	822
+2005	822
+2005	823
+2005	823
+2005	823
+alter table t1 remove partitioning;
+insert into t1 values(2222,0520);
+select * from t1 order by year_col,some_data;
+year_col	some_data
+1990	620
+1990	1220
+1990	1220
+1990	1220
+1990	1221
+1990	1221
+1990	1221
+1990	1221
+1990	1221
+1990	1221
+1990	1221
+1990	1221
+1990	1221
+1990	1222
+1990	1222
+1990	1222
+1990	1222
+1990	1222
+1990	1222
+1990	1222
+1990	1222
+1990	1222
+1990	1223
+1990	1223
+1990	1223
+1994	620
+1994	1120
+1994	1120
+1994	1120
+1994	1121
+1994	1121
+1994	1121
+1994	1121
+1994	1121
+1994	1121
+1994	1121
+1994	1121
+1994	1121
+1994	1122
+1994	1122
+1994	1122
+1994	1122
+1994	1122
+1994	1122
+1994	1122
+1994	1122
+1994	1122
+1994	1123
+1994	1123
+1994	1123
+1996	1020
+1996	1020
+1996	1020
+1996	1021
+1996	1021
+1996	1021
+1996	1021
+1996	1021
+1996	1021
+1996	1021
+1996	1021
+1996	1021
+1996	1022
+1996	1022
+1996	1022
+1996	1022
+1996	1022
+1996	1022
+1996	1022
+1996	1022
+1996	1022
+1996	1023
+1996	1023
+1996	1023
+2000	920
+2000	920
+2000	920
+2000	921
+2000	921
+2000	921
+2000	921
+2000	921
+2000	921
+2000	921
+2000	921
+2000	921
+2000	922
+2000	922
+2000	922
+2000	922
+2000	922
+2000	922
+2000	922
+2000	922
+2000	922
+2000	923
+2000	923
+2000	923
+2005	820
+2005	820
+2005	820
+2005	821
+2005	821
+2005	821
+2005	821
+2005	821
+2005	821
+2005	821
+2005	821
+2005	821
+2005	822
+2005	822
+2005	822
+2005	822
+2005	822
+2005	822
+2005	822
+2005	822
+2005	822
+2005	823
+2005	823
+2005	823
+2222	520
+drop table t1;
+insert into t1 select * from t2;
+ERROR 42S02: Table 'metadata_sync_sequoiadb.t1' doesn't exist
+drop table t2;
+create table t1(col1 int, col2 char(5)) partition by hash(col1) partitions 4;
+insert into t1 values(2005,'a'),(2006,'b'),(2007,'c'),(2008,'d');
+select * from t1 order by col1;
+col1	col2
+2005	a
+2006	b
+2007	c
+2008	d
+drop table t1;
+insert into t1 values(2005,'a'),(2006,'b'),(2007,'c'),(2008,'d');
+ERROR 42S02: Table 'metadata_sync_sequoiadb.t1' doesn't exist
+create table t1(col1 int, col2 char(5), col3 date) partition by key(col3) partitions 4;
+insert into t1 values(2005,'a','2002-10-03'),(2006,'b','2002-10-04'),(2007,'c','2002-10-05'),(2008,'d','2002-10-06');
+select * from t1 order by col1;
+col1	col2	col3
+2005	a	2002-10-03
+2006	b	2002-10-04
+2007	c	2002-10-05
+2008	d	2002-10-06
+drop table t1;
+insert into t1 values(2005,'a','2002-10-03'),(2006,'b','2002-10-04'),(2007,'c','2002-10-05'),(2008,'d','2002-10-06');
+ERROR 42S02: Table 'metadata_sync_sequoiadb.t1' doesn't exist
+create table t1(id int, a int) partition by list(id)
+(partition p0 values in(1,3,5,7,9),
+partition p1 values in(2,4,6,8,10));
+insert into t1 values(1,1),(2,2),(3,3),(4,4),(5,5),(6,6),(7,7),(8,8),(9,9),(10,10);
+update t1 set a = a + 1;
+select * from t1 order by id;
+id	a
+1	2
+2	3
+3	4
+4	5
+5	6
+6	7
+7	8
+8	9
+9	10
+10	11
+alter table t1 add partition (partition p3 values in(11,12));
+insert into t1 values(11,11),(12,12);
+update t1 set a = a + 1 where id >=11;
+select * from t1 order by id;
+id	a
+1	2
+2	3
+3	4
+4	5
+5	6
+6	7
+7	8
+8	9
+9	10
+10	11
+11	12
+12	13
+alter table t1 drop partition p0;
+update t1 set a = a + 1;
+select * from t1 order by id;
+id	a
+2	4
+4	6
+6	8
+8	10
+10	12
+11	13
+12	14
+alter table t1 reorganize partition p1 into (partition n0 values in(2,4,6), partition n1 values in(8,10));
+insert into t1 partition (n0,n1) values(2,2),(8,8),(4,4),(10,10),(6,6);
+update t1 set a = a + 1;
+select * from t1 order by id;
+id	a
+2	5
+2	3
+4	7
+4	5
+6	9
+6	7
+8	11
+8	9
+10	13
+10	11
+11	14
+12	15
+alter table t1 reorganize partition n0,n1 into (partition p0 values in(2,4));
+insert into t1 partition (p0) values(2,2),(4,4);
+update t1 set a = a + 1;
+select * from t1 order by id;
+id	a
+2	6
+2	4
+2	3
+4	8
+4	6
+4	5
+11	15
+12	16
+alter table t1 rebuild partition p0;
+insert into t1 partition (p0) values(2,2),(4,4);
+update t1 set a = a + 1;
+select * from t1 order by id;
+id	a
+2	7
+2	5
+2	4
+2	3
+4	9
+4	7
+4	6
+4	5
+11	16
+12	17
+alter table t1 truncate partition p3;
+insert into t1 values(11,11),(12,12);
+update t1 set a = a + 1;
+select * from t1 order by id;
+id	a
+2	8
+2	6
+2	5
+2	4
+4	10
+4	8
+4	7
+4	6
+11	12
+12	13
+alter table t1 remove partitioning;
+insert into t1 values(2,2),(12,12);
+update t1 set a = a + 1;
+select * from t1 order by id;
+id	a
+2	9
+2	7
+2	6
+2	5
+2	3
+4	11
+4	9
+4	8
+4	7
+11	13
+12	14
+12	13
+drop table t1;
+update t1 set a = a + 1;
+ERROR 42S02: Table 'metadata_sync_sequoiadb.t1' doesn't exist
+create table t2 (year_col int, some_data int);
+insert into t2 values(1990,1220),(1994,1120),(1996,1020),(2000,0920),(2005,0820);
+insert into t2 select year_col, some_data+1 from t2;
+create table t1(year_col int, some_data int) partition by range columns (year_col) 
+(partition p0 values less than (1991),
+partition p1 values less than (1995),
+partition p2 values less than (1999),
+partition p3 values less than (2002),
+partition p4 values less than (2006));
+insert into t1 select * from t2;
+select * from t1 order by year_col,some_data;
+year_col	some_data
+1990	1220
+1990	1221
+1994	1120
+1994	1121
+1996	1020
+1996	1021
+2000	920
+2000	921
+2005	820
+2005	821
+update t1 set some_data = some_data + 1;
+select * from t1 order by year_col,some_data;
+year_col	some_data
+1990	1221
+1990	1222
+1994	1121
+1994	1122
+1996	1021
+1996	1022
+2000	921
+2000	922
+2005	821
+2005	822
+alter table t1 add partition (partition p5 values less than (2009));
+insert into t1 values(2006,0720);
+update t1 set some_data = some_data + 1;
+select * from t1 order by year_col,some_data;
+year_col	some_data
+1990	1222
+1990	1223
+1994	1122
+1994	1123
+1996	1022
+1996	1023
+2000	922
+2000	923
+2005	822
+2005	823
+2006	721
+alter table t1 truncate partition p5;
+insert into t1 select * from t2;
+update t1 set some_data = some_data + 1;
+select * from t1 order by year_col,some_data;
+year_col	some_data
+1990	1221
+1990	1222
+1990	1223
+1990	1224
+1994	1121
+1994	1122
+1994	1123
+1994	1124
+1996	1021
+1996	1022
+1996	1023
+1996	1024
+2000	921
+2000	922
+2000	923
+2000	924
+2005	821
+2005	822
+2005	823
+2005	824
+alter table t1 reorganize partition p0,p1 into (partition p0 values less than (1995));
+insert into t1 values(1994,0620);
+update t1 set some_data = some_data + 1;
+select * from t1 order by year_col,some_data;
+year_col	some_data
+1990	1222
+1990	1223
+1990	1224
+1990	1225
+1994	621
+1994	1122
+1994	1123
+1994	1124
+1994	1125
+1996	1022
+1996	1023
+1996	1024
+1996	1025
+2000	922
+2000	923
+2000	924
+2000	925
+2005	822
+2005	823
+2005	824
+2005	825
+alter table t1 reorganize partition p0 into (partition p0 values less than (1991),partition p1 values less than (1995));
+update t1 set some_data = some_data + 1;
+select * from t1 order by year_col,some_data;
+year_col	some_data
+1990	1223
+1990	1224
+1990	1225
+1990	1226
+1994	622
+1994	1123
+1994	1124
+1994	1125
+1994	1126
+1996	1023
+1996	1024
+1996	1025
+1996	1026
+2000	923
+2000	924
+2000	925
+2000	926
+2005	823
+2005	824
+2005	825
+2005	826
+alter table t1 rebuild partition p0;
+update t1 set some_data = some_data + 1;
+select * from t1 order by year_col,some_data;
+year_col	some_data
+1990	1224
+1990	1225
+1990	1226
+1990	1227
+1994	623
+1994	1124
+1994	1125
+1994	1126
+1994	1127
+1996	1024
+1996	1025
+1996	1026
+1996	1027
+2000	924
+2000	925
+2000	926
+2000	927
+2005	824
+2005	825
+2005	826
+2005	827
+alter table t1 drop partition p5;
+update t1 set some_data = some_data + 1;
+select * from t1 order by year_col,some_data;
+year_col	some_data
+1990	1225
+1990	1226
+1990	1227
+1990	1228
+1994	624
+1994	1125
+1994	1126
+1994	1127
+1994	1128
+1996	1025
+1996	1026
+1996	1027
+1996	1028
+2000	925
+2000	926
+2000	927
+2000	928
+2005	825
+2005	826
+2005	827
+2005	828
+alter table t1 remove partitioning;
+update t1 set some_data = some_data + 1;
+select * from t1 order by year_col,some_data;
+year_col	some_data
+1990	1226
+1990	1227
+1990	1228
+1990	1229
+1994	625
+1994	1126
+1994	1127
+1994	1128
+1994	1129
+1996	1026
+1996	1027
+1996	1028
+1996	1029
+2000	926
+2000	927
+2000	928
+2000	929
+2005	826
+2005	827
+2005	828
+2005	829
+drop table t1;
+update t1 set some_data = some_data + 1;
+ERROR 42S02: Table 'metadata_sync_sequoiadb.t1' doesn't exist
+drop table t2;
+create table t1(col1 int, col2 int) partition by hash(col1) partitions 4;
+insert into t1 values(2005,2005),(2006,2006),(2007,2007),(2008,2008);
+update t1 set col2 = col2 + 1;
+select * from t1 order by col1;
+col1	col2
+2005	2006
+2006	2007
+2007	2008
+2008	2009
+drop table t1;
+update t1 set col2 = col2 + 1;
+ERROR 42S02: Table 'metadata_sync_sequoiadb.t1' doesn't exist
+create table t1(col1 int, col2 char(5), col3 date) partition by key(col3) partitions 4;
+insert into t1 values(2005,'a','2002-10-03'),(2006,'b','2002-10-04'),(2007,'c','2002-10-05'),(2008,'d','2002-10-06');
+update t1 set col1 = col1 + 1;
+select * from t1 order by col3;
+col1	col2	col3
+2006	a	2002-10-03
+2007	b	2002-10-04
+2008	c	2002-10-05
+2009	d	2002-10-06
+drop table t1;
+update t1 set col1 = col1 + 1;
+ERROR 42S02: Table 'metadata_sync_sequoiadb.t1' doesn't exist
+create table t1(id int, a int) partition by list(id)
+(partition p0 values in(1,3,5,7,9),
+partition p1 values in(2,4,6,8,10));
+insert into t1 values(1,1),(2,2),(3,3),(4,4),(5,5),(6,6),(7,7),(8,8),(9,9),(10,10);
+delete from t1;
+select * from t1 order by id;
+id	a
+alter table t1 add partition (partition p3 values in(11,12));
+insert into t1 values(11,11),(12,12);
+delete from t1;
+select * from t1 order by id;
+id	a
+insert into t1 values(1,1),(2,2),(3,3),(4,4),(5,5),(6,6),(7,7),(8,8),(9,9),(10,10);
+alter table t1 drop partition p0;
+delete from t1;
+select * from t1 order by id;
+id	a
+alter table t1 reorganize partition p1 into (partition n0 values in(2,4,6), partition n1 values in(8,10));
+insert into t1 partition (n0,n1) values(2,2),(8,8),(4,4),(10,10),(6,6);
+delete from t1;
+select * from t1;
+id	a
+alter table t1 reorganize partition n0,n1 into (partition p0 values in(2,4));
+insert into t1 partition (p0) values(2,2),(4,4);
+delete from t1;
+select * from t1;
+id	a
+alter table t1 rebuild partition p0;
+insert into t1 partition (p0) values(2,2),(4,4);
+delete from t1;
+select * from t1;
+id	a
+insert into t1 values(2,2),(4,4),(11,11),(12,12);
+alter table t1 truncate partition p3;
+insert into t1 values(11,11),(12,12);
+delete from t1;
+select * from t1;
+id	a
+alter table t1 remove partitioning;
+insert into t1 values(2,2),(12,12);
+delete from t1;
+select * from t1;
+id	a
+insert into t1 values(1,1),(2,2),(3,3),(4,4),(5,5),(6,6),(7,7),(8,8),(9,9),(10,10);
+drop table t1;
+delete from t1;
+ERROR 42S02: Table 'metadata_sync_sequoiadb.t1' doesn't exist
+create table t2 (year_col int, some_data int);
+insert into t2 values(1990,1220),(1994,1120),(1996,1020),(2000,0920),(2005,0820);
+insert into t2 select year_col, some_data+1 from t2;
+create table t1(year_col int, some_data int) partition by range columns (year_col) 
+(partition p0 values less than (1991),
+partition p1 values less than (1995),
+partition p2 values less than (1999),
+partition p3 values less than (2002),
+partition p4 values less than (2006));
+insert into t1 select * from t2;
+select * from t1 order by year_col,some_data;
+year_col	some_data
+1990	1220
+1990	1221
+1994	1120
+1994	1121
+1996	1020
+1996	1021
+2000	920
+2000	921
+2005	820
+2005	821
+delete from t1;
+select * from t1;
+year_col	some_data
+alter table t1 add partition (partition p5 values less than (2009));
+insert into t1 values(2006,0720);
+delete from t1;
+select * from t1;
+year_col	some_data
+alter table t1 truncate partition p5;
+insert into t1 select * from t2;
+delete from t1;
+select * from t1;
+year_col	some_data
+alter table t1 reorganize partition p0,p1 into (partition p0 values less than (1995));
+insert into t1 values(1994,0620);
+delete from t1;
+select * from t1;
+year_col	some_data
+insert into t1 select * from t2;
+alter table t1 reorganize partition p0 into (partition p0 values less than (1991),partition p1 values less than (1995));
+delete from t1;
+select * from t1;
+year_col	some_data
+alter table t1 rebuild partition p0;
+delete from t1;
+select * from t1;
+year_col	some_data
+alter table t1 drop partition p5;
+delete from t1;
+select * from t1;
+year_col	some_data
+alter table t1 remove partitioning;
+delete from t1;
+select * from t1;
+year_col	some_data
+drop table t1;
+delete from t1;
+ERROR 42S02: Table 'metadata_sync_sequoiadb.t1' doesn't exist
+drop table t2;
+create table t1(col1 int, col2 int) partition by hash(col1) partitions 4;
+insert into t1 values(2005,2005),(2006,2006),(2007,2007),(2008,2008);
+delete from t1;
+select * from t1;
+col1	col2
+drop table t1;
+delete from t1;
+ERROR 42S02: Table 'metadata_sync_sequoiadb.t1' doesn't exist
+create table t1(col1 int, col2 char(5), col3 date) partition by key(col3) partitions 4;
+insert into t1 values(2005,'a','2002-10-03'),(2006,'b','2002-10-04'),(2007,'c','2002-10-05'),(2008,'d','2002-10-06');
+delete from t1;
+select * from t1;
+col1	col2	col3
+drop table t1;
+delete from t1;
+ERROR 42S02: Table 'metadata_sync_sequoiadb.t1' doesn't exist
+create table t1(id int unique key, name varchar(35)) partition by list(id)
+(partition p0 values in(1,3,5,7,9),
+partition p1 values in(2,4,6,8,10));
+insert into t1 values(1,'a'),(2,'b'),(3,'c'),(4,'d'),(5,'e'),(6,'f'),(7,'g'),(8,'h'),(9,'i'),(10,'j');
+replace into t1 values(1,'aa'),(2,'bb'),(3,'cc'),(4,'dd'),(5,'ee'),(6,'ff'),(7,'gg'),(8,'hh'),(9,'ii'),(10,'jj');
+select * from t1 order by id;
+id	name
+1	aa
+2	bb
+3	cc
+4	dd
+5	ee
+6	ff
+7	gg
+8	hh
+9	ii
+10	jj
+alter table t1 add partition (partition p3 values in(11,12));
+replace into t1 values(11,'kk'),(12,'ll');
+select * from t1 order by id;
+id	name
+1	aa
+2	bb
+3	cc
+4	dd
+5	ee
+6	ff
+7	gg
+8	hh
+9	ii
+10	jj
+11	kk
+12	ll
+alter table t1 drop partition p0;
+replace into t1 values(1,'aa'),(3,'cc'),(5,'ee'),(7,'gg'),(9,'ii');
+ERROR HY000: Table has no partition for value 1
+select * from t1 order by id;
+id	name
+2	bb
+4	dd
+6	ff
+8	hh
+10	jj
+11	kk
+12	ll
+alter table t1 reorganize partition p1 into (partition n0 values in(2,4,6), partition n1 values in(8,10));
+replace into t1 partition (n0,n1) values(2,'xx'),(8,'yy'),(4,'zz'),(10,'uu'),(6,'vv');
+select * from t1 order by id;
+id	name
+2	xx
+4	zz
+6	vv
+8	yy
+10	uu
+11	kk
+12	ll
+alter table t1 reorganize partition n0,n1 into (partition p0 values in(2,4));
+replace into t1 partition (p0) values(2,'ww'),(4,'mm');
+select * from t1 order by id;
+id	name
+2	ww
+4	mm
+11	kk
+12	ll
+alter table t1 rebuild partition p0;
+replace into t1 partition (p0) values(2,'oo'),(4,'pp');
+select * from t1 order by id;
+id	name
+2	oo
+4	pp
+11	kk
+12	ll
+alter table t1 truncate partition p3;
+replace into t1 values(11,'qq'),(12,'rr');
+select * from t1 order by id;
+id	name
+2	oo
+4	pp
+11	qq
+12	rr
+alter table t1 remove partitioning;
+replace into t1 values(2,'ss'),(12,'tt');
+select * from t1 order by id;
+id	name
+2	ss
+4	pp
+11	qq
+12	tt
+drop table t1;
+replace into t1 values(2,'ss'),(12,'tt');
+ERROR 42S02: Table 'metadata_sync_sequoiadb.t1' doesn't exist
+create table t2 (year_col int, some_data int unique key);
+insert into t2 values(1990,1220),(1994,1120),(1996,1020),(2000,0920),(2005,0820);
+insert into t2 select year_col, some_data+5 from t2;
+insert into t2 select year_col, some_data+10 from t2;
+insert into t2 select year_col, some_data+20 from t2;
+create table t1(year_col int, some_data int) partition by range columns (year_col) 
+(partition p0 values less than (1991),
+partition p1 values less than (1995),
+partition p2 values less than (1999),
+partition p3 values less than (2002),
+partition p4 values less than (2006));
+replace into t1 select * from t2;
+select * from t1 order by year_col,some_data;
+year_col	some_data
+1990	1220
+1990	1225
+1990	1230
+1990	1235
+1990	1240
+1990	1245
+1990	1250
+1990	1255
+1994	1120
+1994	1125
+1994	1130
+1994	1135
+1994	1140
+1994	1145
+1994	1150
+1994	1155
+1996	1020
+1996	1025
+1996	1030
+1996	1035
+1996	1040
+1996	1045
+1996	1050
+1996	1055
+2000	920
+2000	925
+2000	930
+2000	935
+2000	940
+2000	945
+2000	950
+2000	955
+2005	820
+2005	825
+2005	830
+2005	835
+2005	840
+2005	845
+2005	850
+2005	855
+alter table t1 add partition (partition p5 values less than (2009));
+replace into t1 values(2006,0720);
+select * from t1 order by year_col,some_data;
+year_col	some_data
+1990	1220
+1990	1225
+1990	1230
+1990	1235
+1990	1240
+1990	1245
+1990	1250
+1990	1255
+1994	1120
+1994	1125
+1994	1130
+1994	1135
+1994	1140
+1994	1145
+1994	1150
+1994	1155
+1996	1020
+1996	1025
+1996	1030
+1996	1035
+1996	1040
+1996	1045
+1996	1050
+1996	1055
+2000	920
+2000	925
+2000	930
+2000	935
+2000	940
+2000	945
+2000	950
+2000	955
+2005	820
+2005	825
+2005	830
+2005	835
+2005	840
+2005	845
+2005	850
+2005	855
+2006	720
+alter table t1 truncate partition p5;
+replace into t1 select * from t2;
+select * from t1 order by year_col,some_data;
+year_col	some_data
+1990	1220
+1990	1220
+1990	1225
+1990	1225
+1990	1230
+1990	1230
+1990	1235
+1990	1235
+1990	1240
+1990	1240
+1990	1245
+1990	1245
+1990	1250
+1990	1250
+1990	1255
+1990	1255
+1994	1120
+1994	1120
+1994	1125
+1994	1125
+1994	1130
+1994	1130
+1994	1135
+1994	1135
+1994	1140
+1994	1140
+1994	1145
+1994	1145
+1994	1150
+1994	1150
+1994	1155
+1994	1155
+1996	1020
+1996	1020
+1996	1025
+1996	1025
+1996	1030
+1996	1030
+1996	1035
+1996	1035
+1996	1040
+1996	1040
+1996	1045
+1996	1045
+1996	1050
+1996	1050
+1996	1055
+1996	1055
+2000	920
+2000	920
+2000	925
+2000	925
+2000	930
+2000	930
+2000	935
+2000	935
+2000	940
+2000	940
+2000	945
+2000	945
+2000	950
+2000	950
+2000	955
+2000	955
+2005	820
+2005	820
+2005	825
+2005	825
+2005	830
+2005	830
+2005	835
+2005	835
+2005	840
+2005	840
+2005	845
+2005	845
+2005	850
+2005	850
+2005	855
+2005	855
+alter table t1 reorganize partition p0,p1 into (partition p0 values less than (1995));
+replace into t1 values(1994,0620);
+select * from t1 order by year_col,some_data;
+year_col	some_data
+1990	1220
+1990	1220
+1990	1225
+1990	1225
+1990	1230
+1990	1230
+1990	1235
+1990	1235
+1990	1240
+1990	1240
+1990	1245
+1990	1245
+1990	1250
+1990	1250
+1990	1255
+1990	1255
+1994	620
+1994	1120
+1994	1120
+1994	1125
+1994	1125
+1994	1130
+1994	1130
+1994	1135
+1994	1135
+1994	1140
+1994	1140
+1994	1145
+1994	1145
+1994	1150
+1994	1150
+1994	1155
+1994	1155
+1996	1020
+1996	1020
+1996	1025
+1996	1025
+1996	1030
+1996	1030
+1996	1035
+1996	1035
+1996	1040
+1996	1040
+1996	1045
+1996	1045
+1996	1050
+1996	1050
+1996	1055
+1996	1055
+2000	920
+2000	920
+2000	925
+2000	925
+2000	930
+2000	930
+2000	935
+2000	935
+2000	940
+2000	940
+2000	945
+2000	945
+2000	950
+2000	950
+2000	955
+2000	955
+2005	820
+2005	820
+2005	825
+2005	825
+2005	830
+2005	830
+2005	835
+2005	835
+2005	840
+2005	840
+2005	845
+2005	845
+2005	850
+2005	850
+2005	855
+2005	855
+alter table t1 reorganize partition p0 into (partition p0 values less than (1991),partition p1 values less than (1995));
+replace into t1 select * from t2;
+select * from t1 order by year_col,some_data;
+year_col	some_data
+1990	1220
+1990	1220
+1990	1220
+1990	1225
+1990	1225
+1990	1225
+1990	1230
+1990	1230
+1990	1230
+1990	1235
+1990	1235
+1990	1235
+1990	1240
+1990	1240
+1990	1240
+1990	1245
+1990	1245
+1990	1245
+1990	1250
+1990	1250
+1990	1250
+1990	1255
+1990	1255
+1990	1255
+1994	620
+1994	1120
+1994	1120
+1994	1120
+1994	1125
+1994	1125
+1994	1125
+1994	1130
+1994	1130
+1994	1130
+1994	1135
+1994	1135
+1994	1135
+1994	1140
+1994	1140
+1994	1140
+1994	1145
+1994	1145
+1994	1145
+1994	1150
+1994	1150
+1994	1150
+1994	1155
+1994	1155
+1994	1155
+1996	1020
+1996	1020
+1996	1020
+1996	1025
+1996	1025
+1996	1025
+1996	1030
+1996	1030
+1996	1030
+1996	1035
+1996	1035
+1996	1035
+1996	1040
+1996	1040
+1996	1040
+1996	1045
+1996	1045
+1996	1045
+1996	1050
+1996	1050
+1996	1050
+1996	1055
+1996	1055
+1996	1055
+2000	920
+2000	920
+2000	920
+2000	925
+2000	925
+2000	925
+2000	930
+2000	930
+2000	930
+2000	935
+2000	935
+2000	935
+2000	940
+2000	940
+2000	940
+2000	945
+2000	945
+2000	945
+2000	950
+2000	950
+2000	950
+2000	955
+2000	955
+2000	955
+2005	820
+2005	820
+2005	820
+2005	825
+2005	825
+2005	825
+2005	830
+2005	830
+2005	830
+2005	835
+2005	835
+2005	835
+2005	840
+2005	840
+2005	840
+2005	845
+2005	845
+2005	845
+2005	850
+2005	850
+2005	850
+2005	855
+2005	855
+2005	855
+alter table t1 rebuild partition p0;
+replace into t1 values(1990,0620);
+select * from t1 order by year_col,some_data;
+year_col	some_data
+1990	620
+1990	1220
+1990	1220
+1990	1220
+1990	1225
+1990	1225
+1990	1225
+1990	1230
+1990	1230
+1990	1230
+1990	1235
+1990	1235
+1990	1235
+1990	1240
+1990	1240
+1990	1240
+1990	1245
+1990	1245
+1990	1245
+1990	1250
+1990	1250
+1990	1250
+1990	1255
+1990	1255
+1990	1255
+1994	620
+1994	1120
+1994	1120
+1994	1120
+1994	1125
+1994	1125
+1994	1125
+1994	1130
+1994	1130
+1994	1130
+1994	1135
+1994	1135
+1994	1135
+1994	1140
+1994	1140
+1994	1140
+1994	1145
+1994	1145
+1994	1145
+1994	1150
+1994	1150
+1994	1150
+1994	1155
+1994	1155
+1994	1155
+1996	1020
+1996	1020
+1996	1020
+1996	1025
+1996	1025
+1996	1025
+1996	1030
+1996	1030
+1996	1030
+1996	1035
+1996	1035
+1996	1035
+1996	1040
+1996	1040
+1996	1040
+1996	1045
+1996	1045
+1996	1045
+1996	1050
+1996	1050
+1996	1050
+1996	1055
+1996	1055
+1996	1055
+2000	920
+2000	920
+2000	920
+2000	925
+2000	925
+2000	925
+2000	930
+2000	930
+2000	930
+2000	935
+2000	935
+2000	935
+2000	940
+2000	940
+2000	940
+2000	945
+2000	945
+2000	945
+2000	950
+2000	950
+2000	950
+2000	955
+2000	955
+2000	955
+2005	820
+2005	820
+2005	820
+2005	825
+2005	825
+2005	825
+2005	830
+2005	830
+2005	830
+2005	835
+2005	835
+2005	835
+2005	840
+2005	840
+2005	840
+2005	845
+2005	845
+2005	845
+2005	850
+2005	850
+2005	850
+2005	855
+2005	855
+2005	855
+alter table t1 drop partition p5;
+replace into t1 values(2006,0720);
+ERROR HY000: Table has no partition for value from column_list
+select * from t1 order by year_col,some_data;
+year_col	some_data
+1990	620
+1990	1220
+1990	1220
+1990	1220
+1990	1225
+1990	1225
+1990	1225
+1990	1230
+1990	1230
+1990	1230
+1990	1235
+1990	1235
+1990	1235
+1990	1240
+1990	1240
+1990	1240
+1990	1245
+1990	1245
+1990	1245
+1990	1250
+1990	1250
+1990	1250
+1990	1255
+1990	1255
+1990	1255
+1994	620
+1994	1120
+1994	1120
+1994	1120
+1994	1125
+1994	1125
+1994	1125
+1994	1130
+1994	1130
+1994	1130
+1994	1135
+1994	1135
+1994	1135
+1994	1140
+1994	1140
+1994	1140
+1994	1145
+1994	1145
+1994	1145
+1994	1150
+1994	1150
+1994	1150
+1994	1155
+1994	1155
+1994	1155
+1996	1020
+1996	1020
+1996	1020
+1996	1025
+1996	1025
+1996	1025
+1996	1030
+1996	1030
+1996	1030
+1996	1035
+1996	1035
+1996	1035
+1996	1040
+1996	1040
+1996	1040
+1996	1045
+1996	1045
+1996	1045
+1996	1050
+1996	1050
+1996	1050
+1996	1055
+1996	1055
+1996	1055
+2000	920
+2000	920
+2000	920
+2000	925
+2000	925
+2000	925
+2000	930
+2000	930
+2000	930
+2000	935
+2000	935
+2000	935
+2000	940
+2000	940
+2000	940
+2000	945
+2000	945
+2000	945
+2000	950
+2000	950
+2000	950
+2000	955
+2000	955
+2000	955
+2005	820
+2005	820
+2005	820
+2005	825
+2005	825
+2005	825
+2005	830
+2005	830
+2005	830
+2005	835
+2005	835
+2005	835
+2005	840
+2005	840
+2005	840
+2005	845
+2005	845
+2005	845
+2005	850
+2005	850
+2005	850
+2005	855
+2005	855
+2005	855
+alter table t1 remove partitioning;
+replace into t1 values(2222,0520);
+select * from t1 order by year_col,some_data;
+year_col	some_data
+1990	620
+1990	1220
+1990	1220
+1990	1220
+1990	1225
+1990	1225
+1990	1225
+1990	1230
+1990	1230
+1990	1230
+1990	1235
+1990	1235
+1990	1235
+1990	1240
+1990	1240
+1990	1240
+1990	1245
+1990	1245
+1990	1245
+1990	1250
+1990	1250
+1990	1250
+1990	1255
+1990	1255
+1990	1255
+1994	620
+1994	1120
+1994	1120
+1994	1120
+1994	1125
+1994	1125
+1994	1125
+1994	1130
+1994	1130
+1994	1130
+1994	1135
+1994	1135
+1994	1135
+1994	1140
+1994	1140
+1994	1140
+1994	1145
+1994	1145
+1994	1145
+1994	1150
+1994	1150
+1994	1150
+1994	1155
+1994	1155
+1994	1155
+1996	1020
+1996	1020
+1996	1020
+1996	1025
+1996	1025
+1996	1025
+1996	1030
+1996	1030
+1996	1030
+1996	1035
+1996	1035
+1996	1035
+1996	1040
+1996	1040
+1996	1040
+1996	1045
+1996	1045
+1996	1045
+1996	1050
+1996	1050
+1996	1050
+1996	1055
+1996	1055
+1996	1055
+2000	920
+2000	920
+2000	920
+2000	925
+2000	925
+2000	925
+2000	930
+2000	930
+2000	930
+2000	935
+2000	935
+2000	935
+2000	940
+2000	940
+2000	940
+2000	945
+2000	945
+2000	945
+2000	950
+2000	950
+2000	950
+2000	955
+2000	955
+2000	955
+2005	820
+2005	820
+2005	820
+2005	825
+2005	825
+2005	825
+2005	830
+2005	830
+2005	830
+2005	835
+2005	835
+2005	835
+2005	840
+2005	840
+2005	840
+2005	845
+2005	845
+2005	845
+2005	850
+2005	850
+2005	850
+2005	855
+2005	855
+2005	855
+2222	520
+drop table t1;
+replace into t1 select * from t2;
+ERROR 42S02: Table 'metadata_sync_sequoiadb.t1' doesn't exist
+drop table t2;
+create table t1(col1 int unique key, col2 char(5)) partition by hash(col1) partitions 4;
+replace into t1 values(2005,'a'),(2006,'b'),(2007,'c'),(2008,'d');
+drop table t1;
+replace into t1 values(2005,'a'),(2006,'b'),(2007,'c'),(2008,'d');
+ERROR 42S02: Table 'metadata_sync_sequoiadb.t1' doesn't exist
+create table t1(col1 int, col2 char(5), col3 date unique key) partition by key(col3) partitions 4;
+replace into t1 values(2005,'a','2002-10-03'),(2006,'b','2002-10-04'),(2007,'c','2002-10-05'),(2008,'d','2002-10-06');
+drop table t1;
+set server_ha_wait_sync_timeout = 0;
+replace into t1 values(2005,'a','2002-10-03'),(2006,'b','2002-10-04'),(2007,'c','2002-10-05'),(2008,'d','2002-10-06');
+ERROR 42S02: Table 'metadata_sync_sequoiadb.t1' doesn't exist
+drop database metadata_sync_sequoiadb;
+set server_ha_wait_sync_timeout = 0;

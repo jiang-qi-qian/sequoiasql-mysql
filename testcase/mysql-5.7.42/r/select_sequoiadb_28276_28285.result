@@ -1,0 +1,1525 @@
+DROP DATABASE IF EXISTS db_28276;
+create database db_28276;
+use db_28276;
+create table t1(a int, b int);
+truncate t1;
+insert into t1 values(1,1),(2,2),(3,3),(4,4),(NULL,5),(6,6),(7,NULL),(8,8),(9,NULL),(10,10);
+create table t2 as select * from t1;
+create view v1 as select * from t2 where a>4;
+set session sequoiadb_debug_log= on;
+set session sql_mode="STRICT_TRANS_TABLES,ERROR_FOR_DIVISION_BY_ZERO,NO_AUTO_CREATE_USER,NO_ENGINE_SUBSTITUTION";
+select * from (select * from t1 where a>2) t2 limit 3;
+a	b
+3	3
+4	4
+6	6
+[Note] Testcase: Operation log begin
+[Note] SequoiaDB: optimizer pushdown autocommit: 1
+[Note] SequoiaDB: Query message: condition[{ "a": { "$gt": 2 } }], selector[{}], order_by[{}], hint[{}], limit[3], offset[0], table[db_28276.t1]
+explain select * from (select * from t1 where a>2) t2 limit 3;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	ALL	NULL	NULL	NULL	NULL	10	33.33	Using where with pushed condition (`db_28276`.`t1`.`a` > 2)
+Warnings:
+Note	1003	/* select#1 */ select `db_28276`.`t1`.`a` AS `a`,`db_28276`.`t1`.`b` AS `b` from `db_28276`.`t1` where (`db_28276`.`t1`.`a` > 2) limit 3
+select * from (select * from t1 where a>2) t2 order by a;
+a	b
+3	3
+4	4
+6	6
+7	NULL
+8	8
+9	NULL
+10	10
+[Note] Testcase: Operation log begin
+[Note] SequoiaDB: optimizer pushdown autocommit: 1
+[Note] SequoiaDB: Query message: condition[{ "a": { "$gt": 2 } }], selector[{}], order_by[{ "a": 1 }], hint[{}], limit[-1], offset[0], table[db_28276.t1]
+explain select * from (select * from t1 where a>2) t2 order by a;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	ALL	NULL	NULL	NULL	NULL	10	33.33	Using where with pushed condition (`db_28276`.`t1`.`a` > 2); Using pushed sort (`db_28276`.`t1`.`a`)
+Warnings:
+Note	1003	/* select#1 */ select `db_28276`.`t1`.`a` AS `a`,`db_28276`.`t1`.`b` AS `b` from `db_28276`.`t1` where (`db_28276`.`t1`.`a` > 2) order by `db_28276`.`t1`.`a`
+select * from (select * from t1 where a>2) t2 group by a;
+a	b
+3	3
+4	4
+6	6
+7	NULL
+8	8
+9	NULL
+10	10
+[Note] Testcase: Operation log begin
+[Note] SequoiaDB: optimizer pushdown autocommit: 1
+[Note] SequoiaDB: Query message: match[{ "$match": { "a": { "$gt": 2 } } }], group[{ "$group": { "a": { "$first": "$a" }, "_id": { "a": "$a" }, "b": { "$first": "$b" } } }], sort[{ "$sort": { "a": 1 } }], skip[{ "$skip": 0 }], limit[{ "$limit": -1 }]
+explain select * from (select * from t1 where a>2) t2 group by a;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	NULL	NULL	NULL	NULL	NULL	10	33.33	Using where with pushed condition (`db_28276`.`t1`.`a` > 2); Using pushed GROUP BY; Storage engine handles access type
+Warnings:
+Note	1003	/* select#1 */ select `db_28276`.`t1`.`a` AS `a`,`db_28276`.`t1`.`b` AS `b` from `db_28276`.`t1` where (`db_28276`.`t1`.`a` > 2) group by `db_28276`.`t1`.`a`
+select * from (select * from t1 where a>2) t2 group by a order by a limit 3;
+a	b
+3	3
+4	4
+6	6
+[Note] Testcase: Operation log begin
+[Note] SequoiaDB: optimizer pushdown autocommit: 1
+[Note] SequoiaDB: Query message: match[{ "$match": { "a": { "$gt": 2 } } }], group[{ "$group": { "a": { "$first": "$a" }, "_id": { "a": "$a" }, "b": { "$first": "$b" } } }], sort[{ "$sort": { "a": 1 } }], skip[{ "$skip": 0 }], limit[{ "$limit": 3 }]
+explain select * from (select * from t1 where a>2) t2 group by a order by a limit 3;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	NULL	NULL	NULL	NULL	NULL	10	33.33	Using where with pushed condition (`db_28276`.`t1`.`a` > 2); Using pushed GROUP BY; Using pushed ORDER BY; Storage engine handles access type
+Warnings:
+Note	1003	/* select#1 */ select `db_28276`.`t1`.`a` AS `a`,`db_28276`.`t1`.`b` AS `b` from `db_28276`.`t1` where (`db_28276`.`t1`.`a` > 2) group by `db_28276`.`t1`.`a` order by `db_28276`.`t1`.`a` limit 3
+select * from (select * from t1 where a>2) t2 group by concat(a,"") order by a limit 3;
+a	b
+3	3
+4	4
+6	6
+[Note] Testcase: Operation log begin
+[Note] SequoiaDB: optimizer pushdown autocommit: 1
+[Note] SequoiaDB: Query message: condition[{ "a": { "$gt": 2 } }], selector[{}], order_by[{}], hint[{}], limit[-1], offset[0], table[db_28276.t1]
+explain select * from (select * from t1 where a>2) t2 group by concat(a,"") order by a limit 3;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	ALL	NULL	NULL	NULL	NULL	10	33.33	Using where with pushed condition (`db_28276`.`t1`.`a` > 2); Using temporary; Using filesort
+Warnings:
+Note	1003	/* select#1 */ select `db_28276`.`t1`.`a` AS `a`,`db_28276`.`t1`.`b` AS `b` from `db_28276`.`t1` where (`db_28276`.`t1`.`a` > 2) group by concat(`db_28276`.`t1`.`a`,'') order by `db_28276`.`t1`.`a` limit 3
+select * from (select * from t1 where a>rand()) t2 where b>rand() group by a order by a limit 3;
+a	b
+1	1
+2	2
+3	3
+[Note] Testcase: Operation log begin
+[Note] SequoiaDB: optimizer pushdown autocommit: 1
+[Note] SequoiaDB: Query message: condition[{}], selector[{}], order_by[{}], hint[{}], limit[-1], offset[0], table[db_28276.t1]
+explain select * from (select * from t1 where a>rand()) t2 where b>rand() group by a order by a limit 3;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	ALL	NULL	NULL	NULL	NULL	10	11.11	Using where; Using temporary; Using filesort
+Warnings:
+Note	1003	/* select#1 */ select `db_28276`.`t1`.`a` AS `a`,`db_28276`.`t1`.`b` AS `b` from `db_28276`.`t1` where ((`db_28276`.`t1`.`b` > rand()) and (`db_28276`.`t1`.`a` > rand())) group by `db_28276`.`t1`.`a` order by `db_28276`.`t1`.`a` limit 3
+select * from (select * from t1 where a>2 order by a DESC) t2;
+a	b
+10	10
+9	NULL
+8	8
+7	NULL
+6	6
+4	4
+3	3
+[Note] Testcase: Operation log begin
+[Note] SequoiaDB: optimizer pushdown autocommit: 1
+[Note] SequoiaDB: Query message: condition[{ "a": { "$gt": 2 } }], selector[{}], order_by[{ "a": -1 }], hint[{}], limit[-1], offset[0], table[db_28276.t1]
+explain select * from (select * from t1 where a>2 order by a DESC) t2;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	ALL	NULL	NULL	NULL	NULL	10	33.33	Using where with pushed condition (`db_28276`.`t1`.`a` > 2); Using pushed sort (`db_28276`.`t1`.`a` desc)
+Warnings:
+Note	1003	/* select#1 */ select `db_28276`.`t1`.`a` AS `a`,`db_28276`.`t1`.`b` AS `b` from `db_28276`.`t1` where (`db_28276`.`t1`.`a` > 2) order by `db_28276`.`t1`.`a` desc
+select * from (select 1 from t1 where a>2 order by a) t2 limit 3;
+1
+1
+1
+1
+[Note] Testcase: Operation log begin
+[Note] SequoiaDB: optimizer pushdown autocommit: 1
+[Note] SequoiaDB: Query message: condition[{ "a": { "$gt": 2 } }], selector[{}], order_by[{ "a": 1 }], hint[{ "": "" }], limit[3], offset[0], table[db_28276.t1]
+explain select * from (select 1 from t1 where a>2 order by a) t2 limit 3;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	NULL	NULL	NULL	NULL	NULL	10	33.33	Using where with pushed condition (`db_28276`.`t1`.`a` > 2); Using pushed ORDER BY; Storage engine handles access type
+Warnings:
+Note	1003	/* select#1 */ select 1 AS `1` from `db_28276`.`t1` where (`db_28276`.`t1`.`a` > 2) order by `db_28276`.`t1`.`a` limit 3
+select * from v1;
+a	b
+6	6
+7	NULL
+8	8
+9	NULL
+10	10
+[Note] Testcase: Operation log begin
+[Note] SequoiaDB: optimizer pushdown autocommit: 1
+[Note] SequoiaDB: Query message: condition[{ "a": { "$gt": 4 } }], selector[{}], order_by[{}], hint[{}], limit[-1], offset[0], table[db_28276.t2]
+explain select * from v1;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t2	NULL	ALL	NULL	NULL	NULL	NULL	10	33.33	Using where with pushed condition (`db_28276`.`t2`.`a` > 4)
+Warnings:
+Note	1003	/* select#1 */ select `db_28276`.`t2`.`a` AS `a`,`db_28276`.`t2`.`b` AS `b` from `db_28276`.`t2` where (`db_28276`.`t2`.`a` > 4)
+select * from v1 limit 3;
+a	b
+6	6
+7	NULL
+8	8
+[Note] Testcase: Operation log begin
+[Note] SequoiaDB: optimizer pushdown autocommit: 1
+[Note] SequoiaDB: Query message: condition[{ "a": { "$gt": 4 } }], selector[{}], order_by[{}], hint[{}], limit[3], offset[0], table[db_28276.t2]
+explain select * from v1 limit 3;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t2	NULL	ALL	NULL	NULL	NULL	NULL	10	33.33	Using where with pushed condition (`db_28276`.`t2`.`a` > 4)
+Warnings:
+Note	1003	/* select#1 */ select `db_28276`.`t2`.`a` AS `a`,`db_28276`.`t2`.`b` AS `b` from `db_28276`.`t2` where (`db_28276`.`t2`.`a` > 4) limit 3
+select * from v1 order by a;
+a	b
+6	6
+7	NULL
+8	8
+9	NULL
+10	10
+[Note] Testcase: Operation log begin
+[Note] SequoiaDB: optimizer pushdown autocommit: 1
+[Note] SequoiaDB: Query message: condition[{ "a": { "$gt": 4 } }], selector[{}], order_by[{ "a": 1 }], hint[{}], limit[-1], offset[0], table[db_28276.t2]
+explain select * from v1 order by a;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t2	NULL	ALL	NULL	NULL	NULL	NULL	10	33.33	Using where with pushed condition (`db_28276`.`t2`.`a` > 4); Using pushed sort (`db_28276`.`t2`.`a`)
+Warnings:
+Note	1003	/* select#1 */ select `db_28276`.`t2`.`a` AS `a`,`db_28276`.`t2`.`b` AS `b` from `db_28276`.`t2` where (`db_28276`.`t2`.`a` > 4) order by `db_28276`.`t2`.`a`
+select * from v1 group by a;
+a	b
+6	6
+7	NULL
+8	8
+9	NULL
+10	10
+[Note] Testcase: Operation log begin
+[Note] SequoiaDB: optimizer pushdown autocommit: 1
+[Note] SequoiaDB: Query message: match[{ "$match": { "a": { "$gt": 4 } } }], group[{ "$group": { "a": { "$first": "$a" }, "_id": { "a": "$a" }, "b": { "$first": "$b" } } }], sort[{ "$sort": { "a": 1 } }], skip[{ "$skip": 0 }], limit[{ "$limit": -1 }]
+explain select * from v1 group by a;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t2	NULL	NULL	NULL	NULL	NULL	NULL	10	33.33	Using where with pushed condition (`db_28276`.`t2`.`a` > 4); Using pushed GROUP BY; Storage engine handles access type
+Warnings:
+Note	1003	/* select#1 */ select `db_28276`.`t2`.`a` AS `a`,`db_28276`.`t2`.`b` AS `b` from `db_28276`.`t2` where (`db_28276`.`t2`.`a` > 4) group by `db_28276`.`t2`.`a`
+select * from v1 group by a order by a limit 3;
+a	b
+6	6
+7	NULL
+8	8
+[Note] Testcase: Operation log begin
+[Note] SequoiaDB: optimizer pushdown autocommit: 1
+[Note] SequoiaDB: Query message: match[{ "$match": { "a": { "$gt": 4 } } }], group[{ "$group": { "a": { "$first": "$a" }, "_id": { "a": "$a" }, "b": { "$first": "$b" } } }], sort[{ "$sort": { "a": 1 } }], skip[{ "$skip": 0 }], limit[{ "$limit": 3 }]
+explain select * from v1 group by a order by a limit 3;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t2	NULL	NULL	NULL	NULL	NULL	NULL	10	33.33	Using where with pushed condition (`db_28276`.`t2`.`a` > 4); Using pushed GROUP BY; Using pushed ORDER BY; Storage engine handles access type
+Warnings:
+Note	1003	/* select#1 */ select `db_28276`.`t2`.`a` AS `a`,`db_28276`.`t2`.`b` AS `b` from `db_28276`.`t2` where (`db_28276`.`t2`.`a` > 4) group by `db_28276`.`t2`.`a` order by `db_28276`.`t2`.`a` limit 3
+select * from v1 group by concat(a,"") order by a limit 3;
+a	b
+6	6
+7	NULL
+8	8
+[Note] Testcase: Operation log begin
+[Note] SequoiaDB: optimizer pushdown autocommit: 1
+[Note] SequoiaDB: Query message: condition[{ "a": { "$gt": 4 } }], selector[{}], order_by[{}], hint[{}], limit[-1], offset[0], table[db_28276.t2]
+explain select * from v1 group by concat(a,"") order by a limit 3;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t2	NULL	ALL	NULL	NULL	NULL	NULL	10	33.33	Using where with pushed condition (`db_28276`.`t2`.`a` > 4); Using temporary; Using filesort
+Warnings:
+Note	1003	/* select#1 */ select `db_28276`.`t2`.`a` AS `a`,`db_28276`.`t2`.`b` AS `b` from `db_28276`.`t2` where (`db_28276`.`t2`.`a` > 4) group by concat(`db_28276`.`t2`.`a`,'') order by `db_28276`.`t2`.`a` limit 3
+select * from v1 where b>rand() group by a order by a limit 3;
+a	b
+6	6
+8	8
+10	10
+[Note] Testcase: Operation log begin
+[Note] SequoiaDB: optimizer pushdown autocommit: 1
+[Note] SequoiaDB: Query message: condition[{ "a": { "$gt": 4 } }], selector[{}], order_by[{}], hint[{}], limit[-1], offset[0], table[db_28276.t2]
+explain select * from v1 where b>rand() group by a order by a limit 3;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t2	NULL	ALL	NULL	NULL	NULL	NULL	10	11.11	Using where with pushed condition (`db_28276`.`t2`.`a` > 4); Using temporary; Using filesort
+Warnings:
+Note	1003	/* select#1 */ select `db_28276`.`t2`.`a` AS `a`,`db_28276`.`t2`.`b` AS `b` from `db_28276`.`t2` where ((`db_28276`.`t2`.`b` > rand()) and (`db_28276`.`t2`.`a` > 4)) group by `db_28276`.`t2`.`a` order by `db_28276`.`t2`.`a` limit 3
+select * from (select * from t1 where a>2 limit 3) t2 limit 3;
+a	b
+3	3
+4	4
+6	6
+[Note] Testcase: Operation log begin
+[Note] SequoiaDB: Query message: condition[{ "a": { "$gt": 2 } }], selector[{}], order_by[{}], hint[{}], limit[3], offset[0], table[db_28276.t1]
+explain select * from (select * from t1 where a>2 limit 3) t2 limit 3;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	PRIMARY	<derived2>	NULL	ALL	NULL	NULL	NULL	NULL	3	100.00	NULL
+2	DERIVED	t1	NULL	ALL	NULL	NULL	NULL	NULL	10	33.33	Using where with pushed condition (`db_28276`.`t1`.`a` > 2)
+Warnings:
+Note	1003	/* select#1 */ select `t2`.`a` AS `a`,`t2`.`b` AS `b` from (/* select#2 */ select `db_28276`.`t1`.`a` AS `a`,`db_28276`.`t1`.`b` AS `b` from `db_28276`.`t1` where (`db_28276`.`t1`.`a` > 2) limit 3) `t2` limit 3
+select * from (select * from t1 where a>2 group by a) t2 limit 3;
+a	b
+3	3
+4	4
+6	6
+[Note] Testcase: Operation log begin
+[Note] SequoiaDB: Query message: match[{ "$match": { "a": { "$gt": 2 } } }], group[{ "$group": { "a": { "$first": "$a" }, "_id": { "a": "$a" }, "b": { "$first": "$b" } } }], sort[{ "$sort": { "a": 1 } }], skip[{ "$skip": 0 }], limit[{ "$limit": -1 }]
+explain select * from (select * from t1 where a>2 group by a) t2 limit 3;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	PRIMARY	<derived2>	NULL	ALL	NULL	NULL	NULL	NULL	3	100.00	NULL
+2	DERIVED	t1	NULL	NULL	NULL	NULL	NULL	NULL	10	33.33	Using where with pushed condition (`db_28276`.`t1`.`a` > 2); Using pushed GROUP BY; Storage engine handles access type
+Warnings:
+Note	1003	/* select#1 */ select `t2`.`a` AS `a`,`t2`.`b` AS `b` from (/* select#2 */ select `db_28276`.`t1`.`a` AS `a`,`db_28276`.`t1`.`b` AS `b` from `db_28276`.`t1` where (`db_28276`.`t1`.`a` > 2) group by `db_28276`.`t1`.`a`) `t2` limit 3
+select * from (select * from t1 where a>2 group by a order by a limit 3) t2 limit 3;
+a	b
+3	3
+4	4
+6	6
+[Note] Testcase: Operation log begin
+[Note] SequoiaDB: Query message: match[{ "$match": { "a": { "$gt": 2 } } }], group[{ "$group": { "a": { "$first": "$a" }, "_id": { "a": "$a" }, "b": { "$first": "$b" } } }], sort[{ "$sort": { "a": 1 } }], skip[{ "$skip": 0 }], limit[{ "$limit": 3 }]
+explain select * from (select * from t1 where a>2 group by a order by a limit 3) t2 limit 3;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	PRIMARY	<derived2>	NULL	ALL	NULL	NULL	NULL	NULL	3	100.00	NULL
+2	DERIVED	t1	NULL	NULL	NULL	NULL	NULL	NULL	10	33.33	Using where with pushed condition (`db_28276`.`t1`.`a` > 2); Using pushed GROUP BY; Using pushed ORDER BY; Storage engine handles access type
+Warnings:
+Note	1003	/* select#1 */ select `t2`.`a` AS `a`,`t2`.`b` AS `b` from (/* select#2 */ select `db_28276`.`t1`.`a` AS `a`,`db_28276`.`t1`.`b` AS `b` from `db_28276`.`t1` where (`db_28276`.`t1`.`a` > 2) group by `db_28276`.`t1`.`a` order by `db_28276`.`t1`.`a` limit 3) `t2` limit 3
+select * from (select * from t1 where a>2 order by a DESC limit 3) t2 limit 3;
+a	b
+10	10
+9	NULL
+8	8
+[Note] Testcase: Operation log begin
+[Note] SequoiaDB: Query message: condition[{ "a": { "$gt": 2 } }], selector[{}], order_by[{ "a": -1 }], hint[{ "": "" }], limit[3], offset[0], table[db_28276.t1]
+explain select * from (select * from t1 where a>2 order by a DESC limit 3) t2 limit 3;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	PRIMARY	<derived2>	NULL	ALL	NULL	NULL	NULL	NULL	3	100.00	NULL
+2	DERIVED	t1	NULL	NULL	NULL	NULL	NULL	NULL	10	33.33	Using where with pushed condition (`db_28276`.`t1`.`a` > 2); Using pushed ORDER BY; Storage engine handles access type
+Warnings:
+Note	1003	/* select#1 */ select `t2`.`a` AS `a`,`t2`.`b` AS `b` from (/* select#2 */ select `db_28276`.`t1`.`a` AS `a`,`db_28276`.`t1`.`b` AS `b` from `db_28276`.`t1` where (`db_28276`.`t1`.`a` > 2) order by `db_28276`.`t1`.`a` desc limit 3) `t2` limit 3
+select * from (select 1 from t1 where a>2 limit 3) t2 limit 3;
+1
+1
+1
+1
+[Note] Testcase: Operation log begin
+[Note] SequoiaDB: Query message: condition[{ "a": { "$gt": 2 } }], selector[{}], order_by[{}], hint[{}], limit[3], offset[0], table[db_28276.t1]
+explain select * from (select 1 from t1 where a>2 limit 3) t2 limit 3;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	PRIMARY	<derived2>	NULL	ALL	NULL	NULL	NULL	NULL	3	100.00	NULL
+2	DERIVED	t1	NULL	ALL	NULL	NULL	NULL	NULL	10	33.33	Using where with pushed condition (`db_28276`.`t1`.`a` > 2)
+Warnings:
+Note	1003	/* select#1 */ select `t2`.`1` AS `1` from (/* select#2 */ select 1 AS `1` from `db_28276`.`t1` where (`db_28276`.`t1`.`a` > 2) limit 3) `t2` limit 3
+select * from (select t1.* from t1,t2 where t1.a>2) t2 limit 3;
+a	b
+3	3
+4	4
+6	6
+[Note] Testcase: Operation log begin
+[Note] SequoiaDB: Query message: condition[{ "a": { "$gt": 2 } }], selector[{}], order_by[{}], hint[{}], limit[-1], offset[0], table[db_28276.t1]
+[Note] SequoiaDB: Query message: condition[{}], selector[{ "_id": null }], order_by[{}], hint[{}], limit[-1], offset[0], table[db_28276.t2]
+explain select * from (select t1.* from t1,t2 where t1.a>2) t2 limit 3;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	ALL	NULL	NULL	NULL	NULL	10	33.33	Using where with pushed condition (`db_28276`.`t1`.`a` > 2)
+1	SIMPLE	t2	NULL	ALL	NULL	NULL	NULL	NULL	10	100.00	Using join buffer (Block Nested Loop)
+Warnings:
+Note	1003	/* select#1 */ select `db_28276`.`t1`.`a` AS `a`,`db_28276`.`t1`.`b` AS `b` from `db_28276`.`t1` join `db_28276`.`t2` where (`db_28276`.`t1`.`a` > 2) limit 3
+select * from (select * from t1 where a>2) t3,t2 where t2.a=t3.a limit 3;
+a	b	a	b
+3	3	3	3
+4	4	4	4
+6	6	6	6
+[Note] Testcase: Operation log begin
+[Note] SequoiaDB: Query message: condition[{ "a": { "$gt": 2 } }], selector[{}], order_by[{}], hint[{}], limit[-1], offset[0], table[db_28276.t1]
+[Note] SequoiaDB: Query message: condition[{}], selector[{}], order_by[{}], hint[{}], limit[-1], offset[0], table[db_28276.t2]
+explain select * from (select * from t1 where a>2) t3,t2 where t2.a=t3.a limit 3;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	ALL	NULL	NULL	NULL	NULL	10	33.33	Using where with pushed condition (`db_28276`.`t1`.`a` > 2)
+1	SIMPLE	t2	NULL	ALL	NULL	NULL	NULL	NULL	10	10.00	Using where; Using join buffer (Block Nested Loop)
+Warnings:
+Note	1003	/* select#1 */ select `db_28276`.`t1`.`a` AS `a`,`db_28276`.`t1`.`b` AS `b`,`db_28276`.`t2`.`a` AS `a`,`db_28276`.`t2`.`b` AS `b` from `db_28276`.`t1` join `db_28276`.`t2` where ((`db_28276`.`t2`.`a` = `db_28276`.`t1`.`a`) and (`db_28276`.`t1`.`a` > 2)) limit 3
+select * from (select * from t1 where a>2 limit 3) t3,t2 where t2.a=t3.a limit 3;
+a	b	a	b
+3	3	3	3
+4	4	4	4
+6	6	6	6
+[Note] Testcase: Operation log begin
+[Note] SequoiaDB: Query message: condition[{ "a": { "$gt": 2 } }], selector[{}], order_by[{}], hint[{}], limit[3], offset[0], table[db_28276.t1]
+[Note] SequoiaDB: Query message: condition[{}], selector[{}], order_by[{}], hint[{}], limit[-1], offset[0], table[db_28276.t2]
+explain select * from (select * from t1 where a>2 limit 3) t3,t2 where t2.a=t3.a limit 3;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	PRIMARY	<derived2>	NULL	ALL	NULL	NULL	NULL	NULL	3	100.00	NULL
+1	PRIMARY	t2	NULL	ALL	NULL	NULL	NULL	NULL	10	10.00	Using where; Using join buffer (Block Nested Loop)
+2	DERIVED	t1	NULL	ALL	NULL	NULL	NULL	NULL	10	33.33	Using where with pushed condition (`db_28276`.`t1`.`a` > 2)
+Warnings:
+Note	1003	/* select#1 */ select `t3`.`a` AS `a`,`t3`.`b` AS `b`,`db_28276`.`t2`.`a` AS `a`,`db_28276`.`t2`.`b` AS `b` from (/* select#2 */ select `db_28276`.`t1`.`a` AS `a`,`db_28276`.`t1`.`b` AS `b` from `db_28276`.`t1` where (`db_28276`.`t1`.`a` > 2) limit 3) `t3` join `db_28276`.`t2` where (`db_28276`.`t2`.`a` = `t3`.`a`) limit 3
+select * from (select t1.* from t1,t2 where t1.a>2) t2 order by t2.a,t2.b;
+a	b
+3	3
+3	3
+3	3
+3	3
+3	3
+3	3
+3	3
+3	3
+3	3
+3	3
+4	4
+4	4
+4	4
+4	4
+4	4
+4	4
+4	4
+4	4
+4	4
+4	4
+6	6
+6	6
+6	6
+6	6
+6	6
+6	6
+6	6
+6	6
+6	6
+6	6
+7	NULL
+7	NULL
+7	NULL
+7	NULL
+7	NULL
+7	NULL
+7	NULL
+7	NULL
+7	NULL
+7	NULL
+8	8
+8	8
+8	8
+8	8
+8	8
+8	8
+8	8
+8	8
+8	8
+8	8
+9	NULL
+9	NULL
+9	NULL
+9	NULL
+9	NULL
+9	NULL
+9	NULL
+9	NULL
+9	NULL
+9	NULL
+10	10
+10	10
+10	10
+10	10
+10	10
+10	10
+10	10
+10	10
+10	10
+10	10
+[Note] Testcase: Operation log begin
+[Note] SequoiaDB: Query message: condition[{ "a": { "$gt": 2 } }], selector[{}], order_by[{}], hint[{}], limit[-1], offset[0], table[db_28276.t1]
+[Note] SequoiaDB: Query message: condition[{}], selector[{ "_id": null }], order_by[{}], hint[{}], limit[-1], offset[0], table[db_28276.t2]
+explain select * from (select t1.* from t1,t2 where t1.a>2) t2 order by t2.a,t2.b;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	ALL	NULL	NULL	NULL	NULL	10	33.33	Using where with pushed condition (`db_28276`.`t1`.`a` > 2); Using temporary; Using filesort
+1	SIMPLE	t2	NULL	ALL	NULL	NULL	NULL	NULL	10	100.00	Using join buffer (Block Nested Loop)
+Warnings:
+Note	1003	/* select#1 */ select `db_28276`.`t1`.`a` AS `a`,`db_28276`.`t1`.`b` AS `b` from `db_28276`.`t1` join `db_28276`.`t2` where (`db_28276`.`t1`.`a` > 2) order by `db_28276`.`t1`.`a`,`db_28276`.`t1`.`b`
+select * from (select * from t1 where a>2) t3,t2 where t2.a=t3.a order by t2.a,t2.b;
+a	b	a	b
+3	3	3	3
+4	4	4	4
+6	6	6	6
+7	NULL	7	NULL
+8	8	8	8
+9	NULL	9	NULL
+10	10	10	10
+[Note] Testcase: Operation log begin
+[Note] SequoiaDB: Query message: condition[{ "a": { "$gt": 2 } }], selector[{}], order_by[{}], hint[{}], limit[-1], offset[0], table[db_28276.t1]
+[Note] SequoiaDB: Query message: condition[{}], selector[{}], order_by[{}], hint[{}], limit[-1], offset[0], table[db_28276.t2]
+explain select * from (select * from t1 where a>2) t3,t2 where t2.a=t3.a order by t2.a,t2.b;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	ALL	NULL	NULL	NULL	NULL	10	33.33	Using where with pushed condition (`db_28276`.`t1`.`a` > 2); Using temporary; Using filesort
+1	SIMPLE	t2	NULL	ALL	NULL	NULL	NULL	NULL	10	10.00	Using where; Using join buffer (Block Nested Loop)
+Warnings:
+Note	1003	/* select#1 */ select `db_28276`.`t1`.`a` AS `a`,`db_28276`.`t1`.`b` AS `b`,`db_28276`.`t2`.`a` AS `a`,`db_28276`.`t2`.`b` AS `b` from `db_28276`.`t1` join `db_28276`.`t2` where ((`db_28276`.`t2`.`a` = `db_28276`.`t1`.`a`) and (`db_28276`.`t1`.`a` > 2)) order by `db_28276`.`t2`.`a`,`db_28276`.`t2`.`b`
+select * from (select * from t1 where a>2 limit 3) t3,t2 where t2.a=t3.a order by t2.a,t2.b;
+a	b	a	b
+3	3	3	3
+4	4	4	4
+6	6	6	6
+[Note] Testcase: Operation log begin
+[Note] SequoiaDB: Query message: condition[{ "a": { "$gt": 2 } }], selector[{}], order_by[{}], hint[{}], limit[3], offset[0], table[db_28276.t1]
+[Note] SequoiaDB: Query message: condition[{}], selector[{}], order_by[{}], hint[{}], limit[-1], offset[0], table[db_28276.t2]
+explain select * from (select * from t1 where a>2 limit 3) t3,t2 where t2.a=t3.a order by t2.a,t2.b;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	PRIMARY	<derived2>	NULL	ALL	NULL	NULL	NULL	NULL	3	100.00	Using temporary; Using filesort
+1	PRIMARY	t2	NULL	ALL	NULL	NULL	NULL	NULL	10	10.00	Using where; Using join buffer (Block Nested Loop)
+2	DERIVED	t1	NULL	ALL	NULL	NULL	NULL	NULL	10	33.33	Using where with pushed condition (`db_28276`.`t1`.`a` > 2)
+Warnings:
+Note	1003	/* select#1 */ select `t3`.`a` AS `a`,`t3`.`b` AS `b`,`db_28276`.`t2`.`a` AS `a`,`db_28276`.`t2`.`b` AS `b` from (/* select#2 */ select `db_28276`.`t1`.`a` AS `a`,`db_28276`.`t1`.`b` AS `b` from `db_28276`.`t1` where (`db_28276`.`t1`.`a` > 2) limit 3) `t3` join `db_28276`.`t2` where (`db_28276`.`t2`.`a` = `t3`.`a`) order by `db_28276`.`t2`.`a`,`db_28276`.`t2`.`b`
+select * from (select t1.* from t1,t2 where t1.a>2) t2 group by t2.b;
+a	b
+7	NULL
+3	3
+4	4
+6	6
+8	8
+10	10
+[Note] Testcase: Operation log begin
+[Note] SequoiaDB: Query message: condition[{ "a": { "$gt": 2 } }], selector[{}], order_by[{}], hint[{}], limit[-1], offset[0], table[db_28276.t1]
+[Note] SequoiaDB: Query message: condition[{}], selector[{ "_id": null }], order_by[{}], hint[{}], limit[-1], offset[0], table[db_28276.t2]
+explain select * from (select t1.* from t1,t2 where t1.a>2) t2 group by t2.b;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	ALL	NULL	NULL	NULL	NULL	10	33.33	Using where with pushed condition (`db_28276`.`t1`.`a` > 2); Using temporary; Using filesort
+1	SIMPLE	t2	NULL	ALL	NULL	NULL	NULL	NULL	10	100.00	Using join buffer (Block Nested Loop)
+Warnings:
+Note	1003	/* select#1 */ select `db_28276`.`t1`.`a` AS `a`,`db_28276`.`t1`.`b` AS `b` from `db_28276`.`t1` join `db_28276`.`t2` where (`db_28276`.`t1`.`a` > 2) group by `db_28276`.`t1`.`b`
+select * from (select * from t1 where a>2) t3,t2 where t2.a=t3.a group by t2.b;
+a	b	a	b
+7	NULL	7	NULL
+3	3	3	3
+4	4	4	4
+6	6	6	6
+8	8	8	8
+10	10	10	10
+[Note] Testcase: Operation log begin
+[Note] SequoiaDB: Query message: condition[{ "a": { "$gt": 2 } }], selector[{}], order_by[{}], hint[{}], limit[-1], offset[0], table[db_28276.t1]
+[Note] SequoiaDB: Query message: condition[{}], selector[{}], order_by[{}], hint[{}], limit[-1], offset[0], table[db_28276.t2]
+explain select * from (select * from t1 where a>2) t3,t2 where t2.a=t3.a group by t2.b;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	ALL	NULL	NULL	NULL	NULL	10	33.33	Using where with pushed condition (`db_28276`.`t1`.`a` > 2); Using temporary; Using filesort
+1	SIMPLE	t2	NULL	ALL	NULL	NULL	NULL	NULL	10	10.00	Using where; Using join buffer (Block Nested Loop)
+Warnings:
+Note	1003	/* select#1 */ select `db_28276`.`t1`.`a` AS `a`,`db_28276`.`t1`.`b` AS `b`,`db_28276`.`t2`.`a` AS `a`,`db_28276`.`t2`.`b` AS `b` from `db_28276`.`t1` join `db_28276`.`t2` where ((`db_28276`.`t2`.`a` = `db_28276`.`t1`.`a`) and (`db_28276`.`t1`.`a` > 2)) group by `db_28276`.`t2`.`b`
+select * from (select * from t1 where a>2 limit 3) t3,t2 where t2.a=t3.a group by t2.b;
+a	b	a	b
+3	3	3	3
+4	4	4	4
+6	6	6	6
+[Note] Testcase: Operation log begin
+[Note] SequoiaDB: Query message: condition[{ "a": { "$gt": 2 } }], selector[{}], order_by[{}], hint[{}], limit[3], offset[0], table[db_28276.t1]
+[Note] SequoiaDB: Query message: condition[{}], selector[{}], order_by[{}], hint[{}], limit[-1], offset[0], table[db_28276.t2]
+explain select * from (select * from t1 where a>2 limit 3) t3,t2 where t2.a=t3.a group by t2.b;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	PRIMARY	<derived2>	NULL	ALL	NULL	NULL	NULL	NULL	3	100.00	Using temporary; Using filesort
+1	PRIMARY	t2	NULL	ALL	NULL	NULL	NULL	NULL	10	10.00	Using where; Using join buffer (Block Nested Loop)
+2	DERIVED	t1	NULL	ALL	NULL	NULL	NULL	NULL	10	33.33	Using where with pushed condition (`db_28276`.`t1`.`a` > 2)
+Warnings:
+Note	1003	/* select#1 */ select `t3`.`a` AS `a`,`t3`.`b` AS `b`,`db_28276`.`t2`.`a` AS `a`,`db_28276`.`t2`.`b` AS `b` from (/* select#2 */ select `db_28276`.`t1`.`a` AS `a`,`db_28276`.`t1`.`b` AS `b` from `db_28276`.`t1` where (`db_28276`.`t1`.`a` > 2) limit 3) `t3` join `db_28276`.`t2` where (`db_28276`.`t2`.`a` = `t3`.`a`) group by `db_28276`.`t2`.`b`
+select * from t1 where a in (select a from t1 where b<5) limit 3;
+a	b
+1	1
+2	2
+3	3
+[Note] Testcase: Operation log begin
+[Note] SequoiaDB: Query message: condition[{ "a": { "$isnull": 0 } }], selector[{}], order_by[{}], hint[{}], limit[-1], offset[0], table[db_28276.t1]
+[Note] SequoiaDB: Query message: condition[{ "b": { "$lt": 5 } }], selector[{}], order_by[{}], hint[{}], limit[-1], offset[0], table[db_28276.t1]
+explain select * from t1 where a in (select a from t1 where b<5) limit 3;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	ALL	NULL	NULL	NULL	NULL	10	100.00	Using where with pushed condition (`db_28276`.`t1`.`a` is not null)
+1	SIMPLE	<subquery2>	NULL	eq_ref	<auto_key>	<auto_key>	5	db_28276.t1.a	1	100.00	NULL
+2	MATERIALIZED	t1	NULL	ALL	NULL	NULL	NULL	NULL	10	33.33	Using where with pushed condition (`db_28276`.`t1`.`b` < 5)
+Warnings:
+Note	1003	/* select#1 */ select `db_28276`.`t1`.`a` AS `a`,`db_28276`.`t1`.`b` AS `b` from `db_28276`.`t1` semi join (`db_28276`.`t1`) where ((`<subquery2>`.`a` = `db_28276`.`t1`.`a`) and (`db_28276`.`t1`.`b` < 5)) limit 3
+select *,(select a from t2 limit 1) from t1 limit 3;
+a	b	(select a from t2 limit 1)
+1	1	1
+2	2	1
+3	3	1
+[Note] Testcase: Operation log begin
+[Note] SequoiaDB: Query message: condition[{}], selector[{}], order_by[{}], hint[{}], limit[3], offset[0], table[db_28276.t1]
+[Note] SequoiaDB: Query message: condition[{}], selector[{}], order_by[{}], hint[{}], limit[1], offset[0], table[db_28276.t2]
+explain select *,(select a from t2 limit 1) from t1 limit 3;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	PRIMARY	t1	NULL	ALL	NULL	NULL	NULL	NULL	10	100.00	NULL
+2	SUBQUERY	t2	NULL	ALL	NULL	NULL	NULL	NULL	10	100.00	NULL
+Warnings:
+Note	1003	/* select#1 */ select `db_28276`.`t1`.`a` AS `a`,`db_28276`.`t1`.`b` AS `b`,(/* select#2 */ select `db_28276`.`t2`.`a` from `db_28276`.`t2` limit 1) AS `(select a from t2 limit 1)` from `db_28276`.`t1` limit 3
+select * from t1 union select * from t2 limit 3;
+a	b
+1	1
+2	2
+3	3
+[Note] Testcase: Operation log begin
+[Note] SequoiaDB: Query message: condition[{}], selector[{}], order_by[{}], hint[{}], limit[-1], offset[0], table[db_28276.t1]
+[Note] SequoiaDB: Query message: condition[{}], selector[{}], order_by[{}], hint[{}], limit[-1], offset[0], table[db_28276.t2]
+explain select * from t1 union select * from t2 limit 3;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	PRIMARY	t1	NULL	ALL	NULL	NULL	NULL	NULL	10	100.00	NULL
+2	UNION	t2	NULL	ALL	NULL	NULL	NULL	NULL	10	100.00	NULL
+NULL	UNION RESULT	<union1,2>	NULL	ALL	NULL	NULL	NULL	NULL	NULL	NULL	Using temporary
+Warnings:
+Note	1003	/* select#1 */ select `db_28276`.`t1`.`a` AS `a`,`db_28276`.`t1`.`b` AS `b` from `db_28276`.`t1` union /* select#2 */ select `db_28276`.`t2`.`a` AS `a`,`db_28276`.`t2`.`b` AS `b` from `db_28276`.`t2` limit 3
+select * from t1 where a in(select a from t2 where a=2 union select 1) limit 3;
+a	b
+1	1
+2	2
+[Note] Testcase: Operation log begin
+[Note] SequoiaDB: Condition can't be pushed down. db=[db_28276], table[t1], sql=[select * from t1 where a in(select a from t2 where a=2 union select 1) limit 3]
+[Note] SequoiaDB: Condition can't be pushed down. db=[db_28276], table[t1], sql=[select * from t1 where a in(select a from t2 where a=2 union select 1) limit 3]
+[Note] SequoiaDB: Query message: condition[{}], selector[{}], order_by[{}], hint[{}], limit[-1], offset[0], table[db_28276.t1]
+[Note] SequoiaDB: Query message: condition[{ "a": { "$et": 2 } }], selector[{}], order_by[{}], hint[{}], limit[-1], offset[0], table[db_28276.t2]
+[Note] SequoiaDB: Query message: condition[{ "a": { "$et": 2 } }], selector[{}], order_by[{}], hint[{}], limit[-1], offset[0], table[db_28276.t2]
+[Note] SequoiaDB: Query message: condition[{ "a": { "$et": 2 } }], selector[{}], order_by[{}], hint[{}], limit[-1], offset[0], table[db_28276.t2]
+[Note] SequoiaDB: Query message: condition[{ "a": { "$et": 2 } }], selector[{}], order_by[{}], hint[{}], limit[-1], offset[0], table[db_28276.t2]
+[Note] SequoiaDB: Query message: condition[{ "a": { "$et": 2 } }], selector[{}], order_by[{}], hint[{}], limit[-1], offset[0], table[db_28276.t2]
+[Note] SequoiaDB: Query message: condition[{ "a": { "$et": 2 } }], selector[{}], order_by[{}], hint[{}], limit[-1], offset[0], table[db_28276.t2]
+[Note] SequoiaDB: Query message: condition[{ "a": { "$et": 2 } }], selector[{}], order_by[{}], hint[{}], limit[-1], offset[0], table[db_28276.t2]
+[Note] SequoiaDB: Query message: condition[{ "a": { "$et": 2 } }], selector[{}], order_by[{}], hint[{}], limit[-1], offset[0], table[db_28276.t2]
+[Note] SequoiaDB: Query message: condition[{ "a": { "$et": 2 } }], selector[{}], order_by[{}], hint[{}], limit[-1], offset[0], table[db_28276.t2]
+explain select * from t1 where a in(select a from t2 where a=2 union select 1) limit 3;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	PRIMARY	t1	NULL	ALL	NULL	NULL	NULL	NULL	10	100.00	Using where
+2	DEPENDENT SUBQUERY	t2	NULL	ALL	NULL	NULL	NULL	NULL	10	10.00	Using where with pushed condition (`db_28276`.`t2`.`a` = 2)
+3	DEPENDENT UNION	NULL	NULL	NULL	NULL	NULL	NULL	NULL	NULL	NULL	No tables used
+NULL	UNION RESULT	<union2,3>	NULL	ALL	NULL	NULL	NULL	NULL	NULL	NULL	Using temporary
+Warnings:
+Note	1003	/* select#1 */ select `db_28276`.`t1`.`a` AS `a`,`db_28276`.`t1`.`b` AS `b` from `db_28276`.`t1` where <in_optimizer>(`db_28276`.`t1`.`a`,<exists>(/* select#2 */ select 1 from `db_28276`.`t2` where ((`db_28276`.`t2`.`a` = 2) and (<cache>(`db_28276`.`t1`.`a`) = 2)) union /* select#3 */ select 1 having (<cache>(`db_28276`.`t1`.`a`) = <ref_null_helper>(1)))) limit 3
+select * from t1,t2 limit 3;
+a	b	a	b
+1	1	1	1
+2	2	1	1
+3	3	1	1
+[Note] Testcase: Operation log begin
+[Note] SequoiaDB: Query message: condition[{}], selector[{}], order_by[{}], hint[{}], limit[-1], offset[0], table[db_28276.t1]
+[Note] SequoiaDB: Query message: condition[{}], selector[{}], order_by[{}], hint[{}], limit[-1], offset[0], table[db_28276.t2]
+explain select * from t1,t2 limit 3;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	ALL	NULL	NULL	NULL	NULL	10	100.00	NULL
+1	SIMPLE	t2	NULL	ALL	NULL	NULL	NULL	NULL	10	100.00	Using join buffer (Block Nested Loop)
+Warnings:
+Note	1003	/* select#1 */ select `db_28276`.`t1`.`a` AS `a`,`db_28276`.`t1`.`b` AS `b`,`db_28276`.`t2`.`a` AS `a`,`db_28276`.`t2`.`b` AS `b` from `db_28276`.`t1` join `db_28276`.`t2` limit 3
+select * from t1 left outer join t2 on t1.a=t2.a limit 3;
+a	b	a	b
+1	1	1	1
+2	2	2	2
+3	3	3	3
+[Note] Testcase: Operation log begin
+[Note] SequoiaDB: Query message: condition[{}], selector[{}], order_by[{}], hint[{}], limit[-1], offset[0], table[db_28276.t1]
+[Note] SequoiaDB: Query message: condition[{}], selector[{}], order_by[{}], hint[{}], limit[-1], offset[0], table[db_28276.t2]
+explain select * from t1 left outer join t2 on t1.a=t2.a limit 3;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	ALL	NULL	NULL	NULL	NULL	10	100.00	NULL
+1	SIMPLE	t2	NULL	ALL	NULL	NULL	NULL	NULL	10	100.00	Using where; Using join buffer (Block Nested Loop)
+Warnings:
+Note	1003	/* select#1 */ select `db_28276`.`t1`.`a` AS `a`,`db_28276`.`t1`.`b` AS `b`,`db_28276`.`t2`.`a` AS `a`,`db_28276`.`t2`.`b` AS `b` from `db_28276`.`t1` left join `db_28276`.`t2` on((`db_28276`.`t2`.`a` = `db_28276`.`t1`.`a`)) where 1 limit 3
+select * from t1 join t2 using(a) limit 3;
+a	b	b
+1	1	1
+2	2	2
+3	3	3
+[Note] Testcase: Operation log begin
+[Note] SequoiaDB: Query message: condition[{}], selector[{}], order_by[{}], hint[{}], limit[-1], offset[0], table[db_28276.t1]
+[Note] SequoiaDB: Query message: condition[{}], selector[{}], order_by[{}], hint[{}], limit[-1], offset[0], table[db_28276.t2]
+explain select * from t1 join t2 using(a) limit 3;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	ALL	NULL	NULL	NULL	NULL	10	100.00	NULL
+1	SIMPLE	t2	NULL	ALL	NULL	NULL	NULL	NULL	10	10.00	Using where; Using join buffer (Block Nested Loop)
+Warnings:
+Note	1003	/* select#1 */ select `db_28276`.`t1`.`a` AS `a`,`db_28276`.`t1`.`b` AS `b`,`db_28276`.`t2`.`b` AS `b` from `db_28276`.`t1` join `db_28276`.`t2` where (`db_28276`.`t2`.`a` = `db_28276`.`t1`.`a`) limit 3
+select * from t1 where a in (select a from t1 where b<5) order by b;
+a	b
+1	1
+2	2
+3	3
+4	4
+[Note] Testcase: Operation log begin
+[Note] SequoiaDB: Query message: condition[{ "b": { "$lt": 5 } }], selector[{}], order_by[{}], hint[{}], limit[-1], offset[0], table[db_28276.t1]
+[Note] SequoiaDB: Query message: condition[{}], selector[{}], order_by[{}], hint[{}], limit[-1], offset[0], table[db_28276.t1]
+explain select * from t1 where a in (select a from t1 where b<5) order by b;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	ALL	NULL	NULL	NULL	NULL	10	33.33	Using where with pushed condition (`db_28276`.`t1`.`b` < 5); Using temporary; Using filesort; Start temporary
+1	SIMPLE	t1	NULL	ALL	NULL	NULL	NULL	NULL	10	10.00	Using where; End temporary; Using join buffer (Block Nested Loop)
+Warnings:
+Note	1003	/* select#1 */ select `db_28276`.`t1`.`a` AS `a`,`db_28276`.`t1`.`b` AS `b` from `db_28276`.`t1` semi join (`db_28276`.`t1`) where ((`db_28276`.`t1`.`a` = `db_28276`.`t1`.`a`) and (`db_28276`.`t1`.`b` < 5)) order by `db_28276`.`t1`.`b`
+select *,(select a from t2 limit 1) from t1 order by a,b;
+a	b	(select a from t2 limit 1)
+NULL	5	1
+1	1	1
+2	2	1
+3	3	1
+4	4	1
+6	6	1
+7	NULL	1
+8	8	1
+9	NULL	1
+10	10	1
+[Note] Testcase: Operation log begin
+[Note] SequoiaDB: Query message: condition[{}], selector[{}], order_by[{}], hint[{}], limit[-1], offset[0], table[db_28276.t1]
+[Note] SequoiaDB: Query message: condition[{}], selector[{}], order_by[{}], hint[{}], limit[1], offset[0], table[db_28276.t2]
+explain select *,(select a from t2 limit 1) from t1 order by a,b;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	PRIMARY	t1	NULL	ALL	NULL	NULL	NULL	NULL	10	100.00	Using filesort
+2	SUBQUERY	t2	NULL	ALL	NULL	NULL	NULL	NULL	10	100.00	NULL
+Warnings:
+Note	1003	/* select#1 */ select `db_28276`.`t1`.`a` AS `a`,`db_28276`.`t1`.`b` AS `b`,(/* select#2 */ select `db_28276`.`t2`.`a` from `db_28276`.`t2` limit 1) AS `(select a from t2 limit 1)` from `db_28276`.`t1` order by `db_28276`.`t1`.`a`,`db_28276`.`t1`.`b`
+select * from t1 union select * from t2 order by a,b;
+a	b
+NULL	5
+1	1
+2	2
+3	3
+4	4
+6	6
+7	NULL
+8	8
+9	NULL
+10	10
+[Note] Testcase: Operation log begin
+[Note] SequoiaDB: Query message: condition[{}], selector[{}], order_by[{}], hint[{}], limit[-1], offset[0], table[db_28276.t1]
+[Note] SequoiaDB: Query message: condition[{}], selector[{}], order_by[{}], hint[{}], limit[-1], offset[0], table[db_28276.t2]
+explain select * from t1 union select * from t2 order by a,b;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	PRIMARY	t1	NULL	ALL	NULL	NULL	NULL	NULL	10	100.00	NULL
+2	UNION	t2	NULL	ALL	NULL	NULL	NULL	NULL	10	100.00	NULL
+NULL	UNION RESULT	<union1,2>	NULL	ALL	NULL	NULL	NULL	NULL	NULL	NULL	Using temporary; Using filesort
+Warnings:
+Note	1003	/* select#1 */ select `db_28276`.`t1`.`a` AS `a`,`db_28276`.`t1`.`b` AS `b` from `db_28276`.`t1` union /* select#2 */ select `db_28276`.`t2`.`a` AS `a`,`db_28276`.`t2`.`b` AS `b` from `db_28276`.`t2` order by `a`,`b`
+select * from t1 where a in(select a from t2 where a=2 union select 1) order by b;
+a	b
+1	1
+2	2
+[Note] Testcase: Operation log begin
+[Note] SequoiaDB: Condition can't be pushed down. db=[db_28276], table[t1], sql=[select * from t1 where a in(select a from t2 where a=2 union select 1) order by b]
+[Note] SequoiaDB: Query message: condition[{}], selector[{}], order_by[{}], hint[{}], limit[-1], offset[0], table[db_28276.t1]
+[Note] SequoiaDB: Query message: condition[{ "a": { "$et": 2 } }], selector[{}], order_by[{}], hint[{}], limit[-1], offset[0], table[db_28276.t2]
+[Note] SequoiaDB: Query message: condition[{ "a": { "$et": 2 } }], selector[{}], order_by[{}], hint[{}], limit[-1], offset[0], table[db_28276.t2]
+[Note] SequoiaDB: Query message: condition[{ "a": { "$et": 2 } }], selector[{}], order_by[{}], hint[{}], limit[-1], offset[0], table[db_28276.t2]
+[Note] SequoiaDB: Query message: condition[{ "a": { "$et": 2 } }], selector[{}], order_by[{}], hint[{}], limit[-1], offset[0], table[db_28276.t2]
+[Note] SequoiaDB: Query message: condition[{ "a": { "$et": 2 } }], selector[{}], order_by[{}], hint[{}], limit[-1], offset[0], table[db_28276.t2]
+[Note] SequoiaDB: Query message: condition[{ "a": { "$et": 2 } }], selector[{}], order_by[{}], hint[{}], limit[-1], offset[0], table[db_28276.t2]
+[Note] SequoiaDB: Query message: condition[{ "a": { "$et": 2 } }], selector[{}], order_by[{}], hint[{}], limit[-1], offset[0], table[db_28276.t2]
+[Note] SequoiaDB: Query message: condition[{ "a": { "$et": 2 } }], selector[{}], order_by[{}], hint[{}], limit[-1], offset[0], table[db_28276.t2]
+[Note] SequoiaDB: Query message: condition[{ "a": { "$et": 2 } }], selector[{}], order_by[{}], hint[{}], limit[-1], offset[0], table[db_28276.t2]
+explain select * from t1 where a in(select a from t2 where a=2 union select 1) order by b;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	PRIMARY	t1	NULL	ALL	NULL	NULL	NULL	NULL	10	100.00	Using where; Using filesort
+2	DEPENDENT SUBQUERY	t2	NULL	ALL	NULL	NULL	NULL	NULL	10	10.00	Using where with pushed condition (`db_28276`.`t2`.`a` = 2)
+3	DEPENDENT UNION	NULL	NULL	NULL	NULL	NULL	NULL	NULL	NULL	NULL	No tables used
+NULL	UNION RESULT	<union2,3>	NULL	ALL	NULL	NULL	NULL	NULL	NULL	NULL	Using temporary
+Warnings:
+Note	1003	/* select#1 */ select `db_28276`.`t1`.`a` AS `a`,`db_28276`.`t1`.`b` AS `b` from `db_28276`.`t1` where <in_optimizer>(`db_28276`.`t1`.`a`,<exists>(/* select#2 */ select 1 from `db_28276`.`t2` where ((`db_28276`.`t2`.`a` = 2) and (<cache>(`db_28276`.`t1`.`a`) = 2)) union /* select#3 */ select 1 having (<cache>(`db_28276`.`t1`.`a`) = <ref_null_helper>(1)))) order by `db_28276`.`t1`.`b`
+select * from t1,t2 order by t1.a,t2.a,t2.b;
+a	b	a	b
+NULL	5	NULL	5
+NULL	5	1	1
+NULL	5	2	2
+NULL	5	3	3
+NULL	5	4	4
+NULL	5	6	6
+NULL	5	7	NULL
+NULL	5	8	8
+NULL	5	9	NULL
+NULL	5	10	10
+1	1	NULL	5
+1	1	1	1
+1	1	2	2
+1	1	3	3
+1	1	4	4
+1	1	6	6
+1	1	7	NULL
+1	1	8	8
+1	1	9	NULL
+1	1	10	10
+2	2	NULL	5
+2	2	1	1
+2	2	2	2
+2	2	3	3
+2	2	4	4
+2	2	6	6
+2	2	7	NULL
+2	2	8	8
+2	2	9	NULL
+2	2	10	10
+3	3	NULL	5
+3	3	1	1
+3	3	2	2
+3	3	3	3
+3	3	4	4
+3	3	6	6
+3	3	7	NULL
+3	3	8	8
+3	3	9	NULL
+3	3	10	10
+4	4	NULL	5
+4	4	1	1
+4	4	2	2
+4	4	3	3
+4	4	4	4
+4	4	6	6
+4	4	7	NULL
+4	4	8	8
+4	4	9	NULL
+4	4	10	10
+6	6	NULL	5
+6	6	1	1
+6	6	2	2
+6	6	3	3
+6	6	4	4
+6	6	6	6
+6	6	7	NULL
+6	6	8	8
+6	6	9	NULL
+6	6	10	10
+7	NULL	NULL	5
+7	NULL	1	1
+7	NULL	2	2
+7	NULL	3	3
+7	NULL	4	4
+7	NULL	6	6
+7	NULL	7	NULL
+7	NULL	8	8
+7	NULL	9	NULL
+7	NULL	10	10
+8	8	NULL	5
+8	8	1	1
+8	8	2	2
+8	8	3	3
+8	8	4	4
+8	8	6	6
+8	8	7	NULL
+8	8	8	8
+8	8	9	NULL
+8	8	10	10
+9	NULL	NULL	5
+9	NULL	1	1
+9	NULL	2	2
+9	NULL	3	3
+9	NULL	4	4
+9	NULL	6	6
+9	NULL	7	NULL
+9	NULL	8	8
+9	NULL	9	NULL
+9	NULL	10	10
+10	10	NULL	5
+10	10	1	1
+10	10	2	2
+10	10	3	3
+10	10	4	4
+10	10	6	6
+10	10	7	NULL
+10	10	8	8
+10	10	9	NULL
+10	10	10	10
+[Note] Testcase: Operation log begin
+[Note] SequoiaDB: Query message: condition[{}], selector[{}], order_by[{}], hint[{}], limit[-1], offset[0], table[db_28276.t1]
+[Note] SequoiaDB: Query message: condition[{}], selector[{}], order_by[{}], hint[{}], limit[-1], offset[0], table[db_28276.t2]
+explain select * from t1,t2 order by t1.a,t2.a,t2.b;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	ALL	NULL	NULL	NULL	NULL	10	100.00	Using temporary; Using filesort
+1	SIMPLE	t2	NULL	ALL	NULL	NULL	NULL	NULL	10	100.00	Using join buffer (Block Nested Loop)
+Warnings:
+Note	1003	/* select#1 */ select `db_28276`.`t1`.`a` AS `a`,`db_28276`.`t1`.`b` AS `b`,`db_28276`.`t2`.`a` AS `a`,`db_28276`.`t2`.`b` AS `b` from `db_28276`.`t1` join `db_28276`.`t2` order by `db_28276`.`t1`.`a`,`db_28276`.`t2`.`a`,`db_28276`.`t2`.`b`
+select * from t1 left outer join t2 on t1.a=t2.a order by t2.a,t2.b;
+a	b	a	b
+NULL	5	NULL	NULL
+1	1	1	1
+2	2	2	2
+3	3	3	3
+4	4	4	4
+6	6	6	6
+7	NULL	7	NULL
+8	8	8	8
+9	NULL	9	NULL
+10	10	10	10
+[Note] Testcase: Operation log begin
+[Note] SequoiaDB: Query message: condition[{}], selector[{}], order_by[{}], hint[{}], limit[-1], offset[0], table[db_28276.t1]
+[Note] SequoiaDB: Query message: condition[{}], selector[{}], order_by[{}], hint[{}], limit[-1], offset[0], table[db_28276.t2]
+explain select * from t1 left outer join t2 on t1.a=t2.a order by t2.a,t2.b;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	ALL	NULL	NULL	NULL	NULL	10	100.00	Using temporary; Using filesort
+1	SIMPLE	t2	NULL	ALL	NULL	NULL	NULL	NULL	10	100.00	Using where; Using join buffer (Block Nested Loop)
+Warnings:
+Note	1003	/* select#1 */ select `db_28276`.`t1`.`a` AS `a`,`db_28276`.`t1`.`b` AS `b`,`db_28276`.`t2`.`a` AS `a`,`db_28276`.`t2`.`b` AS `b` from `db_28276`.`t1` left join `db_28276`.`t2` on((`db_28276`.`t2`.`a` = `db_28276`.`t1`.`a`)) where 1 order by `db_28276`.`t2`.`a`,`db_28276`.`t2`.`b`
+select * from t1 join t2 using(a);
+a	b	b
+1	1	1
+2	2	2
+3	3	3
+4	4	4
+6	6	6
+7	NULL	NULL
+8	8	8
+9	NULL	NULL
+10	10	10
+[Note] Testcase: Operation log begin
+[Note] SequoiaDB: Query message: condition[{}], selector[{}], order_by[{}], hint[{}], limit[-1], offset[0], table[db_28276.t1]
+[Note] SequoiaDB: Query message: condition[{}], selector[{}], order_by[{}], hint[{}], limit[-1], offset[0], table[db_28276.t2]
+explain select * from t1 join t2 using(a);
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	ALL	NULL	NULL	NULL	NULL	10	100.00	NULL
+1	SIMPLE	t2	NULL	ALL	NULL	NULL	NULL	NULL	10	10.00	Using where; Using join buffer (Block Nested Loop)
+Warnings:
+Note	1003	/* select#1 */ select `db_28276`.`t1`.`a` AS `a`,`db_28276`.`t1`.`b` AS `b`,`db_28276`.`t2`.`b` AS `b` from `db_28276`.`t1` join `db_28276`.`t2` where (`db_28276`.`t2`.`a` = `db_28276`.`t1`.`a`)
+select * from t1 where a in (select a from t1 where b<5) group by b;
+a	b
+1	1
+2	2
+3	3
+4	4
+[Note] Testcase: Operation log begin
+[Note] SequoiaDB: Query message: condition[{ "b": { "$lt": 5 } }], selector[{}], order_by[{}], hint[{}], limit[-1], offset[0], table[db_28276.t1]
+[Note] SequoiaDB: Query message: condition[{}], selector[{}], order_by[{}], hint[{}], limit[-1], offset[0], table[db_28276.t1]
+explain select * from t1 where a in (select a from t1 where b<5) group by b;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	ALL	NULL	NULL	NULL	NULL	10	33.33	Using where with pushed condition (`db_28276`.`t1`.`b` < 5); Using temporary; Using filesort; Start temporary
+1	SIMPLE	t1	NULL	ALL	NULL	NULL	NULL	NULL	10	10.00	Using where; End temporary; Using join buffer (Block Nested Loop)
+Warnings:
+Note	1003	/* select#1 */ select `db_28276`.`t1`.`a` AS `a`,`db_28276`.`t1`.`b` AS `b` from `db_28276`.`t1` semi join (`db_28276`.`t1`) where ((`db_28276`.`t1`.`a` = `db_28276`.`t1`.`a`) and (`db_28276`.`t1`.`b` < 5)) group by `db_28276`.`t1`.`b`
+select *,(select a from t2 limit 1) from t1 group by b;
+a	b	(select a from t2 limit 1)
+7	NULL	1
+1	1	1
+2	2	1
+3	3	1
+4	4	1
+NULL	5	1
+6	6	1
+8	8	1
+10	10	1
+[Note] Testcase: Operation log begin
+[Note] SequoiaDB: Query message: match[{ "$match": {} }], group[{ "$group": { "b": { "$first": "$b" }, "_id": { "b": "$b" }, "a": { "$first": "$a" } } }], sort[{ "$sort": { "b": 1 } }], skip[{ "$skip": 0 }], limit[{ "$limit": -1 }]
+[Note] SequoiaDB: Query message: condition[{}], selector[{}], order_by[{}], hint[{}], limit[1], offset[0], table[db_28276.t2]
+explain select *,(select a from t2 limit 1) from t1 group by b;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	PRIMARY	t1	NULL	NULL	NULL	NULL	NULL	NULL	10	100.00	Using pushed GROUP BY; Storage engine handles access type
+2	SUBQUERY	t2	NULL	ALL	NULL	NULL	NULL	NULL	10	100.00	NULL
+Warnings:
+Note	1003	/* select#1 */ select `db_28276`.`t1`.`a` AS `a`,`db_28276`.`t1`.`b` AS `b`,(/* select#2 */ select `db_28276`.`t2`.`a` from `db_28276`.`t2` limit 1) AS `(select a from t2 limit 1)` from `db_28276`.`t1` group by `db_28276`.`t1`.`b`
+select * from t1 union select * from t2 group by b;
+a	b
+1	1
+2	2
+3	3
+4	4
+NULL	5
+6	6
+7	NULL
+8	8
+9	NULL
+10	10
+[Note] Testcase: Operation log begin
+[Note] SequoiaDB: Query message: condition[{}], selector[{}], order_by[{}], hint[{}], limit[-1], offset[0], table[db_28276.t1]
+[Note] SequoiaDB: Query message: match[{ "$match": {} }], group[{ "$group": { "b": { "$first": "$b" }, "_id": { "b": "$b" }, "a": { "$first": "$a" } } }], sort[{ "$sort": { "b": 1 } }], skip[{ "$skip": 0 }], limit[{ "$limit": -1 }]
+explain select * from t1 union select * from t2 group by b;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	PRIMARY	t1	NULL	ALL	NULL	NULL	NULL	NULL	10	100.00	NULL
+2	UNION	t2	NULL	NULL	NULL	NULL	NULL	NULL	10	100.00	Using pushed GROUP BY; Storage engine handles access type
+NULL	UNION RESULT	<union1,2>	NULL	ALL	NULL	NULL	NULL	NULL	NULL	NULL	Using temporary
+Warnings:
+Note	1003	/* select#1 */ select `db_28276`.`t1`.`a` AS `a`,`db_28276`.`t1`.`b` AS `b` from `db_28276`.`t1` union /* select#2 */ select `db_28276`.`t2`.`a` AS `a`,`db_28276`.`t2`.`b` AS `b` from `db_28276`.`t2` group by `db_28276`.`t2`.`b`
+select * from t1 where a in(select a from t2 where a=2 union select 1) group by b;
+a	b
+1	1
+2	2
+[Note] Testcase: Operation log begin
+[Note] SequoiaDB: Condition can't be pushed down. db=[db_28276], table[t1], sql=[select * from t1 where a in(select a from t2 where a=2 union select 1) group by b]
+[Note] SequoiaDB: Condition can't be pushed down. db=[db_28276], table[t1], sql=[select * from t1 where a in(select a from t2 where a=2 union select 1) group by b]
+[Note] SequoiaDB: Query message: condition[{}], selector[{}], order_by[{}], hint[{}], limit[-1], offset[0], table[db_28276.t1]
+[Note] SequoiaDB: Query message: condition[{ "a": { "$et": 2 } }], selector[{}], order_by[{}], hint[{}], limit[-1], offset[0], table[db_28276.t2]
+[Note] SequoiaDB: Query message: condition[{ "a": { "$et": 2 } }], selector[{}], order_by[{}], hint[{}], limit[-1], offset[0], table[db_28276.t2]
+[Note] SequoiaDB: Query message: condition[{ "a": { "$et": 2 } }], selector[{}], order_by[{}], hint[{}], limit[-1], offset[0], table[db_28276.t2]
+[Note] SequoiaDB: Query message: condition[{ "a": { "$et": 2 } }], selector[{}], order_by[{}], hint[{}], limit[-1], offset[0], table[db_28276.t2]
+[Note] SequoiaDB: Query message: condition[{ "a": { "$et": 2 } }], selector[{}], order_by[{}], hint[{}], limit[-1], offset[0], table[db_28276.t2]
+[Note] SequoiaDB: Query message: condition[{ "a": { "$et": 2 } }], selector[{}], order_by[{}], hint[{}], limit[-1], offset[0], table[db_28276.t2]
+[Note] SequoiaDB: Query message: condition[{ "a": { "$et": 2 } }], selector[{}], order_by[{}], hint[{}], limit[-1], offset[0], table[db_28276.t2]
+[Note] SequoiaDB: Query message: condition[{ "a": { "$et": 2 } }], selector[{}], order_by[{}], hint[{}], limit[-1], offset[0], table[db_28276.t2]
+[Note] SequoiaDB: Query message: condition[{ "a": { "$et": 2 } }], selector[{}], order_by[{}], hint[{}], limit[-1], offset[0], table[db_28276.t2]
+explain select * from t1 where a in(select a from t2 where a=2 union select 1) group by b;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	PRIMARY	t1	NULL	ALL	NULL	NULL	NULL	NULL	10	100.00	Using where; Using temporary; Using filesort
+2	DEPENDENT SUBQUERY	t2	NULL	ALL	NULL	NULL	NULL	NULL	10	10.00	Using where with pushed condition (`db_28276`.`t2`.`a` = 2)
+3	DEPENDENT UNION	NULL	NULL	NULL	NULL	NULL	NULL	NULL	NULL	NULL	No tables used
+NULL	UNION RESULT	<union2,3>	NULL	ALL	NULL	NULL	NULL	NULL	NULL	NULL	Using temporary
+Warnings:
+Note	1003	/* select#1 */ select `db_28276`.`t1`.`a` AS `a`,`db_28276`.`t1`.`b` AS `b` from `db_28276`.`t1` where <in_optimizer>(`db_28276`.`t1`.`a`,<exists>(/* select#2 */ select 1 from `db_28276`.`t2` where ((`db_28276`.`t2`.`a` = 2) and (<cache>(`db_28276`.`t1`.`a`) = 2)) union /* select#3 */ select 1 having (<cache>(`db_28276`.`t1`.`a`) = <ref_null_helper>(1)))) group by `db_28276`.`t1`.`b`
+select * from t1,t2 group by t2.b;
+a	b	a	b
+1	1	7	NULL
+1	1	1	1
+1	1	2	2
+1	1	3	3
+1	1	4	4
+1	1	NULL	5
+1	1	6	6
+1	1	8	8
+1	1	10	10
+[Note] Testcase: Operation log begin
+[Note] SequoiaDB: Query message: condition[{}], selector[{}], order_by[{}], hint[{}], limit[-1], offset[0], table[db_28276.t1]
+[Note] SequoiaDB: Query message: condition[{}], selector[{}], order_by[{}], hint[{}], limit[-1], offset[0], table[db_28276.t2]
+explain select * from t1,t2 group by t2.b;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	ALL	NULL	NULL	NULL	NULL	10	100.00	Using temporary; Using filesort
+1	SIMPLE	t2	NULL	ALL	NULL	NULL	NULL	NULL	10	100.00	Using join buffer (Block Nested Loop)
+Warnings:
+Note	1003	/* select#1 */ select `db_28276`.`t1`.`a` AS `a`,`db_28276`.`t1`.`b` AS `b`,`db_28276`.`t2`.`a` AS `a`,`db_28276`.`t2`.`b` AS `b` from `db_28276`.`t1` join `db_28276`.`t2` group by `db_28276`.`t2`.`b`
+select * from t1 left outer join t2 on t1.a=t2.a group by t2.b;
+a	b	a	b
+7	NULL	7	NULL
+1	1	1	1
+2	2	2	2
+3	3	3	3
+4	4	4	4
+6	6	6	6
+8	8	8	8
+10	10	10	10
+[Note] Testcase: Operation log begin
+[Note] SequoiaDB: Query message: condition[{}], selector[{}], order_by[{}], hint[{}], limit[-1], offset[0], table[db_28276.t1]
+[Note] SequoiaDB: Query message: condition[{}], selector[{}], order_by[{}], hint[{}], limit[-1], offset[0], table[db_28276.t2]
+explain select * from t1 left outer join t2 on t1.a=t2.a group by t2.b;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	ALL	NULL	NULL	NULL	NULL	10	100.00	Using temporary; Using filesort
+1	SIMPLE	t2	NULL	ALL	NULL	NULL	NULL	NULL	10	100.00	Using where; Using join buffer (Block Nested Loop)
+Warnings:
+Note	1003	/* select#1 */ select `db_28276`.`t1`.`a` AS `a`,`db_28276`.`t1`.`b` AS `b`,`db_28276`.`t2`.`a` AS `a`,`db_28276`.`t2`.`b` AS `b` from `db_28276`.`t1` left join `db_28276`.`t2` on((`db_28276`.`t2`.`a` = `db_28276`.`t1`.`a`)) where 1 group by `db_28276`.`t2`.`b`
+select * from t1 join t2 using(a) group by t2.b;
+a	b	b
+7	NULL	NULL
+1	1	1
+2	2	2
+3	3	3
+4	4	4
+6	6	6
+8	8	8
+10	10	10
+[Note] Testcase: Operation log begin
+[Note] SequoiaDB: Query message: condition[{}], selector[{}], order_by[{}], hint[{}], limit[-1], offset[0], table[db_28276.t1]
+[Note] SequoiaDB: Query message: condition[{}], selector[{}], order_by[{}], hint[{}], limit[-1], offset[0], table[db_28276.t2]
+explain select * from t1 join t2 using(a) group by t2.b;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	ALL	NULL	NULL	NULL	NULL	10	100.00	Using temporary; Using filesort
+1	SIMPLE	t2	NULL	ALL	NULL	NULL	NULL	NULL	10	10.00	Using where; Using join buffer (Block Nested Loop)
+Warnings:
+Note	1003	/* select#1 */ select `db_28276`.`t1`.`a` AS `a`,`db_28276`.`t1`.`b` AS `b`,`db_28276`.`t2`.`b` AS `b` from `db_28276`.`t1` join `db_28276`.`t2` where (`db_28276`.`t2`.`a` = `db_28276`.`t1`.`a`) group by `db_28276`.`t2`.`b`
+select count(*) from (select * from t1 where a>2) t2;
+count(*)
+7
+[Note] Testcase: Operation log begin
+[Note] SequoiaDB: optimizer count: 1, condition: [{ "a": { "$gt": 2 } }], table: db_28276.t1
+[Note] SequoiaDB: optimizer pushdown autocommit: 1
+[Note] SequoiaDB: Count message: condition[{ "a": { "$gt": 2 } }],hint[{}] table[db_28276.t1]
+explain select count(*) from (select * from t1 where a>2) t2;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	ALL	NULL	NULL	NULL	NULL	10	33.33	Using where with pushed condition (`db_28276`.`t1`.`a` > 2)
+Warnings:
+Note	1003	/* select#1 */ select count(0) AS `count(*)` from `db_28276`.`t1` where (`db_28276`.`t1`.`a` > 2)
+select count(*) from (select * from t1 where a>2) t2 limit 3;
+count(*)
+7
+[Note] Testcase: Operation log begin
+[Note] SequoiaDB: optimizer count: 1, condition: [{ "a": { "$gt": 2 } }], table: db_28276.t1
+[Note] SequoiaDB: optimizer pushdown autocommit: 1
+[Note] SequoiaDB: Count message: condition[{ "a": { "$gt": 2 } }],hint[{}] table[db_28276.t1]
+explain select count(*) from (select * from t1 where a>2) t2 limit 3;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	ALL	NULL	NULL	NULL	NULL	10	33.33	Using where with pushed condition (`db_28276`.`t1`.`a` > 2)
+Warnings:
+Note	1003	/* select#1 */ select count(0) AS `count(*)` from `db_28276`.`t1` where (`db_28276`.`t1`.`a` > 2) limit 3
+select count(*) from (select * from t1 where a>2) t2 order by a;
+count(*)
+7
+[Note] Testcase: Operation log begin
+[Note] SequoiaDB: optimizer count: 1, condition: [{ "a": { "$gt": 2 } }], table: db_28276.t1
+[Note] SequoiaDB: optimizer pushdown autocommit: 1
+[Note] SequoiaDB: Count message: condition[{ "a": { "$gt": 2 } }],hint[{}] table[db_28276.t1]
+explain select count(*) from (select * from t1 where a>2) t2 order by a;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	ALL	NULL	NULL	NULL	NULL	10	33.33	Using where with pushed condition (`db_28276`.`t1`.`a` > 2)
+Warnings:
+Note	1003	/* select#1 */ select count(0) AS `count(*)` from `db_28276`.`t1` where (`db_28276`.`t1`.`a` > 2)
+select count(*) from (select * from t1 where a>2) t2 group by a;
+count(*)
+1
+1
+1
+1
+1
+1
+1
+[Note] Testcase: Operation log begin
+[Note] SequoiaDB: optimizer pushdown autocommit: 1
+[Note] SequoiaDB: Query message: condition[{ "a": { "$gt": 2 } }], selector[{}], order_by[{}], hint[{}], limit[-1], offset[0], table[db_28276.t1]
+explain select count(*) from (select * from t1 where a>2) t2 group by a;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	ALL	NULL	NULL	NULL	NULL	10	33.33	Using where with pushed condition (`db_28276`.`t1`.`a` > 2); Using temporary; Using filesort
+Warnings:
+Note	1003	/* select#1 */ select count(0) AS `count(*)` from `db_28276`.`t1` where (`db_28276`.`t1`.`a` > 2) group by `db_28276`.`t1`.`a`
+select count(*) from (select * from t1 where a>2) t2 group by a order by a limit 3;
+count(*)
+1
+1
+1
+[Note] Testcase: Operation log begin
+[Note] SequoiaDB: optimizer pushdown autocommit: 1
+[Note] SequoiaDB: Query message: condition[{ "a": { "$gt": 2 } }], selector[{}], order_by[{}], hint[{}], limit[-1], offset[0], table[db_28276.t1]
+explain select count(*) from (select * from t1 where a>2) t2 group by a order by a limit 3;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	ALL	NULL	NULL	NULL	NULL	10	33.33	Using where with pushed condition (`db_28276`.`t1`.`a` > 2); Using temporary; Using filesort
+Warnings:
+Note	1003	/* select#1 */ select count(0) AS `count(*)` from `db_28276`.`t1` where (`db_28276`.`t1`.`a` > 2) group by `db_28276`.`t1`.`a` order by `db_28276`.`t1`.`a` limit 3
+select count(*) from (select * from t1 where a>2 order by a DESC) t2;
+count(*)
+7
+[Note] Testcase: Operation log begin
+[Note] SequoiaDB: optimizer count: 1, condition: [{ "a": { "$gt": 2 } }], table: db_28276.t1
+[Note] SequoiaDB: optimizer pushdown autocommit: 1
+[Note] SequoiaDB: Count message: condition[{ "a": { "$gt": 2 } }],hint[{}] table[db_28276.t1]
+explain select count(*) from (select * from t1 where a>2 order by a DESC) t2;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	ALL	NULL	NULL	NULL	NULL	10	33.33	Using where with pushed condition (`db_28276`.`t1`.`a` > 2)
+Warnings:
+Note	1003	/* select#1 */ select count(0) AS `count(*)` from `db_28276`.`t1` where (`db_28276`.`t1`.`a` > 2)
+select count(*) from v1;
+count(*)
+5
+[Note] Testcase: Operation log begin
+[Note] SequoiaDB: optimizer count: 1, condition: [{ "a": { "$gt": 4 } }], table: db_28276.t2
+[Note] SequoiaDB: optimizer pushdown autocommit: 1
+[Note] SequoiaDB: Count message: condition[{ "a": { "$gt": 4 } }],hint[{}] table[db_28276.t2]
+explain select count(*) from v1;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t2	NULL	ALL	NULL	NULL	NULL	NULL	10	33.33	Using where with pushed condition (`db_28276`.`t2`.`a` > 4)
+Warnings:
+Note	1003	/* select#1 */ select count(0) AS `count(*)` from `db_28276`.`t2` where (`db_28276`.`t2`.`a` > 4)
+select count(*) from v1 limit 3;
+count(*)
+5
+[Note] Testcase: Operation log begin
+[Note] SequoiaDB: optimizer count: 1, condition: [{ "a": { "$gt": 4 } }], table: db_28276.t2
+[Note] SequoiaDB: optimizer pushdown autocommit: 1
+[Note] SequoiaDB: Count message: condition[{ "a": { "$gt": 4 } }],hint[{}] table[db_28276.t2]
+explain select count(*) from v1 limit 3;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t2	NULL	ALL	NULL	NULL	NULL	NULL	10	33.33	Using where with pushed condition (`db_28276`.`t2`.`a` > 4)
+Warnings:
+Note	1003	/* select#1 */ select count(0) AS `count(*)` from `db_28276`.`t2` where (`db_28276`.`t2`.`a` > 4) limit 3
+select count(*) from v1 order by a;
+count(*)
+5
+[Note] Testcase: Operation log begin
+[Note] SequoiaDB: optimizer count: 1, condition: [{ "a": { "$gt": 4 } }], table: db_28276.t2
+[Note] SequoiaDB: optimizer pushdown autocommit: 1
+[Note] SequoiaDB: Count message: condition[{ "a": { "$gt": 4 } }],hint[{}] table[db_28276.t2]
+explain select count(*) from v1 order by a;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t2	NULL	ALL	NULL	NULL	NULL	NULL	10	33.33	Using where with pushed condition (`db_28276`.`t2`.`a` > 4)
+Warnings:
+Note	1003	/* select#1 */ select count(0) AS `count(*)` from `db_28276`.`t2` where (`db_28276`.`t2`.`a` > 4)
+select count(*) from v1 group by a;
+count(*)
+1
+1
+1
+1
+1
+[Note] Testcase: Operation log begin
+[Note] SequoiaDB: optimizer pushdown autocommit: 1
+[Note] SequoiaDB: Query message: condition[{ "a": { "$gt": 4 } }], selector[{}], order_by[{}], hint[{}], limit[-1], offset[0], table[db_28276.t2]
+explain select count(*) from v1 group by a;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t2	NULL	ALL	NULL	NULL	NULL	NULL	10	33.33	Using where with pushed condition (`db_28276`.`t2`.`a` > 4); Using temporary; Using filesort
+Warnings:
+Note	1003	/* select#1 */ select count(0) AS `count(*)` from `db_28276`.`t2` where (`db_28276`.`t2`.`a` > 4) group by `db_28276`.`t2`.`a`
+select count(*) from v1 group by a order by a limit 3;
+count(*)
+1
+1
+1
+[Note] Testcase: Operation log begin
+[Note] SequoiaDB: optimizer pushdown autocommit: 1
+[Note] SequoiaDB: Query message: condition[{ "a": { "$gt": 4 } }], selector[{}], order_by[{}], hint[{}], limit[-1], offset[0], table[db_28276.t2]
+explain select count(*) from v1 group by a order by a limit 3;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t2	NULL	ALL	NULL	NULL	NULL	NULL	10	33.33	Using where with pushed condition (`db_28276`.`t2`.`a` > 4); Using temporary; Using filesort
+Warnings:
+Note	1003	/* select#1 */ select count(0) AS `count(*)` from `db_28276`.`t2` where (`db_28276`.`t2`.`a` > 4) group by `db_28276`.`t2`.`a` order by `db_28276`.`t2`.`a` limit 3
+select count(*) from (select * from t1 where a>2 limit 3) t2;
+count(*)
+3
+[Note] Testcase: Operation log begin
+[Note] SequoiaDB: Query message: condition[{ "a": { "$gt": 2 } }], selector[{}], order_by[{}], hint[{}], limit[3], offset[0], table[db_28276.t1]
+explain select count(*) from (select * from t1 where a>2 limit 3) t2;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	PRIMARY	<derived2>	NULL	ALL	NULL	NULL	NULL	NULL	3	100.00	NULL
+2	DERIVED	t1	NULL	ALL	NULL	NULL	NULL	NULL	10	33.33	Using where with pushed condition (`db_28276`.`t1`.`a` > 2)
+Warnings:
+Note	1003	/* select#1 */ select count(0) AS `count(*)` from (/* select#2 */ select `db_28276`.`t1`.`a` AS `a`,`db_28276`.`t1`.`b` AS `b` from `db_28276`.`t1` where (`db_28276`.`t1`.`a` > 2) limit 3) `t2`
+select count(*) from (select * from t1 where a>2 group by a) t2;
+count(*)
+7
+[Note] Testcase: Operation log begin
+[Note] SequoiaDB: Query message: match[{ "$match": { "a": { "$gt": 2 } } }], group[{ "$group": { "a": { "$first": "$a" }, "_id": { "a": "$a" }, "b": { "$first": "$b" } } }], sort[{ "$sort": { "a": 1 } }], skip[{ "$skip": 0 }], limit[{ "$limit": -1 }]
+explain select count(*) from (select * from t1 where a>2 group by a) t2;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	PRIMARY	<derived2>	NULL	ALL	NULL	NULL	NULL	NULL	3	100.00	NULL
+2	DERIVED	t1	NULL	NULL	NULL	NULL	NULL	NULL	10	33.33	Using where with pushed condition (`db_28276`.`t1`.`a` > 2); Using pushed GROUP BY; Storage engine handles access type
+Warnings:
+Note	1003	/* select#1 */ select count(0) AS `count(*)` from (/* select#2 */ select `db_28276`.`t1`.`a` AS `a`,`db_28276`.`t1`.`b` AS `b` from `db_28276`.`t1` where (`db_28276`.`t1`.`a` > 2) group by `db_28276`.`t1`.`a`) `t2`
+select count(*) from (select * from t1 where a>2 group by a order by a limit 3) t2;
+count(*)
+3
+[Note] Testcase: Operation log begin
+[Note] SequoiaDB: Query message: match[{ "$match": { "a": { "$gt": 2 } } }], group[{ "$group": { "a": { "$first": "$a" }, "_id": { "a": "$a" }, "b": { "$first": "$b" } } }], sort[{ "$sort": { "a": 1 } }], skip[{ "$skip": 0 }], limit[{ "$limit": 3 }]
+explain select count(*) from (select * from t1 where a>2 group by a order by a limit 3) t2;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	PRIMARY	<derived2>	NULL	ALL	NULL	NULL	NULL	NULL	3	100.00	NULL
+2	DERIVED	t1	NULL	NULL	NULL	NULL	NULL	NULL	10	33.33	Using where with pushed condition (`db_28276`.`t1`.`a` > 2); Using pushed GROUP BY; Using pushed ORDER BY; Storage engine handles access type
+Warnings:
+Note	1003	/* select#1 */ select count(0) AS `count(*)` from (/* select#2 */ select `db_28276`.`t1`.`a` AS `a`,`db_28276`.`t1`.`b` AS `b` from `db_28276`.`t1` where (`db_28276`.`t1`.`a` > 2) group by `db_28276`.`t1`.`a` order by `db_28276`.`t1`.`a` limit 3) `t2`
+select count(*) from (select * from t1 where a>2 order by a DESC limit 3) t2;
+count(*)
+3
+[Note] Testcase: Operation log begin
+[Note] SequoiaDB: Query message: condition[{ "a": { "$gt": 2 } }], selector[{}], order_by[{ "a": -1 }], hint[{ "": "" }], limit[3], offset[0], table[db_28276.t1]
+explain select count(*) from (select * from t1 where a>2 order by a DESC limit 3) t2;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	PRIMARY	<derived2>	NULL	ALL	NULL	NULL	NULL	NULL	3	100.00	NULL
+2	DERIVED	t1	NULL	NULL	NULL	NULL	NULL	NULL	10	33.33	Using where with pushed condition (`db_28276`.`t1`.`a` > 2); Using pushed ORDER BY; Storage engine handles access type
+Warnings:
+Note	1003	/* select#1 */ select count(0) AS `count(*)` from (/* select#2 */ select `db_28276`.`t1`.`a` AS `a`,`db_28276`.`t1`.`b` AS `b` from `db_28276`.`t1` where (`db_28276`.`t1`.`a` > 2) order by `db_28276`.`t1`.`a` desc limit 3) `t2`
+select count(*) from (select 1 from t1 where a>2 limit 3) t2;
+count(*)
+3
+[Note] Testcase: Operation log begin
+[Note] SequoiaDB: Query message: condition[{ "a": { "$gt": 2 } }], selector[{}], order_by[{}], hint[{}], limit[3], offset[0], table[db_28276.t1]
+explain select count(*) from (select 1 from t1 where a>2 limit 3) t2;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	PRIMARY	<derived2>	NULL	ALL	NULL	NULL	NULL	NULL	3	100.00	NULL
+2	DERIVED	t1	NULL	ALL	NULL	NULL	NULL	NULL	10	33.33	Using where with pushed condition (`db_28276`.`t1`.`a` > 2)
+Warnings:
+Note	1003	/* select#1 */ select count(0) AS `count(*)` from (/* select#2 */ select 1 AS `1` from `db_28276`.`t1` where (`db_28276`.`t1`.`a` > 2) limit 3) `t2`
+select * from (select * from t1 where a>2 limit 3) t2 limit 3;
+a	b
+3	3
+4	4
+6	6
+[Note] Testcase: Operation log begin
+[Note] SequoiaDB: Query message: condition[{ "a": { "$gt": 2 } }], selector[{}], order_by[{}], hint[{}], limit[3], offset[0], table[db_28276.t1]
+explain select * from (select * from t1 where a>2 limit 3) t2 limit 3;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	PRIMARY	<derived2>	NULL	ALL	NULL	NULL	NULL	NULL	3	100.00	NULL
+2	DERIVED	t1	NULL	ALL	NULL	NULL	NULL	NULL	10	33.33	Using where with pushed condition (`db_28276`.`t1`.`a` > 2)
+Warnings:
+Note	1003	/* select#1 */ select `t2`.`a` AS `a`,`t2`.`b` AS `b` from (/* select#2 */ select `db_28276`.`t1`.`a` AS `a`,`db_28276`.`t1`.`b` AS `b` from `db_28276`.`t1` where (`db_28276`.`t1`.`a` > 2) limit 3) `t2` limit 3
+select * from (select * from t1 where a>2 group by a) t2 limit 3;
+a	b
+3	3
+4	4
+6	6
+[Note] Testcase: Operation log begin
+[Note] SequoiaDB: Query message: match[{ "$match": { "a": { "$gt": 2 } } }], group[{ "$group": { "a": { "$first": "$a" }, "_id": { "a": "$a" }, "b": { "$first": "$b" } } }], sort[{ "$sort": { "a": 1 } }], skip[{ "$skip": 0 }], limit[{ "$limit": -1 }]
+explain select * from (select * from t1 where a>2 group by a) t2 limit 3;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	PRIMARY	<derived2>	NULL	ALL	NULL	NULL	NULL	NULL	3	100.00	NULL
+2	DERIVED	t1	NULL	NULL	NULL	NULL	NULL	NULL	10	33.33	Using where with pushed condition (`db_28276`.`t1`.`a` > 2); Using pushed GROUP BY; Storage engine handles access type
+Warnings:
+Note	1003	/* select#1 */ select `t2`.`a` AS `a`,`t2`.`b` AS `b` from (/* select#2 */ select `db_28276`.`t1`.`a` AS `a`,`db_28276`.`t1`.`b` AS `b` from `db_28276`.`t1` where (`db_28276`.`t1`.`a` > 2) group by `db_28276`.`t1`.`a`) `t2` limit 3
+select * from (select * from t1 where a>2 group by a order by a limit 3) t2 limit 3;
+a	b
+3	3
+4	4
+6	6
+[Note] Testcase: Operation log begin
+[Note] SequoiaDB: Query message: match[{ "$match": { "a": { "$gt": 2 } } }], group[{ "$group": { "a": { "$first": "$a" }, "_id": { "a": "$a" }, "b": { "$first": "$b" } } }], sort[{ "$sort": { "a": 1 } }], skip[{ "$skip": 0 }], limit[{ "$limit": 3 }]
+explain select * from (select * from t1 where a>2 group by a order by a limit 3) t2 limit 3;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	PRIMARY	<derived2>	NULL	ALL	NULL	NULL	NULL	NULL	3	100.00	NULL
+2	DERIVED	t1	NULL	NULL	NULL	NULL	NULL	NULL	10	33.33	Using where with pushed condition (`db_28276`.`t1`.`a` > 2); Using pushed GROUP BY; Using pushed ORDER BY; Storage engine handles access type
+Warnings:
+Note	1003	/* select#1 */ select `t2`.`a` AS `a`,`t2`.`b` AS `b` from (/* select#2 */ select `db_28276`.`t1`.`a` AS `a`,`db_28276`.`t1`.`b` AS `b` from `db_28276`.`t1` where (`db_28276`.`t1`.`a` > 2) group by `db_28276`.`t1`.`a` order by `db_28276`.`t1`.`a` limit 3) `t2` limit 3
+select * from (select * from t1 where a>2 order by a DESC limit 3) t2 limit 3;
+a	b
+10	10
+9	NULL
+8	8
+[Note] Testcase: Operation log begin
+[Note] SequoiaDB: Query message: condition[{ "a": { "$gt": 2 } }], selector[{}], order_by[{ "a": -1 }], hint[{ "": "" }], limit[3], offset[0], table[db_28276.t1]
+explain select * from (select * from t1 where a>2 order by a DESC limit 3) t2 limit 3;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	PRIMARY	<derived2>	NULL	ALL	NULL	NULL	NULL	NULL	3	100.00	NULL
+2	DERIVED	t1	NULL	NULL	NULL	NULL	NULL	NULL	10	33.33	Using where with pushed condition (`db_28276`.`t1`.`a` > 2); Using pushed ORDER BY; Storage engine handles access type
+Warnings:
+Note	1003	/* select#1 */ select `t2`.`a` AS `a`,`t2`.`b` AS `b` from (/* select#2 */ select `db_28276`.`t1`.`a` AS `a`,`db_28276`.`t1`.`b` AS `b` from `db_28276`.`t1` where (`db_28276`.`t1`.`a` > 2) order by `db_28276`.`t1`.`a` desc limit 3) `t2` limit 3
+select * from (select 1 from t1 where a>2 limit 3) t2 limit 3;
+1
+1
+1
+1
+[Note] Testcase: Operation log begin
+[Note] SequoiaDB: Query message: condition[{ "a": { "$gt": 2 } }], selector[{}], order_by[{}], hint[{}], limit[3], offset[0], table[db_28276.t1]
+explain select * from (select 1 from t1 where a>2 limit 3) t2 limit 3;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	PRIMARY	<derived2>	NULL	ALL	NULL	NULL	NULL	NULL	3	100.00	NULL
+2	DERIVED	t1	NULL	ALL	NULL	NULL	NULL	NULL	10	33.33	Using where with pushed condition (`db_28276`.`t1`.`a` > 2)
+Warnings:
+Note	1003	/* select#1 */ select `t2`.`1` AS `1` from (/* select#2 */ select 1 AS `1` from `db_28276`.`t1` where (`db_28276`.`t1`.`a` > 2) limit 3) `t2` limit 3
+select * from (select * from t1 where a>2 limit 3) t2 order by b;
+a	b
+3	3
+4	4
+6	6
+[Note] Testcase: Operation log begin
+[Note] SequoiaDB: Query message: condition[{ "a": { "$gt": 2 } }], selector[{}], order_by[{}], hint[{}], limit[3], offset[0], table[db_28276.t1]
+explain select * from (select * from t1 where a>2 limit 3) t2 order by b;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	PRIMARY	<derived2>	NULL	ALL	NULL	NULL	NULL	NULL	3	100.00	Using filesort
+2	DERIVED	t1	NULL	ALL	NULL	NULL	NULL	NULL	10	33.33	Using where with pushed condition (`db_28276`.`t1`.`a` > 2)
+Warnings:
+Note	1003	/* select#1 */ select `t2`.`a` AS `a`,`t2`.`b` AS `b` from (/* select#2 */ select `db_28276`.`t1`.`a` AS `a`,`db_28276`.`t1`.`b` AS `b` from `db_28276`.`t1` where (`db_28276`.`t1`.`a` > 2) limit 3) `t2` order by `t2`.`b`
+select * from (select * from t1 where a>2 group by a) t2 order by a,b;
+a	b
+3	3
+4	4
+6	6
+7	NULL
+8	8
+9	NULL
+10	10
+[Note] Testcase: Operation log begin
+[Note] SequoiaDB: Query message: match[{ "$match": { "a": { "$gt": 2 } } }], group[{ "$group": { "a": { "$first": "$a" }, "_id": { "a": "$a" }, "b": { "$first": "$b" } } }], sort[{ "$sort": { "a": 1 } }], skip[{ "$skip": 0 }], limit[{ "$limit": -1 }]
+explain select * from (select * from t1 where a>2 group by a) t2 order by a,b;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	PRIMARY	<derived2>	NULL	ALL	NULL	NULL	NULL	NULL	3	100.00	Using filesort
+2	DERIVED	t1	NULL	NULL	NULL	NULL	NULL	NULL	10	33.33	Using where with pushed condition (`db_28276`.`t1`.`a` > 2); Using pushed GROUP BY; Storage engine handles access type
+Warnings:
+Note	1003	/* select#1 */ select `t2`.`a` AS `a`,`t2`.`b` AS `b` from (/* select#2 */ select `db_28276`.`t1`.`a` AS `a`,`db_28276`.`t1`.`b` AS `b` from `db_28276`.`t1` where (`db_28276`.`t1`.`a` > 2) group by `db_28276`.`t1`.`a`) `t2` order by `t2`.`a`,`t2`.`b`
+select * from (select * from t1 where a>2 group by a order by a limit 3) t2 order by b;
+a	b
+3	3
+4	4
+6	6
+[Note] Testcase: Operation log begin
+[Note] SequoiaDB: Query message: match[{ "$match": { "a": { "$gt": 2 } } }], group[{ "$group": { "a": { "$first": "$a" }, "_id": { "a": "$a" }, "b": { "$first": "$b" } } }], sort[{ "$sort": { "a": 1 } }], skip[{ "$skip": 0 }], limit[{ "$limit": 3 }]
+explain select * from (select * from t1 where a>2 group by a order by a limit 3) t2 order by b;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	PRIMARY	<derived2>	NULL	ALL	NULL	NULL	NULL	NULL	3	100.00	Using filesort
+2	DERIVED	t1	NULL	NULL	NULL	NULL	NULL	NULL	10	33.33	Using where with pushed condition (`db_28276`.`t1`.`a` > 2); Using pushed GROUP BY; Using pushed ORDER BY; Storage engine handles access type
+Warnings:
+Note	1003	/* select#1 */ select `t2`.`a` AS `a`,`t2`.`b` AS `b` from (/* select#2 */ select `db_28276`.`t1`.`a` AS `a`,`db_28276`.`t1`.`b` AS `b` from `db_28276`.`t1` where (`db_28276`.`t1`.`a` > 2) group by `db_28276`.`t1`.`a` order by `db_28276`.`t1`.`a` limit 3) `t2` order by `t2`.`b`
+select * from (select * from t1 where a>2 order by a DESC limit 3) t2 order by b DESC;
+a	b
+10	10
+8	8
+9	NULL
+[Note] Testcase: Operation log begin
+[Note] SequoiaDB: Query message: condition[{ "a": { "$gt": 2 } }], selector[{}], order_by[{ "a": -1 }], hint[{ "": "" }], limit[3], offset[0], table[db_28276.t1]
+explain select * from (select * from t1 where a>2 order by a DESC limit 3) t2 order by b DESC;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	PRIMARY	<derived2>	NULL	ALL	NULL	NULL	NULL	NULL	3	100.00	Using filesort
+2	DERIVED	t1	NULL	NULL	NULL	NULL	NULL	NULL	10	33.33	Using where with pushed condition (`db_28276`.`t1`.`a` > 2); Using pushed ORDER BY; Storage engine handles access type
+Warnings:
+Note	1003	/* select#1 */ select `t2`.`a` AS `a`,`t2`.`b` AS `b` from (/* select#2 */ select `db_28276`.`t1`.`a` AS `a`,`db_28276`.`t1`.`b` AS `b` from `db_28276`.`t1` where (`db_28276`.`t1`.`a` > 2) order by `db_28276`.`t1`.`a` desc limit 3) `t2` order by `t2`.`b` desc
+select * from (select 1 from t1 where a>2 limit 3) t2 order by 1 DESC;
+1
+1
+1
+1
+[Note] Testcase: Operation log begin
+[Note] SequoiaDB: Query message: condition[{ "a": { "$gt": 2 } }], selector[{}], order_by[{}], hint[{}], limit[3], offset[0], table[db_28276.t1]
+explain select * from (select 1 from t1 where a>2 limit 3) t2 order by 1 DESC;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	PRIMARY	<derived2>	NULL	ALL	NULL	NULL	NULL	NULL	3	100.00	Using filesort
+2	DERIVED	t1	NULL	ALL	NULL	NULL	NULL	NULL	10	33.33	Using where with pushed condition (`db_28276`.`t1`.`a` > 2)
+Warnings:
+Note	1003	/* select#1 */ select `t2`.`1` AS `1` from (/* select#2 */ select 1 AS `1` from `db_28276`.`t1` where (`db_28276`.`t1`.`a` > 2) limit 3) `t2` order by `t2`.`1` desc
+select * from (select * from t1 where a>2 limit 3) t2 group by b;
+a	b
+3	3
+4	4
+6	6
+[Note] Testcase: Operation log begin
+[Note] SequoiaDB: Query message: condition[{ "a": { "$gt": 2 } }], selector[{}], order_by[{}], hint[{}], limit[3], offset[0], table[db_28276.t1]
+explain select * from (select * from t1 where a>2 limit 3) t2 group by b;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	PRIMARY	<derived2>	NULL	ALL	NULL	NULL	NULL	NULL	3	100.00	Using temporary; Using filesort
+2	DERIVED	t1	NULL	ALL	NULL	NULL	NULL	NULL	10	33.33	Using where with pushed condition (`db_28276`.`t1`.`a` > 2)
+Warnings:
+Note	1003	/* select#1 */ select `t2`.`a` AS `a`,`t2`.`b` AS `b` from (/* select#2 */ select `db_28276`.`t1`.`a` AS `a`,`db_28276`.`t1`.`b` AS `b` from `db_28276`.`t1` where (`db_28276`.`t1`.`a` > 2) limit 3) `t2` group by `t2`.`b`
+select * from (select * from t1 where a>2 group by a) t2 group by b;
+a	b
+7	NULL
+3	3
+4	4
+6	6
+8	8
+10	10
+[Note] Testcase: Operation log begin
+[Note] SequoiaDB: Query message: match[{ "$match": { "a": { "$gt": 2 } } }], group[{ "$group": { "a": { "$first": "$a" }, "_id": { "a": "$a" }, "b": { "$first": "$b" } } }], sort[{ "$sort": { "a": 1 } }], skip[{ "$skip": 0 }], limit[{ "$limit": -1 }]
+explain select * from (select * from t1 where a>2 group by a) t2 group by b;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	PRIMARY	<derived2>	NULL	ALL	NULL	NULL	NULL	NULL	3	100.00	Using temporary; Using filesort
+2	DERIVED	t1	NULL	NULL	NULL	NULL	NULL	NULL	10	33.33	Using where with pushed condition (`db_28276`.`t1`.`a` > 2); Using pushed GROUP BY; Storage engine handles access type
+Warnings:
+Note	1003	/* select#1 */ select `t2`.`a` AS `a`,`t2`.`b` AS `b` from (/* select#2 */ select `db_28276`.`t1`.`a` AS `a`,`db_28276`.`t1`.`b` AS `b` from `db_28276`.`t1` where (`db_28276`.`t1`.`a` > 2) group by `db_28276`.`t1`.`a`) `t2` group by `t2`.`b`
+select * from (select * from t1 where a>2 group by a order by a limit 3) t2 group by b;
+a	b
+3	3
+4	4
+6	6
+[Note] Testcase: Operation log begin
+[Note] SequoiaDB: Query message: match[{ "$match": { "a": { "$gt": 2 } } }], group[{ "$group": { "a": { "$first": "$a" }, "_id": { "a": "$a" }, "b": { "$first": "$b" } } }], sort[{ "$sort": { "a": 1 } }], skip[{ "$skip": 0 }], limit[{ "$limit": 3 }]
+explain select * from (select * from t1 where a>2 group by a order by a limit 3) t2 group by b;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	PRIMARY	<derived2>	NULL	ALL	NULL	NULL	NULL	NULL	3	100.00	Using temporary; Using filesort
+2	DERIVED	t1	NULL	NULL	NULL	NULL	NULL	NULL	10	33.33	Using where with pushed condition (`db_28276`.`t1`.`a` > 2); Using pushed GROUP BY; Using pushed ORDER BY; Storage engine handles access type
+Warnings:
+Note	1003	/* select#1 */ select `t2`.`a` AS `a`,`t2`.`b` AS `b` from (/* select#2 */ select `db_28276`.`t1`.`a` AS `a`,`db_28276`.`t1`.`b` AS `b` from `db_28276`.`t1` where (`db_28276`.`t1`.`a` > 2) group by `db_28276`.`t1`.`a` order by `db_28276`.`t1`.`a` limit 3) `t2` group by `t2`.`b`
+select * from (select * from t1 where a>2 order by a DESC limit 3) t2 group by b;
+a	b
+9	NULL
+8	8
+10	10
+[Note] Testcase: Operation log begin
+[Note] SequoiaDB: Query message: condition[{ "a": { "$gt": 2 } }], selector[{}], order_by[{ "a": -1 }], hint[{ "": "" }], limit[3], offset[0], table[db_28276.t1]
+explain select * from (select * from t1 where a>2 order by a DESC limit 3) t2 group by b;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	PRIMARY	<derived2>	NULL	ALL	NULL	NULL	NULL	NULL	3	100.00	Using temporary; Using filesort
+2	DERIVED	t1	NULL	NULL	NULL	NULL	NULL	NULL	10	33.33	Using where with pushed condition (`db_28276`.`t1`.`a` > 2); Using pushed ORDER BY; Storage engine handles access type
+Warnings:
+Note	1003	/* select#1 */ select `t2`.`a` AS `a`,`t2`.`b` AS `b` from (/* select#2 */ select `db_28276`.`t1`.`a` AS `a`,`db_28276`.`t1`.`b` AS `b` from `db_28276`.`t1` where (`db_28276`.`t1`.`a` > 2) order by `db_28276`.`t1`.`a` desc limit 3) `t2` group by `t2`.`b`
+select * from (select 1 from t1 where a>2 limit 3) t2 group by 1;
+1
+1
+[Note] Testcase: Operation log begin
+[Note] SequoiaDB: Query message: condition[{ "a": { "$gt": 2 } }], selector[{}], order_by[{}], hint[{}], limit[3], offset[0], table[db_28276.t1]
+explain select * from (select 1 from t1 where a>2 limit 3) t2 group by 1;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	PRIMARY	<derived2>	NULL	ALL	NULL	NULL	NULL	NULL	3	100.00	Using temporary; Using filesort
+2	DERIVED	t1	NULL	ALL	NULL	NULL	NULL	NULL	10	33.33	Using where with pushed condition (`db_28276`.`t1`.`a` > 2)
+Warnings:
+Note	1003	/* select#1 */ select `t2`.`1` AS `1` from (/* select#2 */ select 1 AS `1` from `db_28276`.`t1` where (`db_28276`.`t1`.`a` > 2) limit 3) `t2` group by `t2`.`1`
+select count(*) from (select t1.* from t1,t2 where t1.a>2) t2;
+count(*)
+70
+[Note] Testcase: Operation log begin
+[Note] SequoiaDB: Query message: condition[{ "a": { "$gt": 2 } }], selector[{}], order_by[{}], hint[{}], limit[-1], offset[0], table[db_28276.t1]
+[Note] SequoiaDB: Query message: condition[{}], selector[{ "_id": null }], order_by[{}], hint[{}], limit[-1], offset[0], table[db_28276.t2]
+explain select count(*) from (select t1.* from t1,t2 where t1.a>2) t2;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	ALL	NULL	NULL	NULL	NULL	10	33.33	Using where with pushed condition (`db_28276`.`t1`.`a` > 2)
+1	SIMPLE	t2	NULL	ALL	NULL	NULL	NULL	NULL	10	100.00	Using join buffer (Block Nested Loop)
+Warnings:
+Note	1003	/* select#1 */ select count(0) AS `count(*)` from `db_28276`.`t1` join `db_28276`.`t2` where (`db_28276`.`t1`.`a` > 2)
+select count(*) from (select * from t1 where a>2) t3,t2 where t2.a=t3.a;
+count(*)
+7
+[Note] Testcase: Operation log begin
+[Note] SequoiaDB: Query message: condition[{ "a": { "$gt": 2 } }], selector[{}], order_by[{}], hint[{}], limit[-1], offset[0], table[db_28276.t1]
+[Note] SequoiaDB: Query message: condition[{}], selector[{}], order_by[{}], hint[{}], limit[-1], offset[0], table[db_28276.t2]
+explain select count(*) from (select * from t1 where a>2) t3,t2 where t2.a=t3.a;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	ALL	NULL	NULL	NULL	NULL	10	33.33	Using where with pushed condition (`db_28276`.`t1`.`a` > 2)
+1	SIMPLE	t2	NULL	ALL	NULL	NULL	NULL	NULL	10	10.00	Using where; Using join buffer (Block Nested Loop)
+Warnings:
+Note	1003	/* select#1 */ select count(0) AS `count(*)` from `db_28276`.`t1` join `db_28276`.`t2` where ((`db_28276`.`t2`.`a` = `db_28276`.`t1`.`a`) and (`db_28276`.`t1`.`a` > 2))
+select count(*) from (select * from t1 where a>2 limit 3) t3,t2 where t2.a=t3.a;
+count(*)
+3
+[Note] Testcase: Operation log begin
+[Note] SequoiaDB: Query message: condition[{ "a": { "$gt": 2 } }], selector[{}], order_by[{}], hint[{}], limit[3], offset[0], table[db_28276.t1]
+[Note] SequoiaDB: Query message: condition[{}], selector[{}], order_by[{}], hint[{}], limit[-1], offset[0], table[db_28276.t2]
+explain select count(*) from (select * from t1 where a>2 limit 3) t3,t2 where t2.a=t3.a;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	PRIMARY	<derived2>	NULL	ALL	NULL	NULL	NULL	NULL	3	100.00	NULL
+1	PRIMARY	t2	NULL	ALL	NULL	NULL	NULL	NULL	10	10.00	Using where; Using join buffer (Block Nested Loop)
+2	DERIVED	t1	NULL	ALL	NULL	NULL	NULL	NULL	10	33.33	Using where with pushed condition (`db_28276`.`t1`.`a` > 2)
+Warnings:
+Note	1003	/* select#1 */ select count(0) AS `count(*)` from (/* select#2 */ select `db_28276`.`t1`.`a` AS `a`,`db_28276`.`t1`.`b` AS `b` from `db_28276`.`t1` where (`db_28276`.`t1`.`a` > 2) limit 3) `t3` join `db_28276`.`t2` where (`db_28276`.`t2`.`a` = `t3`.`a`)
+select count(*) from t1 where a in (select a from t1 where b<5);
+count(*)
+4
+[Note] Testcase: Operation log begin
+[Note] SequoiaDB: Query message: condition[{ "a": { "$isnull": 0 } }], selector[{}], order_by[{}], hint[{}], limit[-1], offset[0], table[db_28276.t1]
+[Note] SequoiaDB: Query message: condition[{ "b": { "$lt": 5 } }], selector[{}], order_by[{}], hint[{}], limit[-1], offset[0], table[db_28276.t1]
+explain select count(*) from t1 where a in (select a from t1 where b<5);
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	ALL	NULL	NULL	NULL	NULL	10	100.00	Using where with pushed condition (`db_28276`.`t1`.`a` is not null)
+1	SIMPLE	<subquery2>	NULL	eq_ref	<auto_key>	<auto_key>	5	db_28276.t1.a	1	100.00	NULL
+2	MATERIALIZED	t1	NULL	ALL	NULL	NULL	NULL	NULL	10	33.33	Using where with pushed condition (`db_28276`.`t1`.`b` < 5)
+Warnings:
+Note	1003	/* select#1 */ select count(0) AS `count(*)` from `db_28276`.`t1` semi join (`db_28276`.`t1`) where ((`<subquery2>`.`a` = `db_28276`.`t1`.`a`) and (`db_28276`.`t1`.`b` < 5))
+select count(*),(select a from t2 limit 1) from t1;
+count(*)	(select a from t2 limit 1)
+10	1
+[Note] Testcase: Operation log begin
+[Note] SequoiaDB: optimizer count: 1, condition: [{}], table: db_28276.t1
+[Note] SequoiaDB: Count message: condition[{}],hint[{}] table[db_28276.t1]
+[Note] SequoiaDB: Query message: condition[{}], selector[{}], order_by[{}], hint[{}], limit[1], offset[0], table[db_28276.t2]
+explain select count(*),(select a from t2 limit 1) from t1;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	PRIMARY	t1	NULL	ALL	NULL	NULL	NULL	NULL	10	100.00	NULL
+2	SUBQUERY	t2	NULL	ALL	NULL	NULL	NULL	NULL	10	100.00	NULL
+Warnings:
+Note	1003	/* select#1 */ select count(0) AS `count(*)`,(/* select#2 */ select `db_28276`.`t2`.`a` from `db_28276`.`t2` limit 1) AS `(select a from t2 limit 1)` from `db_28276`.`t1`
+select count(*) from t1 union select a from t2;
+count(*)
+10
+1
+2
+3
+4
+NULL
+6
+7
+8
+9
+[Note] Testcase: Operation log begin
+[Note] SequoiaDB: optimizer count: 1, condition: [{}], table: db_28276.t1
+[Note] SequoiaDB: Count message: condition[{}],hint[{}] table[db_28276.t1]
+[Note] SequoiaDB: Query message: condition[{}], selector[{}], order_by[{}], hint[{}], limit[-1], offset[0], table[db_28276.t2]
+explain select count(*) from t1 union select a from t2;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	PRIMARY	t1	NULL	ALL	NULL	NULL	NULL	NULL	10	100.00	NULL
+2	UNION	t2	NULL	ALL	NULL	NULL	NULL	NULL	10	100.00	NULL
+NULL	UNION RESULT	<union1,2>	NULL	ALL	NULL	NULL	NULL	NULL	NULL	NULL	Using temporary
+Warnings:
+Note	1003	/* select#1 */ select count(0) AS `count(*)` from `db_28276`.`t1` union /* select#2 */ select `db_28276`.`t2`.`a` AS `a` from `db_28276`.`t2`
+select count(*) from t1 where a in(select a from t2 where a=2 union select 1);
+count(*)
+2
+[Note] Testcase: Operation log begin
+[Note] SequoiaDB: Condition can't be pushed down. db=[db_28276], table[t1], sql=[select count(*) from t1 where a in(select a from t2 where a=2 union select 1)]
+[Note] SequoiaDB: Condition can't be pushed down. db=[db_28276], table[t1], sql=[select count(*) from t1 where a in(select a from t2 where a=2 union select 1)]
+[Note] SequoiaDB: Query message: condition[{}], selector[{}], order_by[{}], hint[{}], limit[-1], offset[0], table[db_28276.t1]
+[Note] SequoiaDB: Query message: condition[{ "a": { "$et": 2 } }], selector[{}], order_by[{}], hint[{}], limit[-1], offset[0], table[db_28276.t2]
+[Note] SequoiaDB: Query message: condition[{ "a": { "$et": 2 } }], selector[{}], order_by[{}], hint[{}], limit[-1], offset[0], table[db_28276.t2]
+[Note] SequoiaDB: Query message: condition[{ "a": { "$et": 2 } }], selector[{}], order_by[{}], hint[{}], limit[-1], offset[0], table[db_28276.t2]
+[Note] SequoiaDB: Query message: condition[{ "a": { "$et": 2 } }], selector[{}], order_by[{}], hint[{}], limit[-1], offset[0], table[db_28276.t2]
+[Note] SequoiaDB: Query message: condition[{ "a": { "$et": 2 } }], selector[{}], order_by[{}], hint[{}], limit[-1], offset[0], table[db_28276.t2]
+[Note] SequoiaDB: Query message: condition[{ "a": { "$et": 2 } }], selector[{}], order_by[{}], hint[{}], limit[-1], offset[0], table[db_28276.t2]
+[Note] SequoiaDB: Query message: condition[{ "a": { "$et": 2 } }], selector[{}], order_by[{}], hint[{}], limit[-1], offset[0], table[db_28276.t2]
+[Note] SequoiaDB: Query message: condition[{ "a": { "$et": 2 } }], selector[{}], order_by[{}], hint[{}], limit[-1], offset[0], table[db_28276.t2]
+[Note] SequoiaDB: Query message: condition[{ "a": { "$et": 2 } }], selector[{}], order_by[{}], hint[{}], limit[-1], offset[0], table[db_28276.t2]
+explain select count(*) from t1 where a in(select a from t2 where a=2 union select 1);
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	PRIMARY	t1	NULL	ALL	NULL	NULL	NULL	NULL	10	100.00	Using where
+2	DEPENDENT SUBQUERY	t2	NULL	ALL	NULL	NULL	NULL	NULL	10	10.00	Using where with pushed condition (`db_28276`.`t2`.`a` = 2)
+3	DEPENDENT UNION	NULL	NULL	NULL	NULL	NULL	NULL	NULL	NULL	NULL	No tables used
+NULL	UNION RESULT	<union2,3>	NULL	ALL	NULL	NULL	NULL	NULL	NULL	NULL	Using temporary
+Warnings:
+Note	1003	/* select#1 */ select count(0) AS `count(*)` from `db_28276`.`t1` where <in_optimizer>(`db_28276`.`t1`.`a`,<exists>(/* select#2 */ select 1 from `db_28276`.`t2` where ((`db_28276`.`t2`.`a` = 2) and (<cache>(`db_28276`.`t1`.`a`) = 2)) union /* select#3 */ select 1 having (<cache>(`db_28276`.`t1`.`a`) = <ref_null_helper>(1))))
+select count(*) from t1,t2;
+count(*)
+100
+[Note] Testcase: Operation log begin
+[Note] SequoiaDB: Query message: condition[{}], selector[{ "_id": null }], order_by[{}], hint[{}], limit[-1], offset[0], table[db_28276.t1]
+[Note] SequoiaDB: Query message: condition[{}], selector[{ "_id": null }], order_by[{}], hint[{}], limit[-1], offset[0], table[db_28276.t2]
+explain select count(*) from t1,t2;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	ALL	NULL	NULL	NULL	NULL	10	100.00	NULL
+1	SIMPLE	t2	NULL	ALL	NULL	NULL	NULL	NULL	10	100.00	Using join buffer (Block Nested Loop)
+Warnings:
+Note	1003	/* select#1 */ select count(0) AS `count(*)` from `db_28276`.`t1` join `db_28276`.`t2`
+select count(*) from t1 left outer join t2 on t1.a=t2.a;
+count(*)
+10
+[Note] Testcase: Operation log begin
+[Note] SequoiaDB: Query message: condition[{}], selector[{}], order_by[{}], hint[{}], limit[-1], offset[0], table[db_28276.t1]
+[Note] SequoiaDB: Query message: condition[{}], selector[{}], order_by[{}], hint[{}], limit[-1], offset[0], table[db_28276.t2]
+explain select count(*) from t1 left outer join t2 on t1.a=t2.a;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	ALL	NULL	NULL	NULL	NULL	10	100.00	NULL
+1	SIMPLE	t2	NULL	ALL	NULL	NULL	NULL	NULL	10	100.00	Using where; Using join buffer (Block Nested Loop)
+Warnings:
+Note	1003	/* select#1 */ select count(0) AS `count(*)` from `db_28276`.`t1` left join `db_28276`.`t2` on((`db_28276`.`t2`.`a` = `db_28276`.`t1`.`a`)) where 1
+select count(*) from t1 join t2 using(a);
+count(*)
+9
+[Note] Testcase: Operation log begin
+[Note] SequoiaDB: Query message: condition[{}], selector[{}], order_by[{}], hint[{}], limit[-1], offset[0], table[db_28276.t1]
+[Note] SequoiaDB: Query message: condition[{}], selector[{}], order_by[{}], hint[{}], limit[-1], offset[0], table[db_28276.t2]
+explain select count(*) from t1 join t2 using(a);
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	ALL	NULL	NULL	NULL	NULL	10	100.00	NULL
+1	SIMPLE	t2	NULL	ALL	NULL	NULL	NULL	NULL	10	10.00	Using where; Using join buffer (Block Nested Loop)
+Warnings:
+Note	1003	/* select#1 */ select count(0) AS `count(*)` from `db_28276`.`t1` join `db_28276`.`t2` where (`db_28276`.`t2`.`a` = `db_28276`.`t1`.`a`)
+set session sequoiadb_debug_log=default;
+set session sql_mode=default;
+drop database db_28276;

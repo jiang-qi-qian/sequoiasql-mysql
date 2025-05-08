@@ -1,0 +1,20 @@
+#case 29886
+--source include/have_sequoiadb.inc
+
+--disable_warnings
+drop table if exists derived_table_sort_sequoiadb;
+--enable_warnings
+
+set session sequoiadb_optimizer_options = "direct_sort,direct_limit,direct_count";
+set session sequoiadb_cls_pushdown_expand = on;
+set session optimizer_switch = "optimizer_sort_pushdown=on";
+set session optimizer_index_sort_prune = on;
+--source include/derived_table_sort_sequoiadb.inc
+
+set session sequoiadb_optimizer_options = '';
+set session sequoiadb_cls_pushdown_expand = off;
+set session optimizer_index_sort_prune = off;
+set session optimizer_switch = "optimizer_sort_pushdown=off";
+--source include/derived_table_sort_sequoiadb.inc
+
+--source include/uninstall_sequoiadb.inc

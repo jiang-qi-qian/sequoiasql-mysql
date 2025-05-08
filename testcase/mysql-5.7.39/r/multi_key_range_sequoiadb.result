@@ -1,0 +1,41 @@
+drop database if exists mutli_key_range_sequoiadb;
+create database mutli_key_range_sequoiadb;
+drop database mutli_key_range_sequoiadb;
+create database mutli_key_range_sequoiadb;
+use mutli_key_range_sequoiadb;
+set session sequoiadb_optimizer_options = '';
+set session sequoiadb_debug_log = on;
+CREATE TABLE `t1` (
+`col_date` date DEFAULT NULL,
+`col_varchar_16` varchar(16) COLLATE utf8mb4_bin DEFAULT NULL,
+`pk` int(11) NOT NULL AUTO_INCREMENT,
+`col_int` int(11) DEFAULT NULL,
+PRIMARY KEY (`pk`)
+) ENGINE=SequoiaDB AUTO_INCREMENT=1001 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin;
+ALTER TABLE t1 ADD INDEX ivd(col_int, col_varchar_16, col_date);
+ALTER TABLE t1 ADD INDEX idv(col_int, col_date, col_varchar_16);
+ALTER TABLE t1 ADD INDEX vid(col_varchar_16, col_int, col_date);
+ALTER TABLE t1 ADD INDEX vdi(col_varchar_16, col_date, col_int);
+ALTER TABLE t1 ADD INDEX d_i_v(col_date, col_int, col_varchar_16);
+ALTER TABLE t1 ADD INDEX dvi(col_date, col_varchar_16, col_int);
+INSERT INTO `t1` VALUES ('2003-11-18',NULL,1,3),('2005-01-14','n',2,NULL),('2005-02-05','p',3,-657588224),(NULL,'e',4,NULL),('2008-12-05','q',5,NULL),(NULL,'s',6,-361234432),('2000-07-20','here',7,5),(NULL,'v',8,1103495168),(NULL,'l',9,NULL),(NULL,'u',10,2),('2000-07-17',NULL,11,-403374080),('2001-05-02',NULL,12,NULL),('2001-04-06','c',13,2),('2008-04-24','going',14,0),(NULL,'me',15,8),(NULL,'c',16,NULL),('2008-08-25','u',17,2),('2002-02-11',NULL,18,0),('2001-09-08','good',19,4),('2000-04-08','be',20,5),('2000-02-24','v',21,1287127040),('2001-11-08',NULL,22,2),('2007-12-07',NULL,23,9),('2003-04-28','q',24,-932839424),('2006-10-12','m',25,-51904512),('2003-04-03','his',26,NULL),('2002-11-13','okay',27,7),(NULL,'now',28,7),('2001-09-03','z',29,818216960),('2002-07-26','x',30,-1557659648),(NULL,'r',31,NULL),(NULL,NULL,32,109838336),('2009-09-12','l',33,0),('2003-06-16','i',34,1290993664),('2003-12-10','u',35,NULL),('2002-08-20','m',36,5),('2009-02-22','n',37,2),('2002-10-13','it',38,2),('2009-09-26','n',39,3),('2009-02-13',NULL,40,NULL),('2006-09-04','l',41,9),('2007-02-11','a',42,NULL),(NULL,NULL,43,NULL);
+analyze table t1;
+Table	Op	Msg_type	Msg_text
+mutli_key_range_sequoiadb.t1	analyze	status	OK
+SELECT `col_int` AS field1 FROM `t1` WHERE col_date != '2007-11-27' AND `col_int` IS NULL AND col_varchar_16 = 'c' ORDER BY field1 DESC;
+field1
+[Note] SequoiaDB: Query message: condition[{ "$and": [ { "col_varchar_16": { "$et": "c" } }, { "col_date": { "$ne": {"$date": "2007-11-27"} } }, { "col_int": { "$isnull": 1 } } ] }], selector[{}], order_by[{}], hint[{ "$Range": { "IsAllEqual": false, "IndexValueIncluded": [ [ false, false ], [ false, true ] ], "PrefixNum": [ 3, 3 ], "IndexValue": [ [ { "1": {"$minKey":1}, "2": {"$minKey":1}, "3": "c", "4": null }, { "1": null, "2": "c", "3": {"$date": "2007-11-27"} } ], [ { "1": {"$minKey":1}, "2": {"$minKey":1}, "3": "c", "4": {"$date": "2007-11-27"} }, { "1": null, "2": "c", "3": {"$maxKey":1} } ] ] }, "": "ivd" }], limit[-1], offset[0], table[mutli_key_range_sequoiadb.t1]
+explain SELECT `col_int` AS field1 FROM `t1` WHERE col_date != '2007-11-27' AND `col_int` IS NULL AND col_varchar_16 = 'c' ORDER BY field1 DESC;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	range	ivd,idv,vid,vdi,d_i_v,dvi	ivd	76	NULL	4	100.00	Using where with pushed condition ((`mutli_key_range_sequoiadb`.`t1`.`col_varchar_16` = 'c') and (`mutli_key_range_sequoiadb`.`t1`.`col_date` <> '2007-11-27') and isnull(`mutli_key_range_sequoiadb`.`t1`.`col_int`)); Using MRR; Using index; Using filesort
+Warnings:
+Note	1003	/* select#1 */ select `mutli_key_range_sequoiadb`.`t1`.`col_int` AS `field1` from `mutli_key_range_sequoiadb`.`t1` where ((`mutli_key_range_sequoiadb`.`t1`.`col_varchar_16` = 'c') and (`mutli_key_range_sequoiadb`.`t1`.`col_date` <> '2007-11-27') and isnull(`mutli_key_range_sequoiadb`.`t1`.`col_int`)) order by `field1` desc
+SELECT `pk` AS field1 FROM `t1` WHERE `col_int` IS NULL AND col_date != '1999-12-05' AND col_varchar_16 = 'r';
+field1
+[Note] SequoiaDB: Query message: condition[{ "$and": [ { "col_varchar_16": { "$et": "r" } }, { "col_int": { "$isnull": 1 } }, { "col_date": { "$ne": {"$date": "1999-12-05"} } } ] }], selector[{}], order_by[{}], hint[{ "$Range": { "IsAllEqual": false, "IndexValueIncluded": [ [ false, false ], [ false, true ] ], "PrefixNum": [ 3, 3 ], "IndexValue": [ [ { "1": {"$minKey":1}, "2": {"$minKey":1}, "3": "r", "4": null }, { "1": null, "2": "r", "3": {"$date": "1999-12-05"} } ], [ { "1": {"$minKey":1}, "2": {"$minKey":1}, "3": "r", "4": {"$date": "1999-12-05"} }, { "1": null, "2": "r", "3": {"$maxKey":1} } ] ] }, "": "ivd" }], limit[-1], offset[0], table[mutli_key_range_sequoiadb.t1]
+explain  SELECT `pk` AS field1 FROM `t1` WHERE `col_int` IS NULL AND col_date != '1999-12-05' AND col_varchar_16 = 'r';
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	range	ivd,idv,vid,vdi,d_i_v,dvi	ivd	76	NULL	4	100.00	Using where with pushed condition ((`mutli_key_range_sequoiadb`.`t1`.`col_varchar_16` = 'r') and isnull(`mutli_key_range_sequoiadb`.`t1`.`col_int`) and (`mutli_key_range_sequoiadb`.`t1`.`col_date` <> '1999-12-05')); Using MRR
+Warnings:
+Note	1003	/* select#1 */ select `mutli_key_range_sequoiadb`.`t1`.`pk` AS `field1` from `mutli_key_range_sequoiadb`.`t1` where ((`mutli_key_range_sequoiadb`.`t1`.`col_varchar_16` = 'r') and isnull(`mutli_key_range_sequoiadb`.`t1`.`col_int`) and (`mutli_key_range_sequoiadb`.`t1`.`col_date` <> '1999-12-05'))
+drop database mutli_key_range_sequoiadb;

@@ -1,0 +1,29 @@
+show variables like "server_ha_dml_max_retry_count";
+Variable_name	Value
+select @@server_ha_dml_max_retry_count;
+@@server_ha_dml_max_retry_count
+1
+set @@server_ha_dml_max_retry_count=20;
+select @@server_ha_dml_max_retry_count;
+@@server_ha_dml_max_retry_count
+20
+set @@server_ha_dml_max_retry_count=-1;
+Warnings:
+Warning	1292	Truncated incorrect server_ha_dml_max_retry_count value: '-1'
+select @@server_ha_dml_max_retry_count;
+@@server_ha_dml_max_retry_count
+0
+set @@server_ha_dml_max_retry_count=101;
+Warnings:
+Warning	1292	Truncated incorrect server_ha_dml_max_retry_count value: '101'
+select @@server_ha_dml_max_retry_count;
+@@server_ha_dml_max_retry_count
+100
+set @@server_ha_dml_max_retry_count=0;
+select @@server_ha_dml_max_retry_count;
+@@server_ha_dml_max_retry_count
+0
+set @@server_ha_dml_max_retry_count=100;
+select @@server_ha_dml_max_retry_count;
+@@server_ha_dml_max_retry_count
+100

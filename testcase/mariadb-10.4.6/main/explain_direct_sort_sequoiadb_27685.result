@@ -1,0 +1,109 @@
+drop database if exists explain_direct_sort_27685;
+create database explain_direct_sort_27685;
+drop database explain_direct_sort_27685;
+create database explain_direct_sort_27685;
+use explain_direct_sort_27685;
+set session sequoiadb_debug_log=on;
+drop table if exists t1;
+create table t1(
+col1 int,
+col2 varchar(10),
+col3 varchar(10),
+col4 varchar(10),
+key idx_col1(col1),
+key idx_col2(col2),
+key idx_col12(col1,col2),
+unique key uniq_idx4(col4)
+);
+insert into t1 values(3,'abd','def','defg');
+insert into t1 values(4,'abc','abcdef','xyz');
+insert into t1 values(2,'defg','abd','efg');
+insert into t1 values(5,'xyz','abc','abd');
+insert into t1 values(0,'abde','xyz','def');
+insert into t1 values(6,'abcdef','abde','abc');
+insert into t1 values(null,null,null,null);
+insert into t1 values(1,'def','defg','abcdef');
+select * from t1 order by col1;
+col1	col2	col3	col4
+NULL	NULL	NULL	NULL
+0	abde	xyz	def
+1	def	defg	abcdef
+2	defg	abd	efg
+3	abd	def	defg
+4	abc	abcdef	xyz
+5	xyz	abc	abd
+6	abcdef	abde	abc
+select * from t1 order by col2;
+col1	col2	col3	col4
+NULL	NULL	NULL	NULL
+4	abc	abcdef	xyz
+6	abcdef	abde	abc
+3	abd	def	defg
+0	abde	xyz	def
+1	def	defg	abcdef
+2	defg	abd	efg
+5	xyz	abc	abd
+select * from t1 order by col3;
+col1	col2	col3	col4
+NULL	NULL	NULL	NULL
+5	xyz	abc	abd
+4	abc	abcdef	xyz
+2	defg	abd	efg
+6	abcdef	abde	abc
+3	abd	def	defg
+1	def	defg	abcdef
+0	abde	xyz	def
+select * from t1 order by col4;
+col1	col2	col3	col4
+NULL	NULL	NULL	NULL
+6	abcdef	abde	abc
+1	def	defg	abcdef
+5	xyz	abc	abd
+0	abde	xyz	def
+3	abd	def	defg
+2	defg	abd	efg
+4	abc	abcdef	xyz
+explain select * from t1 order by col1 limit 2;
+id	select_type	table	type	possible_keys	key	key_len	ref	rows	Extra
+1	SIMPLE	t1	NULL	NULL	NULL	NULL	NULL	8	Using pushed ORDER BY; Storage engine handles access type
+select * from t1 order by col1 limit 2;
+col1	col2	col3	col4
+NULL	NULL	NULL	NULL
+0	abde	xyz	def
+[Note] SequoiaDB: Query message: condition[{}], selector[{}], order_by[{ "col1": 1 }], hint[{ "": "" }], limit[2], offset[0], table[explain_direct_sort_27685.t1]
+explain select * from t1 order by col2 limit 2;
+id	select_type	table	type	possible_keys	key	key_len	ref	rows	Extra
+1	SIMPLE	t1	NULL	NULL	NULL	NULL	NULL	8	Using pushed ORDER BY; Storage engine handles access type
+select * from t1 order by col2 limit 2;
+col1	col2	col3	col4
+NULL	NULL	NULL	NULL
+4	abc	abcdef	xyz
+[Note] SequoiaDB: Query message: condition[{}], selector[{}], order_by[{ "col2": 1 }], hint[{ "": "" }], limit[2], offset[0], table[explain_direct_sort_27685.t1]
+explain select * from t1 order by col2 desc limit 2;
+id	select_type	table	type	possible_keys	key	key_len	ref	rows	Extra
+1	SIMPLE	t1	NULL	NULL	NULL	NULL	NULL	8	Using pushed ORDER BY; Storage engine handles access type
+select * from t1 order by col2 limit 2;
+col1	col2	col3	col4
+NULL	NULL	NULL	NULL
+4	abc	abcdef	xyz
+[Note] SequoiaDB: Query message: condition[{}], selector[{}], order_by[{ "col2": 1 }], hint[{ "": "" }], limit[2], offset[0], table[explain_direct_sort_27685.t1]
+explain select * from t1 order by col2 limit 2,3;
+id	select_type	table	type	possible_keys	key	key_len	ref	rows	Extra
+1	SIMPLE	t1	NULL	NULL	NULL	NULL	NULL	8	Using pushed ORDER BY; Storage engine handles access type
+select * from t1 order by col2 limit 2,3;
+col1	col2	col3	col4
+6	abcdef	abde	abc
+3	abd	def	defg
+0	abde	xyz	def
+[Note] SequoiaDB: Query message: condition[{}], selector[{}], order_by[{ "col2": 1 }], hint[{ "": "" }], limit[3], offset[2], table[explain_direct_sort_27685.t1]
+explain select * from t1 order by col3 limit 2;
+id	select_type	table	type	possible_keys	key	key_len	ref	rows	Extra
+1	SIMPLE	t1	NULL	NULL	NULL	NULL	NULL	8	Using pushed ORDER BY; Storage engine handles access type
+select * from t1 order by col3 limit 2;
+col1	col2	col3	col4
+NULL	NULL	NULL	NULL
+5	xyz	abc	abd
+[Note] SequoiaDB: Query message: condition[{}], selector[{}], order_by[{ "col3": 1 }], hint[{ "": "" }], limit[2], offset[0], table[explain_direct_sort_27685.t1]
+drop table t1;
+set session sequoiadb_debug_log=off;
+drop database explain_direct_sort_27685;

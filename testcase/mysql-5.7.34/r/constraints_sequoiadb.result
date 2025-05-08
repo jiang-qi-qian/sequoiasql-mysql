@@ -1,0 +1,109 @@
+drop database if exists constraints_sequoiadb;
+create database constraints_sequoiadb;
+drop database constraints_sequoiadb;
+create database constraints_sequoiadb;
+use constraints_sequoiadb;
+create table t1(id int,name varchar(10),constraint t1_id_pk primary key(id));
+show create table t1;
+Table	Create Table
+t1	CREATE TABLE `t1` (
+  `id` int(11) NOT NULL,
+  `name` varchar(10) DEFAULT NULL,
+  PRIMARY KEY (`id`)
+) ENGINE=SequoiaDB DEFAULT CHARSET=latin1
+show index from t1;
+Table	Non_unique	Key_name	Seq_in_index	Column_name	Collation	Cardinality	Sub_part	Packed	Null	Index_type	Comment	Index_comment
+t1	0	PRIMARY	1	id	A	NULL	NULL	NULL		BTREE		
+insert into t1 values(1,'sdbadmin');
+insert into t1 values(1,'sequoiadb');
+ERROR 23000: Duplicate entry '{ "id": 1 }' for key 'PRIMARY'
+insert into t1(name) values('ssql');
+ERROR HY000: Field 'id' doesn't have a default value
+select * from t1;
+id	name
+1	sdbadmin
+drop table t1;
+create table t2(id int auto_increment primary key,name varchar(10),email varchar(128),unique(email));
+show create table t2;
+Table	Create Table
+t2	CREATE TABLE `t2` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `name` varchar(10) DEFAULT NULL,
+  `email` varchar(128) DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `email` (`email`)
+) ENGINE=SequoiaDB DEFAULT CHARSET=latin1
+show index from t2;
+Table	Non_unique	Key_name	Seq_in_index	Column_name	Collation	Cardinality	Sub_part	Packed	Null	Index_type	Comment	Index_comment
+t2	0	PRIMARY	1	id	A	NULL	NULL	NULL		BTREE		
+t2	0	email	1	email	A	NULL	NULL	NULL	YES	BTREE		
+insert into t2(name,email) values('libai','23456322@qq.com');
+insert into t2(name,email) values('zhaoxin','23456322@qq.com');
+ERROR 23000: Duplicate entry '{ "email": "23456322@qq.com" }' for key 'email'
+select * from t2;
+id	name	email
+1	libai	23456322@qq.com
+create table t3(id int auto_increment primary key,name varchar(10),email varchar(128),unique(name,email));
+show create table t3;
+Table	Create Table
+t3	CREATE TABLE `t3` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `name` varchar(10) DEFAULT NULL,
+  `email` varchar(128) DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `name` (`name`,`email`)
+) ENGINE=SequoiaDB DEFAULT CHARSET=latin1
+show index from t3;
+Table	Non_unique	Key_name	Seq_in_index	Column_name	Collation	Cardinality	Sub_part	Packed	Null	Index_type	Comment	Index_comment
+t3	0	PRIMARY	1	id	A	NULL	NULL	NULL		BTREE		
+t3	0	name	1	name	A	NULL	NULL	NULL	YES	BTREE		
+t3	0	name	2	email	A	NULL	NULL	NULL	YES	BTREE		
+insert into t3(name,email) values('libai','23456322@qq.com');
+insert into t3(name,email) values('zhaoxin','23456322@qq.com');
+insert into t3(name,email) values('libai','77869322@qq.com');
+insert into t3(name,email) values('zhaoxin','23456322@qq.com');
+ERROR 23000: Duplicate entry '{ "name": "zhaoxin", "email": "23456322@qq.com" }' for key 'name'
+select * from t3;
+id	name	email
+1	libai	23456322@qq.com
+2	zhaoxin	23456322@qq.com
+3	libai	77869322@qq.com
+drop table t3;
+create table t4(id int primary key,name varchar(10) not null);
+show create table t4;
+Table	Create Table
+t4	CREATE TABLE `t4` (
+  `id` int(11) NOT NULL,
+  `name` varchar(10) NOT NULL,
+  PRIMARY KEY (`id`)
+) ENGINE=SequoiaDB DEFAULT CHARSET=latin1
+insert into t4 values(1,'abc');
+insert into t4(name) values('daqiao');
+ERROR HY000: Field 'id' doesn't have a default value
+insert into t4(id) values(2);
+ERROR HY000: Field 'name' doesn't have a default value
+select * from t4;
+id	name
+1	abc
+drop table t4;
+create table t5(id int auto_increment primary key,name varchar(10),email varchar(128) default 'sequoiadb.com');
+show create table t5;
+Table	Create Table
+t5	CREATE TABLE `t5` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `name` varchar(10) DEFAULT NULL,
+  `email` varchar(128) DEFAULT 'sequoiadb.com',
+  PRIMARY KEY (`id`)
+) ENGINE=SequoiaDB DEFAULT CHARSET=latin1
+insert into t5(name,email) values('zhangj','qq.com');
+insert into t5(name) values('luwk');
+insert into t5(email) values('huawei.com');
+insert into t5(id) values(4);
+select * from t5;
+id	name	email
+1	zhangj	qq.com
+2	luwk	sequoiadb.com
+3	NULL	huawei.com
+4	NULL	sequoiadb.com
+drop table t5;
+drop database constraints_sequoiadb;

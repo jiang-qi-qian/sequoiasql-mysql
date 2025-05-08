@@ -1,0 +1,29 @@
+#seqDB-32547
+--source include/have_sequoiadb.inc
+
+set session optimizer_switch='index_merge_intersection=on';
+
+--disable_warnings
+drop database if exists index_merge_udpate_sequoiadb;
+--enable_warnings
+create database index_merge_udpate_sequoiadb;
+drop database index_merge_udpate_sequoiadb;
+create database index_merge_udpate_sequoiadb;
+use index_merge_udpate_sequoiadb;
+
+CREATE TABLE `t1` (
+     `a` int(11) DEFAULT NULL,
+     `b` int(11) DEFAULT NULL,
+     KEY `a` (`a`),
+     KEY `b` (`b`)
+) ENGINE=SequoiaDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin;
+
+insert into t1 values (2,1),(2,1),(2,1),(2,1);
+
+explain update t1 set a=3 where a=1 and b=2;
+update t1 set a=3 where a=1 and b=2;
+select * from t1;
+
+drop database index_merge_udpate_sequoiadb;
+
+--source include/uninstall_sequoiadb.inc

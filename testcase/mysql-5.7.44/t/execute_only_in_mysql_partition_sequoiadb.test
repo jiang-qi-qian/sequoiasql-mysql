@@ -1,0 +1,253 @@
+#Case 22339
+
+--source include/have_sequoiadb.inc
+
+# RANGE COLUMNS 
+SET sequoiadb_execute_only_in_mysql = ON;
+CREATE TABLE t1 ( a INT, c CHAR(16), PRIMARY KEY(a,c) )
+PARTITION BY RANGE COLUMNS (a,c) (
+  PARTITION p1 VALUES LESS THAN (10,'h'),
+  PARTITION p2 VALUES LESS THAN (20,'m'),
+  PARTITION p3 VALUES LESS THAN (50,'z')
+);
+SHOW CREATE TABLE t1;
+INSERT INTO t1 PARTITION (p2,p3) VALUES (20,'m'),(22,'j'),(25,'n'),(30,'o'),(40,'t'),(49,'z');
+#BUG #SEQUOIASQLMAINSTREAM-708
+#--error 131
+#SELECT * FROM t1 PARTITION (p1);
+#--error 131
+#UPDATE t1 PARTITION (p3) SET c = 'updatedC' WHERE a = 22;
+#--error 131
+#DELETE FROM t1 PARTITION (p3) WHERE a > 40;
+SELECT * FROM t1 ORDER BY a;
+DROP TABLE t1;
+SET sequoiadb_execute_only_in_mysql = OFF;
+
+# LIST (expr)  
+CREATE TABLE `t1#ExecuteOnly#List#Expr` ( id INT, a INT NOT NULL, b INT GENERATED ALWAYS AS (a+1) STORED )
+PARTITION BY LIST (b) (
+  PARTITION ptest1 VALUES IN (-4,40,9,-1,0,100,11),
+  PARTITION otest2 VALUES IN (3,50,8,-9,41,99,1),
+  PARTITION qtest3 VALUES IN (36,7,-8,-50,14,13),
+  PARTITION ytest4 VALUES IN (6,16,-7,12,-13,10,101,-99)
+);
+SHOW CREATE TABLE `t1#ExecuteOnly#List#Expr`;
+INSERT INTO `t1#ExecuteOnly#List#Expr` PARTITION (otest2,qtest3,ytest4)(id,a) VALUES (0,0),(40,40),(11,11),(13,13),(12,12),(-8,-8),(100,100),(9,9),(2,2);
+# ENABLE sequoiadb_execute_only_in_mysql AFTER EXISTING DATA
+SET sequoiadb_execute_only_in_mysql = ON;
+#BUG #SEQUOIASQLMAINSTREAM-708
+#--error 1748
+#INSERT INTO `t1#ExecuteOnly#List#Expr` PARTITION (otest2)(id,a) VALUES (0,-2);
+UPDATE `t1#ExecuteOnly#List#Expr` PARTITION (ptest1,otest2,ytest4) SET id = id*2 WHERE a >= 10;
+SELECT * FROM `t1#ExecuteOnly#List#Expr` PARTITION (otest2,qtest3,ytest4) WHERE a IN (2,99,11) ORDER BY id;
+ALTER TABLE `t1#ExecuteOnly#List#Expr` ADD UNIQUE KEY (b);
+SHOW CREATE TABLE `t1#ExecuteOnly#List#Expr`;
+SELECT * FROM `t1#ExecuteOnly#List#Expr` PARTITION (otest2,qtest3,ytest4) WHERE a IN (2,99,11) ORDER BY id;
+DELETE FROM `t1#ExecuteOnly#List#Expr` PARTITION (ptest1,otest2,qtest3) WHERE a IN (10,13,90,95,0);
+SELECT * FROM `t1#ExecuteOnly#List#Expr` PARTITION (ptest1,otest2,qtest3,ytest4) ORDER BY id;
+FLUSH TABLE `t1#ExecuteOnly#List#Expr`;
+SELECT PARTITION_NAME, PARTITION_METHOD, PARTITION_EXPRESSION, TABLE_ROWS 
+  FROM INFORMATION_SCHEMA.PARTITIONS WHERE TABLE_SCHEMA LIKE '%test_parallel%' AND TABLE_NAME = 't1#ExecuteOnly#List#Expr';
+# DISABLE sequoiadb_execute_only_in_mysql, AND CHECK DATAS
+SET sequoiadb_execute_only_in_mysql = OFF;
+SELECT * FROM `t1#ExecuteOnly#List#Expr` PARTITION (ptest1,otest2,qtest3,ytest4) ORDER BY id;
+FLUSH TABLE `t1#ExecuteOnly#List#Expr`;
+SELECT PARTITION_NAME, PARTITION_METHOD, PARTITION_EXPRESSION, TABLE_ROWS
+  FROM INFORMATION_SCHEMA.PARTITIONS WHERE TABLE_SCHEMA LIKE '%test_parallel%' AND TABLE_NAME = 't1#ExecuteOnly#List#Expr';
+# ENABLE sequoiadb_execute_only_in_mysql, AND MODIFY METADATAS
+SET sequoiadb_execute_only_in_mysql = ON;
+# PARTITION MANAGEMENT
+ALTER TABLE `t1#ExecuteOnly#List#Expr` ADD PARTITION (
+  PARTITION pmore1 VALUES IN (-3,19,21,-2,97),
+  PARTITION pmore2 VALUES IN (32,28,15,4,-10)
+);
+SHOW CREATE TABLE `t1#ExecuteOnly#List#Expr`;
+INSERT INTO `t1#ExecuteOnly#List#Expr` PARTITION (pmore1,pmore2)(id,a) VALUES (-4,-4),(31,31),(-3,-3),(3,3);
+ALTER TABLE `t1#ExecuteOnly#List#Expr` REORGANIZE PARTITION otest2,qtest3 INTO (
+  PARTITION qtest3 VALUES IN (35,27,-22,-6,26,88)
+);
+ALTER TABLE `t1#ExecuteOnly#List#Expr` REORGANIZE PARTITION pmore1 INTO (
+  PARTITION pmoren1 VALUES IN (38,5,17),
+  PARTITION pmoren2 VALUES IN (30,-5,13),
+  PARTITION pmoren3 VALUES IN (-30,29,18)
+);
+SHOW CREATE TABLE `t1#ExecuteOnly#List#Expr`;
+INSERT INTO `t1#ExecuteOnly#List#Expr` PARTITION (qtest3,pmoren1,pmoren2,pmoren3)(id,a) VALUES (-7,-7),(-23,-23),(-6,-6),(4,4),(17,17),(12,12),(16,16);
+SELECT * FROM `t1#ExecuteOnly#List#Expr` PARTITION (qtest3,pmoren1,pmoren3) ORDER BY id;
+ALTER TABLE `t1#ExecuteOnly#List#Expr` DROP PARTITION qtest3,ytest4,pmoren1,pmore2;
+SHOW CREATE TABLE `t1#ExecuteOnly#List#Expr`;
+# REBUILD PARTITION
+ALTER TABLE `t1#ExecuteOnly#List#Expr` REBUILD PARTITION ALL;
+UPDATE `t1#ExecuteOnly#List#Expr` PARTITION (pmoren2,pmoren3) SET id = 1 WHERE a > 0;
+SELECT * FROM `t1#ExecuteOnly#List#Expr` PARTITION (ptest1,pmoren2,pmoren3) ORDER BY id;
+# seqDB-22715
+#SEQUOIASQLMAINSTREAM-761
+# CHECK/REPAIR PARTITION
+# insert invalid row
+#CREATE TABLE `t1#ExecuteOnly#List#Expr#P#pmoren2` ( id INT, a INT NOT NULL, b INT GENERATED ALWAYS AS (a+1) STORED )
+CREATE TABLE `t1#ExecuteOnly#List#Expr#P#ptest1` ( id INT, _phid_ BIGINT, a INT NOT NULL, b INT );
+INSERT INTO `t1#ExecuteOnly#List#Expr#P#ptest1` VALUES (11,11,11,12),(17,17,17,18);
+--replace_column 1 x
+CHECK TABLE `t1#ExecuteOnly#List#Expr`;
+--replace_column 1 x
+REPAIR TABLE `t1#ExecuteOnly#List#Expr`;
+--replace_column 1 x
+ALTER TABLE `t1#ExecuteOnly#List#Expr` CHECK PARTITION ptest1;
+--replace_column 1 x
+ALTER TABLE `t1#ExecuteOnly#List#Expr` CHECK PARTITION ALL QUICK;
+--replace_column 1 x
+ALTER TABLE `t1#ExecuteOnly#List#Expr` REPAIR PARTITION ptest1;
+--replace_column 1 x
+ALTER TABLE `t1#ExecuteOnly#List#Expr` REPAIR PARTITION ALL EXTENDED;
+# TRUNCATE PARTITION
+ALTER TABLE `t1#ExecuteOnly#List#Expr` TRUNCATE PARTITION ALL;
+SELECT * FROM `t1#ExecuteOnly#List#Expr` PARTITION (ptest1,pmoren2,pmoren3) ORDER BY id;
+FLUSH TABLE `t1#ExecuteOnly#List#Expr`;
+SELECT PARTITION_NAME, PARTITION_METHOD, PARTITION_EXPRESSION, TABLE_ROWS
+  FROM INFORMATION_SCHEMA.PARTITIONS WHERE TABLE_SCHEMA LIKE '%test_parallel%' AND TABLE_NAME = 't1#ExecuteOnly#List#Expr';
+# DISABLE sequoiadb_execute_only_in_mysql, AND DROP TABLE
+SET sequoiadb_execute_only_in_mysql = OFF;
+DROP TABLE `t1#ExecuteOnly#List#Expr`,`t1#ExecuteOnly#List#Expr#P#ptest1`;
+
+# HASH (expr) 
+SET sequoiadb_execute_only_in_mysql = ON;
+CREATE TABLE `t1#ExecuteOnly#Hash` ( id FLOAT, b INT GENERATED ALWAYS AS (id+1) STORED )
+  PARTITION BY HASH( CEILING(b) ) PARTITIONS 16;
+SHOW CREATE TABLE `t1#ExecuteOnly#Hash`;
+FLUSH TABLE `t1#ExecuteOnly#Hash`;
+SELECT PARTITION_NAME, PARTITION_METHOD, PARTITION_EXPRESSION, TABLE_ROWS
+  FROM INFORMATION_SCHEMA.PARTITIONS WHERE TABLE_SCHEMA LIKE '%test_parallel%' AND TABLE_NAME = 't1#ExecuteOnly#Hash';
+INSERT INTO `t1#ExecuteOnly#Hash`(id) VALUES (1.19),(-2.94),(0.001),(123.45678901),(10.000011),(-5.667),(9.876),(-1.19);
+SELECT * FROM `t1#ExecuteOnly#Hash` ORDER BY id;
+--error 131
+INSERT INTO `t1#ExecuteOnly#Hash` PARTITION (p0)(id) VALUES (11.11);
+--error 131
+SELECT * FROM `t1#ExecuteOnly#Hash` PARTITION (p0);
+--error 131
+UPDATE `t1#ExecuteOnly#Hash` PARTITION (p1) SET id = 1 WHERE b > 10;
+--error 131
+DELETE FROM `t1#ExecuteOnly#Hash` PARTITION (p3) WHERE id > 1;
+# PARTITION MANAGEMENT
+ALTER TABLE `t1#ExecuteOnly#Hash` ADD PARTITION PARTITIONS 6;
+SHOW CREATE TABLE `t1#ExecuteOnly#Hash`;
+#BUG #SEQUOIASQLMAINSTREAM-789
+# REBUILD PARTITION
+--error 131
+ALTER TABLE `t1#ExecuteOnly#Hash` REBUILD PARTITION p15;
+INSERT INTO `t1#ExecuteOnly#Hash`(id) VALUES (5.56),(-9.94);
+SELECT * FROM `t1#ExecuteOnly#Hash` ORDER BY id;
+# seqDB-22715
+#SEQUOIASQLMAINSTREAM-761
+# CHECK/REPAIR PARTITION
+--replace_column 1 x
+CHECK TABLE `t1#ExecuteOnly#Hash`;
+--replace_column 1 x
+REPAIR TABLE `t1#ExecuteOnly#Hash`;
+#BUG #SEQUOIASQLMAINSTREAM-708
+#--error 131
+#ALTER TABLE `t1#ExecuteOnly#Hash` CHECK PARTITION p1;
+#--error 131
+#ALTER TABLE `t1#ExecuteOnly#Hash` CHECK PARTITION ALL QUICK;
+#--error 131
+#ALTER TABLE `t1#ExecuteOnly#Hash` REPAIR PARTITION p1;
+#--error 131
+#ALTER TABLE `t1#ExecuteOnly#Hash` REPAIR PARTITION ALL EXTENDED;
+# TRUNCATE PARTITION
+ALTER TABLE `t1#ExecuteOnly#Hash` TRUNCATE PARTITION ALL;
+SELECT * FROM `t1#ExecuteOnly#Hash` ORDER BY id;
+FLUSH TABLE `t1#ExecuteOnly#Hash`;
+SELECT PARTITION_NAME, PARTITION_METHOD, PARTITION_EXPRESSION, TABLE_ROWS
+  FROM INFORMATION_SCHEMA.PARTITIONS WHERE TABLE_SCHEMA LIKE '%test_parallel%' AND TABLE_NAME = 't1#ExecuteOnly#Hash';
+DROP TABLE `t1#ExecuteOnly#Hash`;
+
+#BUG #SEQUOIASQLMAINSTREAM-708
+## ShardingKey named '_phid_' should fail
+#--error 1166
+#CREATE TABLE t1(
+#   id INT,
+#   _phid_ INT
+#)
+#PARTITION BY RANGE COLUMNS (_phid_) (
+#    PARTITION p0 VALUES LESS THAN (6),
+#    PARTITION p1 VALUES LESS THAN (11),
+#    PARTITION p2 VALUES LESS THAN (16),
+#    PARTITION p3 VALUES LESS THAN (21)
+#);
+
+#BUG #SEQUOIASQLMAINSTREAM-708
+## RANGE partition, ShardingKey is AutoIncrement, should fail
+#--error 140
+#CREATE TABLE t1(
+#   id int auto_increment primary key
+#)
+#PARTITION BY RANGE COLUMNS ( id ) (
+#    PARTITION p0 VALUES LESS THAN (6),
+#    PARTITION p1 VALUES LESS THAN (11),
+#    PARTITION p2 VALUES LESS THAN (16),
+#    PARTITION p3 VALUES LESS THAN (21)
+#);
+
+# ShardingKey of table_options is not as same as partition key, should fail
+CREATE TABLE t1(id int, a int) COMMENT 'sequoiadb:{ partition_options: { ShardingKey: {a:1} } }'
+PARTITION BY LIST ( id ) (
+    PARTITION p0 VALUES IN (1,3,5),
+    PARTITION p1 VALUES IN (2,4,8),
+    PARTITION p2 VALUES IN (6,10),
+    PARTITION p3 VALUES IN (7,9)
+);
+SHOW CREATE TABLE t1;
+DROP TABLE t1;
+
+#BUG #SEQUOIASQLMAINSTREAM-708
+#--error 1210
+#CREATE TABLE t1(id int, a int) COMMENT 'sequoiadb:{ table_options: { ShardingKey: {a:1} } }'
+#PARTITION BY LIST ( id ) (
+#    PARTITION p0 VALUES IN (1,3,5),
+#    PARTITION p1 VALUES IN (2,4,8),
+#    PARTITION p2 VALUES IN (6,10),
+#    PARTITION p3 VALUES IN (7,9)
+#);
+
+# Transformation of different partitioning types
+CREATE TABLE t1 (
+    age INT,
+    city VARCHAR(15)
+);
+SHOW CREATE TABLE t1;
+INSERT INTO t1 VALUES(2,'a'),(6,'b'),(7,'c');
+SELECT * FROM t1 ORDER BY age;
+ALTER TABLE t1 PARTITION BY LIST ( age ) (
+    PARTITION p0 VALUES IN (1,3,5),
+    PARTITION p1 VALUES IN (2,4,8),
+    PARTITION p2 VALUES IN (6,10),
+    PARTITION p3 VALUES IN (7,9)
+);
+SHOW CREATE TABLE t1;
+SELECT * FROM t1 ORDER BY age;
+INSERT INTO t1 PARTITION(p0) VALUES(1,'d');
+SELECT * FROM t1 PARTITION(p0);
+UPDATE t1 PARTITION(p1) SET city = 'e';
+SELECT * FROM t1 PARTITION(p1);
+DELETE FROM t1 PARTITION(p2) WHERE age > 3;
+SELECT * FROM t1 PARTITION(p2);
+
+ALTER TABLE t1 PARTITION BY HASH( age ) PARTITIONS 4;
+SHOW CREATE TABLE t1;
+SELECT * FROM t1 ORDER BY age;
+INSERT INTO t1 VALUES(200,'w');
+SELECT * FROM t1 ORDER BY age;
+UPDATE t1 SET city = 'ccc' WHERE age > 100;
+SELECT * FROM t1 ORDER BY age;
+DELETE FROM t1 WHERE age > 60;
+SELECT * FROM t1 ORDER BY age;
+
+ALTER TABLE t1 REMOVE PARTITIONING;
+SHOW CREATE TABLE t1;
+SELECT * FROM t1 ORDER BY age;
+INSERT INTO t1 VALUES(555,'666');
+SELECT * FROM t1 ORDER BY age;
+DROP TABLE t1;
+
+SET sequoiadb_execute_only_in_mysql = OFF;
+
+--source include/uninstall_sequoiadb.inc

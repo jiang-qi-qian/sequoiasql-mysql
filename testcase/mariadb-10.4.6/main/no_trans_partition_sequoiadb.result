@@ -1,0 +1,2235 @@
+CREATE TABLE t1 ( a INT, c CHAR(16), PRIMARY KEY(a,c) )
+PARTITION BY RANGE COLUMNS (a,c) (
+PARTITION p1 VALUES LESS THAN (10,'h'),
+PARTITION p2 VALUES LESS THAN (20,'m'),
+PARTITION p3 VALUES LESS THAN (50,'z')
+);
+SHOW CREATE TABLE t1;
+Table	Create Table
+t1	CREATE TABLE `t1` (
+  `a` int(11) NOT NULL,
+  `c` char(16) NOT NULL,
+  PRIMARY KEY (`a`,`c`)
+) ENGINE=SequoiaDB DEFAULT CHARSET=latin1
+/*!50500 PARTITION BY RANGE  COLUMNS(a,c)
+(PARTITION p1 VALUES LESS THAN (10,'h') ENGINE = SequoiaDB,
+ PARTITION p2 VALUES LESS THAN (20,'m') ENGINE = SequoiaDB,
+ PARTITION p3 VALUES LESS THAN (50,'z') ENGINE = SequoiaDB) */
+INSERT INTO t1 PARTITION (p2,p3) VALUES (20,'m'),(22,'j'),(25,'n'),(30,'o'),(40,'t'),(49,'z');
+SELECT * FROM t1 PARTITION (p1);
+ERROR HY000: Cannot specify partitions sharded by multi columns
+UPDATE t1 PARTITION (p3) SET c = 'updatedC' WHERE a = 22;
+ERROR HY000: Cannot specify partitions sharded by multi columns
+DELETE FROM t1 PARTITION (p3) WHERE a > 40;
+ERROR HY000: Cannot specify partitions sharded by multi columns
+SELECT * FROM t1 ORDER BY a;
+a	c
+20	m
+22	j
+25	n
+30	o
+40	t
+49	z
+DROP TABLE t1;
+CREATE TABLE `t#P#1` ( id INT,  b INT GENERATED ALWAYS AS (id*2) STORED, c CHAR(16) )
+PARTITION BY RANGE COLUMNS (b) (
+PARTITION p0 VALUES LESS THAN (10),
+PARTITION p1 VALUES LESS THAN (100),
+PARTITION p2 VALUES LESS THAN (1000)
+);
+SHOW CREATE TABLE `t#P#1`;
+Table	Create Table
+t#P#1	CREATE TABLE `t#P#1` (
+  `id` int(11) DEFAULT NULL,
+  `b` int(11) GENERATED ALWAYS AS ((`id` * 2)) STORED,
+  `c` char(16) DEFAULT NULL
+) ENGINE=SequoiaDB DEFAULT CHARSET=latin1
+/*!50500 PARTITION BY RANGE  COLUMNS(b)
+(PARTITION p0 VALUES LESS THAN (10) ENGINE = SequoiaDB,
+ PARTITION p1 VALUES LESS THAN (100) ENGINE = SequoiaDB,
+ PARTITION p2 VALUES LESS THAN (1000) ENGINE = SequoiaDB) */
+INSERT INTO `t#P#1` PARTITION (p0,p1,p2)(id,c) VALUES (20,'1'),(9,'2'),(0,'3'),(2,'4'),(4,'5'),(5,'6'),(99,'7'),(25,'8'),(50,'9'),(45,'10'),(150,'11');
+INSERT INTO `t#P#1` PARTITION (p0)(id,c) VALUES (6,'12');
+ERROR HY000: Found a row not matching the given partition set
+UPDATE `t#P#1` PARTITION (p1) SET id = 60;
+ERROR HY000: Sharding key cannot be updated
+UPDATE `t#P#1` PARTITION (p2) SET c = 'updatedC' WHERE id > 50 AND id < 100;
+SELECT * FROM `t#P#1` PARTITION (p0,p1) WHERE id >= 0 AND c <= '7' ORDER BY id;
+id	b	c
+0	0	3
+2	4	4
+4	8	5
+5	10	6
+9	18	2
+20	40	1
+45	90	10
+SELECT * FROM `t#P#1` PARTITION (p0,p2) WHERE NOT id >= 50 OR c <= '7' ORDER BY id;
+id	b	c
+0	0	3
+2	4	4
+4	8	5
+150	300	11
+ALTER TABLE `t#P#1` ADD PRIMARY KEY (b);
+ERROR HY000: Sharding key cannot be updated
+CREATE UNIQUE INDEX b ON `t#P#1`(b);
+SHOW CREATE TABLE `t#P#1`;
+Table	Create Table
+t#P#1	CREATE TABLE `t#P#1` (
+  `id` int(11) DEFAULT NULL,
+  `b` int(11) GENERATED ALWAYS AS ((`id` * 2)) STORED,
+  `c` char(16) DEFAULT NULL,
+  UNIQUE KEY `b` (`b`)
+) ENGINE=SequoiaDB DEFAULT CHARSET=latin1
+/*!50500 PARTITION BY RANGE  COLUMNS(b)
+(PARTITION p0 VALUES LESS THAN (10) ENGINE = SequoiaDB,
+ PARTITION p1 VALUES LESS THAN (100) ENGINE = SequoiaDB,
+ PARTITION p2 VALUES LESS THAN (1000) ENGINE = SequoiaDB) */
+SELECT * FROM `t#P#1` PARTITION (p0,p1) WHERE id >= 0 AND c <= '7' ORDER BY id;
+id	b	c
+0	0	3
+2	4	4
+4	8	5
+5	10	6
+9	18	2
+20	40	1
+45	90	10
+SELECT * FROM `t#P#1` PARTITION (p0,p2) WHERE NOT id >= 50 OR c <= '7' ORDER BY id;
+id	b	c
+0	0	3
+2	4	4
+4	8	5
+150	300	11
+DELETE FROM `t#P#1` PARTITION (p0) WHERE id > 3;
+SELECT * FROM `t#P#1` PARTITION (p0) ORDER BY id;
+id	b	c
+0	0	3
+2	4	4
+DELETE FROM `t#P#1` PARTITION (p0,p2) WHERE id > 0 AND id < 100;
+SELECT * FROM `t#P#1` PARTITION (p0,p1,p2) ORDER BY id;
+id	b	c
+0	0	3
+5	10	6
+9	18	2
+20	40	1
+25	50	8
+45	90	10
+150	300	11
+SELECT PARTITION_NAME, PARTITION_METHOD, PARTITION_EXPRESSION, TABLE_ROWS
+FROM INFORMATION_SCHEMA.PARTITIONS WHERE TABLE_SCHEMA LIKE '%test_parallel%' AND TABLE_NAME = 't#P#1';
+PARTITION_NAME	PARTITION_METHOD	PARTITION_EXPRESSION	TABLE_ROWS
+p0	RANGE COLUMNS	`b`	3
+p1	RANGE COLUMNS	`b`	2
+p2	RANGE COLUMNS	`b`	2
+ALTER TABLE `t#P#1` ADD PARTITION (
+PARTITION pmore1 VALUES LESS THAN (5000),
+PARTITION pmore2 VALUES LESS THAN (10000) 
+);
+SHOW CREATE TABLE `t#P#1`;
+Table	Create Table
+t#P#1	CREATE TABLE `t#P#1` (
+  `id` int(11) DEFAULT NULL,
+  `b` int(11) GENERATED ALWAYS AS ((`id` * 2)) STORED,
+  `c` char(16) DEFAULT NULL,
+  UNIQUE KEY `b` (`b`)
+) ENGINE=SequoiaDB DEFAULT CHARSET=latin1
+/*!50500 PARTITION BY RANGE  COLUMNS(b)
+(PARTITION p0 VALUES LESS THAN (10) ENGINE = SequoiaDB,
+ PARTITION p1 VALUES LESS THAN (100) ENGINE = SequoiaDB,
+ PARTITION p2 VALUES LESS THAN (1000) ENGINE = SequoiaDB,
+ PARTITION pmore1 VALUES LESS THAN (5000) ENGINE = SequoiaDB,
+ PARTITION pmore2 VALUES LESS THAN (10000) ENGINE = SequoiaDB) */
+INSERT INTO `t#P#1` PARTITION (pmore1,pmore2)(id,c) VALUES (1000,'12'),(500,'13'),(4000,'14'),(2500,'15');
+ALTER TABLE `t#P#1` REORGANIZE PARTITION p0,p1 INTO (
+PARTITION p1 VALUES LESS THAN (10), 
+PARTITION p0 VALUES LESS THAN  (100)
+);
+ALTER TABLE `t#P#1` REORGANIZE PARTITION p2,pmore1 INTO (
+PARTITION pmix1 VALUES LESS THAN (5000) );
+ALTER TABLE `t#P#1` REORGANIZE PARTITION pmore2 INTO (
+PARTITION pmore2 VALUES LESS THAN (8000),
+PARTITION pmore3 VALUES LESS THAN (10000)
+);
+SHOW CREATE TABLE `t#P#1`;
+Table	Create Table
+t#P#1	CREATE TABLE `t#P#1` (
+  `id` int(11) DEFAULT NULL,
+  `b` int(11) GENERATED ALWAYS AS ((`id` * 2)) STORED,
+  `c` char(16) DEFAULT NULL,
+  UNIQUE KEY `b` (`b`)
+) ENGINE=SequoiaDB DEFAULT CHARSET=latin1
+/*!50500 PARTITION BY RANGE  COLUMNS(b)
+(PARTITION p1 VALUES LESS THAN (10) ENGINE = SequoiaDB,
+ PARTITION p0 VALUES LESS THAN (100) ENGINE = SequoiaDB,
+ PARTITION pmix1 VALUES LESS THAN (5000) ENGINE = SequoiaDB,
+ PARTITION pmore2 VALUES LESS THAN (8000) ENGINE = SequoiaDB,
+ PARTITION pmore3 VALUES LESS THAN (10000) ENGINE = SequoiaDB) */
+INSERT INTO `t#P#1` PARTITION (p0,p1,pmix1,pmore2,pmore3)(id,c) VALUES (3,'16'),(30,'17'),(1500,'18'), (3000,'19'),(4800,'20');
+SELECT * FROM `t#P#1` PARTITION (p0) ORDER BY id;
+id	b	c
+5	10	6
+9	18	2
+20	40	1
+25	50	8
+30	60	17
+45	90	10
+SELECT * FROM `t#P#1` PARTITION (p1) ORDER BY id;
+id	b	c
+0	0	3
+3	6	16
+SELECT * FROM `t#P#1` PARTITION (pmix1) ORDER BY id;
+id	b	c
+150	300	11
+500	1000	13
+1000	2000	12
+1500	3000	18
+SELECT * FROM `t#P#1` PARTITION (pmore2,pmore3) ORDER BY id;
+id	b	c
+2500	5000	15
+3000	6000	19
+4000	8000	14
+4800	9600	20
+ALTER TABLE `t#P#1` DROP PARTITION p0,pmore2,pmore3;
+SHOW CREATE TABLE `t#P#1`;
+Table	Create Table
+t#P#1	CREATE TABLE `t#P#1` (
+  `id` int(11) DEFAULT NULL,
+  `b` int(11) GENERATED ALWAYS AS ((`id` * 2)) STORED,
+  `c` char(16) DEFAULT NULL,
+  UNIQUE KEY `b` (`b`)
+) ENGINE=SequoiaDB DEFAULT CHARSET=latin1
+/*!50500 PARTITION BY RANGE  COLUMNS(b)
+(PARTITION p1 VALUES LESS THAN (10) ENGINE = SequoiaDB,
+ PARTITION pmix1 VALUES LESS THAN (5000) ENGINE = SequoiaDB) */
+UPDATE `t#P#1` PARTITION (pmix1) SET c = 'newC';
+SELECT * FROM `t#P#1` PARTITION (p1) ORDER BY id;
+id	b	c
+0	0	3
+3	6	16
+SELECT * FROM `t#P#1` PARTITION (pmix1) ORDER BY id;
+id	b	c
+150	300	newC
+500	1000	newC
+1000	2000	newC
+1500	3000	newC
+CREATE TABLE `t#P#1#P#p1` ( `id` int(11) DEFAULT NULL, `b` int(11) GENERATED ALWAYS AS ((`id` * 2)) STORED, `c` char(16), UNIQUE KEY(b) );
+CREATE TABLE `t#P#1#P#pmix1` ( `id` int(11) DEFAULT NULL, `b` int(11) GENERATED ALWAYS AS ((`id` * 2)) STORED, `c` char(16), UNIQUE KEY(b) );
+INSERT INTO `t#P#1#P#p1`(id,c) VALUES (3000,'19') ;
+SELECT * FROM `t#P#1` ORDER BY id;
+id	b	c
+0	0	3
+3	6	16
+150	300	newC
+500	1000	newC
+1000	2000	newC
+1500	3000	newC
+3000	6000	19
+CHECK TABLE `t#P#1`;
+Table	Op	Msg_type	Msg_text
+x	check	error	Found a misplaced row in part p1 should be in part unknown:
+ b:6000
+x	check	error	Partition p1 returned error
+x	check	error	Table upgrade required. Please do "REPAIR TABLE `t#P#1`" or dump/reload to fix it!
+ALTER TABLE `t#P#1` CHECK PARTITION p1;
+Table	Op	Msg_type	Msg_text
+x	check	error	Found a misplaced row in part p1 should be in part unknown:
+ b:6000
+x	check	error	Partition p1 returned error
+x	check	error	Table upgrade required. Please do "REPAIR TABLE `t#P#1`" or dump/reload to fix it!
+ALTER TABLE `t#P#1` CHECK PARTITION pmix1;
+Table	Op	Msg_type	Msg_text
+x	check	status	OK
+REPAIR TABLE `t#P#1`;
+Table	Op	Msg_type	Msg_text
+x	repair	error	Failed to move/insert a row from part p1 into part unknown:
+No matched partition, please update or delete the record:
+ id:3000 b:6000 c:19
+x	repair	error	Partition p1 returned error
+x	repair	error	Corrupt
+ALTER TABLE `t#P#1` REPAIR PARTITION P1;
+Table	Op	Msg_type	Msg_text
+x	repair	error	Failed to move/insert a row from part p1 into part unknown:
+No matched partition, please update or delete the record:
+ id:3000 b:6000 c:19
+x	repair	error	Partition p1 returned error
+x	repair	error	Corrupt
+ALTER TABLE `t#P#1` REPAIR PARTITION pmix1;
+Table	Op	Msg_type	Msg_text
+x	repair	status	OK
+ALTER TABLE `t#P#1` REBUILD PARTITION P1;
+DELETE FROM `t#P#1#P#p1` WHERE id = 3000;
+SELECT * FROM `t#P#1` ORDER BY id;
+id	b	c
+0	0	3
+3	6	16
+150	300	newC
+500	1000	newC
+1000	2000	newC
+1500	3000	newC
+CHECK TABLE `t#P#1`;
+Table	Op	Msg_type	Msg_text
+x	check	status	OK
+INSERT INTO `t#P#1#P#pmix1`(id,c) VALUES (3,'20');
+SELECT * FROM `t#P#1` ORDER BY id, c;
+id	b	c
+0	0	3
+3	6	16
+3	6	20
+150	300	newC
+500	1000	newC
+1000	2000	newC
+1500	3000	newC
+CHECK TABLE `t#P#1` MEDIUM;
+Table	Op	Msg_type	Msg_text
+x	check	error	Found a misplaced row in part pmix1 should be in part p1:
+ b:6
+x	check	error	Partition pmix1 returned error
+x	check	error	Table upgrade required. Please do "REPAIR TABLE `t#P#1`" or dump/reload to fix it!
+ALTER TABLE `t#P#1` CHECK PARTITION P1;
+Table	Op	Msg_type	Msg_text
+x	check	status	OK
+ALTER TABLE `t#P#1` CHECK PARTITION pmix1 MEDIUM;
+Table	Op	Msg_type	Msg_text
+x	check	error	Found a misplaced row in part pmix1 should be in part p1:
+ b:6
+x	check	error	Partition pmix1 returned error
+x	check	error	Table upgrade required. Please do "REPAIR TABLE `t#P#1`" or dump/reload to fix it!
+REPAIR TABLE `t#P#1` QUICK;
+Table	Op	Msg_type	Msg_text
+x	repair	status	OK
+REPAIR TABLE `t#P#1` USE_FRM;
+Table	Op	Msg_type	Msg_text
+x	repair	status	OK
+REPAIR TABLE `t#P#1` EXTENDED;
+Table	Op	Msg_type	Msg_text
+x	repair	error	Failed to move/insert a row from part pmix1 into part p1:
+Duplicate key found, please update or delete the record:
+ id:3 b:6 c:20
+x	repair	error	Partition pmix1 returned error
+x	repair	error	Corrupt
+ALTER TABLE `t#P#1` REPAIR PARTITION P1;
+Table	Op	Msg_type	Msg_text
+x	repair	status	OK
+ALTER TABLE `t#P#1` REPAIR PARTITION pmix1 EXTENDED;
+Table	Op	Msg_type	Msg_text
+x	repair	error	Failed to move/insert a row from part pmix1 into part p1:
+Duplicate key found, please update or delete the record:
+ id:3 b:6 c:20
+x	repair	error	Partition pmix1 returned error
+x	repair	error	Corrupt
+ALTER TABLE `t#P#1` REBUILD PARTITION P1;
+ERROR 23000: Can't write; duplicate key in table 't#P#1'
+CHECK TABLE `t#P#1`;
+Table	Op	Msg_type	Msg_text
+x	check	error	Found a misplaced row in part pmix1 should be in part p1:
+ b:6
+x	check	error	Partition pmix1 returned error
+x	check	error	Table upgrade required. Please do "REPAIR TABLE `t#P#1`" or dump/reload to fix it!
+DELETE FROM `t#P#1#P#pmix1` WHERE id = 3;
+SELECT * FROM `t#P#1` ORDER BY id;
+id	b	c
+0	0	3
+3	6	16
+150	300	newC
+500	1000	newC
+1000	2000	newC
+1500	3000	newC
+CHECK TABLE `t#P#1`;
+Table	Op	Msg_type	Msg_text
+x	check	status	OK
+INSERT INTO `t#P#1#P#p1`(id,c) VALUES (600,'21') ;
+SELECT * FROM `t#P#1` ORDER BY id;
+id	b	c
+0	0	3
+3	6	16
+150	300	newC
+500	1000	newC
+600	1200	21
+1000	2000	newC
+1500	3000	newC
+CHECK TABLE `t#P#1` EXTENDED;
+Table	Op	Msg_type	Msg_text
+x	check	error	Found a misplaced row in part p1 should be in part pmix1:
+ b:1200
+x	check	error	Partition p1 returned error
+x	check	error	Table upgrade required. Please do "REPAIR TABLE `t#P#1`" or dump/reload to fix it!
+ALTER TABLE `t#P#1` CHECK PARTITION p1 EXTENDED;
+Table	Op	Msg_type	Msg_text
+x	check	error	Found a misplaced row in part p1 should be in part pmix1:
+ b:1200
+x	check	error	Partition p1 returned error
+x	check	error	Table upgrade required. Please do "REPAIR TABLE `t#P#1`" or dump/reload to fix it!
+ALTER TABLE `t#P#1` CHECK PARTITION pmix1;
+Table	Op	Msg_type	Msg_text
+x	check	status	OK
+ALTER TABLE `t#P#1` REPAIR PARTITION ALL;
+Table	Op	Msg_type	Msg_text
+x	repair	warning	Moved 1 misplaced rows
+x	repair	status	OK
+ALTER TABLE `t#P#1` REBUILD PARTITION ALL;
+SELECT * FROM `t#P#1` ORDER BY id;
+id	b	c
+0	0	3
+3	6	16
+150	300	newC
+500	1000	newC
+600	1200	21
+1000	2000	newC
+1500	3000	newC
+CHECK TABLE `t#P#1`;
+Table	Op	Msg_type	Msg_text
+x	check	status	OK
+DROP TABLE `t#P#1`,`t#P#1#P#p1`,`t#P#1#P#pmix1`;
+CREATE TABLE `t1#Range#Expr` ( id INT, d DATE NOT NULL )
+PARTITION BY RANGE ( YEAR(d) ) (
+PARTITION p0 VALUES LESS THAN (1960),
+PARTITION p1 VALUES LESS THAN (1980),
+PARTITION p2 VALUES LESS THAN (2000),
+PARTITION p3 VALUES LESS THAN (2020),
+PARTITION p4 VALUES LESS THAN (MAXVALUE)
+);
+CREATE TABLE `t1#List#Expr` ( id INT, a INT NOT NULL, b INT GENERATED ALWAYS AS (a+1) STORED )
+PARTITION BY LIST (b) (
+PARTITION ptest1 VALUES IN (-4,40,9,-1,0,100,11),
+PARTITION otest2 VALUES IN (3,50,8,-9,41,99,1),
+PARTITION qtest3 VALUES IN (36,7,-8,-50,14,13),
+PARTITION ytest4 VALUES IN (6,16,-7,12,-13,10,101,-99)
+);
+CREATE TABLE `t1#P#List#Columns` ( id INT, a INT GENERATED ALWAYS AS (id-1) STORED, d DATE ) 
+PARTITION BY LIST COLUMNS(a, d) (
+PARTITION l1 VALUES IN ( (0,'2000-02-01'), (3,'2008-02-01'), (5,'1990-02-01'), (8,'1998-02-01'), (-1,'2001-02-01'), (-9,'2011-02-01'), (10,'2020-02-01') ), 
+PARTITION l2 VALUES IN ( (-3,'2001-03-01'), (7,'2006-03-01'), (9,'1997-03-01'), (99,'1998-03-01'), (-5,'2002-03-01'), (16,'2009-03-01'), (80,'2020-03-01') ), 
+PARTITION l3 VALUES IN ( (14,'2001-04-01'), (17,'2005-04-01'), (-99,'1995-04-01'), (-4,'1998-04-01'), (24,'2002-04-01'), (19,'2008-04-01'), (-80,'2019-04-01'),(81, '2020-03-01') ), 
+PARTITION l4 VALUES IN ( (6,'2018-05-01'), (13,'2004-05-01'), (98,'1995-05-01'), (-98,'1998-05-01'), (23,'2019-05-01'), (-19,'2003-05-01'), (79,'2021-05-01') )
+);
+SHOW CREATE TABLE `t1#Range#Expr`;
+Table	Create Table
+t1#Range#Expr	CREATE TABLE `t1#Range#Expr` (
+  `id` int(11) DEFAULT NULL,
+  `d` date NOT NULL
+) ENGINE=SequoiaDB DEFAULT CHARSET=latin1
+/*!50100 PARTITION BY RANGE ( YEAR(d))
+(PARTITION p0 VALUES LESS THAN (1960) ENGINE = SequoiaDB,
+ PARTITION p1 VALUES LESS THAN (1980) ENGINE = SequoiaDB,
+ PARTITION p2 VALUES LESS THAN (2000) ENGINE = SequoiaDB,
+ PARTITION p3 VALUES LESS THAN (2020) ENGINE = SequoiaDB,
+ PARTITION p4 VALUES LESS THAN MAXVALUE ENGINE = SequoiaDB) */
+SHOW CREATE TABLE `t1#List#Expr`;
+Table	Create Table
+t1#List#Expr	CREATE TABLE `t1#List#Expr` (
+  `id` int(11) DEFAULT NULL,
+  `a` int(11) NOT NULL,
+  `b` int(11) GENERATED ALWAYS AS ((`a` + 1)) STORED
+) ENGINE=SequoiaDB DEFAULT CHARSET=latin1
+/*!50100 PARTITION BY LIST (b)
+(PARTITION ptest1 VALUES IN (-4,40,9,-1,0,100,11) ENGINE = SequoiaDB,
+ PARTITION otest2 VALUES IN (3,50,8,-9,41,99,1) ENGINE = SequoiaDB,
+ PARTITION qtest3 VALUES IN (36,7,-8,-50,14,13) ENGINE = SequoiaDB,
+ PARTITION ytest4 VALUES IN (6,16,-7,12,-13,10,101,-99) ENGINE = SequoiaDB) */
+SHOW CREATE TABLE `t1#P#List#Columns`;
+Table	Create Table
+t1#P#List#Columns	CREATE TABLE `t1#P#List#Columns` (
+  `id` int(11) DEFAULT NULL,
+  `a` int(11) GENERATED ALWAYS AS ((`id` - 1)) STORED,
+  `d` date DEFAULT NULL
+) ENGINE=SequoiaDB DEFAULT CHARSET=latin1
+/*!50500 PARTITION BY LIST  COLUMNS(a,d)
+(PARTITION l1 VALUES IN ((0,'2000-02-01'),(3,'2008-02-01'),(5,'1990-02-01'),(8,'1998-02-01'),(-1,'2001-02-01'),(-9,'2011-02-01'),(10,'2020-02-01')) ENGINE = SequoiaDB,
+ PARTITION l2 VALUES IN ((-3,'2001-03-01'),(7,'2006-03-01'),(9,'1997-03-01'),(99,'1998-03-01'),(-5,'2002-03-01'),(16,'2009-03-01'),(80,'2020-03-01')) ENGINE = SequoiaDB,
+ PARTITION l3 VALUES IN ((14,'2001-04-01'),(17,'2005-04-01'),(-99,'1995-04-01'),(-4,'1998-04-01'),(24,'2002-04-01'),(19,'2008-04-01'),(-80,'2019-04-01'),(81,'2020-03-01')) ENGINE = SequoiaDB,
+ PARTITION l4 VALUES IN ((6,'2018-05-01'),(13,'2004-05-01'),(98,'1995-05-01'),(-98,'1998-05-01'),(23,'2019-05-01'),(-19,'2003-05-01'),(79,'2021-05-01')) ENGINE = SequoiaDB) */
+INSERT INTO `t1#Range#Expr` PARTITION (p0) VALUES (0,'1960-01-01');
+ERROR HY000: Found a row not matching the given partition set
+INSERT INTO `t1#List#Expr` PARTITION (otest2)(id,a) VALUES (0,-2);
+ERROR HY000: Found a row not matching the given partition set
+INSERT INTO `t1#P#List#Columns` PARTITION (l3)(id,d) VALUES (17,'2009-03-01');
+ERROR HY000: Found a row not matching the given partition set
+INSERT INTO `t1#Range#Expr` PARTITION (p0,p3,p4) VALUES (1,'1900-01-01'),(2,'1940-04-04'),(-1,'1950-05-05'),(99,'2000-01-01'),(0,'2010-07-07'),(18,'2018-03-03'),(10,'2020-02-02'),(9,'2037-02-01'),(100,'2019-12-30');
+INSERT INTO `t1#List#Expr` PARTITION (otest2,qtest3,ytest4)(id,a) VALUES (0,0),(40,40),(11,11),(13,13),(12,12),(-8,-8),(100,100),(9,9),(2,2);
+INSERT INTO `t1#P#List#Columns` PARTITION (l1,l2,l3,l4)(id,d) VALUES (4,'2008-02-01'), (6,'1990-02-01'),(0,'2001-02-01'),(8,'2006-03-01'), (-4,'2002-03-01'),(81,'2020-03-01'),(15,'2001-04-01'), (-3,'1998-04-01'),(20,'2008-04-01'),(7,'2018-05-01'),(14,'2004-05-01'),(80,'2021-05-01');
+UPDATE `t1#Range#Expr` PARTITION (p3) SET d = '1910-01-01';
+ERROR HY000: Sharding key cannot be updated
+UPDATE `t1#List#Expr` PARTITION (otest2) SET a = -1 WHERE a > 0;
+ERROR HY000: Sharding key cannot be updated
+UPDATE `t1#P#List#Columns` PARTITION (l1,l2,l3,l4) SET id = id+1 WHERE a = 80 AND d IS NOT NULL;
+ERROR HY000: Sharding key cannot be updated
+UPDATE `t1#List#Expr` PARTITION (ptest1,otest2,ytest4) SET id = id*2 WHERE a >= (SELECT id FROM `t1#Range#Expr` WHERE id > 99);
+UPDATE `t1#Range#Expr` PARTITION (p0,p3,p4) SET id = id + 3 WHERE d > '1970-01-01' AND d < '2020-01-01';
+SELECT * FROM `t1#Range#Expr` PARTITION (p0,p1,p4) WHERE d < '2037-01-01' ORDER BY id;
+id	d
+-1	1950-05-05
+1	1900-01-01
+2	1940-04-04
+10	2020-02-02
+SELECT * FROM `t1#List#Expr` PARTITION (otest2,qtest3,ytest4) WHERE a IN (2,99,11) ORDER BY id;
+id	a	b
+2	2	3
+11	11	12
+SELECT t1.id ,t1.d FROM `t1#Range#Expr` AS t1 JOIN `t1#List#Expr` PARTITION (ptest1,otest2,ytest4) AS t2 ON t1.id=t2.id ORDER BY t1.id;
+id	d
+2	1940-04-04
+9	2037-02-01
+SELECT * FROM `t1#P#List#Columns` PARTITION (l1,l2,l3,l4) WHERE a NOT IN (3,4,5,80) AND d > '2001-04-01' ORDER BY id;
+id	a	d
+-4	-5	2002-03-01
+7	6	2018-05-01
+8	7	2006-03-01
+14	13	2004-05-01
+20	19	2008-04-01
+80	79	2021-05-01
+ALTER TABLE `t1#Range#Expr` ADD PRIMARY KEY (d);
+ALTER TABLE `t1#List#Expr` ADD UNIQUE KEY (b);
+SHOW CREATE TABLE `t1#Range#Expr`;
+Table	Create Table
+t1#Range#Expr	CREATE TABLE `t1#Range#Expr` (
+  `id` int(11) DEFAULT NULL,
+  `d` date NOT NULL,
+  PRIMARY KEY (`d`)
+) ENGINE=SequoiaDB DEFAULT CHARSET=latin1
+/*!50100 PARTITION BY RANGE ( YEAR(d))
+(PARTITION p0 VALUES LESS THAN (1960) ENGINE = SequoiaDB,
+ PARTITION p1 VALUES LESS THAN (1980) ENGINE = SequoiaDB,
+ PARTITION p2 VALUES LESS THAN (2000) ENGINE = SequoiaDB,
+ PARTITION p3 VALUES LESS THAN (2020) ENGINE = SequoiaDB,
+ PARTITION p4 VALUES LESS THAN MAXVALUE ENGINE = SequoiaDB) */
+SHOW CREATE TABLE `t1#List#Expr`;
+Table	Create Table
+t1#List#Expr	CREATE TABLE `t1#List#Expr` (
+  `id` int(11) DEFAULT NULL,
+  `a` int(11) NOT NULL,
+  `b` int(11) GENERATED ALWAYS AS ((`a` + 1)) STORED,
+  UNIQUE KEY `b` (`b`)
+) ENGINE=SequoiaDB DEFAULT CHARSET=latin1
+/*!50100 PARTITION BY LIST (b)
+(PARTITION ptest1 VALUES IN (-4,40,9,-1,0,100,11) ENGINE = SequoiaDB,
+ PARTITION otest2 VALUES IN (3,50,8,-9,41,99,1) ENGINE = SequoiaDB,
+ PARTITION qtest3 VALUES IN (36,7,-8,-50,14,13) ENGINE = SequoiaDB,
+ PARTITION ytest4 VALUES IN (6,16,-7,12,-13,10,101,-99) ENGINE = SequoiaDB) */
+SHOW CREATE TABLE `t1#P#List#Columns`;
+Table	Create Table
+t1#P#List#Columns	CREATE TABLE `t1#P#List#Columns` (
+  `id` int(11) DEFAULT NULL,
+  `a` int(11) GENERATED ALWAYS AS ((`id` - 1)) STORED,
+  `d` date DEFAULT NULL
+) ENGINE=SequoiaDB DEFAULT CHARSET=latin1
+/*!50500 PARTITION BY LIST  COLUMNS(a,d)
+(PARTITION l1 VALUES IN ((0,'2000-02-01'),(3,'2008-02-01'),(5,'1990-02-01'),(8,'1998-02-01'),(-1,'2001-02-01'),(-9,'2011-02-01'),(10,'2020-02-01')) ENGINE = SequoiaDB,
+ PARTITION l2 VALUES IN ((-3,'2001-03-01'),(7,'2006-03-01'),(9,'1997-03-01'),(99,'1998-03-01'),(-5,'2002-03-01'),(16,'2009-03-01'),(80,'2020-03-01')) ENGINE = SequoiaDB,
+ PARTITION l3 VALUES IN ((14,'2001-04-01'),(17,'2005-04-01'),(-99,'1995-04-01'),(-4,'1998-04-01'),(24,'2002-04-01'),(19,'2008-04-01'),(-80,'2019-04-01'),(81,'2020-03-01')) ENGINE = SequoiaDB,
+ PARTITION l4 VALUES IN ((6,'2018-05-01'),(13,'2004-05-01'),(98,'1995-05-01'),(-98,'1998-05-01'),(23,'2019-05-01'),(-19,'2003-05-01'),(79,'2021-05-01')) ENGINE = SequoiaDB) */
+SELECT * FROM `t1#Range#Expr` PARTITION (p0,p1,p4) WHERE d < '2037-01-01' ORDER BY id;
+id	d
+-1	1950-05-05
+1	1900-01-01
+2	1940-04-04
+10	2020-02-02
+SELECT * FROM `t1#List#Expr` PARTITION (otest2,qtest3,ytest4) WHERE a IN (2,99,11) ORDER BY id;
+id	a	b
+2	2	3
+11	11	12
+SELECT t1.id ,t1.d FROM `t1#Range#Expr` AS t1 JOIN `t1#List#Expr` PARTITION (ptest1,otest2,ytest4) AS t2 ON t1.id=t2.id ORDER BY t1.id;
+id	d
+2	1940-04-04
+9	2037-02-01
+SELECT * FROM `t1#P#List#Columns` PARTITION (l1,l2,l3,l4) WHERE a NOT IN (3,4,5,80) AND d > '2001-04-01' ORDER BY id;
+id	a	d
+-4	-5	2002-03-01
+7	6	2018-05-01
+8	7	2006-03-01
+14	13	2004-05-01
+20	19	2008-04-01
+80	79	2021-05-01
+DELETE FROM `t1#Range#Expr` PARTITION (p1,p3) WHERE id > 10;
+DELETE FROM `t1#List#Expr` PARTITION (ptest1,otest2,qtest3) WHERE a IN (10,13,90,95,0);
+DELETE FROM `t1#P#List#Columns` PARTITION (l1,l2,l3,l4) WHERE a NOT IN (1,3,4,10,80);
+SELECT * FROM `t1#Range#Expr` PARTITION (p0,p2,p1,p4) ORDER BY id;
+id	d
+-1	1950-05-05
+1	1900-01-01
+2	1940-04-04
+9	2037-02-01
+10	2020-02-02
+SELECT * FROM `t1#List#Expr` PARTITION (ptest1,otest2,qtest3,ytest4) ORDER BY id;
+id	a	b
+-8	-8	-7
+2	2	3
+9	9	10
+11	11	12
+12	12	13
+40	40	41
+200	100	101
+SELECT * FROM `t1#P#List#Columns` PARTITION (l1,l3,l2,l4) ORDER BY id;
+id	a	d
+4	3	2008-02-01
+81	80	2020-03-01
+SELECT PARTITION_NAME, PARTITION_METHOD, PARTITION_EXPRESSION, TABLE_ROWS 
+FROM INFORMATION_SCHEMA.PARTITIONS WHERE TABLE_SCHEMA LIKE '%test_parallel%' AND TABLE_NAME = 't1#Range#Expr';
+PARTITION_NAME	PARTITION_METHOD	PARTITION_EXPRESSION	TABLE_ROWS
+p0	RANGE	 YEAR(d)	2
+p1	RANGE	 YEAR(d)	1
+p2	RANGE	 YEAR(d)	1
+p3	RANGE	 YEAR(d)	1
+p4	RANGE	 YEAR(d)	1
+SELECT PARTITION_NAME, PARTITION_METHOD, PARTITION_EXPRESSION, TABLE_ROWS 
+FROM INFORMATION_SCHEMA.PARTITIONS WHERE TABLE_SCHEMA LIKE '%test_parallel%' AND TABLE_NAME = 't1#List#Expr';
+PARTITION_NAME	PARTITION_METHOD	PARTITION_EXPRESSION	TABLE_ROWS
+ptest1	LIST	b	2
+otest2	LIST	b	2
+qtest3	LIST	b	2
+ytest4	LIST	b	1
+SELECT PARTITION_NAME, PARTITION_METHOD, PARTITION_EXPRESSION, TABLE_ROWS 
+FROM INFORMATION_SCHEMA.PARTITIONS WHERE TABLE_SCHEMA LIKE '%test_parallel%' AND TABLE_NAME = 't1#P#List#Columns';
+PARTITION_NAME	PARTITION_METHOD	PARTITION_EXPRESSION	TABLE_ROWS
+l1	LIST COLUMNS	`a`,`d`	1
+l2	LIST COLUMNS	`a`,`d`	1
+l3	LIST COLUMNS	`a`,`d`	1
+l4	LIST COLUMNS	`a`,`d`	1
+ALTER TABLE `t1#List#Expr` ADD PARTITION (
+PARTITION pmore1 VALUES IN (-3,19,21,-2,97),
+PARTITION pmore2 VALUES IN (32,28,15,4,-10)
+);
+SHOW CREATE TABLE `t1#List#Expr`;
+Table	Create Table
+t1#List#Expr	CREATE TABLE `t1#List#Expr` (
+  `id` int(11) DEFAULT NULL,
+  `a` int(11) NOT NULL,
+  `b` int(11) GENERATED ALWAYS AS ((`a` + 1)) STORED,
+  UNIQUE KEY `b` (`b`)
+) ENGINE=SequoiaDB DEFAULT CHARSET=latin1
+/*!50100 PARTITION BY LIST (b)
+(PARTITION ptest1 VALUES IN (-4,40,9,-1,0,100,11) ENGINE = SequoiaDB,
+ PARTITION otest2 VALUES IN (3,50,8,-9,41,99,1) ENGINE = SequoiaDB,
+ PARTITION qtest3 VALUES IN (36,7,-8,-50,14,13) ENGINE = SequoiaDB,
+ PARTITION ytest4 VALUES IN (6,16,-7,12,-13,10,101,-99) ENGINE = SequoiaDB,
+ PARTITION pmore1 VALUES IN (-3,19,21,-2,97) ENGINE = SequoiaDB,
+ PARTITION pmore2 VALUES IN (32,28,15,4,-10) ENGINE = SequoiaDB) */
+INSERT INTO `t1#List#Expr` PARTITION (pmore1,pmore2)(id,a) VALUES (-4,-4),(31,31),(20,20),(-3,-3),(3,3),(27,27);
+ALTER TABLE `t1#List#Expr` REORGANIZE PARTITION otest2,qtest3 INTO (
+PARTITION qtest3 VALUES IN (35,27,-22,-6,26,88,3,13,41)
+);
+ALTER TABLE `t1#List#Expr` REORGANIZE PARTITION pmore1 INTO (
+PARTITION pmoren1 VALUES IN (38,5,17,-3),
+PARTITION pmoren2 VALUES IN (30,-5,21,-2),
+PARTITION pmoren3 VALUES IN (-30,29,18)
+);
+ALTER TABLE `t1#List#Expr` REORGANIZE PARTITION qtest3,ytest4 INTO (
+PARTITION ytest4 VALUES IN (35,27,-22,-6,26,88,3,13,41),
+PARTITION qtest3 VALUES IN (6,16,-7,12,-13,10,101,-99)
+);
+SHOW CREATE TABLE `t1#List#Expr`;
+Table	Create Table
+t1#List#Expr	CREATE TABLE `t1#List#Expr` (
+  `id` int(11) DEFAULT NULL,
+  `a` int(11) NOT NULL,
+  `b` int(11) GENERATED ALWAYS AS ((`a` + 1)) STORED,
+  UNIQUE KEY `b` (`b`)
+) ENGINE=SequoiaDB DEFAULT CHARSET=latin1
+/*!50100 PARTITION BY LIST (b)
+(PARTITION ptest1 VALUES IN (-4,40,9,-1,0,100,11) ENGINE = SequoiaDB,
+ PARTITION ytest4 VALUES IN (35,27,-22,-6,26,88,3,13,41) ENGINE = SequoiaDB,
+ PARTITION qtest3 VALUES IN (6,16,-7,12,-13,10,101,-99) ENGINE = SequoiaDB,
+ PARTITION pmoren1 VALUES IN (38,5,17,-3) ENGINE = SequoiaDB,
+ PARTITION pmoren2 VALUES IN (30,-5,21,-2) ENGINE = SequoiaDB,
+ PARTITION pmoren3 VALUES IN (-30,29,18) ENGINE = SequoiaDB,
+ PARTITION pmore2 VALUES IN (32,28,15,4,-10) ENGINE = SequoiaDB) */
+INSERT INTO `t1#List#Expr` PARTITION (qtest3,ytest4)(id,a) VALUES (-100,-100),(-7,-7),(-23,-23);
+INSERT INTO `t1#List#Expr` PARTITION (pmoren1,pmoren2,pmoren3)(id,a) VALUES (-6,-6),(4,4),(17,17),(16,16);
+SELECT * FROM `t1#List#Expr` PARTITION (qtest3,ytest4) ORDER BY id;
+id	a	b
+-100	-100	-99
+-23	-23	-22
+-8	-8	-7
+-7	-7	-6
+2	2	3
+9	9	10
+11	11	12
+12	12	13
+40	40	41
+200	100	101
+SELECT * FROM `t1#List#Expr` PARTITION (pmoren1) ORDER BY id;
+id	a	b
+-4	-4	-3
+4	4	5
+16	16	17
+SELECT * FROM `t1#List#Expr` PARTITION (pmoren2,pmoren3) ORDER BY id;
+id	a	b
+-6	-6	-5
+-3	-3	-2
+17	17	18
+20	20	21
+ALTER TABLE `t1#List#Expr` DROP PARTITION qtest3,ytest4,pmoren1,pmore2;
+SHOW CREATE TABLE `t1#List#Expr`;
+Table	Create Table
+t1#List#Expr	CREATE TABLE `t1#List#Expr` (
+  `id` int(11) DEFAULT NULL,
+  `a` int(11) NOT NULL,
+  `b` int(11) GENERATED ALWAYS AS ((`a` + 1)) STORED,
+  UNIQUE KEY `b` (`b`)
+) ENGINE=SequoiaDB DEFAULT CHARSET=latin1
+/*!50100 PARTITION BY LIST (b)
+(PARTITION ptest1 VALUES IN (-4,40,9,-1,0,100,11) ENGINE = SequoiaDB,
+ PARTITION pmoren2 VALUES IN (30,-5,21,-2) ENGINE = SequoiaDB,
+ PARTITION pmoren3 VALUES IN (-30,29,18) ENGINE = SequoiaDB) */
+ALTER TABLE `t1#Range#Expr` REBUILD PARTITION p0;
+ALTER TABLE `t1#List#Expr` REBUILD PARTITION ALL;
+UPDATE `t1#List#Expr` PARTITION (pmoren2,pmoren3) SET id = 1 WHERE a > 0;
+SELECT * FROM `t1#Range#Expr` PARTITION (p0,p2,p1,p3,p4) ORDER BY id;
+id	d
+-1	1950-05-05
+1	1900-01-01
+2	1940-04-04
+3	2010-07-07
+9	2037-02-01
+10	2020-02-02
+SELECT * FROM `t1#List#Expr` PARTITION (ptest1,pmoren2) ORDER BY id;
+id	a	b
+-6	-6	-5
+-3	-3	-2
+1	20	21
+SELECT * FROM `t1#List#Expr` PARTITION (pmoren3) ORDER BY id;
+id	a	b
+1	17	18
+CREATE TABLE `t1#List#Expr#P#ptest1` ( id INT, _phid_ BIGINT, a INT NOT NULL, b INT GENERATED ALWAYS AS (a+1) STORED );
+CREATE TABLE `t1#List#Expr#P#pmoren2` ( id INT, _phid_ BIGINT, a INT NOT NULL, b INT GENERATED ALWAYS AS (a+1) STORED );
+CREATE TABLE `t1#List#Expr#P#pmoren3` ( id INT, _phid_ BIGINT, a INT NOT NULL, b INT GENERATED ALWAYS AS (a+1) STORED );
+INSERT INTO `t1#List#Expr#P#ptest1`(id,_phid_ ,a) VALUES (101,101,101) ;
+SELECT * FROM `t1#List#Expr` ORDER BY id, a;
+id	a	b
+-6	-6	-5
+-3	-3	-2
+1	17	18
+1	20	21
+101	101	102
+CHECK TABLE `t1#List#Expr`;
+Table	Op	Msg_type	Msg_text
+x	check	error	Found a misplaced row in part ptest1 should be in part unknown:
+ b:102
+x	check	error	Partition ptest1 returned error
+x	check	error	Table upgrade required. Please do "REPAIR TABLE `t1#List#Expr`" or dump/reload to fix it!
+ALTER TABLE `t1#List#Expr` CHECK PARTITION ptest1;
+Table	Op	Msg_type	Msg_text
+x	check	error	Found a misplaced row in part ptest1 should be in part unknown:
+ b:102
+x	check	error	Partition ptest1 returned error
+x	check	error	Table upgrade required. Please do "REPAIR TABLE `t1#List#Expr`" or dump/reload to fix it!
+ALTER TABLE `t1#List#Expr` CHECK PARTITION pmoren2,pmoren3;
+Table	Op	Msg_type	Msg_text
+x	check	status	OK
+REPAIR TABLE `t1#List#Expr`;
+Table	Op	Msg_type	Msg_text
+x	repair	error	Failed to move/insert a row from part ptest1 into part unknown:
+No matched partition, please update or delete the record:
+ id:101 a:101 b:102
+x	repair	error	Partition ptest1 returned error
+x	repair	error	Corrupt
+ALTER TABLE `t1#List#Expr` REPAIR PARTITION ptest1;
+Table	Op	Msg_type	Msg_text
+x	repair	error	Failed to move/insert a row from part ptest1 into part unknown:
+No matched partition, please update or delete the record:
+ id:101 a:101 b:102
+x	repair	error	Partition ptest1 returned error
+x	repair	error	Corrupt
+ALTER TABLE `t1#List#Expr` REPAIR PARTITION pmoren2,pmoren3;
+Table	Op	Msg_type	Msg_text
+x	repair	status	OK
+ALTER TABLE `t1#List#Expr` REBUILD PARTITION ptest1;
+DELETE FROM `t1#List#Expr#P#ptest1` WHERE a = 101;
+SELECT * FROM `t1#List#Expr` ORDER BY id, a;
+id	a	b
+-6	-6	-5
+-3	-3	-2
+1	17	18
+1	20	21
+CHECK TABLE `t1#List#Expr`;
+Table	Op	Msg_type	Msg_text
+x	check	status	OK
+INSERT INTO `t1#List#Expr#P#ptest1`(id, _phid_, a) VALUES (29,29,29),(-31,31,-31) ;
+INSERT INTO `t1#List#Expr#P#pmoren2`(id, _phid_, a) VALUES (10,10,10);
+SELECT * FROM `t1#List#Expr` ORDER BY id, a;
+id	a	b
+-31	-31	-30
+-6	-6	-5
+-3	-3	-2
+1	17	18
+1	20	21
+10	10	11
+29	29	30
+CHECK TABLE `t1#List#Expr` EXTENDED;
+Table	Op	Msg_type	Msg_text
+x	check	error	Found a misplaced row in part ptest1 should be in part pmoren2:
+ b:30
+x	check	error	Partition ptest1 returned error
+x	check	error	Table upgrade required. Please do "REPAIR TABLE `t1#List#Expr`" or dump/reload to fix it!
+ALTER TABLE `t1#List#Expr` REPAIR PARTITION ptest1 EXTENDED;
+Table	Op	Msg_type	Msg_text
+x	repair	warning	Moved 2 misplaced rows
+x	repair	status	OK
+ALTER TABLE  `t1#List#Expr` CHECK PARTITION ptest1 EXTENDED;
+Table	Op	Msg_type	Msg_text
+x	check	status	OK
+ALTER TABLE  `t1#List#Expr` CHECK PARTITION pmoren2 MEDIUM;
+Table	Op	Msg_type	Msg_text
+x	check	error	Found a misplaced row in part pmoren2 should be in part ptest1:
+ b:11
+x	check	error	Partition pmoren2 returned error
+x	check	error	Table upgrade required. Please do "REPAIR TABLE `t1#List#Expr`" or dump/reload to fix it!
+ALTER TABLE  `t1#List#Expr` CHECK PARTITION pmoren3;
+Table	Op	Msg_type	Msg_text
+x	check	status	OK
+REPAIR TABLE `t1#List#Expr`;
+Table	Op	Msg_type	Msg_text
+x	repair	warning	Moved 1 misplaced rows
+x	repair	status	OK
+ALTER TABLE `t1#List#Expr` REBUILD PARTITION ALL;
+SELECT * FROM `t1#List#Expr` ORDER BY id, a;
+id	a	b
+-31	-31	-30
+-6	-6	-5
+-3	-3	-2
+1	17	18
+1	20	21
+10	10	11
+29	29	30
+CHECK TABLE `t1#List#Expr`;
+Table	Op	Msg_type	Msg_text
+x	check	status	OK
+INSERT INTO `t1#List#Expr#P#pmoren2`(id, _phid_, a) VALUES (10,10,10);
+INSERT INTO `t1#List#Expr#P#pmoren3`(id, _phid_, a) VALUES (8,8,8),(99,99,99);
+SELECT * FROM `t1#List#Expr` ORDER BY id, a;
+id	a	b
+-31	-31	-30
+-6	-6	-5
+-3	-3	-2
+1	17	18
+1	20	21
+8	8	9
+10	10	11
+10	10	11
+29	29	30
+99	99	100
+CHECK TABLE `t1#List#Expr`;
+Table	Op	Msg_type	Msg_text
+x	check	error	Found a misplaced row in part pmoren2 should be in part ptest1:
+ b:11
+x	check	error	Partition pmoren2 returned error
+x	check	error	Table upgrade required. Please do "REPAIR TABLE `t1#List#Expr`" or dump/reload to fix it!
+ALTER TABLE `t1#List#Expr` REPAIR PARTITION ALL;
+Table	Op	Msg_type	Msg_text
+x	repair	error	Failed to move/insert a row from part pmoren2 into part ptest1:
+Duplicate key found, please update or delete the record:
+ id:10 a:10 b:11
+x	repair	error	Partition pmoren2 returned error
+x	repair	error	Corrupt
+ALTER TABLE `t1#List#Expr` CHECK PARTITION ALL;
+Table	Op	Msg_type	Msg_text
+x	check	error	Found a misplaced row in part pmoren2 should be in part ptest1:
+ b:11
+x	check	error	Partition pmoren2 returned error
+x	check	error	Table upgrade required. Please do "REPAIR TABLE `t1#List#Expr`" or dump/reload to fix it!
+ALTER TABLE `t1#List#Expr` REBUILD PARTITION ALL;
+ERROR 23000: Can't write; duplicate key in table 't1#List#Expr'
+CHECK TABLE `t1#List#Expr`;
+Table	Op	Msg_type	Msg_text
+x	check	error	Found a misplaced row in part pmoren2 should be in part ptest1:
+ b:11
+x	check	error	Partition pmoren2 returned error
+x	check	error	Table upgrade required. Please do "REPAIR TABLE `t1#List#Expr`" or dump/reload to fix it!
+DELETE FROM `t1#List#Expr#P#pmoren2` WHERE a = 10;
+DELETE FROM `t1#List#Expr#P#pmoren3` WHERE a = 8 OR a = 99;
+SELECT * FROM `t1#List#Expr` ORDER BY id, a;
+id	a	b
+-31	-31	-30
+-6	-6	-5
+-3	-3	-2
+1	17	18
+1	20	21
+10	10	11
+29	29	30
+CHECK TABLE `t1#List#Expr`;
+Table	Op	Msg_type	Msg_text
+x	check	status	OK
+DROP TABLE `t1#Range#Expr`,`t1#List#Expr`,`t1#P#List#Columns`;
+DROP TABLE `t1#List#Expr#P#ptest1`,`t1#List#Expr#P#pmoren2`,`t1#List#Expr#P#pmoren3`;
+CREATE TABLE `t1#Hash` ( id FLOAT, b INT GENERATED ALWAYS AS (id+1) STORED )
+PARTITION BY HASH( CEILING(b) ) PARTITIONS 16;
+CREATE TABLE `t1#P#Key#p#` ( id INT NOT NULL AUTO_INCREMENT, tm TIME(4), PRIMARY KEY(id,tm) )
+PARTITION BY LINEAR KEY (id,tm) PARTITIONS 6;
+SHOW CREATE TABLE `t1#Hash`;
+Table	Create Table
+t1#Hash	CREATE TABLE `t1#Hash` (
+  `id` float DEFAULT NULL,
+  `b` int(11) GENERATED ALWAYS AS ((`id` + 1)) STORED
+) ENGINE=SequoiaDB DEFAULT CHARSET=latin1
+/*!50100 PARTITION BY HASH ( CEILING(b))
+PARTITIONS 16 */
+SHOW CREATE TABLE `t1#P#Key#p#`;
+Table	Create Table
+t1#P#Key#p#	CREATE TABLE `t1#P#Key#p#` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `tm` time(4) NOT NULL,
+  PRIMARY KEY (`id`,`tm`)
+) ENGINE=SequoiaDB DEFAULT CHARSET=latin1
+/*!50100 PARTITION BY LINEAR KEY (id,tm)
+PARTITIONS 6 */
+INSERT INTO `t1#Hash`(id) VALUES (1.19),(-2.94),(0.001),(123.45678901),(10.000011),(-5.667),(9.876),(-1.19);
+INSERT INTO `t1#P#Key#p#`(tm) VALUES (1234559.99),('1'),('1:23'),('1:23:45'), ('10.22'),('10:10:10'),('13:00:00'),('09:00:00');
+SELECT * FROM `t1#Hash` ORDER BY id;
+id	b
+-5.667	-5
+-2.94	-2
+-1.19	0
+0.001	1
+1.19	2
+9.876	11
+10	11
+123.457	124
+SELECT * FROM `t1#P#Key#p#` ORDER BY id;
+id	tm
+1	123:45:59.9900
+2	00:00:01.0000
+3	01:23:00.0000
+4	01:23:45.0000
+5	00:00:10.2200
+6	10:10:10.0000
+7	13:00:00.0000
+8	09:00:00.0000
+INSERT INTO `t1#Hash` PARTITION (p0)(id) VALUES (11.11);
+ERROR HY000: Cannot specify HASH or KEY partitions
+INSERT INTO `t1#P#Key#p#` PARTITION (p0)(tm) VALUES ('23:59:59');
+ERROR HY000: Cannot specify HASH or KEY partitions
+SELECT * FROM `t1#Hash` PARTITION (p0);
+ERROR HY000: Cannot specify HASH or KEY partitions
+SELECT * FROM `t1#P#Key#p#` PARTITION (p0);
+ERROR HY000: Cannot specify HASH or KEY partitions
+UPDATE `t1#Hash` PARTITION (p1) SET id = 1 WHERE b > 10;
+ERROR HY000: Cannot specify HASH or KEY partitions
+UPDATE `t1#P#Key#p#` PARTITION (p1) SET id = 10 WHERE tm = '10:10:10';
+ERROR HY000: Cannot specify HASH or KEY partitions
+DELETE FROM `t1#Hash` PARTITION (p3) WHERE id > 1;
+ERROR HY000: Cannot specify HASH or KEY partitions
+DELETE FROM `t1#P#Key#p#` PARTITION (p3) WHERE id > 10;
+ERROR HY000: Cannot specify HASH or KEY partitions
+ALTER TABLE `t1#P#Key#p#` ADD PARTITION PARTITIONS 6;
+SHOW CREATE TABLE `t1#P#Key#p#`;
+Table	Create Table
+t1#P#Key#p#	CREATE TABLE `t1#P#Key#p#` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `tm` time(4) NOT NULL,
+  PRIMARY KEY (`id`,`tm`)
+) ENGINE=SequoiaDB AUTO_INCREMENT=1001 DEFAULT CHARSET=latin1
+/*!50100 PARTITION BY LINEAR KEY (id,tm)
+PARTITIONS 12 */
+ALTER TABLE `t1#P#Key#p#` COALESCE PARTITION 10;
+SHOW CREATE TABLE `t1#P#Key#p#`;
+Table	Create Table
+t1#P#Key#p#	CREATE TABLE `t1#P#Key#p#` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `tm` time(4) NOT NULL,
+  PRIMARY KEY (`id`,`tm`)
+) ENGINE=SequoiaDB AUTO_INCREMENT=1001 DEFAULT CHARSET=latin1
+/*!50100 PARTITION BY LINEAR KEY (id,tm)
+PARTITIONS 2 */
+ALTER TABLE `t1#Hash` REBUILD PARTITION p15;
+ERROR HY000: Cannot specify HASH or KEY partitions
+ALTER TABLE `t1#P#Key#p#` REBUILD PARTITION ALL;
+INSERT INTO `t1#P#Key#p#`(tm) VALUES ('837:00:00'),('838:00:00');
+SELECT * FROM `t1#Hash` ORDER BY id;
+id	b
+-5.667	-5
+-2.94	-2
+-1.19	0
+0.001	1
+1.19	2
+9.876	11
+10	11
+123.457	124
+SELECT * FROM `t1#P#Key#p#` ORDER BY id;
+id	tm
+1	123:45:59.9900
+2	00:00:01.0000
+3	01:23:00.0000
+4	01:23:45.0000
+5	00:00:10.2200
+6	10:10:10.0000
+7	13:00:00.0000
+8	09:00:00.0000
+9	837:00:00.0000
+10	838:00:00.0000
+CHECK TABLE `t1#Hash`;
+Table	Op	Msg_type	Msg_text
+x	check	status	OK
+CHECK TABLE `t1#P#Key#p#` QUICK;
+Table	Op	Msg_type	Msg_text
+x	check	status	OK
+REPAIR TABLE `t1#Hash` USE_FRM;
+Table	Op	Msg_type	Msg_text
+x	repair	status	OK
+REPAIR TABLE  `t1#P#Key#p#`;
+Table	Op	Msg_type	Msg_text
+x	repair	status	OK
+ALTER TABLE `t1#Hash` CHECK PARTITION p1 EXTENDED;
+Table	Op	Msg_type	Msg_text
+x	check	error	Cannot specify HASH or KEY partitions
+x	check	error	Invalid argument
+ALTER TABLE `t1#P#Key#p#` CHECK PARTITION p1 FAST;
+Table	Op	Msg_type	Msg_text
+x	check	status	OK
+ALTER TABLE `t1#Hash` REPAIR PARTITION p2 USE_FRM;
+Table	Op	Msg_type	Msg_text
+x	repair	status	OK
+ALTER TABLE `t1#P#Key#p#` REPAIR PARTITION p1;
+Table	Op	Msg_type	Msg_text
+x	repair	error	Cannot specify HASH or KEY partitions
+x	repair	error	Invalid argument
+DROP TABLE `t1#Hash`,`t1#P#Key#p#`;
+CREATE TABLE `t1#Sub#` ( id INT(11) NOT NULL, f1 INT AUTO_INCREMENT, f2 INT GENERATED ALWAYS AS (id-10) STORED, PRIMARY KEY(f1,f2) )
+PARTITION BY RANGE( ABS(f2) ) PARTITIONS 3
+SUBPARTITION BY LINEAR KEY(f1)
+SUBPARTITIONS 2 (
+PARTITION p01 VALUES LESS THAN (100),
+PARTITION p11 VALUES LESS THAN (200),
+PARTITION p21 VALUES LESS THAN MAXVALUE );
+CREATE TABLE `t1#P#Sub#` ( a INT, b INT GENERATED ALWAYS AS (a*10) STORED, c INT, PRIMARY KEY (a,b,c) )
+PARTITION BY RANGE COLUMNS (b,c)
+SUBPARTITION BY hash (a+b)
+(PARTITION x1 VALUES LESS THAN (1, 100)
+(SUBPARTITION x11,
+SUBPARTITION x12),
+PARTITION x2 VALUES LESS THAN (100, 500)
+(SUBPARTITION x21,
+SUBPARTITION x22),
+PARTITION x3 VALUES LESS THAN (1000, 900)
+(SUBPARTITION x31,
+SUBPARTITION x32));
+SHOW CREATE TABLE `t1#Sub#`;
+Table	Create Table
+t1#Sub#	CREATE TABLE `t1#Sub#` (
+  `id` int(11) NOT NULL,
+  `f1` int(11) NOT NULL AUTO_INCREMENT,
+  `f2` int(11) GENERATED ALWAYS AS ((`id` - 10)) STORED NOT NULL,
+  PRIMARY KEY (`f1`,`f2`)
+) ENGINE=SequoiaDB DEFAULT CHARSET=latin1
+/*!50100 PARTITION BY RANGE ( ABS(f2))
+SUBPARTITION BY LINEAR KEY (f1)
+SUBPARTITIONS 2
+(PARTITION p01 VALUES LESS THAN (100) ENGINE = SequoiaDB,
+ PARTITION p11 VALUES LESS THAN (200) ENGINE = SequoiaDB,
+ PARTITION p21 VALUES LESS THAN MAXVALUE ENGINE = SequoiaDB) */
+SHOW CREATE TABLE `t1#P#Sub#`;
+Table	Create Table
+t1#P#Sub#	CREATE TABLE `t1#P#Sub#` (
+  `a` int(11) NOT NULL,
+  `b` int(11) GENERATED ALWAYS AS ((`a` * 10)) STORED NOT NULL,
+  `c` int(11) NOT NULL,
+  PRIMARY KEY (`a`,`b`,`c`)
+) ENGINE=SequoiaDB DEFAULT CHARSET=latin1
+/*!50500 PARTITION BY RANGE  COLUMNS(b,c)
+SUBPARTITION BY HASH (a+b)
+(PARTITION x1 VALUES LESS THAN (1,100)
+ (SUBPARTITION x11 ENGINE = SequoiaDB,
+  SUBPARTITION x12 ENGINE = SequoiaDB),
+ PARTITION x2 VALUES LESS THAN (100,500)
+ (SUBPARTITION x21 ENGINE = SequoiaDB,
+  SUBPARTITION x22 ENGINE = SequoiaDB),
+ PARTITION x3 VALUES LESS THAN (1000,900)
+ (SUBPARTITION x31 ENGINE = SequoiaDB,
+  SUBPARTITION x32 ENGINE = SequoiaDB)) */
+INSERT INTO `t1#Sub#` PARTITION (p01,p11,p21)(id) VALUES (20),(-185),(0),(2),(199),(5),(99),(135),(50),(45),(350),(175),(1010),(1000);
+INSERT INTO `t1#P#Sub#` PARTITION (x1,x2,x3)(a,c) VALUES (1,8),(-9,19),(4,-9),(0,0),(99,-99),(99,410),(5,610),(6,320),(7,50),(-4,8),(14,-5);
+INSERT INTO `t1#Sub#` PARTITION (p01)(id) VALUES (-90);
+ERROR HY000: Found a row not matching the given partition set
+INSERT INTO `t1#P#Sub#` PARTITION (x1)(a,c) VALUES (2,-2);
+ERROR HY000: Found a row not matching the given partition set
+UPDATE `t1#Sub#` PARTITION (p01) SET id = 160;
+ERROR HY000: Sharding key cannot be updated
+UPDATE `t1#Sub#` PARTITION (p01) SET id = -1 WHERE f1 = 6;
+UPDATE `t1#P#Sub#` PARTITION (x1) SET a = 45 WHERE c > 10;
+ERROR HY000: Cannot specify partitions sharded by multi columns
+SELECT * FROM `t1#Sub#` PARTITION (p01,p11) WHERE id > -10 OR f2 > 99 ORDER BY id;
+id	f1	f2
+-1	6	-11
+0	3	-10
+2	4	-8
+20	1	10
+45	10	35
+50	9	40
+99	7	89
+135	8	125
+175	12	165
+199	5	189
+SELECT * FROM `t1#P#Sub#` PARTITION (x1,x3) WHERE NOT a < 0 OR c >= 50 ORDER BY c;
+ERROR HY000: Cannot specify partitions sharded by multi columns
+DELETE FROM `t1#Sub#` PARTITION (p11) WHERE id < 0 ;
+DELETE FROM `t1#P#Sub#` PARTITION (x1,x3) WHERE a > 1 AND c < 100;
+ERROR HY000: Cannot specify partitions sharded by multi columns
+SELECT * FROM `t1#Sub#` PARTITION (p01,p11,p21) ORDER BY id;
+id	f1	f2
+-1	6	-11
+0	3	-10
+2	4	-8
+20	1	10
+45	10	35
+50	9	40
+99	7	89
+135	8	125
+175	12	165
+199	5	189
+350	11	340
+1000	14	990
+1010	13	1000
+SELECT * FROM `t1#P#Sub#` PARTITION (x1,x2,x3) ORDER BY b,c;
+a	b	c
+-9	-90	19
+-4	-40	8
+0	0	0
+1	10	8
+4	40	-9
+5	50	610
+6	60	320
+7	70	50
+14	140	-5
+99	990	-99
+99	990	410
+INSERT INTO `t1#P#Sub#` PARTITION (x11)(a,c) VALUES (-10,10);
+ERROR HY000: Cannot specify HASH or KEY partitions
+SELECT * FROM `t1#P#Sub#` PARTITION (x11);
+ERROR HY000: Cannot specify HASH or KEY partitions
+DELETE FROM `t1#P#Sub#` PARTITION (x11);
+ERROR HY000: Cannot specify HASH or KEY partitions
+UPDATE `t1#P#Sub#` PARTITION (x21) SET a = 10;
+ERROR HY000: Cannot specify HASH or KEY partitions
+SELECT PARTITION_NAME, SUBPARTITION_NAME, PARTITION_METHOD, SUBPARTITION_METHOD, PARTITION_EXPRESSION, SUBPARTITION_EXPRESSION, TABLE_ROWS 
+FROM INFORMATION_SCHEMA.PARTITIONS WHERE TABLE_SCHEMA LIKE '%test_parallel%' AND TABLE_NAME = 't1#Sub#';
+PARTITION_NAME	SUBPARTITION_NAME	PARTITION_METHOD	SUBPARTITION_METHOD	PARTITION_EXPRESSION	SUBPARTITION_EXPRESSION	TABLE_ROWS
+p01	p01sp0	RANGE	LINEAR KEY	 ABS(f2)	`f1`	3
+p01	p01sp1	RANGE	LINEAR KEY	 ABS(f2)	`f1`	2
+p11	p11sp0	RANGE	LINEAR KEY	 ABS(f2)	`f1`	2
+p11	p11sp1	RANGE	LINEAR KEY	 ABS(f2)	`f1`	2
+p21	p21sp0	RANGE	LINEAR KEY	 ABS(f2)	`f1`	2
+p21	p21sp1	RANGE	LINEAR KEY	 ABS(f2)	`f1`	2
+SELECT PARTITION_NAME, SUBPARTITION_NAME, PARTITION_METHOD, SUBPARTITION_METHOD, PARTITION_EXPRESSION, SUBPARTITION_EXPRESSION, TABLE_ROWS 
+FROM INFORMATION_SCHEMA.PARTITIONS WHERE TABLE_SCHEMA LIKE '%test_parallel%' AND TABLE_NAME = 't1#P#Sub#';
+PARTITION_NAME	SUBPARTITION_NAME	PARTITION_METHOD	SUBPARTITION_METHOD	PARTITION_EXPRESSION	SUBPARTITION_EXPRESSION	TABLE_ROWS
+x1	x11	RANGE COLUMNS	HASH	`b`,`c`	a+b	2
+x1	x12	RANGE COLUMNS	HASH	`b`,`c`	a+b	2
+x2	x21	RANGE COLUMNS	HASH	`b`,`c`	a+b	2
+x2	x22	RANGE COLUMNS	HASH	`b`,`c`	a+b	2
+x3	x31	RANGE COLUMNS	HASH	`b`,`c`	a+b	2
+x3	x32	RANGE COLUMNS	HASH	`b`,`c`	a+b	1
+ALTER TABLE `t1#P#Sub#` ADD PARTITION (
+PARTITION pmore1 VALUES LESS THAN (2000,800),
+PARTITION pmore2 VALUES LESS THAN (3000,400)
+);
+SHOW CREATE TABLE `t1#P#Sub#`;
+Table	Create Table
+t1#P#Sub#	CREATE TABLE `t1#P#Sub#` (
+  `a` int(11) NOT NULL,
+  `b` int(11) GENERATED ALWAYS AS ((`a` * 10)) STORED NOT NULL,
+  `c` int(11) NOT NULL,
+  PRIMARY KEY (`a`,`b`,`c`)
+) ENGINE=SequoiaDB DEFAULT CHARSET=latin1
+/*!50500 PARTITION BY RANGE  COLUMNS(b,c)
+SUBPARTITION BY HASH (a+b)
+(PARTITION x1 VALUES LESS THAN (1,100)
+ (SUBPARTITION x11 ENGINE = SequoiaDB,
+  SUBPARTITION x12 ENGINE = SequoiaDB),
+ PARTITION x2 VALUES LESS THAN (100,500)
+ (SUBPARTITION x21 ENGINE = SequoiaDB,
+  SUBPARTITION x22 ENGINE = SequoiaDB),
+ PARTITION x3 VALUES LESS THAN (1000,900)
+ (SUBPARTITION x31 ENGINE = SequoiaDB,
+  SUBPARTITION x32 ENGINE = SequoiaDB),
+ PARTITION pmore1 VALUES LESS THAN (2000,800)
+ (SUBPARTITION pmore1sp0 ENGINE = SequoiaDB,
+  SUBPARTITION pmore1sp1 ENGINE = SequoiaDB),
+ PARTITION pmore2 VALUES LESS THAN (3000,400)
+ (SUBPARTITION pmore2sp0 ENGINE = SequoiaDB,
+  SUBPARTITION pmore2sp1 ENGINE = SequoiaDB)) */
+INSERT INTO `t1#P#Sub#` PARTITION (pmore1,pmore2)(a,c) VALUES (150,200),(300,300),(250,100),(200,200);
+ALTER TABLE `t1#P#Sub#` REORGANIZE PARTITION x2,x3,pmore1 INTO (
+PARTITION pmore1 VALUES LESS THAN (2000,800)
+);
+SHOW CREATE TABLE `t1#P#Sub#`;
+Table	Create Table
+t1#P#Sub#	CREATE TABLE `t1#P#Sub#` (
+  `a` int(11) NOT NULL,
+  `b` int(11) GENERATED ALWAYS AS ((`a` * 10)) STORED NOT NULL,
+  `c` int(11) NOT NULL,
+  PRIMARY KEY (`a`,`b`,`c`)
+) ENGINE=SequoiaDB DEFAULT CHARSET=latin1
+/*!50500 PARTITION BY RANGE  COLUMNS(b,c)
+SUBPARTITION BY HASH (a+b)
+(PARTITION x1 VALUES LESS THAN (1,100)
+ (SUBPARTITION x11 ENGINE = SequoiaDB,
+  SUBPARTITION x12 ENGINE = SequoiaDB),
+ PARTITION pmore1 VALUES LESS THAN (2000,800)
+ (SUBPARTITION pmore1sp0 ENGINE = SequoiaDB,
+  SUBPARTITION pmore1sp1 ENGINE = SequoiaDB),
+ PARTITION pmore2 VALUES LESS THAN (3000,400)
+ (SUBPARTITION pmore2sp0 ENGINE = SequoiaDB,
+  SUBPARTITION pmore2sp1 ENGINE = SequoiaDB)) */
+INSERT INTO `t1#P#Sub#` PARTITION (x1,pmore1,pmore2)(a,c) VALUES (8,80),(-10,70),(120,600),(200,600),(250,300),(220,350);
+SELECT * FROM `t1#P#Sub#` ORDER BY a,c;
+a	b	c
+-10	-100	70
+-9	-90	19
+-4	-40	8
+0	0	0
+1	10	8
+4	40	-9
+5	50	610
+6	60	320
+7	70	50
+8	80	80
+14	140	-5
+99	990	-99
+99	990	410
+120	1200	600
+150	1500	200
+200	2000	200
+200	2000	600
+220	2200	350
+250	2500	100
+250	2500	300
+300	3000	300
+ALTER TABLE `t1#P#Sub#` REORGANIZE PARTITION pmore1 INTO (
+PARTITION pmore1 VALUES LESS THAN (500,600),
+PARTITION pmore1_1 VALUES LESS THAN (1300,400),
+PARTITION pmore1_2 VALUES LESS THAN (2000,800)
+);
+SHOW CREATE TABLE `t1#P#Sub#`;
+Table	Create Table
+t1#P#Sub#	CREATE TABLE `t1#P#Sub#` (
+  `a` int(11) NOT NULL,
+  `b` int(11) GENERATED ALWAYS AS ((`a` * 10)) STORED NOT NULL,
+  `c` int(11) NOT NULL,
+  PRIMARY KEY (`a`,`b`,`c`)
+) ENGINE=SequoiaDB DEFAULT CHARSET=latin1
+/*!50500 PARTITION BY RANGE  COLUMNS(b,c)
+SUBPARTITION BY HASH (a+b)
+(PARTITION x1 VALUES LESS THAN (1,100)
+ (SUBPARTITION x11 ENGINE = SequoiaDB,
+  SUBPARTITION x12 ENGINE = SequoiaDB),
+ PARTITION pmore1 VALUES LESS THAN (500,600)
+ (SUBPARTITION pmore1sp0 ENGINE = SequoiaDB,
+  SUBPARTITION pmore1sp1 ENGINE = SequoiaDB),
+ PARTITION pmore1_1 VALUES LESS THAN (1300,400)
+ (SUBPARTITION pmore1_1sp0 ENGINE = SequoiaDB,
+  SUBPARTITION pmore1_1sp1 ENGINE = SequoiaDB),
+ PARTITION pmore1_2 VALUES LESS THAN (2000,800)
+ (SUBPARTITION pmore1_2sp0 ENGINE = SequoiaDB,
+  SUBPARTITION pmore1_2sp1 ENGINE = SequoiaDB),
+ PARTITION pmore2 VALUES LESS THAN (3000,400)
+ (SUBPARTITION pmore2sp0 ENGINE = SequoiaDB,
+  SUBPARTITION pmore2sp1 ENGINE = SequoiaDB)) */
+INSERT INTO `t1#P#Sub#` PARTITION (pmore1,pmore1_1,pmore1_2)(a,c) VALUES (40,80),(35,70),(115,300),(95,400),(130,650),(175,350);
+SELECT * FROM `t1#P#Sub#` ORDER BY a,c;
+a	b	c
+-10	-100	70
+-9	-90	19
+-4	-40	8
+0	0	0
+1	10	8
+4	40	-9
+5	50	610
+6	60	320
+7	70	50
+8	80	80
+14	140	-5
+35	350	70
+40	400	80
+95	950	400
+99	990	-99
+99	990	410
+115	1150	300
+120	1200	600
+130	1300	650
+150	1500	200
+175	1750	350
+200	2000	200
+200	2000	600
+220	2200	350
+250	2500	100
+250	2500	300
+300	3000	300
+ALTER TABLE `t1#P#Sub#` DROP PARTITION pmore1;
+SHOW CREATE TABLE `t1#P#Sub#`;
+Table	Create Table
+t1#P#Sub#	CREATE TABLE `t1#P#Sub#` (
+  `a` int(11) NOT NULL,
+  `b` int(11) GENERATED ALWAYS AS ((`a` * 10)) STORED NOT NULL,
+  `c` int(11) NOT NULL,
+  PRIMARY KEY (`a`,`b`,`c`)
+) ENGINE=SequoiaDB DEFAULT CHARSET=latin1
+/*!50500 PARTITION BY RANGE  COLUMNS(b,c)
+SUBPARTITION BY HASH (a+b)
+(PARTITION x1 VALUES LESS THAN (1,100)
+ (SUBPARTITION x11 ENGINE = SequoiaDB,
+  SUBPARTITION x12 ENGINE = SequoiaDB),
+ PARTITION pmore1_1 VALUES LESS THAN (1300,400)
+ (SUBPARTITION pmore1_1sp0 ENGINE = SequoiaDB,
+  SUBPARTITION pmore1_1sp1 ENGINE = SequoiaDB),
+ PARTITION pmore1_2 VALUES LESS THAN (2000,800)
+ (SUBPARTITION pmore1_2sp0 ENGINE = SequoiaDB,
+  SUBPARTITION pmore1_2sp1 ENGINE = SequoiaDB),
+ PARTITION pmore2 VALUES LESS THAN (3000,400)
+ (SUBPARTITION pmore2sp0 ENGINE = SequoiaDB,
+  SUBPARTITION pmore2sp1 ENGINE = SequoiaDB)) */
+ALTER TABLE `t1#Sub#` REBUILD PARTITION p01,p11,p21;
+ALTER TABLE `t1#P#Sub#` REBUILD PARTITION ALL;
+DELETE FROM `t1#P#Sub#` WHERE c > 10 AND c < 300;
+SELECT * FROM `t1#Sub#` PARTITION (p01,p11,p21) ORDER BY id;
+id	f1	f2
+-1	6	-11
+0	3	-10
+2	4	-8
+20	1	10
+45	10	35
+50	9	40
+99	7	89
+135	8	125
+175	12	165
+199	5	189
+350	11	340
+1000	14	990
+1010	13	1000
+SELECT * FROM `t1#P#Sub#` ORDER BY a,c;
+a	b	c
+-4	-40	8
+0	0	0
+95	950	400
+99	990	-99
+99	990	410
+115	1150	300
+120	1200	600
+130	1300	650
+175	1750	350
+200	2000	600
+220	2200	350
+250	2500	300
+300	3000	300
+CREATE TABLE `t1#Sub##P#p01` ( id INT(11) NOT NULL, _phid_ BIGINT, f1 INT AUTO_INCREMENT, f2 INT GENERATED ALWAYS AS (id-10) STORED, PRIMARY KEY(f1,f2,_phid_)  );
+CREATE TABLE `t1#Sub##P#p11` ( id INT(11) NOT NULL, _phid_ BIGINT, f1 INT AUTO_INCREMENT, f2 INT GENERATED ALWAYS AS (id-10) STORED, PRIMARY KEY(f1,f2,_phid_) );
+CREATE TABLE `t1#Sub##P#p21` ( id INT(11) NOT NULL, _phid_ BIGINT, f1 INT AUTO_INCREMENT, f2 INT GENERATED ALWAYS AS (id-10) STORED, PRIMARY KEY(f1,f2,_phid_) );
+INSERT INTO `t1#Sub##P#p01`(id,f1,_phid_) VALUES (300,300,300),(120,120,120) ;
+INSERT INTO `t1#Sub##P#p21`(id,f1,_phid_) VALUES (80,80,80);
+SELECT * FROM `t1#Sub#` ORDER BY id;
+id	f1	f2
+-1	6	-11
+0	3	-10
+2	4	-8
+20	1	10
+45	10	35
+50	9	40
+80	80	70
+99	7	89
+120	120	110
+135	8	125
+175	12	165
+199	5	189
+300	300	290
+350	11	340
+1000	14	990
+1010	13	1000
+CHECK TABLE `t1#Sub#`;
+Table	Op	Msg_type	Msg_text
+x	check	error	Found a misplaced row in part p01 should be in part p21:
+ f1:300 f2:290
+x	check	error	Partition p01 returned error
+x	check	error	Table upgrade required. Please do "REPAIR TABLE `t1#Sub#`" or dump/reload to fix it!
+ALTER TABLE  `t1#Sub#` CHECK PARTITION p01 MEDIUM;
+Table	Op	Msg_type	Msg_text
+x	check	error	Found a misplaced row in part p01 should be in part p21:
+ f1:300 f2:290
+x	check	error	Partition p01 returned error
+x	check	error	Table upgrade required. Please do "REPAIR TABLE `t1#Sub#`" or dump/reload to fix it!
+ALTER TABLE  `t1#Sub#` CHECK PARTITION p11 MEDIUM;
+Table	Op	Msg_type	Msg_text
+x	check	status	OK
+ALTER TABLE  `t1#Sub#` CHECK PARTITION p21 MEDIUM;
+Table	Op	Msg_type	Msg_text
+x	check	error	Found a misplaced row in part p21 should be in part p01:
+ f1:80 f2:70
+x	check	error	Partition p21 returned error
+x	check	error	Table upgrade required. Please do "REPAIR TABLE `t1#Sub#`" or dump/reload to fix it!
+REPAIR TABLE `t1#Sub#` USE_FRM;
+Table	Op	Msg_type	Msg_text
+x	repair	status	OK
+ALTER TABLE `t1#Sub#` REPAIR PARTITION p01;
+Table	Op	Msg_type	Msg_text
+x	repair	warning	Moved 2 misplaced rows
+x	repair	status	OK
+CHECK TABLE `t1#Sub#` MEDIUM;
+Table	Op	Msg_type	Msg_text
+x	check	error	Found a misplaced row in part p21 should be in part p01:
+ f1:80 f2:70
+x	check	error	Partition p21 returned error
+x	check	error	Table upgrade required. Please do "REPAIR TABLE `t1#Sub#`" or dump/reload to fix it!
+REPAIR TABLE `t1#Sub#` EXTENDED;
+Table	Op	Msg_type	Msg_text
+x	repair	warning	Moved 1 misplaced rows
+x	repair	status	OK
+CHECK TABLE `t1#Sub#`;
+Table	Op	Msg_type	Msg_text
+x	check	status	OK
+ALTER TABLE `t1#Sub#` REBUILD PARTITION ALL;
+SELECT * FROM `t1#Sub#` ORDER BY id;
+id	f1	f2
+-1	6	-11
+0	3	-10
+2	4	-8
+20	1	10
+45	10	35
+50	9	40
+80	80	70
+99	7	89
+120	120	110
+135	8	125
+175	12	165
+199	5	189
+300	300	290
+350	11	340
+1000	14	990
+1010	13	1000
+INSERT INTO `t1#Sub##P#p01`(id, f1, _phid_) VALUES (200,30,200),(150,40,150),(175,12,175);
+INSERT INTO `t1#Sub##P#p11`(id, f1, _phid_) VALUES (2000,2000,2000);
+SELECT * FROM `t1#Sub#` ORDER BY id;
+id	f1	f2
+-1	6	-11
+0	3	-10
+2	4	-8
+20	1	10
+45	10	35
+50	9	40
+80	80	70
+99	7	89
+120	120	110
+135	8	125
+150	40	140
+175	12	165
+175	12	165
+199	5	189
+200	30	190
+300	300	290
+350	11	340
+1000	14	990
+1010	13	1000
+2000	2000	1990
+CHECK TABLE `t1#Sub#`;
+Table	Op	Msg_type	Msg_text
+x	check	error	Found a misplaced row in part p01 should be in part p11:
+ f1:x f2:x
+x	check	error	Partition p01 returned error
+x	check	error	Table upgrade required. Please do "REPAIR TABLE `t1#Sub#`" or dump/reload to fix it!
+ALTER TABLE  `t1#Sub#` CHECK PARTITION p01;
+Table	Op	Msg_type	Msg_text
+x	check	error	Found a misplaced row in part p01 should be in part p11:
+ f1:x f2:x
+x	check	error	Partition p01 returned error
+x	check	error	Table upgrade required. Please do "REPAIR TABLE `t1#Sub#`" or dump/reload to fix it!
+ALTER TABLE  `t1#Sub#` CHECK PARTITION p11;
+Table	Op	Msg_type	Msg_text
+x	check	error	Found a misplaced row in part p11 should be in part p21:
+ f1:2000 f2:1990
+x	check	error	Partition p11 returned error
+x	check	error	Table upgrade required. Please do "REPAIR TABLE `t1#Sub#`" or dump/reload to fix it!
+ALTER TABLE  `t1#Sub#` CHECK PARTITION p21;
+Table	Op	Msg_type	Msg_text
+x	check	status	OK
+REPAIR TABLE `t1#Sub#` EXTENDED;
+Table	Op	Msg_type	Msg_text
+x	repair	error	Failed to move/insert a row from part p01 into part p11:
+Duplicate key found, please update or delete the record:
+ id:175 f1:12 f2:165
+x	repair	error	Partition p01 returned error
+x	repair	error	Corrupt
+ALTER TABLE `t1#Sub#` REPAIR PARTITION p01 EXTENDED;
+Table	Op	Msg_type	Msg_text
+x	repair	error	Failed to move/insert a row from part p01 into part p11:
+Duplicate key found, please update or delete the record:
+ id:175 f1:12 f2:165
+x	repair	error	Partition p01 returned error
+x	repair	error	Corrupt
+ALTER TABLE  `t1#Sub#` CHECK PARTITION p01;
+Table	Op	Msg_type	Msg_text
+x	check	error	Found a misplaced row in part p01 should be in part p11:
+ f1:x f2:x
+x	check	error	Partition p01 returned error
+x	check	error	Table upgrade required. Please do "REPAIR TABLE `t1#Sub#`" or dump/reload to fix it!
+ALTER TABLE  `t1#Sub#` CHECK PARTITION p11;
+Table	Op	Msg_type	Msg_text
+x	check	error	Found a misplaced row in part p11 should be in part p21:
+ f1:2000 f2:1990
+x	check	error	Partition p11 returned error
+x	check	error	Table upgrade required. Please do "REPAIR TABLE `t1#Sub#`" or dump/reload to fix it!
+ALTER TABLE `t1#Sub#` REBUILD PARTITION ALL;
+ERROR 23000: Can't write; duplicate key in table 't1#Sub#'
+REPAIR TABLE `t1#Sub#`;
+Table	Op	Msg_type	Msg_text
+x	repair	error	Failed to move/insert a row from part p01 into part p11:
+Duplicate key found, please update or delete the record:
+ id:175 f1:12 f2:165
+x	repair	error	Partition p01 returned error
+x	repair	error	Corrupt
+ALTER TABLE  `t1#Sub#` CHECK PARTITION p01;
+Table	Op	Msg_type	Msg_text
+x	check	error	Found a misplaced row in part p01 should be in part p11:
+ f1:x f2:x
+x	check	error	Partition p01 returned error
+x	check	error	Table upgrade required. Please do "REPAIR TABLE `t1#Sub#`" or dump/reload to fix it!
+ALTER TABLE  `t1#Sub#` CHECK PARTITION p11;
+Table	Op	Msg_type	Msg_text
+x	check	error	Found a misplaced row in part p11 should be in part p21:
+ f1:2000 f2:1990
+x	check	error	Partition p11 returned error
+x	check	error	Table upgrade required. Please do "REPAIR TABLE `t1#Sub#`" or dump/reload to fix it!
+DELETE FROM `t1#Sub##P#p01` WHERE f1 = 12;
+DELETE FROM `t1#Sub##P#p11` WHERE f1 = 2000;
+SELECT * FROM `t1#Sub#` ORDER BY id;
+id	f1	f2
+-1	6	-11
+0	3	-10
+2	4	-8
+20	1	10
+45	10	35
+50	9	40
+80	80	70
+99	7	89
+120	120	110
+135	8	125
+150	40	140
+175	12	165
+199	5	189
+200	30	190
+300	300	290
+350	11	340
+1000	14	990
+1010	13	1000
+REPAIR TABLE `t1#Sub#`;
+CHECK TABLE `t1#Sub#`;
+Table	Op	Msg_type	Msg_text
+x	check	status	OK
+DROP TABLE `t1#Sub#`,`t1#P#Sub#`;
+DROP TABLE `t1#Sub##P#p01`,`t1#Sub##P#p11`,`t1#Sub##P#p21`;
+CREATE TABLE t1 (col1 INT, col2 CHAR(5), col3 DATE) COMMENT 'sequoiadb:{ table_options: { ReplSize: 2 } }'
+    PARTITION BY LINEAR HASH( YEAR(col3) ) 
+PARTITIONS 6;
+SHOW CREATE TABLE t1;
+Table	Create Table
+t1	CREATE TABLE `t1` (
+  `col1` int(11) DEFAULT NULL,
+  `col2` char(5) DEFAULT NULL,
+  `col3` date DEFAULT NULL
+) ENGINE=SequoiaDB DEFAULT CHARSET=latin1 COMMENT='sequoiadb:{ table_options: { ReplSize: 2 } }'
+/*!50100 PARTITION BY LINEAR HASH ( YEAR(col3))
+PARTITIONS 6 */
+ALTER TABLE t1 COMMENT 'sequoiadb:{ table_options: { ReplSize: -1 } }';
+SHOW CREATE TABLE t1;
+Table	Create Table
+t1	CREATE TABLE `t1` (
+  `col1` int(11) DEFAULT NULL,
+  `col2` char(5) DEFAULT NULL,
+  `col3` date DEFAULT NULL
+) ENGINE=SequoiaDB DEFAULT CHARSET=latin1 COMMENT='sequoiadb:{ table_options: { ReplSize: -1 } }'
+/*!50100 PARTITION BY LINEAR HASH ( YEAR(col3))
+PARTITIONS 6 */
+ALTER TABLE t1 COMMENT 'sequoiadb:{ table_options: { ReplSize: 0 }, partition_options: {Partition: 8192} }';
+ERROR HY000: partition_options requires partition type of RANGE or LIST
+SHOW CREATE TABLE t1;
+Table	Create Table
+t1	CREATE TABLE `t1` (
+  `col1` int(11) DEFAULT NULL,
+  `col2` char(5) DEFAULT NULL,
+  `col3` date DEFAULT NULL
+) ENGINE=SequoiaDB DEFAULT CHARSET=latin1 COMMENT='sequoiadb:{ table_options: { ReplSize: -1 } }'
+/*!50100 PARTITION BY LINEAR HASH ( YEAR(col3))
+PARTITIONS 6 */
+DROP TABLE t1;
+CREATE TABLE t1 (col1 INT, col2 CHAR(5), col3 DATE) COMMENT 'sequoiadb:{ partition_options: { Partition: 8192} }'
+    PARTITION BY LINEAR HASH( YEAR(col3) )
+PARTITIONS 6;
+ERROR HY000: partition_options requires partition type of RANGE or LIST
+CREATE TABLE t1 (
+col1 INT NOT NULL,
+col2 CHAR(5),
+col3 DATE
+) COMMENT 'sequoiadb:{ table_options: { ReplSize: 2 } }'
+PARTITION BY LINEAR KEY (col1)
+PARTITIONS 3;
+SHOW CREATE TABLE t1;
+Table	Create Table
+t1	CREATE TABLE `t1` (
+  `col1` int(11) NOT NULL,
+  `col2` char(5) DEFAULT NULL,
+  `col3` date DEFAULT NULL
+) ENGINE=SequoiaDB DEFAULT CHARSET=latin1 COMMENT='sequoiadb:{ table_options: { ReplSize: 2 } }'
+/*!50100 PARTITION BY LINEAR KEY (col1)
+PARTITIONS 3 */
+ALTER TABLE t1 COMMENT 'sequoiadb:{ table_options: { ReplSize: -1 } }';
+SHOW CREATE TABLE t1;
+Table	Create Table
+t1	CREATE TABLE `t1` (
+  `col1` int(11) NOT NULL,
+  `col2` char(5) DEFAULT NULL,
+  `col3` date DEFAULT NULL
+) ENGINE=SequoiaDB DEFAULT CHARSET=latin1 COMMENT='sequoiadb:{ table_options: { ReplSize: -1 } }'
+/*!50100 PARTITION BY LINEAR KEY (col1)
+PARTITIONS 3 */
+ALTER TABLE t1 COMMENT 'sequoiadb:{ table_options: { ReplSize: 0 }, partition_options: {Partition: 8192} }';
+ERROR HY000: partition_options requires partition type of RANGE or LIST
+SHOW CREATE TABLE t1;
+Table	Create Table
+t1	CREATE TABLE `t1` (
+  `col1` int(11) NOT NULL,
+  `col2` char(5) DEFAULT NULL,
+  `col3` date DEFAULT NULL
+) ENGINE=SequoiaDB DEFAULT CHARSET=latin1 COMMENT='sequoiadb:{ table_options: { ReplSize: -1 } }'
+/*!50100 PARTITION BY LINEAR KEY (col1)
+PARTITIONS 3 */
+DROP TABLE t1;
+CREATE TABLE t1 (
+col1 INT NOT NULL,
+col2 CHAR(5),
+col3 DATE
+) COMMENT 'sequoiadb:{ partition_options: {Partition: 8192} }'
+PARTITION BY LINEAR KEY (col1)
+PARTITIONS 3;
+ERROR HY000: partition_options requires partition type of RANGE or LIST
+CREATE TABLE t1 ( id INT, purchased DATE ) COMMENT 'sequoiadb:{ table_options: { ReplSize: 0 }, partition_options: {Partition: 8192} }'
+    PARTITION BY RANGE( YEAR(purchased) )
+SUBPARTITION BY LINEAR HASH( TO_DAYS(purchased) )
+SUBPARTITIONS 2 (
+PARTITION p0 VALUES LESS THAN (1990),
+PARTITION p1 VALUES LESS THAN (2000),
+PARTITION p2 VALUES LESS THAN MAXVALUE
+);
+CREATE TABLE t2 (id INT, purchased DATE)
+PARTITION BY RANGE( YEAR(purchased) )
+SUBPARTITION BY HASH( TO_DAYS(purchased) ) (
+PARTITION p0 VALUES LESS THAN (1990) (
+SUBPARTITION s0,
+SUBPARTITION s1
+),
+PARTITION p1 VALUES LESS THAN (2000) (
+SUBPARTITION s2,
+SUBPARTITION s3
+),
+PARTITION p2 VALUES LESS THAN MAXVALUE (
+SUBPARTITION s4,
+SUBPARTITION s5
+)
+);
+SHOW CREATE TABLE t1;
+Table	Create Table
+t1	CREATE TABLE `t1` (
+  `id` int(11) DEFAULT NULL,
+  `purchased` date DEFAULT NULL
+) ENGINE=SequoiaDB DEFAULT CHARSET=latin1 COMMENT='sequoiadb:{ table_options: { ReplSize: 0 }, partition_options: {Partition: 8192} }'
+/*!50100 PARTITION BY RANGE ( YEAR(purchased))
+SUBPARTITION BY LINEAR HASH ( TO_DAYS(purchased))
+SUBPARTITIONS 2
+(PARTITION p0 VALUES LESS THAN (1990) ENGINE = SequoiaDB,
+ PARTITION p1 VALUES LESS THAN (2000) ENGINE = SequoiaDB,
+ PARTITION p2 VALUES LESS THAN MAXVALUE ENGINE = SequoiaDB) */
+SHOW CREATE TABLE t2;
+Table	Create Table
+t2	CREATE TABLE `t2` (
+  `id` int(11) DEFAULT NULL,
+  `purchased` date DEFAULT NULL
+) ENGINE=SequoiaDB DEFAULT CHARSET=latin1
+/*!50100 PARTITION BY RANGE ( YEAR(purchased))
+SUBPARTITION BY HASH ( TO_DAYS(purchased))
+(PARTITION p0 VALUES LESS THAN (1990)
+ (SUBPARTITION s0 ENGINE = SequoiaDB,
+  SUBPARTITION s1 ENGINE = SequoiaDB),
+ PARTITION p1 VALUES LESS THAN (2000)
+ (SUBPARTITION s2 ENGINE = SequoiaDB,
+  SUBPARTITION s3 ENGINE = SequoiaDB),
+ PARTITION p2 VALUES LESS THAN MAXVALUE
+ (SUBPARTITION s4 ENGINE = SequoiaDB,
+  SUBPARTITION s5 ENGINE = SequoiaDB)) */
+DROP TABLE t1,t2;
+CREATE TABLE t1 ( id INT, purchased DATE ) COMMENT 'sequoiadb:{ table_options: { ReplSize: 0 }, partition_options: {Partition: 8192} }'
+    PARTITION BY LIST( id )
+SUBPARTITION BY LINEAR KEY ( id )
+SUBPARTITIONS 2 (
+PARTITION p0 VALUES IN (10),
+PARTITION p1 VALUES IN (20),
+PARTITION p2 VALUES IN (30)
+);
+SHOW CREATE TABLE t1;
+Table	Create Table
+t1	CREATE TABLE `t1` (
+  `id` int(11) DEFAULT NULL,
+  `purchased` date DEFAULT NULL
+) ENGINE=SequoiaDB DEFAULT CHARSET=latin1 COMMENT='sequoiadb:{ table_options: { ReplSize: 0 }, partition_options: {Partition: 8192} }'
+/*!50100 PARTITION BY LIST ( id)
+SUBPARTITION BY LINEAR KEY (id)
+SUBPARTITIONS 2
+(PARTITION p0 VALUES IN (10) ENGINE = SequoiaDB,
+ PARTITION p1 VALUES IN (20) ENGINE = SequoiaDB,
+ PARTITION p2 VALUES IN (30) ENGINE = SequoiaDB) */
+DROP TABLE t1;
+CREATE TABLE t1 ( id INT, purchased DATE )
+COMMENT 'sequoiadb: { table_options: { ReplSize: -1}, partition_options: { Partition: 1024 }}'
+    PARTITION BY RANGE( YEAR(purchased) )
+SUBPARTITION BY HASH( TO_DAYS(purchased) )
+SUBPARTITIONS 2 (
+PARTITION p0 VALUES LESS THAN(1990)
+COMMENT 'sequoiadb: { partition_options : { Partition: 1024, ReplSize: 2 } }',
+PARTITION p1 VALUES LESS THAN(2000)
+COMMENT 'sequoiadb: { partition_options : { Partition: 2048, Compressed: true, CompressionType:"snappy" } }',   
+PARTITION p2 VALUES LESS THAN MAXVALUE
+COMMENT 'sequoiadb: { partition_options : { Partition: 8192, ReplSize: 3, StrictDataMode: true } }'  
+);
+SHOW CREATE TABLE t1;
+Table	Create Table
+t1	CREATE TABLE `t1` (
+  `id` int(11) DEFAULT NULL,
+  `purchased` date DEFAULT NULL
+) ENGINE=SequoiaDB DEFAULT CHARSET=latin1 COMMENT='sequoiadb: { table_options: { ReplSize: -1}, partition_options: { Partition: 1024 }}'
+/*!50100 PARTITION BY RANGE ( YEAR(purchased))
+SUBPARTITION BY HASH ( TO_DAYS(purchased))
+SUBPARTITIONS 2
+(PARTITION p0 VALUES LESS THAN (1990) COMMENT = 'sequoiadb: { partition_options : { Partition: 1024, ReplSize: 2 } }' ENGINE = SequoiaDB,
+ PARTITION p1 VALUES LESS THAN (2000) COMMENT = 'sequoiadb: { partition_options : { Partition: 2048, Compressed: true, CompressionType:"snappy" } }' ENGINE = SequoiaDB,
+ PARTITION p2 VALUES LESS THAN MAXVALUE COMMENT = 'sequoiadb: { partition_options : { Partition: 8192, ReplSize: 3, StrictDataMode: true } }' ENGINE = SequoiaDB) */
+ALTER TABLE t1 COMMENT 'sequoiadb: { table_options: {ReplSize: 1, StrictDataMode: true, AutoIndexId: true, AutoSplit: false}}';
+ERROR HY000: Option is not supported yet
+ALTER TABLE t1 COMMENT 'sequoiadb: { partition_options: {ReplSize: 1, StrictDataMode: true, AutoIndexId: true, AutoSplit: false}}';
+ERROR HY000: Option is not supported yet
+ALTER TABLE t1 COMMENT 'sequoiadb: { table_options: {ReplSize: 1}}';
+ALTER TABLE t1 COMMENT 'sequoiadb: { table_options: {ReplSize: 2}, partition_options: {ReplSize: 1, AutoIndexId: true, AutoSplit: true, Compressed:true, StrictDataMode: true, Partition: 8192}}';
+DROP TABLE t1;
+CREATE TABLE t1 ( id INT, purchased DATE )
+COMMENT 'sequoiadb: { table_options: { ReplSize: -1}, partition_options: { Partition: 1024 }}'
+    PARTITION BY RANGE( YEAR(purchased) )
+SUBPARTITION BY HASH( TO_DAYS(purchased) )
+SUBPARTITIONS 2 (
+PARTITION p0 VALUES LESS THAN(1990)
+COMMENT 'sequoiadb: { table_options : { Partition: 1024, ReplSize: 2 } }',
+PARTITION p1 VALUES LESS THAN(2000)
+COMMENT 'sequoiadb: { partition_options : { Partition: 2048, Compressed: true, CompressionType:"snappy" } }',   
+PARTITION p2 VALUES LESS THAN MAXVALUE
+COMMENT 'sequoiadb: { partition_options : { Partition: 8192, ReplSize: 3, StrictDataMode: true } }'  
+);
+ERROR HY000: table_options is not for partition comment. Try partition_options
+CREATE TABLE t1 (
+id INT NOT NULL PRIMARY KEY,
+name VARCHAR(20)
+)
+PARTITION BY KEY()
+PARTITIONS 2;
+CREATE TABLE t2 (
+id INT NOT NULL UNIQUE KEY,
+name VARCHAR(20)
+)
+PARTITION BY KEY()
+PARTITIONS 2;
+SHOW CREATE TABLE t1;
+Table	Create Table
+t1	CREATE TABLE `t1` (
+  `id` int(11) NOT NULL,
+  `name` varchar(20) DEFAULT NULL,
+  PRIMARY KEY (`id`)
+) ENGINE=SequoiaDB DEFAULT CHARSET=latin1
+/*!50100 PARTITION BY KEY ()
+PARTITIONS 2 */
+SHOW CREATE TABLE t2;
+Table	Create Table
+t2	CREATE TABLE `t2` (
+  `id` int(11) NOT NULL,
+  `name` varchar(20) DEFAULT NULL,
+  UNIQUE KEY `id` (`id`)
+) ENGINE=SequoiaDB DEFAULT CHARSET=latin1
+/*!50100 PARTITION BY KEY ()
+PARTITIONS 2 */
+DROP TABLE t1,t2;
+CREATE TABLE `t1#P#pp` ( 
+id INT NOT NULL, 
+produced_date DATE
+) 
+PARTITION BY RANGE COLUMNS (produced_date) ( 
+PARTITION p0 VALUES LESS THAN ('1990-01-01'), 
+PARTITION p1 VALUES LESS THAN ('2000-01-01'), 
+PARTITION p2 VALUES LESS THAN ('2010-01-01'), 
+PARTITION p3 VALUES LESS THAN ('2020-01-01') 
+);
+CREATE TABLE `t2#P#pp` ( 
+id INT NOT NULL, 
+c INT,
+PRIMARY KEY(id,c)
+) 
+PARTITION BY LIST (id)
+SUBPARTITION BY HASH(c)
+SUBPARTITIONS 2
+(PARTITION p0 VALUES IN (0),
+PARTITION p1 VALUES IN (100),
+PARTITION p2 VALUES IN (1000),
+PARTITION p3 VALUES IN (10000)
+);
+INSERT INTO `t1#P#pp` VALUES (1, '1989-01-01'), (2, '1999-01-01'),(3, '2009-01-01'),(4, '2019-01-01');
+INSERT INTO `t2#P#pp` VALUES (0, 0),(100, 100),(1000, 1000),(10000, 10000);
+SHOW CREATE TABLE `t1#P#pp`;
+Table	Create Table
+t1#P#pp	CREATE TABLE `t1#P#pp` (
+  `id` int(11) NOT NULL,
+  `produced_date` date DEFAULT NULL
+) ENGINE=SequoiaDB DEFAULT CHARSET=latin1
+/*!50500 PARTITION BY RANGE  COLUMNS(produced_date)
+(PARTITION p0 VALUES LESS THAN ('1990-01-01') ENGINE = SequoiaDB,
+ PARTITION p1 VALUES LESS THAN ('2000-01-01') ENGINE = SequoiaDB,
+ PARTITION p2 VALUES LESS THAN ('2010-01-01') ENGINE = SequoiaDB,
+ PARTITION p3 VALUES LESS THAN ('2020-01-01') ENGINE = SequoiaDB) */
+SHOW CREATE TABLE `t2#P#pp`;
+Table	Create Table
+t2#P#pp	CREATE TABLE `t2#P#pp` (
+  `id` int(11) NOT NULL,
+  `c` int(11) NOT NULL,
+  PRIMARY KEY (`id`,`c`)
+) ENGINE=SequoiaDB DEFAULT CHARSET=latin1
+/*!50100 PARTITION BY LIST (id)
+SUBPARTITION BY HASH (c)
+SUBPARTITIONS 2
+(PARTITION p0 VALUES IN (0) ENGINE = SequoiaDB,
+ PARTITION p1 VALUES IN (100) ENGINE = SequoiaDB,
+ PARTITION p2 VALUES IN (1000) ENGINE = SequoiaDB,
+ PARTITION p3 VALUES IN (10000) ENGINE = SequoiaDB) */
+ALTER TABLE `t1#P#pp` DROP PARTITION p3;
+ALTER TABLE `t2#P#pp` DROP PARTITION p1,p2;
+SHOW CREATE TABLE `t1#P#pp`;
+Table	Create Table
+t1#P#pp	CREATE TABLE `t1#P#pp` (
+  `id` int(11) NOT NULL,
+  `produced_date` date DEFAULT NULL
+) ENGINE=SequoiaDB DEFAULT CHARSET=latin1
+/*!50500 PARTITION BY RANGE  COLUMNS(produced_date)
+(PARTITION p0 VALUES LESS THAN ('1990-01-01') ENGINE = SequoiaDB,
+ PARTITION p1 VALUES LESS THAN ('2000-01-01') ENGINE = SequoiaDB,
+ PARTITION p2 VALUES LESS THAN ('2010-01-01') ENGINE = SequoiaDB) */
+SHOW CREATE TABLE `t2#P#pp`;
+Table	Create Table
+t2#P#pp	CREATE TABLE `t2#P#pp` (
+  `id` int(11) NOT NULL,
+  `c` int(11) NOT NULL,
+  PRIMARY KEY (`id`,`c`)
+) ENGINE=SequoiaDB DEFAULT CHARSET=latin1
+/*!50100 PARTITION BY LIST (id)
+SUBPARTITION BY HASH (c)
+SUBPARTITIONS 2
+(PARTITION p0 VALUES IN (0) ENGINE = SequoiaDB,
+ PARTITION p3 VALUES IN (10000) ENGINE = SequoiaDB) */
+SELECT * FROM `t1#P#pp` ORDER BY id;
+id	produced_date
+1	1989-01-01
+2	1999-01-01
+3	2009-01-01
+SELECT * FROM `t2#P#pp` ORDER BY id;
+id	c
+0	0
+10000	10000
+DROP TABLE `t1#P#pp`,`t2#P#pp`;
+CREATE TABLE t1 ( 
+id INT, 
+dt DATE
+) 
+PARTITION BY LIST(YEAR(dt)) # TEST _phid_
+(PARTITION p1 VALUES IN (1970,1990), 
+PARTITION p2 VALUES IN (2000,2008), 
+PARTITION p3 VALUES IN (2020));
+ALTER TABLE t1 ADD UNIQUE INDEX uid (id);
+ERROR HY000: The unique index must include all fields in sharding key
+SHOW CREATE TABLE t1;
+Table	Create Table
+t1	CREATE TABLE `t1` (
+  `id` int(11) DEFAULT NULL,
+  `dt` date DEFAULT NULL
+) ENGINE=SequoiaDB DEFAULT CHARSET=latin1
+/*!50100 PARTITION BY LIST (YEAR(dt))
+(PARTITION p1 VALUES IN (1970,1990) ENGINE = SequoiaDB,
+ PARTITION p2 VALUES IN (2000,2008) ENGINE = SequoiaDB,
+ PARTITION p3 VALUES IN (2020) ENGINE = SequoiaDB) */
+ALTER TABLE t1 PARTITION BY RANGE COLUMNS (dt) ( # TEST col_list
+PARTITION d1 VALUES LESS THAN ('1970-01-01'),
+PARTITION d2 VALUES LESS THAN ('2000-02-02'),
+PARTITION d3 VALUES LESS THAN ('2020-03-03')
+);
+ALTER TABLE t1 ADD UNIQUE INDEX uid (id);
+ERROR HY000: The unique index must include all fields in sharding key
+SHOW CREATE TABLE t1;
+Table	Create Table
+t1	CREATE TABLE `t1` (
+  `id` int(11) DEFAULT NULL,
+  `dt` date DEFAULT NULL
+) ENGINE=SequoiaDB DEFAULT CHARSET=latin1
+/*!50500 PARTITION BY RANGE  COLUMNS(dt)
+(PARTITION d1 VALUES LESS THAN ('1970-01-01') ENGINE = SequoiaDB,
+ PARTITION d2 VALUES LESS THAN ('2000-02-02') ENGINE = SequoiaDB,
+ PARTITION d3 VALUES LESS THAN ('2020-03-03') ENGINE = SequoiaDB) */
+DROP TABLE t1;
+CREATE TABLE t1(a INT) COMMENT 'sequoiadb:{ table_options: { ReplSize: 2 } }';
+SHOW CREATE TABLE t1;
+Table	Create Table
+t1	CREATE TABLE `t1` (
+  `a` int(11) DEFAULT NULL
+) ENGINE=SEQUOIADB DEFAULT CHARSET=latin1 COMMENT='sequoiadb:{ table_options: { ReplSize: 2 } }'
+ALTER TABLE t1 COMMENT 'sequoiadb:{ table_options: { ReplSize: 1 } }';
+SHOW CREATE TABLE t1;
+Table	Create Table
+t1	CREATE TABLE `t1` (
+  `a` int(11) DEFAULT NULL
+) ENGINE=SEQUOIADB DEFAULT CHARSET=latin1 COMMENT='sequoiadb:{ table_options: { ReplSize: 1 } }'
+ALTER TABLE t1 COMMENT 'sequoiadb:{ table_options: { ReplSize: 0 }, partition_options: { Partition: 8192 } }';
+ERROR HY000: partition_options is only for partitioned table
+DROP TABLE t1;
+CREATE TABLE t1(a INT) COMMENT 'sequoiadb:{ partition_options: { Partition: 8192 } }';
+ERROR HY000: partition_options is only for partitioned table
+CREATE TABLE t1 (
+id INT NOT NULL,
+produced_date DATE,
+name VARCHAR(100),
+company VARCHAR(100)
+)COMPRESSION "None"
+COMMENT 'sequoiadb:{ partition_options: { Compressed : true, CompressionType: "snappy" } }'
+PARTITION BY RANGE COLUMNS (produced_date)
+SUBPARTITION BY KEY (id)
+SUBPARTITIONS 2 (
+PARTITION p0 VALUES LESS THAN ('1990-01-01') COMMENT 'sequoiadb:{ partition_options: { Compressed: true, CompressionType: "lzw" } }',
+PARTITION p1 VALUES LESS THAN ('2000-01-01'),
+PARTITION p2 VALUES LESS THAN ('2010-01-01')
+);
+SHOW CREATE TABLE t1;
+Table	Create Table
+t1	CREATE TABLE `t1` (
+  `id` int(11) NOT NULL,
+  `produced_date` date DEFAULT NULL,
+  `name` varchar(100) DEFAULT NULL,
+  `company` varchar(100) DEFAULT NULL
+) ENGINE=SequoiaDB DEFAULT CHARSET=latin1 COMPRESSION='None' COMMENT='sequoiadb:{ partition_options: { Compressed : true, CompressionType: "snappy" } }'
+/*!50500 PARTITION BY RANGE  COLUMNS(produced_date)
+SUBPARTITION BY KEY (id)
+SUBPARTITIONS 2
+(PARTITION p0 VALUES LESS THAN ('1990-01-01') COMMENT = 'sequoiadb:{ partition_options: { Compressed: true, CompressionType: "lzw" } }' ENGINE = SequoiaDB,
+ PARTITION p1 VALUES LESS THAN ('2000-01-01') ENGINE = SequoiaDB,
+ PARTITION p2 VALUES LESS THAN ('2010-01-01') ENGINE = SequoiaDB) */
+ALTER TABLE t1 COMPRESSION "None" COMMENT 'sequoiadb:{ partition_options: { Compressed : true, CompressionType: "lzw" } }';
+SHOW CREATE TABLE t1;
+Table	Create Table
+t1	CREATE TABLE `t1` (
+  `id` int(11) NOT NULL,
+  `produced_date` date DEFAULT NULL,
+  `name` varchar(100) DEFAULT NULL,
+  `company` varchar(100) DEFAULT NULL
+) ENGINE=SequoiaDB DEFAULT CHARSET=latin1 COMPRESSION='None' COMMENT='sequoiadb:{ partition_options: { Compressed : true, CompressionType: "lzw" } }'
+/*!50500 PARTITION BY RANGE  COLUMNS(produced_date)
+SUBPARTITION BY KEY (id)
+SUBPARTITIONS 2
+(PARTITION p0 VALUES LESS THAN ('1990-01-01') COMMENT = 'sequoiadb:{ partition_options: { Compressed: true, CompressionType: "lzw" } }' ENGINE = SequoiaDB,
+ PARTITION p1 VALUES LESS THAN ('2000-01-01') ENGINE = SequoiaDB,
+ PARTITION p2 VALUES LESS THAN ('2010-01-01') ENGINE = SequoiaDB) */
+DROP TABLE t1;
+CREATE TABLE t1(
+id INT,
+_phid_ INT
+)
+PARTITION BY RANGE COLUMNS (_phid_) (
+PARTITION p0 VALUES LESS THAN (6),
+PARTITION p1 VALUES LESS THAN (11),
+PARTITION p2 VALUES LESS THAN (16),
+PARTITION p3 VALUES LESS THAN (21)
+);
+ERROR 42000: Incorrect column name '_phid_'
+CREATE TABLE t1(
+id INT,
+_phid_ INT
+)
+PARTITION BY RANGE (_phid_) (
+PARTITION p0 VALUES LESS THAN (6),
+PARTITION p1 VALUES LESS THAN (11),
+PARTITION p2 VALUES LESS THAN (16),
+PARTITION p3 VALUES LESS THAN (21)
+);
+ERROR 42000: Incorrect column name '_phid_'
+CREATE TABLE t1(
+id INT,
+_phid_ INT
+)
+PARTITION BY KEY (_phid_)
+PARTITIONS 4;
+ERROR 42000: Incorrect column name '_phid_'
+CREATE TABLE t1(
+id int auto_increment primary key
+)
+PARTITION BY RANGE COLUMNS ( id ) (
+PARTITION p0 VALUES LESS THAN (6),
+PARTITION p1 VALUES LESS THAN (11),
+PARTITION p2 VALUES LESS THAN (16),
+PARTITION p3 VALUES LESS THAN (21)
+);
+ERROR HY000: Auto-increment field cannot be used for RANGE or LIST partition
+CREATE TABLE t1(id int, a int) COMMENT 'sequoiadb:{ partition_options: { ShardingKey: {a:1} } }'
+PARTITION BY LIST ( id ) (
+PARTITION p0 VALUES IN (1,3,5),
+PARTITION p1 VALUES IN (2,4,8),
+PARTITION p2 VALUES IN (6,10),
+PARTITION p3 VALUES IN (7,9)
+);
+SHOW CREATE TABLE t1;
+Table	Create Table
+t1	CREATE TABLE `t1` (
+  `id` int(11) DEFAULT NULL,
+  `a` int(11) DEFAULT NULL
+) ENGINE=SequoiaDB DEFAULT CHARSET=latin1 COMMENT='sequoiadb:{ partition_options: { ShardingKey: {a:1} } }'
+/*!50100 PARTITION BY LIST ( id)
+(PARTITION p0 VALUES IN (1,3,5) ENGINE = SequoiaDB,
+ PARTITION p1 VALUES IN (2,4,8) ENGINE = SequoiaDB,
+ PARTITION p2 VALUES IN (6,10) ENGINE = SequoiaDB,
+ PARTITION p3 VALUES IN (7,9) ENGINE = SequoiaDB) */
+DROP TABLE t1;
+CREATE TABLE t1(id int, a int) COMMENT 'sequoiadb:{ table_options: { ShardingKey: {a:1} } }'
+PARTITION BY LIST ( id ) (
+PARTITION p0 VALUES IN (1,3,5),
+PARTITION p1 VALUES IN (2,4,8),
+PARTITION p2 VALUES IN (6,10),
+PARTITION p3 VALUES IN (7,9)
+);
+ERROR HY000: Ambiguous option ShardingKey
+CREATE TABLE t1 (
+age INT,
+city VARCHAR(15)
+);
+SHOW CREATE TABLE t1;
+Table	Create Table
+t1	CREATE TABLE `t1` (
+  `age` int(11) DEFAULT NULL,
+  `city` varchar(15) DEFAULT NULL
+) ENGINE=SEQUOIADB DEFAULT CHARSET=latin1
+INSERT INTO t1 VALUES(2,'a'),(6,'b'),(7,'c');
+SELECT * FROM t1 ORDER BY age;
+age	city
+2	a
+6	b
+7	c
+ALTER TABLE t1 PARTITION BY LIST ( age ) (
+PARTITION p0 VALUES IN (1,3,5),
+PARTITION p1 VALUES IN (2,4,8),
+PARTITION p2 VALUES IN (6,10),
+PARTITION p3 VALUES IN (7,9)
+);
+SHOW CREATE TABLE t1;
+Table	Create Table
+t1	CREATE TABLE `t1` (
+  `age` int(11) DEFAULT NULL,
+  `city` varchar(15) DEFAULT NULL
+) ENGINE=SequoiaDB DEFAULT CHARSET=latin1
+/*!50100 PARTITION BY LIST ( age)
+(PARTITION p0 VALUES IN (1,3,5) ENGINE = SequoiaDB,
+ PARTITION p1 VALUES IN (2,4,8) ENGINE = SequoiaDB,
+ PARTITION p2 VALUES IN (6,10) ENGINE = SequoiaDB,
+ PARTITION p3 VALUES IN (7,9) ENGINE = SequoiaDB) */
+SELECT * FROM t1 ORDER BY age;
+age	city
+2	a
+6	b
+7	c
+INSERT INTO t1 PARTITION(p0) VALUES(1,'d');
+SELECT * FROM t1 PARTITION(p0);
+age	city
+1	d
+UPDATE t1 PARTITION(p1) SET city = 'e';
+SELECT * FROM t1 PARTITION(p1);
+age	city
+2	e
+DELETE FROM t1 PARTITION(p2) WHERE age > 3;
+SELECT * FROM t1 PARTITION(p2);
+age	city
+ALTER TABLE t1 PARTITION BY HASH( age ) PARTITIONS 4;
+SHOW CREATE TABLE t1;
+Table	Create Table
+t1	CREATE TABLE `t1` (
+  `age` int(11) DEFAULT NULL,
+  `city` varchar(15) DEFAULT NULL
+) ENGINE=SequoiaDB DEFAULT CHARSET=latin1
+/*!50100 PARTITION BY HASH ( age)
+PARTITIONS 4 */
+SELECT * FROM t1 ORDER BY age;
+age	city
+1	d
+2	e
+7	c
+INSERT INTO t1 VALUES(200,'w');
+SELECT * FROM t1 ORDER BY age;
+age	city
+1	d
+2	e
+7	c
+200	w
+UPDATE t1 SET city = 'ccc' WHERE age > 100;
+SELECT * FROM t1 ORDER BY age;
+age	city
+1	d
+2	e
+7	c
+200	ccc
+DELETE FROM t1 WHERE age > 60;
+SELECT * FROM t1 ORDER BY age;
+age	city
+1	d
+2	e
+7	c
+ALTER TABLE t1 REMOVE PARTITIONING;
+SHOW CREATE TABLE t1;
+Table	Create Table
+t1	CREATE TABLE `t1` (
+  `age` int(11) DEFAULT NULL,
+  `city` varchar(15) DEFAULT NULL
+) ENGINE=SEQUOIADB DEFAULT CHARSET=latin1
+SELECT * FROM t1 ORDER BY age;
+age	city
+1	d
+2	e
+7	c
+INSERT INTO t1 VALUES(555,'666');
+SELECT * FROM t1 ORDER BY age;
+age	city
+1	d
+2	e
+7	c
+555	666
+DROP TABLE t1;
+CREATE TABLE t1 (
+age INT,
+name VARCHAR(15)
+)
+PARTITION BY LIST ( age ) (
+PARTITION p0 VALUES IN (1,3,5),
+PARTITION p1 VALUES IN (2,4,8),
+PARTITION p2 VALUES IN (6,10),
+PARTITION p3 VALUES IN (7,9)
+);
+SHOW CREATE TABLE t1;
+Table	Create Table
+t1	CREATE TABLE `t1` (
+  `age` int(11) DEFAULT NULL,
+  `name` varchar(15) DEFAULT NULL
+) ENGINE=SequoiaDB DEFAULT CHARSET=latin1
+/*!50100 PARTITION BY LIST ( age)
+(PARTITION p0 VALUES IN (1,3,5) ENGINE = SequoiaDB,
+ PARTITION p1 VALUES IN (2,4,8) ENGINE = SequoiaDB,
+ PARTITION p2 VALUES IN (6,10) ENGINE = SequoiaDB,
+ PARTITION p3 VALUES IN (7,9) ENGINE = SequoiaDB) */
+INSERT INTO t1 VALUES(1,'1'),(2,'2'),(6,'6'),(7,'7');
+SELECT * FROM t1 PARTITION(p0);
+age	name
+1	1
+ALTER TABLE t1 TRUNCATE PARTITION p0;
+SELECT * FROM t1 PARTITION(p0);
+age	name
+SELECT * FROM t1 ORDER BY age;
+age	name
+2	2
+6	6
+7	7
+ALTER TABLE t1 TRUNCATE PARTITION all;
+SELECT * FROM t1 ORDER BY age;
+age	name
+DROP TABLE t1;
+CREATE TABLE t1 (
+id INT NOT NULL PRIMARY KEY,
+name VARCHAR(20)
+)
+PARTITION BY KEY(id)
+PARTITIONS 2;
+SHOW CREATE TABLE t1;
+Table	Create Table
+t1	CREATE TABLE `t1` (
+  `id` int(11) NOT NULL,
+  `name` varchar(20) DEFAULT NULL,
+  PRIMARY KEY (`id`)
+) ENGINE=SequoiaDB DEFAULT CHARSET=latin1
+/*!50100 PARTITION BY KEY (id)
+PARTITIONS 2 */
+INSERT INTO t1 VALUES(1,'a'),(2,'b'),(3,'c'),(4,'b'),(5,'f');
+SELECT * FROM t1 ORDER BY id;
+id	name
+1	a
+2	b
+3	c
+4	b
+5	f
+ALTER TABLE t1 TRUNCATE PARTITION p0;
+ERROR HY000: Cannot specify HASH or KEY partitions
+ALTER TABLE t1 TRUNCATE PARTITION all;
+SELECT * FROM t1 ORDER BY id;
+id	name
+DROP TABLE t1;
+CREATE TABLE t1 (c1 INT, PRIMARY KEY (c1));
+CREATE TABLE t2 (c1 INT, PRIMARY KEY (c1), FOREIGN KEY (c1) REFERENCES t1 (c1) ON DELETE CASCADE)
+PARTITION BY HASH(c1) PARTITIONS 5;
+SHOW CREATE TABLE t1;
+Table	Create Table
+t1	CREATE TABLE `t1` (
+  `c1` int(11) NOT NULL,
+  PRIMARY KEY (`c1`)
+) ENGINE=SEQUOIADB DEFAULT CHARSET=latin1
+SHOW CREATE TABLE t2;
+Table	Create Table
+t2	CREATE TABLE `t2` (
+  `c1` int(11) NOT NULL,
+  PRIMARY KEY (`c1`)
+) ENGINE=SequoiaDB DEFAULT CHARSET=latin1
+/*!50100 PARTITION BY HASH (c1)
+PARTITIONS 5 */
+INSERT INTO t2 VALUES (2),(0);
+ALTER TABLE t2 REMOVE PARTITIONING;
+SHOW CREATE TABLE t2;
+Table	Create Table
+t2	CREATE TABLE `t2` (
+  `c1` int(11) NOT NULL,
+  PRIMARY KEY (`c1`)
+) ENGINE=SEQUOIADB DEFAULT CHARSET=latin1
+ALTER TABLE t2 ADD CONSTRAINT fk FOREIGN KEY(c1) REFERENCES t1 (c1) PARTITION BY LIST (c1) (
+PARTITION l1 VALUES IN (0,1),
+PARTITION l2 VALUES IN (2,3)
+);
+SHOW CREATE TABLE t2;
+Table	Create Table
+t2	CREATE TABLE `t2` (
+  `c1` int(11) NOT NULL,
+  PRIMARY KEY (`c1`)
+) ENGINE=SequoiaDB DEFAULT CHARSET=latin1
+/*!50100 PARTITION BY LIST (c1)
+(PARTITION l1 VALUES IN (0,1) ENGINE = SequoiaDB,
+ PARTITION l2 VALUES IN (2,3) ENGINE = SequoiaDB) */
+INSERT INTO t2 VALUES (1),(3);
+SELECT * FROM t2 ORDER BY c1;
+c1
+0
+1
+2
+3
+DROP TABLE t1,t2;
+CREATE TABLE t1 (
+id INT GENERATED ALWAYS AS (year(start) + 1) VIRTUAL,
+start DATE NOT NULL DEFAULT '1970-01-01',
+end DATE NOT NULL DEFAULT '9999-12-31',
+COMMENT VARCHAR(255),
+flag INT
+)
+PARTITION BY LIST (flag + id + 1) (
+PARTITION p0 VALUES IN (1, 3),
+PARTITION p1 VALUES IN (2, 5, 7),
+PARTITION p2 VALUES IN (4, 6)
+);
+ERROR HY000: Virtual generated column 'id' cannot be used for ShardingKey
+CREATE TABLE t1 (
+id INT GENERATED ALWAYS AS (year(start) + 1) VIRTUAL,
+start DATE NOT NULL DEFAULT '1970-01-01',
+end DATE NOT NULL DEFAULT '9999-12-31',
+COMMENT VARCHAR(255),
+flag INT
+)
+PARTITION BY RANGE COLUMNS (id) (
+PARTITION p0 VALUES LESS THAN (100),
+PARTITION p1 VALUES LESS THAN (200)
+);
+ERROR HY000: Virtual generated column 'id' cannot be used for ShardingKey

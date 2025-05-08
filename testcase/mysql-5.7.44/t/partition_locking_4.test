@@ -1,0 +1,54 @@
+--source include/have_partition.inc
+#--source include/have_innodb.inc
+
+SET @old_autocommit = @@global.autocommit;
+SET @@global.autocommit = 0;
+SET @old_lock_wait_timeout= @@global.lock_wait_timeout;
+SET @@global.lock_wait_timeout = 1;
+SET @old_innodb_lock_wait_timeout= @@global.innodb_lock_wait_timeout;
+SET @@global.innodb_lock_wait_timeout = 1;
+
+CREATE USER 'mysqltest1_locking4'@'localhost';
+CREATE USER 'mysqltest2_locking4'@'localhost';
+GRANT ALL PRIVILEGES ON test.* TO 'mysqltest1_locking4'@'localhost';
+GRANT ALL PRIVILEGES ON test.* TO 'mysqltest2_locking4'@'localhost';
+
+CREATE TABLE t1 (a int PRIMARY KEY, b varchar(128), KEY (b))
+ENGINE = SequoiaDB 
+PARTITION BY HASH (a) PARTITIONS 13;
+
+INSERT INTO t1 VALUES (11, 'First row, p11');
+INSERT INTO t1 VALUES (12, 'First row, p12');
+
+--enable_connect_log
+let $current_db = `select database()`;
+connect (test1,localhost,mysqltest1_locking4,,$current_db);
+connect (test2,localhost,mysqltest2_locking4,,$current_db);
+
+connection test1;
+INSERT INTO t1 VALUES (13+11, 'Second row, p11');
+INSERT INTO t1 VALUES (13+12, 'Second row, p12');
+SELECT * FROM t1 ORDER BY a;
+
+connection test2;
+#SEQUOIADBMAINSTREAM-4111
+#--error ER_LOCK_WAIT_TIMEOUT
+--error ER_DUP_ENTRY
+INSERT INTO t1 VALUES (13+11, 'Second row, p11');
+#--error ER_LOCK_WAIT_TIMEOUT
+--error ER_DUP_ENTRY
+INSERT INTO t1 VALUES (13+12, 'Second row, p12');
+SELECT * FROM t1 ORDER BY a;
+COMMIT;
+
+connection test1;
+SELECT * FROM t1 ORDER BY a;
+COMMIT;
+
+connection default;
+DROP TABLE t1;
+DROP USER 'mysqltest1_locking4'@'localhost';
+DROP USER 'mysqltest2_locking4'@'localhost';
+SET @@global.autocommit = @old_autocommit;
+SET @@global.lock_wait_timeout= @old_lock_wait_timeout;
+SET @@global.innodb_lock_wait_timeout= @old_innodb_lock_wait_timeout;

@@ -1,0 +1,614 @@
+#seqDB-26641
+--source include/have_sequoiadb.inc
+
+--disable_warnings
+drop database if exists like_single_func_pushdown_sequoiadb_1;
+--enable_warnings
+create database like_single_func_pushdown_sequoiadb_1;
+drop database like_single_func_pushdown_sequoiadb_1;
+create database like_single_func_pushdown_sequoiadb_1;
+use like_single_func_pushdown_sequoiadb_1;
+set session sequoiadb_debug_log=on;
+set session sequoiadb_support_mode='';
+
+--disable_warnings
+drop table if exists t1, t2, t3, t4, t5;
+--enable_warnings
+
+create table t1(
+    a varchar(514) charset utf8mb4 collate utf8mb4_bin
+);
+create table t2(
+    a varchar(20) charset utf8mb4 collate utf8mb4_bin
+);
+create table t3(
+    a set('a1','b2','c3') charset utf8mb4 collate utf8mb4_bin
+);
+create table t4(
+    a int
+);
+create table t5(
+    a varchar(20) charset utf8mb4 collate utf8mb4_unicode_ci
+);
+
+#----------------------------string functions----------------------------#
+
+#ascii
+select ascii('a'),ascii(1);
+insert into t1 values(ascii('a')),(ascii(1));
+select * from t1 where a like ascii('a') order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t1 where a like ascii(1) order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t2 where a like ascii((a));
+--source include/query_pushdown_condition_sequoiadb.inc
+
+#bin
+select bin('2'),bin(3);
+insert into t1 values(bin('2')),(bin(3));
+select * from t1 where a like bin('2') order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t1 where a like bin(3) order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t2 where a like bin((a));
+--source include/query_pushdown_condition_sequoiadb.inc
+
+#bit_length
+select bit_length('a'),bit_length(11);
+insert into t1 values(bit_length('a')),(bit_length(11));
+select * from t1 where a like bit_length('a') order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t1 where a like bit_length(11) order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t2 where a like bit_length((a));
+--source include/query_pushdown_condition_sequoiadb.inc
+
+#char
+select char('97'),char(97),char(353);
+insert into t1 values(char('97')),(char(97)),(char(353));
+select * from t1 where a like char('97') order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t1 where a like char(97) order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t1 where a like char(353) order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t2 where a like char((a));
+--source include/query_pushdown_condition_sequoiadb.inc
+
+#char_length
+select char_length('a'),char_length('森林'),char_length(12);
+insert into t1 values(char_length('a')),(char_length('森林')),(char_length(12));
+select * from t1 where a like char_length('a') order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t1 where a like char_length('森林') order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t1 where a like char_length(12) order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t2 where a like char_length((a));
+--source include/query_pushdown_condition_sequoiadb.inc
+
+#concat
+select concat('a','%'),concat(1,2);
+insert into t1 values('apple'),(concat(1,2));
+select * from t1 where a like concat('a','%') order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t1 where a like concat(1,2) order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t2 where a like  concat((a),'%');
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t2 where a like concat(null,'%');
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t3 where a like concat('a','1');
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t4 where a like concat(1,2);
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t5 where a like concat('a','%');
+--source include/query_pushdown_condition_sequoiadb.inc
+
+#concat_ws
+select concat_ws('A','a','b'),concat_ws(',','a','b'),concat_ws('A',1,2);
+insert into t1 values(concat_ws('A','a','b')),(concat_ws(',','a','b')),(concat_ws('A',1,2)); 
+select * from t1 where a like concat_ws('A','a','b') order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t1 where a like concat_ws(',','a','b') order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t1 where a like concat_ws('A',1,2) order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t2 where a like concat_ws((a),'a','b');
+--source include/query_pushdown_condition_sequoiadb.inc
+
+#elt
+select elt(1,'n','m'),elt(1,4,5);
+insert into t1 values(elt(1,'n','m')),(elt(1,4,5));
+select * from t1 where a like elt(1,'n','m') order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t1 where a like elt(1,4,5) order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t2 where a like elt((a),1,2);
+--source include/query_pushdown_condition_sequoiadb.inc
+
+#export_set
+select EXPORT_SET(5,'Y','N',',',4),EXPORT_SET(5,1,0,',',4);
+insert into t1 values(EXPORT_SET(5,'Y','N',',',4)),(EXPORT_SET(5,1,0,',',4));
+select * from t1 where a like EXPORT_SET(5,'Y','N',',',4) order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t1 where a like EXPORT_SET(5,1,0,',',4) order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t2 where a like EXPORT_SET((a),'Y','N',',',4);
+--source include/query_pushdown_condition_sequoiadb.inc
+
+#field
+select field('b','a','b','c'),field(2,1,2,3);
+select * from t1 where a like field('b','a','b','c') order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t1 where a like field(2,1,2,3) order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t2 where a like field((a),'a','b','c');
+--source include/query_pushdown_condition_sequoiadb.inc
+
+#find_in_set
+select FIND_IN_SET('b','a,b,c,d'),FIND_IN_SET(2,'1,2,3,4');
+select * from t1 where a like FIND_IN_SET('b','a,b,c,d') order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t1 where a like FIND_IN_SET(2,'1,2,3,4') order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t2 where a like FIND_IN_SET((a),'a,b,c,d');
+--source include/query_pushdown_condition_sequoiadb.inc
+
+#format
+select format('1.234',2),format(2.234,2);
+insert into t1 values(format('1.234',2)),(format(2.234,2));
+select * from t1 where a like format('1.234',2) order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t1 where a like format(2.234,2) order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t2 where a like format((a),2);
+--source include/query_pushdown_condition_sequoiadb.inc
+
+#from_base64
+select FROM_BASE64(TO_BASE64('abc'));
+insert into t1 values(FROM_BASE64(TO_BASE64('abc')));
+select * from t1 where a like FROM_BASE64(TO_BASE64('abc')) order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t2 where a like FROM_BASE64(TO_BASE64((a)));
+--source include/query_pushdown_condition_sequoiadb.inc
+
+#hex
+select hex('a'),hex(10);
+insert into t1 values(hex('a')),(hex(10));
+select * from t1 where a like hex('a') order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t1 where a like hex(10) order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t2 where a like hex((a));
+--source include/query_pushdown_condition_sequoiadb.inc
+
+#insert
+select insert('apple', 2, 4, 'What'),insert(1111, 2, 3, 234);
+insert into t1 values(insert('apple', 2, 4, 'What')),(insert(1111, 2, 3, 234));
+select * from t1 where a like insert('apple', 2, 4, 'What') order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t1 where a like insert(1111, 2, 3, 234) order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t2 where a like insert((a), 2, 4, 'What');
+--source include/query_pushdown_condition_sequoiadb.inc
+
+#instr
+select instr('foobarbar','bar'),instr(4321,4);
+insert into t1 values(instr('foobarbar','bar')),(instr(4321,4));
+select * from t1 where a like instr('foobarbar','bar') order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t1 where a like instr(4321,4) order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t2 where a like instr((a),4);
+--source include/query_pushdown_condition_sequoiadb.inc
+
+#lower
+select lower('YES');
+insert into t1 values(lower('YES'));
+select * from t1 where a like lower('YES') order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t2 where a like lower((a));
+--source include/query_pushdown_condition_sequoiadb.inc
+
+#left
+select left('abc',2),left(1234,3);
+insert into t1 values(left('abc',2)),(left(1234,3));
+select * from t1 where a like left('abc',2) order by a; 
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t1 where a like left(1234,3) order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t2 where a like left((a),2);
+--source include/query_pushdown_condition_sequoiadb.inc
+
+#length
+select length('text'),length(1234);
+insert into t1 values(length('text'));
+select * from t1 where a like length('text') order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t1 where a like length(1234) order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t2 where a like length((a));
+--source include/query_pushdown_condition_sequoiadb.inc
+
+#locate
+select locate('bar','foobarbar'),locate(4,1234);
+select * from t1 where a like locate('bar','foobarbar') order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t1 where a like locate(4,1234) order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t2 where a like locate((a),'foobarbar');
+--source include/query_pushdown_condition_sequoiadb.inc
+
+#lpad
+select lpad('hi',4,'a'),lpad(11,4,2),lpad('',512,'?');
+insert into t1 values(lpad('hi',4,'a')),(lpad(11,4,2)),(lpad('',512,'?'));
+select * from t1 where a like lpad('hi',4,'a') order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t1 where a like lpad(11,4,2) order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t1 where a like lpad('',512,'?') order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t1 where a like lpad('',513,'?');
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t2 where a like lpad((a),4,'a');
+--source include/query_pushdown_condition_sequoiadb.inc
+
+#ltrim
+select ltrim(' bar');
+insert into t1 values(ltrim(' bar'));
+select * from t1 where a like ltrim(' bar') order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t2 where a like ltrim((a));
+--source include/query_pushdown_condition_sequoiadb.inc
+
+#make_set
+select make_set(3,'a','b','c','d'),make_set(4,1,2,3,4);
+insert into t1 values(make_set(3,'a','b','c','d')),(make_set(4,1,2,3,4));
+select * from t1 where a like make_set(3,'a','b','c','d') order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t1 where a like make_set(4,1,2,3,4) order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t2 where a like make_set((a),'a','b','c','d');
+--source include/query_pushdown_condition_sequoiadb.inc
+
+#not regexp
+select 'bread' not regexp '^c',123 not regexp '^1';
+insert into t1 values(('bread' not regexp '^c')),((123 not regexp '^1'));
+select * from t1 where a like ('bread' not regexp '^c') order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t1 where a like (123 not regexp '^1') order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t2 where a like ((a) not regexp '^a');
+--source include/query_pushdown_condition_sequoiadb.inc
+
+#oct
+select oct('8'),oct(10);
+insert into t1 values(oct('8')),(oct(10));
+select * from t1 where a like oct('8') order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t1 where a like oct(10) order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t2 where a like oct((a));
+--source include/query_pushdown_condition_sequoiadb.inc
+
+#ord
+select ord('士'),ord(0x12);
+insert into t1 values(ord('士')), (ord(0x12));
+select * from t1 where a like ord('士') order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t1 where a like ord(0x12) order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t2 where a like ord((a));
+--source include/query_pushdown_condition_sequoiadb.inc
+
+#quote
+select quote('ab\c'),quote(123);
+insert into t1 values(quote('ab\c')), (quote(123));
+select * from t1 where a like quote('ab\c') order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t1 where a like quote(123) order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t2 where a like quote((a));
+--source include/query_pushdown_condition_sequoiadb.inc
+
+#rlike
+select 'a' rlike 'b',1 rlike 1;
+insert into t1 values(('a' rlike 'b')), ((1 rlike 1));
+select * from t1 where a like ('a' rlike 'b') order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t1 where a like (1 rlike 1) order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t2 where a like ((a) rlike 'a');
+--source include/query_pushdown_condition_sequoiadb.inc
+
+#regexp
+select 'a' regexp 'b',1 regexp 1;
+insert into t1 values(('a' regexp 'b')), ((1 regexp 1));
+select * from t1 where a like ('a' regexp 'b') order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t1 where a like (1 regexp 1) order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t2 where a like ((a) regexp 'a');
+--source include/query_pushdown_condition_sequoiadb.inc
+
+#repeat
+select repeat('a','5'),repeat(1,5);
+insert into t1 values(repeat('a','5')), (repeat(1,5));
+select * from t1 where a like repeat('a','5') order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t1 where a like repeat(1,5) order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t2 where a like repeat((a),5);
+--source include/query_pushdown_condition_sequoiadb.inc
+
+#replace
+select replace('abc','a','d'),replace(123,1,4);
+insert into t1 values(replace('abc','a','d')), (replace(123,1,4));
+select * from t1 where a like replace('abc','a','d') order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t1 where a like replace(123,1,4) order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t2 where a like replace((a),'a','d');
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t3 where a like replace('abc','a','d');
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t4 where a like replace('abc','a','d');
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t5 where a like replace('abc','a','d');
+--source include/query_pushdown_condition_sequoiadb.inc
+
+#reverse
+select reverse('abc'),reverse(123);
+insert into t1 values(reverse('abc')), (reverse(123));
+select * from t1 where a like reverse('abc') order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t1 where a like reverse(123) order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t2 where a like reverse((a));
+--source include/query_pushdown_condition_sequoiadb.inc
+
+#right
+select right('abc',1),right(123,1);
+insert into t1 values(right('abc',1)), (right(123,1));
+select * from t1 where a like right('abc',1) order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t1 where a like right(123,1) order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t2 where a like right((a),1);
+--source include/query_pushdown_condition_sequoiadb.inc
+
+#rpad
+select rpad('a',5,'b'),rpad(1,5,2);
+insert into t1 values(rpad('a',5,'b')), (rpad(1,5,2));
+select * from t1 where a like rpad('a',5,'b') order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t1 where a like rpad(1,5,2) order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t2 where a like rpad((a),5,'b');
+--source include/query_pushdown_condition_sequoiadb.inc
+
+#rtrim
+select rtrim('abc   '),rtrim('123   ');
+insert into t1 values(rtrim('abc   ')), (rtrim('123   '));
+select * from t1 where a like rtrim('abc   ') order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t1 where a like rtrim('123   ') order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t2 where a like rtrim((a));
+--source include/query_pushdown_condition_sequoiadb.inc
+
+#soundex
+select soundex('abc');
+insert into t1 values(soundex('abc'));
+select * from t1 where a like soundex('abc') order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t2 where a like soundex((a));
+--source include/query_pushdown_condition_sequoiadb.inc
+
+#space
+select space('1'),space(1);
+insert into t1 values(space('1')), (space(1));
+select * from t1 where a like space('1') order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t1 where a like space(1) order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t2 where a like space((a));
+--source include/query_pushdown_condition_sequoiadb.inc
+
+#strcmp
+select strcmp('a','a'),strcmp(1,1);
+insert into t1 values(strcmp('a','a')), (strcmp(1,1));
+select * from t1 where a like strcmp('a','a') order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t1 where a like strcmp(1,1) order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t2 where a like strcmp((a),'1');
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t3 where a like strcmp('a','a');
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t4 where a like strcmp('a','a');
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t5 where a like strcmp('a','a');
+--source include/query_pushdown_condition_sequoiadb.inc
+
+#substr
+select substr('abc',2),substr(123456,2);
+insert into t1 values(substr('abc',2)), (substr(123456,2));
+select * from t1 where a like substr('abc',2) order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t1 where a like substr(123456,2) order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t2 where a like substr((a),2);
+--source include/query_pushdown_condition_sequoiadb.inc
+
+#substring
+select substring('abc',2),substring(123456,2);
+insert into t1 values(substring('abc',2)), (substring(123456,2));
+select * from t1 where a like substring('abc',2) order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t1 where a like substring(123456,2) order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t2 where a like substring((a),2);
+--source include/query_pushdown_condition_sequoiadb.inc
+
+#substring_index
+select substring_index('a,b,c',',',2),substring_index(121212,1,2);
+insert into t1 values(substring_index('a,b,c',',',2)), (substring_index(121212,1,2));
+select * from t1 where a like substring_index('a,b,c',',',2) order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t1 where a like substring_index(121212,1,2) order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t2 where a like substring_index((a),'',2);
+--source include/query_pushdown_condition_sequoiadb.inc
+
+#to_base64
+select to_base64('a'),to_base64(1);
+insert into t1 values(to_base64('a')), (to_base64(1));
+select * from t1 where a like to_base64('a') order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t1 where a like to_base64(1) order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t2 where a like to_base64((a));
+--source include/query_pushdown_condition_sequoiadb.inc
+
+#trim
+select trim('   abc   '),trim(both 1 from 111222111);
+insert into t1 values(trim('   abc   ')), (trim(both 1 from 111222111));
+select * from t1 where a like trim('   abc   ') order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t1 where a like trim(both 1 from 111222111) order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t2 where a like trim((a));
+--source include/query_pushdown_condition_sequoiadb.inc
+
+#ucase
+select ucase('aBc'),ucase(123);
+insert into t1 values(ucase('aBc')), (ucase(123));
+select * from t1 where a like ucase('aBc') order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t1 where a like ucase(123) order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t2 where a like ucase((a));
+--source include/query_pushdown_condition_sequoiadb.inc
+
+#unhex
+select unhex('4D7953514C'),unhex(7953);
+insert into t1 values(unhex('4D7953514C')), (unhex(7953));
+select * from t1 where a like unhex('4D7953514C') order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t1 where a like unhex(7953) order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t2 where a like unhex((a));
+--source include/query_pushdown_condition_sequoiadb.inc
+
+#upper
+select upper('aBc'),upper(123);
+insert into t1 values(upper('aBc')), (upper(123));
+select * from t1 where a like upper('aBc') order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t1 where a like upper(123) order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t2 where a like upper((a));
+--source include/query_pushdown_condition_sequoiadb.inc
+
+#weight_string
+select weight_string(_latin1 'a'),weight_string(0x1234);
+insert into t1 values(weight_string(_latin1 'a')), (weight_string(0x1234));
+select * from t1 where a like weight_string(_latin1 'a') order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t1 where a like weight_string(0x1234) order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t2 where a like weight_string((a));
+--source include/query_pushdown_condition_sequoiadb.inc
+
+#binary
+select binary 'a',binary 1;
+insert into t1 values(binary 'a'),(binary 1);
+select * from t1 where a like binary 'a' order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t1 where a like binary 1 order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t2 where a like binary (a);
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t2 where a like binary null;
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t3 where a like binary 'a';
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t4 where a like binary 'a';
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t5 where a like binary 'a';
+--source include/query_pushdown_condition_sequoiadb.inc
+
+#cast
+select cast('a' as binary),cast(0x12345 as binary);
+insert into t1 values(cast('a' as binary)),(cast(0x12345 as binary));
+select * from t1 where a like cast('a' as binary) order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t1 where a like cast(0x12345 as binary) order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t2 where a like cast((a) as binary);
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t3 where a like cast('a' as binary);
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t4 where a like cast('a' as binary);
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t5 where a like cast('a' as binary);
+--source include/query_pushdown_condition_sequoiadb.inc
+
+#convert
+select convert('abcd' using latin1);
+insert into t1 values(convert('abcd' using latin1));
+select * from t1 where a like convert('abcd' using latin1) order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t2 where a like convert((a) using latin1);
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t3 where a like convert('abcd' using latin1);
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t4 where a like convert('abcd' using latin1);
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t5 where a like convert('abcd' using latin1);
+--source include/query_pushdown_condition_sequoiadb.inc
+
+#extractvalue
+select extractvalue('<cases><case>(1)</case></cases>','/cases/case'),extractvalue('<cases><case>abc</case></cases>','/cases/case');
+insert into t1 values(extractvalue('<cases><case>(1)</case></cases>','/cases/case')),(extractvalue('<cases><case>abc</case></cases>','/cases/case'));
+select * from t1 where a like extractvalue('<cases><case>(1)</case></cases>','/cases/case') order by a;
+--replace_regex /^([^s]*)\[Note\]/[Note]/
+--exec grep -w "Query message" $MYSQLTEST_VARDIR/log/mysqld.1.err | tail -1 | sed 's/: ".*",/: "",/'
+select * from t1 where a like extractvalue('<cases><case>abc</case></cases>','/cases/case') order by a;
+--replace_regex /^([^s]*)\[Note\]/[Note]/
+--exec grep -w "Query message" $MYSQLTEST_VARDIR/log/mysqld.1.err | tail -1 | sed 's/: ".*",/: "",/'
+select * from t2 where a like extractvalue('<cases><case>abc</case></cases>',null);
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t2 where a like extractvalue((a),'/cases/case');
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t3 where a like extractvalue('<cases><case>abc</case></cases>','/cases/case');
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t4 where a like extractvalue('<cases><case>abc</case></cases>','/cases/case');
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t5 where a like extractvalue('<cases><case>abc</case></cases>','/cases/case');
+--source include/query_pushdown_condition_sequoiadb.inc
+
+#updatexml
+select updatexml('<a>123456</a>','/a','<b>abcdef</b>');
+insert into t1 values(updatexml('<a>123456</a>','/a','<b>abcdef</b>'));
+select * from t1 where a like updatexml('<a>123456</a>','/a','<b>abcdef</b>') order by a;
+--replace_regex /^([^s]*)\[Note\]/[Note]/
+--exec grep -w "Query message" $MYSQLTEST_VARDIR/log/mysqld.1.err | tail -1 | sed 's/: ".*",/: "",/'
+select * from t2 where a like updatexml((a),'/a','<b>abcdef</b>');
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t3 where a like updatexml('<a>123456</a>','/a','<b>abcdef</b>');
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t4 where a like updatexml('<a>123456</a>','/a','<b>abcdef</b>');
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t5 where a like updatexml('<a>123456</a>','/a','<b>abcdef</b>');
+--source include/query_pushdown_condition_sequoiadb.inc
+
+#---------------------------------string functions----------------------------#
+
+set session sequoiadb_debug_log=default;
+set session sequoiadb_support_mode=default;
+drop table t1, t2, t3, t4, t5;
+drop database like_single_func_pushdown_sequoiadb_1;
+--source include/uninstall_sequoiadb.inc

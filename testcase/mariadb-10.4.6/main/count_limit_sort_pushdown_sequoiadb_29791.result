@@ -1,0 +1,60 @@
+connect  conn1,localhost,root,,,$MASTER_MYPORT,$MASTER_MYSOCK;
+connection conn1;
+set sequoiadb_cls_pushdown_expand=1;
+select @@sequoiadb_cls_pushdown_expand;
+@@sequoiadb_cls_pushdown_expand
+1
+set sequoiadb_cls_pushdown_expand=0;
+select @@sequoiadb_cls_pushdown_expand;
+@@sequoiadb_cls_pushdown_expand
+0
+set sequoiadb_cls_pushdown_expand=on;
+select @@sequoiadb_cls_pushdown_expand;
+@@sequoiadb_cls_pushdown_expand
+1
+set sequoiadb_cls_pushdown_expand=off;
+select @@sequoiadb_cls_pushdown_expand;
+@@sequoiadb_cls_pushdown_expand
+0
+set session sequoiadb_cls_pushdown_expand=on;
+select @@sequoiadb_cls_pushdown_expand;
+@@sequoiadb_cls_pushdown_expand
+1
+set session sequoiadb_cls_pushdown_expand=off;
+select @@sequoiadb_cls_pushdown_expand;
+@@sequoiadb_cls_pushdown_expand
+0
+set global sequoiadb_cls_pushdown_expand=on;
+select @@sequoiadb_cls_pushdown_expand;
+@@sequoiadb_cls_pushdown_expand
+0
+disconnect conn1;
+connect  conn1,localhost,root,,,$MASTER_MYPORT,$MASTER_MYSOCK;
+connection conn1;
+select @@sequoiadb_cls_pushdown_expand;
+@@sequoiadb_cls_pushdown_expand
+1
+set global sequoiadb_cls_pushdown_expand=off;
+select @@sequoiadb_cls_pushdown_expand;
+@@sequoiadb_cls_pushdown_expand
+1
+set global sequoiadb_cls_pushdown_expand=default;
+select @@sequoiadb_cls_pushdown_expand;
+@@sequoiadb_cls_pushdown_expand
+1
+disconnect conn1;
+connect  conn1,localhost,root,,,$MASTER_MYPORT,$MASTER_MYSOCK;
+connection conn1;
+select @@sequoiadb_cls_pushdown_expand;
+@@sequoiadb_cls_pushdown_expand
+1
+set session sequoiadb_cls_pushdown_expand='';
+ERROR 42000: Variable 'sequoiadb_cls_pushdown_expand' can't be set to the value of ''
+set session sequoiadb_cls_pushdown_expand=3;
+ERROR 42000: Variable 'sequoiadb_cls_pushdown_expand' can't be set to the value of '3'
+set session sequoiadb_cls_pushdown_expand=default;
+select @@sequoiadb_cls_pushdown_expand;
+@@sequoiadb_cls_pushdown_expand
+1
+disconnect conn1;
+connection default;

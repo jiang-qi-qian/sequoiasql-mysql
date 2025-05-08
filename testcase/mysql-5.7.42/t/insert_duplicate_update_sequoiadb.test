@@ -1,0 +1,74 @@
+# TestCase: seqDB-26609 / seqDB-26610 / seqDB-26611 / seqDB-26612 / seqDB-26613 / seqDB-26614
+--source include/have_sequoiadb.inc
+
+--disable_warnings
+drop table if exists insert_duplicate_update_sequoiadb;
+--enable_warnings
+create table insert_duplicate_update_sequoiadb (a int primary key, b int);
+drop table insert_duplicate_update_sequoiadb;
+create table insert_duplicate_update_sequoiadb (a int primary key, b int);
+
+# seqDB-26609:insert不冲突的记录
+insert into insert_duplicate_update_sequoiadb values(1,1),(2,1),(3,1);
+# insert单条不冲突的记录
+insert into insert_duplicate_update_sequoiadb values(4,1) on duplicate key update b=2;
+select * from insert_duplicate_update_sequoiadb where a=4 order by a;
+# insert多条不冲突的记录
+insert into insert_duplicate_update_sequoiadb values(5,1),(6,1) on duplicate key update b=2;
+select * from insert_duplicate_update_sequoiadb where a in(5,6) order by a;
+select * from insert_duplicate_update_sequoiadb order by a;
+delete from insert_duplicate_update_sequoiadb;
+
+# seqDB-26610:insert单条记录冲突后update
+insert into insert_duplicate_update_sequoiadb values(1,1),(2,1),(3,1);
+# update不冲突
+insert into insert_duplicate_update_sequoiadb values(1,1) on duplicate key update a=4;
+select * from insert_duplicate_update_sequoiadb where a in(1,4) order by a;
+# update冲突且更新后的值跟原记录一致
+insert into insert_duplicate_update_sequoiadb values(1,1) on duplicate key update a=1;
+select * from insert_duplicate_update_sequoiadb where a=1 order by a;
+# update冲突且更新后的值跟原记录不一致，update不会再次冲突
+insert into insert_duplicate_update_sequoiadb values(1,1) on duplicate key update a=1,b=3;
+select * from insert_duplicate_update_sequoiadb where a = 1 order by a;
+# update冲突且更新后的值跟原记录不一致，update会再次冲突
+--error 1062
+insert into insert_duplicate_update_sequoiadb values(2,3) on duplicate key update a=3,b=2;
+select * from insert_duplicate_update_sequoiadb where a in(2,3) order by a;
+select * from insert_duplicate_update_sequoiadb order by a;
+delete from insert_duplicate_update_sequoiadb;
+
+# seqDB-26611:insert多条记录冲突，update后部分跟现有记录冲突
+insert into insert_duplicate_update_sequoiadb values(1,1);
+insert into insert_duplicate_update_sequoiadb values(1,1),(2,1),(3,1),(4,1) on duplicate key update a=a+1;
+select * from insert_duplicate_update_sequoiadb order by a;
+delete from insert_duplicate_update_sequoiadb;
+
+# seqDB-26612:insert多条记录，update后的记录多次跟后一条insert记录冲突
+insert into insert_duplicate_update_sequoiadb values(5,1);
+insert into insert_duplicate_update_sequoiadb values(5,1),(4,1),(3,1),(2,1),(1,1) on duplicate key update a=a+1;
+select * from insert_duplicate_update_sequoiadb order by a;
+delete from insert_duplicate_update_sequoiadb;
+
+# seqDB-26613:insert多条记录，update后的记录多次跟前一条insert记录冲突
+insert into insert_duplicate_update_sequoiadb values(5,1);
+insert into insert_duplicate_update_sequoiadb values(5,1),(4,1),(3,1),(2,1),(1,1) on duplicate key update a=a-1;
+select * from insert_duplicate_update_sequoiadb order by a;
+delete from insert_duplicate_update_sequoiadb;
+
+# seqDB-26614:insert多条记录冲突，索引键值相同非索引键值不同
+insert into insert_duplicate_update_sequoiadb values(1,1),(2,1);
+# 更新索引键值不冲突
+insert into insert_duplicate_update_sequoiadb values(1,2) on duplicate key update a=3;
+select * from insert_duplicate_update_sequoiadb where a in(1,3) order by a;
+# 更新索引键值冲突
+--error 1062
+insert into insert_duplicate_update_sequoiadb values(2,2) on duplicate key update a=3;
+select * from insert_duplicate_update_sequoiadb where a in(2,3) order by a;
+# 更新非索引键值
+insert into insert_duplicate_update_sequoiadb values(3,2) on duplicate key update b=3;
+select * from insert_duplicate_update_sequoiadb where a=3 order by a;
+select * from insert_duplicate_update_sequoiadb order by a;
+
+drop table insert_duplicate_update_sequoiadb;
+--source include/uninstall_sequoiadb.inc
+

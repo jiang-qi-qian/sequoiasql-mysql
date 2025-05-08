@@ -1,0 +1,27 @@
+# Case 24702
+# SEQUOIASQLMAINSTREAM-1059
+
+--disable_warnings
+set sql_mode='';
+drop table if exists t1;
+--enable_warnings
+
+CREATE TABLE t1( a VARCHAR(6), b VARCHAR(6), c VARCHAR(6), d VARCHAR(6), e VARCHAR(6))DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin;
+
+INSERT INTO t1 VALUES('一二三四五六', '一二三四五', '一二三四', '一二三四五六', '一二三四五六');
+
+select length(a),length(b),length(c),length(d),length(e) from (SELECT * FROM t1) t2;
+
+ALTER TABLE t1 MODIFY COLUMN a VARCHAR(5);
+ALTER TABLE t1 MODIFY COLUMN b VARCHAR(5);
+ALTER TABLE t1 MODIFY COLUMN c VARCHAR(5);
+ALTER TABLE t1 MODIFY COLUMN d VARCHAR(7);
+ALTER TABLE t1 MODIFY COLUMN e VARCHAR(6);
+
+SHOW CREATE TABLE t1;
+
+INSERT INTO t1 VALUES('一二三四五六', '一二三四五', '一二三四五', '一二三四五六七', '一二三四五六');
+
+select length(a),length(b),length(c),length(d),length(e) from (SELECT * FROM t1) t2;
+
+DROP TABLE t1;

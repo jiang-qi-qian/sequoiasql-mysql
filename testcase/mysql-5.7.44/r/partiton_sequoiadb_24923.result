@@ -1,0 +1,19 @@
+DROP TABLE IF EXISTS partiton_sequoiadb_24923;
+CREATE TABLE partiton_sequoiadb_24923 (
+id INT NOT NULL,
+produced_date DATE,
+name VARCHAR(100),
+company VARCHAR(100)
+)
+PARTITION BY RANGE COLUMNS (produced_date) (
+PARTITION p0 VALUES LESS THAN ('1990-01-01'),
+PARTITION p1 VALUES LESS THAN ('2000-01-01'),
+PARTITION p2 VALUES LESS THAN ('2010-01-01'),
+PARTITION p3 VALUES LESS THAN ('2020-01-01')
+);
+ALTER TABLE partiton_sequoiadb_24923 drop partition p2;
+insert into partiton_sequoiadb_24923 values(1, '2005-01-01', "Tom", 'JS');
+select * from partiton_sequoiadb_24923;
+id	produced_date	name	company
+1	2005-01-01	Tom	JS
+DROP TABLE partiton_sequoiadb_24923;

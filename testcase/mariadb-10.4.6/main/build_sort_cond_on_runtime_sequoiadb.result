@@ -1,0 +1,726 @@
+SET SESSION sequoiadb_optimizer_options = "direct_sort,direct_limit,direct_count";
+SET SESSION sequoiadb_cls_pushdown_expand = ON;
+SET SESSION optimizer_switch = "optimizer_sort_pushdown=ON";
+SET SESSION optimizer_index_sort_prune = ON;
+DROP DATABASE IF EXISTS build_sort_cond_on_runtime_sequoiadb;
+CREATE DATABASE build_sort_cond_on_runtime_sequoiadb;
+DROP DATABASE build_sort_cond_on_runtime_sequoiadb;
+CREATE DATABASE build_sort_cond_on_runtime_sequoiadb;
+USE build_sort_cond_on_runtime_sequoiadb;
+SET sql_mode="STRICT_TRANS_TABLES,ERROR_FOR_DIVISION_BY_ZERO,NO_AUTO_CREATE_USER,NO_ENGINE_SUBSTITUTION";
+CREATE TABLE t1(
+col1 int NOT NULL,
+col2 varchar(10) NOT NULL,
+col3 datetime,
+col4 varchar(10),
+KEY idx_col12(col1,col2),
+UNIQUE KEY idx_col3(col3)
+);
+INSERT INTO t1 VALUES
+(0,'abc','20221115114010','abc'),
+(1,'abcdef','20221115114015','abcdef'),
+(1,'abcdef','20221115114018','abcdef'),
+(2,'def','20221115114020','def'),
+(3,'abcde','20221115114022','efg'),
+(4,'def','20221115114210','def'),
+(4,'def','20221115114215','def'),
+(5,'defg ','20221115114510','defg'),
+(6,'xyz','20221115114512','xyz '),
+(7,'xyz ','20221115114518','xyz '),
+(8,'xxx',null,null),
+(9,'yyy',null,null);
+CREATE VIEW v1 AS SELECT * FROM t1 WHERE col1 > 3;
+CREATE TABLE t2 LIKE t1;
+INSERT INTO t2 SELECT * FROM t1;
+SET SESSION sequoiadb_build_sort_cond_on_runtime = OFF;
+SELECT @@sequoiadb_build_sort_cond_on_runtime;
+@@sequoiadb_build_sort_cond_on_runtime
+0
+explain select * from t1 where col2>'abc' order by col1;
+id	select_type	table	type	possible_keys	key	key_len	ref	rows	Extra
+1	SIMPLE	t1	ALL	NULL	NULL	NULL	NULL	12	Using where with pushed condition; Using pushed sort (t1.col1)
+select col1 from t1 where col2>'abc' order by col1;
+col1
+1
+1
+2
+3
+4
+4
+5
+6
+7
+8
+9
+explain select * from t1 where col2>'abc' group by col1;
+id	select_type	table	type	possible_keys	key	key_len	ref	rows	Extra
+1	SIMPLE	t1	NULL	NULL	NULL	NULL	NULL	12	Using where with pushed condition; Using pushed GROUP BY; Storage engine handles access type
+select col1 from t1 where col2>'abc' group by col1;
+col1
+1
+2
+3
+4
+5
+6
+7
+8
+9
+explain select * from t1 where col2>'abc' group by col1 order by col1;
+id	select_type	table	type	possible_keys	key	key_len	ref	rows	Extra
+1	SIMPLE	t1	NULL	NULL	NULL	NULL	NULL	12	Using where with pushed condition; Using pushed GROUP BY; Using pushed ORDER BY; Storage engine handles access type
+select col1 from t1 where col2>'abc' group by col1 order by col1;
+col1
+1
+2
+3
+4
+5
+6
+7
+8
+9
+explain select * from t1 where col2>'abc' group by col1 limit 3;
+id	select_type	table	type	possible_keys	key	key_len	ref	rows	Extra
+1	SIMPLE	t1	NULL	NULL	NULL	NULL	NULL	12	Using where with pushed condition; Using pushed GROUP BY; Storage engine handles access type
+select col1 from t1 where col2>'abc' group by col1 limit 3;
+col1
+1
+2
+3
+explain select col1 from t1 order by col1;
+id	select_type	table	type	possible_keys	key	key_len	ref	rows	Extra
+1	SIMPLE	t1	index	NULL	idx_col12	16	NULL	12	Using index
+select col1 from t1 order by col1;
+col1
+0
+1
+1
+2
+3
+4
+4
+5
+6
+7
+8
+9
+explain select col1 from t1 group by col1;
+id	select_type	table	type	possible_keys	key	key_len	ref	rows	Extra
+1	SIMPLE	t1	index	NULL	idx_col12	16	NULL	12	Using index; Using pushed GROUP BY
+select col1 from t1 group by col1;
+col1
+0
+1
+2
+3
+4
+5
+6
+7
+8
+9
+Warnings:
+Warning	1263	Column set to default value; NULL supplied to NOT NULL column 'col2' at row 1
+Warning	1263	Column set to default value; NULL supplied to NOT NULL column 'col2' at row 2
+Warning	1263	Column set to default value; NULL supplied to NOT NULL column 'col2' at row 3
+Warning	1263	Column set to default value; NULL supplied to NOT NULL column 'col2' at row 4
+Warning	1263	Column set to default value; NULL supplied to NOT NULL column 'col2' at row 5
+Warning	1263	Column set to default value; NULL supplied to NOT NULL column 'col2' at row 6
+Warning	1263	Column set to default value; NULL supplied to NOT NULL column 'col2' at row 7
+Warning	1263	Column set to default value; NULL supplied to NOT NULL column 'col2' at row 8
+Warning	1263	Column set to default value; NULL supplied to NOT NULL column 'col2' at row 9
+Warning	1263	Column set to default value; NULL supplied to NOT NULL column 'col2' at row 10
+explain select col1 from t1 group by col1 order by col1;
+id	select_type	table	type	possible_keys	key	key_len	ref	rows	Extra
+1	SIMPLE	t1	index	NULL	idx_col12	16	NULL	12	Using index; Using pushed GROUP BY; Using pushed ORDER BY
+select col1 from t1 group by col1 order by col1;
+col1
+0
+1
+2
+3
+4
+5
+6
+7
+8
+9
+Warnings:
+Warning	1263	Column set to default value; NULL supplied to NOT NULL column 'col2' at row 1
+Warning	1263	Column set to default value; NULL supplied to NOT NULL column 'col2' at row 2
+Warning	1263	Column set to default value; NULL supplied to NOT NULL column 'col2' at row 3
+Warning	1263	Column set to default value; NULL supplied to NOT NULL column 'col2' at row 4
+Warning	1263	Column set to default value; NULL supplied to NOT NULL column 'col2' at row 5
+Warning	1263	Column set to default value; NULL supplied to NOT NULL column 'col2' at row 6
+Warning	1263	Column set to default value; NULL supplied to NOT NULL column 'col2' at row 7
+Warning	1263	Column set to default value; NULL supplied to NOT NULL column 'col2' at row 8
+Warning	1263	Column set to default value; NULL supplied to NOT NULL column 'col2' at row 9
+Warning	1263	Column set to default value; NULL supplied to NOT NULL column 'col2' at row 10
+explain select col1 from t1 group by col1 limit 3;
+id	select_type	table	type	possible_keys	key	key_len	ref	rows	Extra
+1	SIMPLE	t1	index	NULL	idx_col12	16	NULL	12	Using index; Using pushed GROUP BY
+select col1 from t1 group by col1 limit 3;
+col1
+0
+1
+2
+Warnings:
+Warning	1263	Column set to default value; NULL supplied to NOT NULL column 'col2' at row 1
+Warning	1263	Column set to default value; NULL supplied to NOT NULL column 'col2' at row 2
+Warning	1263	Column set to default value; NULL supplied to NOT NULL column 'col2' at row 3
+explain select * from t1 where col1>2 or col3="20221115114210" order by col3;
+id	select_type	table	type	possible_keys	key	key_len	ref	rows	Extra
+1	SIMPLE	t1	index_merge	idx_col3,idx_col12	idx_col12,idx_col3	4,6	NULL	10	Using sdb_sort_union(idx_col12,idx_col3); Using where with pushed condition; Using filesort
+select * from t1 where col1>2 or col3="20221115114210" order by col3;
+col1	col2	col3	col4
+8	xxx	NULL	NULL
+9	yyy	NULL	NULL
+3	abcde	2022-11-15 11:40:22	efg
+4	def	2022-11-15 11:42:10	def
+4	def	2022-11-15 11:42:15	def
+5	defg 	2022-11-15 11:45:10	defg
+6	xyz	2022-11-15 11:45:12	xyz 
+7	xyz 	2022-11-15 11:45:18	xyz 
+explain select * from t1 where col1>2 or col3="20221115114210" group by col3;
+id	select_type	table	type	possible_keys	key	key_len	ref	rows	Extra
+1	SIMPLE	t1	NULL	NULL	NULL	NULL	NULL	12	Using where with pushed condition; Using pushed GROUP BY; Storage engine handles access type
+select * from t1 where col1>2 or col3="20221115114210" group by col3;
+col1	col2	col3	col4
+8	xxx	NULL	NULL
+3	abcde	2022-11-15 11:40:22	efg
+4	def	2022-11-15 11:42:10	def
+4	def	2022-11-15 11:42:15	def
+5	defg 	2022-11-15 11:45:10	defg
+6	xyz	2022-11-15 11:45:12	xyz 
+7	xyz 	2022-11-15 11:45:18	xyz 
+explain select * from t1 where col1>2 or col3="20221115114210" group by col3 order by col3;
+id	select_type	table	type	possible_keys	key	key_len	ref	rows	Extra
+1	SIMPLE	t1	NULL	NULL	NULL	NULL	NULL	12	Using where with pushed condition; Using pushed GROUP BY; Using pushed ORDER BY; Storage engine handles access type
+select * from t1 where col1>2 or col3="20221115114210" group by col3 order by col3;
+col1	col2	col3	col4
+8	xxx	NULL	NULL
+3	abcde	2022-11-15 11:40:22	efg
+4	def	2022-11-15 11:42:10	def
+4	def	2022-11-15 11:42:15	def
+5	defg 	2022-11-15 11:45:10	defg
+6	xyz	2022-11-15 11:45:12	xyz 
+7	xyz 	2022-11-15 11:45:18	xyz 
+explain select * from t1 where col1>2 or col3="20221115114210" group by col3 limit 3;
+id	select_type	table	type	possible_keys	key	key_len	ref	rows	Extra
+1	SIMPLE	t1	NULL	NULL	NULL	NULL	NULL	12	Using where with pushed condition; Using pushed GROUP BY; Storage engine handles access type
+select * from t1 where col1>2 or col3="20221115114210" group by col3 limit 3;
+col1	col2	col3	col4
+8	xxx	NULL	NULL
+3	abcde	2022-11-15 11:40:22	efg
+4	def	2022-11-15 11:42:10	def
+explain select * from t1 where col1>3 order by col2;
+id	select_type	table	type	possible_keys	key	key_len	ref	rows	Extra
+1	SIMPLE	t1	ALL	idx_col12	NULL	NULL	NULL	12	Using where with pushed condition; Using pushed sort (t1.col2)
+select * from t1 where col1>3 order by col2;
+col1	col2	col3	col4
+4	def	2022-11-15 11:42:10	def
+4	def	2022-11-15 11:42:15	def
+5	defg 	2022-11-15 11:45:10	defg
+8	xxx	NULL	NULL
+6	xyz	2022-11-15 11:45:12	xyz 
+7	xyz 	2022-11-15 11:45:18	xyz 
+9	yyy	NULL	NULL
+explain select * from t1 where col1>3 group by col2;
+id	select_type	table	type	possible_keys	key	key_len	ref	rows	Extra
+1	SIMPLE	t1	NULL	NULL	NULL	NULL	NULL	12	Using where with pushed condition; Using pushed GROUP BY; Storage engine handles access type
+select * from t1 where col1>3 group by col2;
+col1	col2	col3	col4
+4	def	2022-11-15 11:42:10	def
+5	defg 	2022-11-15 11:45:10	defg
+8	xxx	NULL	NULL
+6	xyz	2022-11-15 11:45:12	xyz 
+7	xyz 	2022-11-15 11:45:18	xyz 
+9	yyy	NULL	NULL
+explain select * from t1 where col1>3 group by col2 order by col2;
+id	select_type	table	type	possible_keys	key	key_len	ref	rows	Extra
+1	SIMPLE	t1	NULL	NULL	NULL	NULL	NULL	12	Using where with pushed condition; Using pushed GROUP BY; Using pushed ORDER BY; Storage engine handles access type
+select * from t1 where col1>3 group by col2 order by col2;
+col1	col2	col3	col4
+4	def	2022-11-15 11:42:10	def
+5	defg 	2022-11-15 11:45:10	defg
+8	xxx	NULL	NULL
+6	xyz	2022-11-15 11:45:12	xyz 
+7	xyz 	2022-11-15 11:45:18	xyz 
+9	yyy	NULL	NULL
+explain select * from t1 where col1>3 group by col2 limit 3;
+id	select_type	table	type	possible_keys	key	key_len	ref	rows	Extra
+1	SIMPLE	t1	NULL	NULL	NULL	NULL	NULL	12	Using where with pushed condition; Using pushed GROUP BY; Storage engine handles access type
+select * from t1 where col1>3 group by col2 limit 3;
+col1	col2	col3	col4
+4	def	2022-11-15 11:42:10	def
+5	defg 	2022-11-15 11:45:10	defg
+8	xxx	NULL	NULL
+explain select * from t1 where col1=3 order by col3;
+id	select_type	table	type	possible_keys	key	key_len	ref	rows	Extra
+1	SIMPLE	t1	ref	idx_col12	idx_col12	4	const	2	Using where; Using pushed sort (t1.col3)
+select * from t1 where col1=3 order by col3;
+col1	col2	col3	col4
+3	abcde	2022-11-15 11:40:22	efg
+explain select * from t1 where col1=3 group by col3;
+id	select_type	table	type	possible_keys	key	key_len	ref	rows	Extra
+1	SIMPLE	t1	ref	idx_col12	idx_col12	4	const	2	Using pushed GROUP BY
+select * from t1 where col1=3 group by col3;
+col1	col2	col3	col4
+3	abcde	2022-11-15 11:40:22	efg
+explain select * from t1 where col1=3 group by col3 order by col3;
+id	select_type	table	type	possible_keys	key	key_len	ref	rows	Extra
+1	SIMPLE	t1	ref	idx_col12	idx_col12	4	const	2	Using pushed GROUP BY; Using pushed ORDER BY
+select * from t1 where col1=3 group by col3 order by col3;
+col1	col2	col3	col4
+3	abcde	2022-11-15 11:40:22	efg
+explain select * from t1 where col1=3 group by col3 limit 3;
+id	select_type	table	type	possible_keys	key	key_len	ref	rows	Extra
+1	SIMPLE	t1	ref	idx_col12	idx_col12	4	const	2	Using pushed GROUP BY
+select * from t1 where col1=3 group by col3 limit 3;
+col1	col2	col3	col4
+3	abcde	2022-11-15 11:40:22	efg
+explain select * from t1 where col3="20221115114510" order by col1;
+id	select_type	table	type	possible_keys	key	key_len	ref	rows	Extra
+1	SIMPLE	t1	const	idx_col3	idx_col3	6	const	1	
+select * from t1 where col3="20221115114510" order by col1;
+col1	col2	col3	col4
+5	defg 	2022-11-15 11:45:10	defg
+explain select * from t1 where col3="20221115114510" group by col1;
+id	select_type	table	type	possible_keys	key	key_len	ref	rows	Extra
+1	SIMPLE	t1	const	idx_col3	idx_col3	6	const	1	Using pushed GROUP BY
+select * from t1 where col3="20221115114510" group by col1;
+col1	col2	col3	col4
+5	defg 	2022-11-15 11:45:10	defg
+explain select * from t1 where col3="20221115114510" group by col1 order by col1;
+id	select_type	table	type	possible_keys	key	key_len	ref	rows	Extra
+1	SIMPLE	t1	const	idx_col3	idx_col3	6	const	1	Using pushed GROUP BY; Using pushed ORDER BY
+select * from t1 where col3="20221115114510" group by col1 order by col1;
+col1	col2	col3	col4
+5	defg 	2022-11-15 11:45:10	defg
+explain select * from t1 where col3="20221115114510" group by col1 limit 3;
+id	select_type	table	type	possible_keys	key	key_len	ref	rows	Extra
+1	SIMPLE	t1	const	idx_col3	idx_col3	6	const	1	Using pushed GROUP BY
+select * from t1 where col3="20221115114510" group by col1 limit 3;
+col1	col2	col3	col4
+5	defg 	2022-11-15 11:45:10	defg
+explain (select * from t1 where col4>="def" order by col4 limit 2,3) union (select * from t2 where col1>=1 group by col2 order by col2 limit 2,1) order by col3 limit 2,3;
+id	select_type	table	type	possible_keys	key	key_len	ref	rows	Extra
+1	PRIMARY	t1	NULL	NULL	NULL	NULL	NULL	12	Using where with pushed condition; Using pushed ORDER BY; Storage engine handles access type
+2	UNION	t2	NULL	NULL	NULL	NULL	NULL	12	Using where with pushed condition; Using pushed GROUP BY; Using pushed ORDER BY; Storage engine handles access type
+NULL	UNION RESULT	<union1,2>	ALL	NULL	NULL	NULL	NULL	NULL	Using filesort
+(select * from t1 where col4>="def" order by col4 limit 2,3) union (select * from t2 where col1>=1 group by col2 order by col2 limit 2,1) order by col3 limit 2,3;
+col1	col2	col3	col4
+4	def	2022-11-15 11:42:15	def
+5	defg 	2022-11-15 11:45:10	defg
+explain select *,(select col1 from t1 where col2>="bcd" order by col3 limit 0,1) from t2 where t2.col4 in(select col2 from t1 where col2>"def" group by col1 desc order by col1) group by col1 limit 3;
+id	select_type	table	type	possible_keys	key	key_len	ref	rows	Extra
+1	PRIMARY	t2	index	NULL	idx_col12	16	NULL	1	
+1	PRIMARY	<subquery3>	eq_ref	distinct_key	distinct_key	13	func	1	
+3	MATERIALIZED	t1	index	NULL	idx_col12	16	NULL	12	Using where with pushed condition; Using index
+2	SUBQUERY	t1	NULL	NULL	NULL	NULL	NULL	12	Using where with pushed condition; Using pushed ORDER BY; Storage engine handles access type
+select *,(select col1 from t1 where col2>="bcd" order by col3 limit 0,1) from t2 where t2.col4 in(select col2 from t1 where col2>"def" group by col1 desc order by col1) group by col1 limit 3;
+col1	col2	col3	col4	(select col1 from t1 where col2>="bcd" order by col3 limit 0,1)
+5	defg 	2022-11-15 11:45:10	defg	8
+6	xyz	2022-11-15 11:45:12	xyz 	8
+7	xyz 	2022-11-15 11:45:18	xyz 	8
+explain select * from (select * from t1 where col2>"def" order by col4 desc limit 5) dt where col1>=1 limit 2,3;
+id	select_type	table	type	possible_keys	key	key_len	ref	rows	Extra
+1	PRIMARY	<derived2>	ALL	NULL	NULL	NULL	NULL	5	Using where
+2	DERIVED	t1	NULL	NULL	NULL	NULL	NULL	12	Using where with pushed condition; Using pushed ORDER BY; Storage engine handles access type
+select * from (select * from t1 where col2>"def" order by col4 desc limit 5) dt where col1>=1 limit 2,3;
+col1	col2	col3	col4
+5	defg 	2022-11-15 11:45:10	defg
+8	xxx	NULL	NULL
+9	yyy	NULL	NULL
+explain select * from (select * from t1 where col1>1 group by col4 desc limit 4) dt where col4>"aef" order by col4 desc limit 2,2;
+id	select_type	table	type	possible_keys	key	key_len	ref	rows	Extra
+1	PRIMARY	<derived2>	ALL	NULL	NULL	NULL	NULL	4	Using where; Using filesort
+2	DERIVED	t1	NULL	NULL	NULL	NULL	NULL	12	Using where with pushed condition; Using pushed GROUP BY; Storage engine handles access type
+select * from (select * from t1 where col1>1 group by col4 desc limit 4) dt where col4>"aef" order by col4 desc limit 2,2;
+col1	col2	col3	col4
+5	defg 	2022-11-15 11:45:10	defg
+2	def	2022-11-15 11:40:20	def
+explain select * from v1 group by col1;
+id	select_type	table	type	possible_keys	key	key_len	ref	rows	Extra
+1	SIMPLE	t1	NULL	NULL	NULL	NULL	NULL	12	Using where with pushed condition; Using pushed GROUP BY; Storage engine handles access type
+select * from v1 group by col1;
+col1	col2	col3	col4
+4	def	2022-11-15 11:42:10	def
+5	defg 	2022-11-15 11:45:10	defg
+6	xyz	2022-11-15 11:45:12	xyz 
+7	xyz 	2022-11-15 11:45:18	xyz 
+8	xxx	NULL	NULL
+9	yyy	NULL	NULL
+explain select * from v1 group by col1;
+id	select_type	table	type	possible_keys	key	key_len	ref	rows	Extra
+1	SIMPLE	t1	NULL	NULL	NULL	NULL	NULL	12	Using where with pushed condition; Using pushed GROUP BY; Storage engine handles access type
+select col1 from v1 group by col1;
+col1
+4
+5
+6
+7
+8
+9
+Warnings:
+Warning	1263	Column set to default value; NULL supplied to NOT NULL column 'col2' at row 1
+Warning	1263	Column set to default value; NULL supplied to NOT NULL column 'col2' at row 2
+Warning	1263	Column set to default value; NULL supplied to NOT NULL column 'col2' at row 3
+Warning	1263	Column set to default value; NULL supplied to NOT NULL column 'col2' at row 4
+Warning	1263	Column set to default value; NULL supplied to NOT NULL column 'col2' at row 5
+Warning	1263	Column set to default value; NULL supplied to NOT NULL column 'col2' at row 6
+explain select * from v1 order by col3;
+id	select_type	table	type	possible_keys	key	key_len	ref	rows	Extra
+1	SIMPLE	t1	ALL	idx_col12	NULL	NULL	NULL	12	Using where with pushed condition; Using pushed sort (t1.col3)
+select * from v1 order by col3;
+col1	col2	col3	col4
+8	xxx	NULL	NULL
+9	yyy	NULL	NULL
+4	def	2022-11-15 11:42:10	def
+4	def	2022-11-15 11:42:15	def
+5	defg 	2022-11-15 11:45:10	defg
+6	xyz	2022-11-15 11:45:12	xyz 
+7	xyz 	2022-11-15 11:45:18	xyz 
+explain select * from v1 order by col3;
+id	select_type	table	type	possible_keys	key	key_len	ref	rows	Extra
+1	SIMPLE	t1	ALL	idx_col12	NULL	NULL	NULL	12	Using where with pushed condition; Using pushed sort (t1.col3)
+select col3 from v1 order by col3;
+col3
+NULL
+NULL
+2022-11-15 11:42:10
+2022-11-15 11:42:15
+2022-11-15 11:45:10
+2022-11-15 11:45:12
+2022-11-15 11:45:18
+SET SESSION sequoiadb_build_sort_cond_on_runtime = ON;
+SELECT @@sequoiadb_build_sort_cond_on_runtime;
+@@sequoiadb_build_sort_cond_on_runtime
+1
+explain select * from t1 where col2>'abc' order by col1;
+id	select_type	table	type	possible_keys	key	key_len	ref	rows	Extra
+1	SIMPLE	t1	ALL	NULL	NULL	NULL	NULL	12	Using where with pushed condition; Using pushed sort (t1.col1)
+select col1 from t1 where col2>'abc' order by col1;
+col1
+1
+1
+2
+3
+4
+4
+5
+6
+7
+8
+9
+explain select * from t1 where col2>'abc' group by col1;
+id	select_type	table	type	possible_keys	key	key_len	ref	rows	Extra
+1	SIMPLE	t1	NULL	NULL	NULL	NULL	NULL	12	Using where with pushed condition; Using pushed GROUP BY; Storage engine handles access type
+select col1 from t1 where col2>'abc' group by col1;
+col1
+1
+2
+3
+4
+5
+6
+7
+8
+9
+explain select * from t1 where col2>'abc' group by col1 order by col1;
+id	select_type	table	type	possible_keys	key	key_len	ref	rows	Extra
+1	SIMPLE	t1	NULL	NULL	NULL	NULL	NULL	12	Using where with pushed condition; Using pushed GROUP BY; Using pushed ORDER BY; Storage engine handles access type
+select col1 from t1 where col2>'abc' group by col1 order by col1;
+col1
+1
+2
+3
+4
+5
+6
+7
+8
+9
+explain select * from t1 where col2>'abc' group by col1 limit 3;
+id	select_type	table	type	possible_keys	key	key_len	ref	rows	Extra
+1	SIMPLE	t1	NULL	NULL	NULL	NULL	NULL	12	Using where with pushed condition; Using pushed GROUP BY; Storage engine handles access type
+select col1 from t1 where col2>'abc' group by col1 limit 3;
+col1
+1
+2
+3
+explain select col1 from t1 order by col1;
+id	select_type	table	type	possible_keys	key	key_len	ref	rows	Extra
+1	SIMPLE	t1	index	NULL	idx_col12	16	NULL	12	Using index
+select col1 from t1 order by col1;
+col1
+0
+1
+1
+2
+3
+4
+4
+5
+6
+7
+8
+9
+explain select col1 from t1 group by col1;
+id	select_type	table	type	possible_keys	key	key_len	ref	rows	Extra
+1	SIMPLE	t1	index	NULL	idx_col12	16	NULL	12	Using index; Using pushed GROUP BY
+select col1 from t1 group by col1;
+col1
+0
+1
+2
+3
+4
+5
+6
+7
+8
+9
+explain select col1 from t1 group by col1 order by col1;
+id	select_type	table	type	possible_keys	key	key_len	ref	rows	Extra
+1	SIMPLE	t1	index	NULL	idx_col12	16	NULL	12	Using index; Using pushed GROUP BY; Using pushed ORDER BY
+select col1 from t1 group by col1 order by col1;
+col1
+0
+1
+2
+3
+4
+5
+6
+7
+8
+9
+explain select col1 from t1 group by col1 limit 3;
+id	select_type	table	type	possible_keys	key	key_len	ref	rows	Extra
+1	SIMPLE	t1	index	NULL	idx_col12	16	NULL	12	Using index; Using pushed GROUP BY
+select col1 from t1 group by col1 limit 3;
+col1
+0
+1
+2
+explain select * from t1 where col1>2 or col3="20221115114210" order by col3;
+id	select_type	table	type	possible_keys	key	key_len	ref	rows	Extra
+1	SIMPLE	t1	index_merge	idx_col3,idx_col12	idx_col12,idx_col3	4,6	NULL	10	Using sdb_sort_union(idx_col12,idx_col3); Using where with pushed condition; Using filesort
+select * from t1 where col1>2 or col3="20221115114210" order by col3;
+col1	col2	col3	col4
+8	xxx	NULL	NULL
+9	yyy	NULL	NULL
+3	abcde	2022-11-15 11:40:22	efg
+4	def	2022-11-15 11:42:10	def
+4	def	2022-11-15 11:42:15	def
+5	defg 	2022-11-15 11:45:10	defg
+6	xyz	2022-11-15 11:45:12	xyz 
+7	xyz 	2022-11-15 11:45:18	xyz 
+explain select * from t1 where col1>2 or col3="20221115114210" group by col3;
+id	select_type	table	type	possible_keys	key	key_len	ref	rows	Extra
+1	SIMPLE	t1	NULL	NULL	NULL	NULL	NULL	12	Using where with pushed condition; Using pushed GROUP BY; Storage engine handles access type
+select * from t1 where col1>2 or col3="20221115114210" group by col3;
+col1	col2	col3	col4
+8	xxx	NULL	NULL
+3	abcde	2022-11-15 11:40:22	efg
+4	def	2022-11-15 11:42:10	def
+4	def	2022-11-15 11:42:15	def
+5	defg 	2022-11-15 11:45:10	defg
+6	xyz	2022-11-15 11:45:12	xyz 
+7	xyz 	2022-11-15 11:45:18	xyz 
+explain select * from t1 where col1>2 or col3="20221115114210" group by col3 order by col3;
+id	select_type	table	type	possible_keys	key	key_len	ref	rows	Extra
+1	SIMPLE	t1	NULL	NULL	NULL	NULL	NULL	12	Using where with pushed condition; Using pushed GROUP BY; Using pushed ORDER BY; Storage engine handles access type
+select * from t1 where col1>2 or col3="20221115114210" group by col3 order by col3;
+col1	col2	col3	col4
+8	xxx	NULL	NULL
+3	abcde	2022-11-15 11:40:22	efg
+4	def	2022-11-15 11:42:10	def
+4	def	2022-11-15 11:42:15	def
+5	defg 	2022-11-15 11:45:10	defg
+6	xyz	2022-11-15 11:45:12	xyz 
+7	xyz 	2022-11-15 11:45:18	xyz 
+explain select * from t1 where col1>2 or col3="20221115114210" group by col3 limit 3;
+id	select_type	table	type	possible_keys	key	key_len	ref	rows	Extra
+1	SIMPLE	t1	NULL	NULL	NULL	NULL	NULL	12	Using where with pushed condition; Using pushed GROUP BY; Storage engine handles access type
+select * from t1 where col1>2 or col3="20221115114210" group by col3 limit 3;
+col1	col2	col3	col4
+8	xxx	NULL	NULL
+3	abcde	2022-11-15 11:40:22	efg
+4	def	2022-11-15 11:42:10	def
+explain select * from t1 where col1>3 order by col2;
+id	select_type	table	type	possible_keys	key	key_len	ref	rows	Extra
+1	SIMPLE	t1	ALL	idx_col12	NULL	NULL	NULL	12	Using where with pushed condition; Using pushed sort (t1.col2)
+select * from t1 where col1>3 order by col2;
+col1	col2	col3	col4
+4	def	2022-11-15 11:42:10	def
+4	def	2022-11-15 11:42:15	def
+5	defg 	2022-11-15 11:45:10	defg
+8	xxx	NULL	NULL
+6	xyz	2022-11-15 11:45:12	xyz 
+7	xyz 	2022-11-15 11:45:18	xyz 
+9	yyy	NULL	NULL
+explain select * from t1 where col1>3 group by col2;
+id	select_type	table	type	possible_keys	key	key_len	ref	rows	Extra
+1	SIMPLE	t1	NULL	NULL	NULL	NULL	NULL	12	Using where with pushed condition; Using pushed GROUP BY; Storage engine handles access type
+select * from t1 where col1>3 group by col2;
+col1	col2	col3	col4
+4	def	2022-11-15 11:42:10	def
+5	defg 	2022-11-15 11:45:10	defg
+8	xxx	NULL	NULL
+6	xyz	2022-11-15 11:45:12	xyz 
+7	xyz 	2022-11-15 11:45:18	xyz 
+9	yyy	NULL	NULL
+explain select * from t1 where col1>3 group by col2 order by col2;
+id	select_type	table	type	possible_keys	key	key_len	ref	rows	Extra
+1	SIMPLE	t1	NULL	NULL	NULL	NULL	NULL	12	Using where with pushed condition; Using pushed GROUP BY; Using pushed ORDER BY; Storage engine handles access type
+select * from t1 where col1>3 group by col2 order by col2;
+col1	col2	col3	col4
+4	def	2022-11-15 11:42:10	def
+5	defg 	2022-11-15 11:45:10	defg
+8	xxx	NULL	NULL
+6	xyz	2022-11-15 11:45:12	xyz 
+7	xyz 	2022-11-15 11:45:18	xyz 
+9	yyy	NULL	NULL
+explain select * from t1 where col1>3 group by col2 limit 3;
+id	select_type	table	type	possible_keys	key	key_len	ref	rows	Extra
+1	SIMPLE	t1	NULL	NULL	NULL	NULL	NULL	12	Using where with pushed condition; Using pushed GROUP BY; Storage engine handles access type
+select * from t1 where col1>3 group by col2 limit 3;
+col1	col2	col3	col4
+4	def	2022-11-15 11:42:10	def
+5	defg 	2022-11-15 11:45:10	defg
+8	xxx	NULL	NULL
+explain select * from t1 where col1=3 order by col3;
+id	select_type	table	type	possible_keys	key	key_len	ref	rows	Extra
+1	SIMPLE	t1	ref	idx_col12	idx_col12	4	const	2	Using where; Using pushed sort (t1.col3)
+select * from t1 where col1=3 order by col3;
+col1	col2	col3	col4
+3	abcde	2022-11-15 11:40:22	efg
+explain select * from t1 where col1=3 group by col3;
+id	select_type	table	type	possible_keys	key	key_len	ref	rows	Extra
+1	SIMPLE	t1	ref	idx_col12	idx_col12	4	const	2	Using pushed GROUP BY
+select * from t1 where col1=3 group by col3;
+col1	col2	col3	col4
+3	abcde	2022-11-15 11:40:22	efg
+explain select * from t1 where col1=3 group by col3 order by col3;
+id	select_type	table	type	possible_keys	key	key_len	ref	rows	Extra
+1	SIMPLE	t1	ref	idx_col12	idx_col12	4	const	2	Using pushed GROUP BY; Using pushed ORDER BY
+select * from t1 where col1=3 group by col3 order by col3;
+col1	col2	col3	col4
+3	abcde	2022-11-15 11:40:22	efg
+explain select * from t1 where col1=3 group by col3 limit 3;
+id	select_type	table	type	possible_keys	key	key_len	ref	rows	Extra
+1	SIMPLE	t1	ref	idx_col12	idx_col12	4	const	2	Using pushed GROUP BY
+select * from t1 where col1=3 group by col3 limit 3;
+col1	col2	col3	col4
+3	abcde	2022-11-15 11:40:22	efg
+explain select * from t1 where col3="20221115114510" order by col1;
+id	select_type	table	type	possible_keys	key	key_len	ref	rows	Extra
+1	SIMPLE	t1	const	idx_col3	idx_col3	6	const	1	
+select * from t1 where col3="20221115114510" order by col1;
+col1	col2	col3	col4
+5	defg 	2022-11-15 11:45:10	defg
+explain select * from t1 where col3="20221115114510" group by col1;
+id	select_type	table	type	possible_keys	key	key_len	ref	rows	Extra
+1	SIMPLE	t1	const	idx_col3	idx_col3	6	const	1	Using pushed GROUP BY
+select * from t1 where col3="20221115114510" group by col1;
+col1	col2	col3	col4
+5	defg 	2022-11-15 11:45:10	defg
+explain select * from t1 where col3="20221115114510" group by col1 order by col1;
+id	select_type	table	type	possible_keys	key	key_len	ref	rows	Extra
+1	SIMPLE	t1	const	idx_col3	idx_col3	6	const	1	Using pushed GROUP BY; Using pushed ORDER BY
+select * from t1 where col3="20221115114510" group by col1 order by col1;
+col1	col2	col3	col4
+5	defg 	2022-11-15 11:45:10	defg
+explain select * from t1 where col3="20221115114510" group by col1 limit 3;
+id	select_type	table	type	possible_keys	key	key_len	ref	rows	Extra
+1	SIMPLE	t1	const	idx_col3	idx_col3	6	const	1	Using pushed GROUP BY
+select * from t1 where col3="20221115114510" group by col1 limit 3;
+col1	col2	col3	col4
+5	defg 	2022-11-15 11:45:10	defg
+explain (select * from t1 where col4>="def" order by col4 limit 2,3) union (select * from t2 where col1>=1 group by col2 order by col2 limit 2,1) order by col3 limit 2,3;
+id	select_type	table	type	possible_keys	key	key_len	ref	rows	Extra
+1	PRIMARY	t1	NULL	NULL	NULL	NULL	NULL	12	Using where with pushed condition; Using pushed ORDER BY; Storage engine handles access type
+2	UNION	t2	NULL	NULL	NULL	NULL	NULL	12	Using where with pushed condition; Using pushed GROUP BY; Using pushed ORDER BY; Storage engine handles access type
+NULL	UNION RESULT	<union1,2>	ALL	NULL	NULL	NULL	NULL	NULL	Using filesort
+(select * from t1 where col4>="def" order by col4 limit 2,3) union (select * from t2 where col1>=1 group by col2 order by col2 limit 2,1) order by col3 limit 2,3;
+col1	col2	col3	col4
+4	def	2022-11-15 11:42:15	def
+5	defg 	2022-11-15 11:45:10	defg
+explain select *,(select col1 from t1 where col2>="bcd" order by col3 limit 0,1) from t2 where t2.col4 in(select col2 from t1 where col2>"def" group by col1 desc order by col1) group by col1 limit 3;
+id	select_type	table	type	possible_keys	key	key_len	ref	rows	Extra
+1	PRIMARY	t2	index	NULL	idx_col12	16	NULL	1	
+1	PRIMARY	<subquery3>	eq_ref	distinct_key	distinct_key	13	func	1	
+3	MATERIALIZED	t1	index	NULL	idx_col12	16	NULL	12	Using where with pushed condition; Using index
+2	SUBQUERY	t1	NULL	NULL	NULL	NULL	NULL	12	Using where with pushed condition; Using pushed ORDER BY; Storage engine handles access type
+select *,(select col1 from t1 where col2>="bcd" order by col3 limit 0,1) from t2 where t2.col4 in(select col2 from t1 where col2>"def" group by col1 desc order by col1) group by col1 limit 3;
+col1	col2	col3	col4	(select col1 from t1 where col2>="bcd" order by col3 limit 0,1)
+5	defg 	2022-11-15 11:45:10	defg	8
+6	xyz	2022-11-15 11:45:12	xyz 	8
+7	xyz 	2022-11-15 11:45:18	xyz 	8
+explain select * from (select * from t1 where col2>"def" order by col4 desc limit 5) dt where col1>=1 limit 2,3;
+id	select_type	table	type	possible_keys	key	key_len	ref	rows	Extra
+1	PRIMARY	<derived2>	ALL	NULL	NULL	NULL	NULL	5	Using where
+2	DERIVED	t1	NULL	NULL	NULL	NULL	NULL	12	Using where with pushed condition; Using pushed ORDER BY; Storage engine handles access type
+select * from (select * from t1 where col2>"def" order by col4 desc limit 5) dt where col1>=1 limit 2,3;
+col1	col2	col3	col4
+5	defg 	2022-11-15 11:45:10	defg
+8	xxx	NULL	NULL
+9	yyy	NULL	NULL
+explain select * from (select * from t1 where col1>1 group by col4 desc limit 4) dt where col4>"aef" order by col4 desc limit 2,2;
+id	select_type	table	type	possible_keys	key	key_len	ref	rows	Extra
+1	PRIMARY	<derived2>	ALL	NULL	NULL	NULL	NULL	4	Using where; Using filesort
+2	DERIVED	t1	NULL	NULL	NULL	NULL	NULL	12	Using where with pushed condition; Using pushed GROUP BY; Storage engine handles access type
+select * from (select * from t1 where col1>1 group by col4 desc limit 4) dt where col4>"aef" order by col4 desc limit 2,2;
+col1	col2	col3	col4
+5	defg 	2022-11-15 11:45:10	defg
+2	def	2022-11-15 11:40:20	def
+explain select * from v1 group by col1;
+id	select_type	table	type	possible_keys	key	key_len	ref	rows	Extra
+1	SIMPLE	t1	NULL	NULL	NULL	NULL	NULL	12	Using where with pushed condition; Using pushed GROUP BY; Storage engine handles access type
+select * from v1 group by col1;
+col1	col2	col3	col4
+4	def	2022-11-15 11:42:10	def
+5	defg 	2022-11-15 11:45:10	defg
+6	xyz	2022-11-15 11:45:12	xyz 
+7	xyz 	2022-11-15 11:45:18	xyz 
+8	xxx	NULL	NULL
+9	yyy	NULL	NULL
+explain select * from v1 group by col1;
+id	select_type	table	type	possible_keys	key	key_len	ref	rows	Extra
+1	SIMPLE	t1	NULL	NULL	NULL	NULL	NULL	12	Using where with pushed condition; Using pushed GROUP BY; Storage engine handles access type
+select col1 from v1 group by col1;
+col1
+4
+5
+6
+7
+8
+9
+explain select * from v1 order by col3;
+id	select_type	table	type	possible_keys	key	key_len	ref	rows	Extra
+1	SIMPLE	t1	ALL	idx_col12	NULL	NULL	NULL	12	Using where with pushed condition; Using pushed sort (t1.col3)
+select * from v1 order by col3;
+col1	col2	col3	col4
+8	xxx	NULL	NULL
+9	yyy	NULL	NULL
+4	def	2022-11-15 11:42:10	def
+4	def	2022-11-15 11:42:15	def
+5	defg 	2022-11-15 11:45:10	defg
+6	xyz	2022-11-15 11:45:12	xyz 
+7	xyz 	2022-11-15 11:45:18	xyz 
+explain select * from v1 order by col3;
+id	select_type	table	type	possible_keys	key	key_len	ref	rows	Extra
+1	SIMPLE	t1	ALL	idx_col12	NULL	NULL	NULL	12	Using where with pushed condition; Using pushed sort (t1.col3)
+select col3 from v1 order by col3;
+col3
+NULL
+NULL
+2022-11-15 11:42:10
+2022-11-15 11:42:15
+2022-11-15 11:45:10
+2022-11-15 11:45:12
+2022-11-15 11:45:18
+DROP DATABASE  build_sort_cond_on_runtime_sequoiadb;

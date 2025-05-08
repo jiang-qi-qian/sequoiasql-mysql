@@ -1,0 +1,30 @@
+# restart
+drop database if exists statistics_trace_sequoiadb_33960;
+create database statistics_trace_sequoiadb_33960;
+drop database statistics_trace_sequoiadb_33960;
+create database statistics_trace_sequoiadb_33960;
+use statistics_trace_sequoiadb_33960;
+set session sequoiadb_debug_log = on;
+set session sequoiadb_secure_log = off;
+set session sequoiadb_share_log_output = on;
+set session refresh_all_cached_tables_supported = on;
+create table t1 (a int);
+insert into t1 values (1),(2);
+create table t2 like t1;
+create table t3 like t1;
+flush tables;
+select * from t1;
+select * from t2;
+select * from t3;
+show status like "sdb_share_updated";
+Variable_name	Value
+sdb_share_updated	4
+refresh tables stats;
+[Note] Testcase: Operation log begin
+[Note] SequoiaDB: Sdb_share has marked expired in extra(), replace the Sdb_share in the bucket with a new one ,sql_str:refresh tables stats , table_name:./statistics_trace_sequoiadb_33960/t3, new idx stats map:0
+[Note] SequoiaDB: Sdb_share has marked expired in extra(), replace the Sdb_share in the bucket with a new one ,sql_str:refresh tables stats , table_name:./statistics_trace_sequoiadb_33960/t2, new idx stats map:0
+[Note] SequoiaDB: Sdb_share has marked expired in extra(), replace the Sdb_share in the bucket with a new one ,sql_str:refresh tables stats , table_name:./statistics_trace_sequoiadb_33960/t1, new idx stats map:0
+show status like "sdb_share_updated";
+Variable_name	Value
+sdb_share_updated	7
+drop database statistics_trace_sequoiadb_33960;

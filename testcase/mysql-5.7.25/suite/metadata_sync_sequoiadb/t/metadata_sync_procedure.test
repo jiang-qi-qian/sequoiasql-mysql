@@ -1,0 +1,279 @@
+#case 18869#case 22327
+
+--source include/have_sequoiadb.inc
+--source suite/metadata_sync_sequoiadb/inc/insts_connect_sequoiadb.inc
+
+# connect to conn1, clear databases in the beginning
+connection conn1;
+--disable_warnings
+DROP DATABASE IF EXISTS metasync_procedure;
+DROP DATABASE IF EXISTS metasync_scptpkg;
+--enable_warnings
+
+# connect to conn2, check databases are cleaned in the beginning
+connection conn2;
+--sleep $sleep
+--error ER_BAD_DB_ERROR 
+SHOW CREATE DATABASE metasync_procedure;
+--error ER_BAD_DB_ERROR
+SHOW CREATE DATABASE metasync_scptpkg;
+# seqDB-18869
+# begin testing
+#
+# CREATE/ALTER/DROP PROCEDURE
+#
+connection conn1;
+CREATE DATABASE metasync_procedure;
+USE metasync_procedure;
+# test proc_parameter in, out, inout
+DELIMITER |; 
+CREATE PROCEDURE sp_param_inout ( IN p_in INT, OUT p_out INT, INOUT p_inout INT )
+BEGIN
+   DECLARE z INT DEFAULT 2;
+   SET p_in = 2;
+   SET p_out = z;
+   SELECT p_in, p_out;
+   DROP TABLE IF EXISTS t0;
+   CREATE TABLE t0 SELECT @p_inout;
+   SELECT * FROM t0;
+END|
+# test characteristics
+CREATE PROCEDURE sp_chistics ()
+   LANGUAGE SQL
+   MODIFIES SQL DATA
+   NOT DETERMINISTIC
+   SQL SECURITY DEFINER
+   COMMENT 'Characteristics procedure test'
+SELECT "Characteristics"|
+# test repeat
+CREATE PROCEDURE sp_repeat ( x INT )
+REPEAT
+   SELECT REPEAT( "b", x );
+   SET x = x - 1;
+UNTIL x = 0 END REPEAT|
+# test case
+CREATE PROCEDURE sp_case ( x INT )
+CASE
+WHEN x < 0 THEN
+   SELECT "case0";
+WHEN x = 0 THEN
+   SELECT "case1";
+ELSE
+   SELECT "case2";
+END case|
+# test cursor
+DROP TABLE IF EXISTS t1, t2, t3| 
+CREATE TABLE t1 ( id INT, data INT )|
+INSERT INTO t1 VALUES ( 1, 1 )|
+CREATE TABLE t2 ( i INT )|
+INSERT INTO t2 VALUES ( 2 )| 
+CREATE TABLE t3 ( data CHAR(64), i INT )|
+CREATE PROCEDURE sp_cursor ()
+BEGIN
+   DECLARE done INT DEFAULT 0;
+   DECLARE c1 cursor FOR SELECT id,data FROM t1 ORDER BY id,data;
+   DECLARE c2 cursor FOR SELECT i FROM t2 ORDER BY i;
+   DECLARE CONTINUE HANDLER FOR SQLSTATE '02000' SET done = 1;
+
+   OPEN c1;
+   OPEN c2;
+   REPEAT
+   BEGIN
+     DECLARE a CHAR(16);
+     DECLARE b,c INT;
+
+     FETCH FROM c1 INTO a, b;
+     FETCH NEXT FROM c2 INTO c;
+     IF NOT done THEN
+        IF b < c THEN
+           INSERT INTO t3 VALUES (a, b);
+        ELSE
+           INSERT INTO t3 VALUES (a, c);
+        END IF;
+     END IF;
+   END;
+   UNTIL done END REPEAT;
+   CLOSE c1;
+   CLOSE c2;
+END|
+# test prepare statement
+CREATE PROCEDURE sp_prepare_stmt ( tbl_name varchar(32) )
+BEGIN
+   SET @str =
+    CONCAT("CREATE TABLE ", tbl_name, "(stuff char(15))");
+   SELECT @str;
+   PREPARE stmt FROM @str;
+   EXECUTE stmt;
+
+   SET @str =
+    CONCAT("INSERT INTO ", tbl_name, " VALUES('row1'),('row2'),('row3')" );
+   SELECT @str;
+   PREPARE stmt FROM @str;
+   EXECUTE stmt;
+
+   SET @str =
+    CONCAT("CREATE VIEW v1(c1) AS SELECT stuff FROM ", tbl_name);
+   SELECT @str;
+   PREPARE stmt FROM @str;
+   EXECUTE stmt;
+
+   SELECT * FROM v1;
+
+   SET @str =
+    "DROP VIEW v1";
+   SELECT @str;
+   PREPARE stmt FROM @str;
+   EXECUTE stmt;
+END|
+# test definer
+CREATE DEFINER = `root`@`localhost` PROCEDURE sp_definer ()
+BEGIN
+   CREATE DATABASE metasync_scptpkg;
+
+   DROP TABLE IF EXISTS metasync_scptpkg.tfw_relation;
+   CREATE TABLE metasync_scptpkg.tfw_relation ( ID BIGINT, MENUID INT, ROLEID INT ); 
+   INSERT INTO metasync_scptpkg.tfw_relation ( ID, MENUID, ROLEID ) VALUES ('968410495344181258', '37', '2');
+   INSERT INTO metasync_scptpkg.tfw_relation ( ID, MENUID, ROLEID ) VALUES ('968410495344181259', '38', '2');
+   INSERT INTO metasync_scptpkg.tfw_relation ( ID, MENUID, ROLEID ) VALUES ('968410495344181260', '20040', '2');
+
+   DROP TABLE IF EXISTS metasync_scptpkg.tfw_dict;
+   CREATE TABLE metasync_scptpkg.tfw_dict ( ID BIGINT, CODE TEXT, NUM INT, PID BIGINT, NAME TEXT, TIPS TEXT, VERSION INT, SELECTED INT );
+   SELECT COUNT(1) FROM metasync_scptpkg.tfw_dict WHERE CODE = 'SealStatusType' INTO @temp;
+   IF @temp = 0 THEN
+   INSERT INTO metasync_scptpkg.tfw_dict ( ID, CODE, NUM, PID, NAME, TIPS, VERSION, SELECTED ) VALUES ('962499376750526464','SealStatusType','0',NULL,'签章状态','',0,0);
+   INSERT INTO metasync_scptpkg.tfw_dict ( ID, CODE, NUM, PID, NAME, TIPS, VERSION, SELECTED ) VALUES ('962499516458598400','SealStatusType','1','962499376750526464','已启用','',0,0);
+   INSERT INTO metasync_scptpkg.tfw_dict ( ID, CODE, NUM, PID, NAME, TIPS, VERSION, SELECTED ) VALUES ('962499592304197632','SealStatusType','2','962499376750526464','已禁用','',0,0);
+   INSERT INTO metasync_scptpkg.tfw_dict ( ID, CODE, NUM, PID, NAME, TIPS, VERSION, SELECTED ) VALUES ('962499644422619136','SealStatusType','3','962499376750526464','已作废','',0,0);
+   END IF ;
+
+   SELECT COUNT(1) FROM information_schema.tables WHERE table_schema = "metasync_scptpkg" AND table_name = 'tfw_invoke_api_log' INTO @temp ;
+   IF @temp = 0 then
+   CREATE TABLE metasync_scptpkg.tfw_invoke_api_log (
+         ID bigint(24) NOT NULL,
+         APPID bigint(24) DEFAULT NULL COMMENT '应用ID',
+         APIURI varchar(100) DEFAULT NULL COMMENT '应用接口地址',
+         APIPARAM longtext COMMENT '应用请求参数',
+         APIHEADER text COMMENT '应用请求头',
+         SUCCEED varchar(255) DEFAULT NULL COMMENT '是否成功',
+         IP varchar(100) DEFAULT NULL COMMENT 'IP地址',
+         REQTIME datetime DEFAULT NULL COMMENT '请求时间',
+         RESPTIME datetime DEFAULT NULL COMMENT '响应时间',
+         MESSAGE text COMMENT '异常栈消息',
+         PRIMARY KEY (ID)
+         ) ENGINE=SEQUOIADB DEFAULT CHARSET=utf8mb4;
+   ALTER TABLE metasync_scptpkg.tfw_invoke_api_log ADD INDEX INDEX_INVOKE_API_APPID (APPID); /* 这里创建索引 INDEX_INVOKE_API_APPID*/
+   ALTER TABLE metasync_scptpkg.tfw_invoke_api_log ADD INDEX INDEX_INVOKE_API_APIURI (APIURI); # 这里创建索引 INDEX_INVOKE_API_APIURI
+   ALTER TABLE metasync_scptpkg.tfw_invoke_api_log ADD INDEX INDEX_INVOKE_API_SUCCEED (SUCCEED); # 这里创建索引 INDEX_INVOKE_API_SUCCEED
+   END IF ;
+END|
+DELIMITER ;|
+# seqDB-22327
+# test create large procedure
+--source std_data/metadata_sync_large170k_procedure.sql
+# check metadatas after create
+connection conn2;
+--sleep $sleep
+USE metasync_procedure;
+--replace_regex /DEFINER=`.*`@/DEFINER=`x`@/
+SHOW CREATE PROCEDURE sp_param_inout;
+--replace_regex /DEFINER=`.*`@/DEFINER=`x`@/
+SHOW CREATE PROCEDURE sp_chistics;
+--replace_regex /DEFINER=`.*`@/DEFINER=`x`@/
+SHOW CREATE PROCEDURE sp_repeat;
+--replace_regex /DEFINER=`.*`@/DEFINER=`x`@/
+SHOW CREATE PROCEDURE sp_case;
+--replace_regex /DEFINER=`.*`@/DEFINER=`x`@/
+SHOW CREATE PROCEDURE sp_cursor;
+--replace_regex /DEFINER=`.*`@/DEFINER=`x`@/
+SHOW CREATE PROCEDURE sp_prepare_stmt;
+SHOW CREATE PROCEDURE sp_definer;
+--replace_regex /DEFINER=`.*`@/DEFINER=`x`@/
+SHOW CREATE PROCEDURE sp_large170k;
+# call sp
+SET @p_in = 1;
+SET @p_out = 1;
+SET @p_inout = 1;
+CALL sp_param_inout( @p_in, @p_out, @p_inout );
+CALL sp_chistics();
+CALL sp_repeat(3);
+CALL sp_case(-42);
+CALL sp_cursor();
+CALL sp_prepare_stmt('t4');
+CALL sp_definer();
+# check metadatas after call
+connection conn1;
+--sleep $sleep
+SHOW CREATE TABLE t0;
+SHOW CREATE TABLE t1;
+SHOW CREATE TABLE t2;
+SHOW CREATE TABLE t3;
+SHOW CREATE TABLE t4;
+SHOW CREATE TABLE metasync_scptpkg.tfw_relation;
+SHOW CREATE TABLE metasync_scptpkg.tfw_dict;
+SHOW CREATE TABLE metasync_scptpkg.tfw_invoke_api_log;
+SELECT * FROM metasync_scptpkg.tfw_relation ORDER BY ID;
+SELECT * FROM metasync_scptpkg.tfw_dict ORDER BY ID;
+SELECT * FROM metasync_scptpkg.tfw_invoke_api_log ORDER BY ID;
+# alter procedure
+DELIMITER |;
+ALTER PROCEDURE sp_param_inout
+   language sql
+   sql security invoker
+   comment 'test alter procedure' |
+DELIMITER ;|
+# check metadatas after alter
+connection conn2;
+--sleep $sleep
+--replace_regex /DEFINER=`.*`@/DEFINER=`x`@/
+SHOW CREATE PROCEDURE sp_param_inout;
+# drop procedure
+DROP PROCEDURE IF EXISTS sp_param_inout;
+DROP PROCEDURE sp_chistics;
+DROP PROCEDURE sp_repeat;
+DROP PROCEDURE sp_case;
+DROP PROCEDURE sp_cursor;
+DROP PROCEDURE sp_prepare_stmt;
+DROP PROCEDURE sp_definer;
+DROP PROCEDURE sp_large170k;
+DROP PROCEDURE IF EXISTS sp_large170k; 
+# check metadatas after drop
+connection conn1;
+--sleep $sleep
+--error ER_SP_DOES_NOT_EXIST
+SHOW CREATE PROCEDURE sp_param_inout;
+--error ER_SP_DOES_NOT_EXIST
+SHOW CREATE PROCEDURE sp_chistics;
+--error ER_SP_DOES_NOT_EXIST
+SHOW CREATE PROCEDURE sp_repeat;
+--error ER_SP_DOES_NOT_EXIST
+SHOW CREATE PROCEDURE sp_case;
+--error ER_SP_DOES_NOT_EXIST
+SHOW CREATE PROCEDURE sp_cursor;
+--error ER_SP_DOES_NOT_EXIST
+SHOW CREATE PROCEDURE sp_prepare_stmt;
+--error ER_SP_DOES_NOT_EXIST
+SHOW CREATE PROCEDURE sp_definer;
+--error ER_SP_DOES_NOT_EXIST
+SHOW CREATE PROCEDURE sp_large170k;
+SHOW CREATE TABLE t0;
+SHOW CREATE TABLE t1;
+SHOW CREATE TABLE t2;
+SHOW CREATE TABLE t3;
+SHOW CREATE TABLE t4;
+SHOW CREATE TABLE metasync_scptpkg.tfw_relation;
+SHOW CREATE TABLE metasync_scptpkg.tfw_dict;
+SHOW CREATE TABLE metasync_scptpkg.tfw_invoke_api_log;
+
+# clear databases in the ending
+DROP DATABASE metasync_procedure;
+DROP DATABASE metasync_scptpkg;
+# check databases are cleaned in the ending
+connection conn2;
+--sleep $sleep
+--error ER_BAD_DB_ERROR 
+SHOW CREATE DATABASE metasync_procedure;
+--error ER_BAD_DB_ERROR
+SHOW CREATE DATABASE metasync_scptpkg;
+
+--source include/uninstall_sequoiadb.inc
+--source suite/metadata_sync_sequoiadb/inc/insts_disconnect_sequoiadb.inc

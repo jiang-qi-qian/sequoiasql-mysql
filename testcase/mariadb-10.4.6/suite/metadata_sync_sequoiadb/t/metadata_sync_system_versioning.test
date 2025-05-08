@@ -1,0 +1,122 @@
+#case 23500
+
+--source include/have_sequoiadb.inc
+--source suite/metadata_sync_sequoiadb/inc/insts_connect_sequoiadb.inc
+
+# connect to conn1, clear databases in the beginning
+connection conn1;
+--disable_warnings
+DROP DATABASE IF EXISTS metasync_system_versioning_23500;
+--enable_warnings
+
+# connect to conn2, check databases are cleaned in the beginning
+connection conn2;
+--error ER_BAD_DB_ERROR
+SHOW CREATE DATABASE metasync_system_versioning_23500;
+
+# seqDB-23500
+# begin testing
+#
+# create/alter/drop system-versioning table
+connection conn1;
+CREATE DATABASE metasync_system_versioning_23500;
+USE metasync_system_versioning_23500;
+# create system-versioning table
+CREATE TABLE sys_version1 (
+   id int primary key,
+   name varchar(16),
+   start_timestamp TIMESTAMP(6) GENERATED ALWAYS as ROW START INVISIBLE,
+   end_timestamp TIMESTAMP(6) GENERATED ALWAYS as ROW END INVISIBLE,
+   PERIOD FOR SYSTEM_TIME (start_timestamp, end_timestamp)
+) WITH SYSTEM VERSIONING;
+CREATE OR REPLACE TABLE sys_version2 (
+   x int primary key,
+   y int
+) WITH SYSTEM VERSIONING;
+# check metadatas after create
+connection conn2;
+SHOW CREATE TABLE metasync_system_versioning_23500.sys_version1;
+SHOW CREATE TABLE metasync_system_versioning_23500.sys_version2;
+# create application-time periods table
+connection conn1;
+CREATE TABLE period_tab (
+   id int auto_increment primary key, 
+   start_time datetime,
+   end_time datetime,
+   PERIOD FOR dt_period(start_time, end_time));
+# check metadatas after create
+connection conn2;
+SHOW CREATE TABLE metasync_system_versioning_23500.period_tab;
+# create bitemporal table
+connection conn1;
+CREATE TABLE bitemporal_tab (
+   id int auto_increment primary key,
+   name varchar(32),
+   date_1 date,
+   date_2 date,
+   row_start timestamp(6) AS ROW START INVISIBLE,
+   row_end timestamp(6) AS ROW END INVISIBLE,
+   PERIOD FOR application_time(date_1, date_2),
+   PERIOD FOR system_time(row_start, row_end)) WITH SYSTEM VERSIONING;
+# check metadatas after create
+connection conn2;
+SHOW CREATE TABLE metasync_system_versioning_23500.bitemporal_tab;
+USE metasync_system_versioning_23500;
+#BUG #SEQUOIASQLMAINSTREAM-939
+# alter system-versioning table
+connection conn1;
+SET system_versioning_alter_history = KEEP;
+ALTER TABLE sys_version2 MODIFY y int WITHOUT SYSTEM VERSIONING, ADD COLUMN z int, algorithm=copy;
+SET system_versioning_alter_history = DEFAULT; 
+# check metadatas after alter
+connection conn2;
+SHOW CREATE TABLE sys_version2;
+# alter application-time periods table
+connection conn1;
+ALTER TABLE period_tab ADD COLUMN name varchar(64);
+# check metadatas after alter
+connection conn2;
+SHOW CREATE TABLE period_tab;
+# alter bitemporal table
+connection conn1;
+SET system_versioning_alter_history = KEEP;
+ALTER TABLE bitemporal_tab ADD COLUMN age int, CHANGE name name varchar(127);
+SET system_versioning_alter_history = DEFAULT; 
+# check metadatas after alter
+connection conn2;
+SHOW CREATE TABLE bitemporal_tab;
+# drop system-versioning table
+connection conn1;
+DROP TABLE sys_version1; 
+DROP TABLE sys_version2; 
+# check metadatas after drop
+connection conn2;
+--error ER_NO_SUCH_TABLE
+SHOW CREATE TABLE sys_version1;
+--error ER_NO_SUCH_TABLE
+SHOW CREATE TABLE sys_version2;
+# drop application-time periods table
+connection conn1;
+DROP TABLE period_tab;
+# check metadatas after drop
+connection conn2;
+--error ER_NO_SUCH_TABLE
+SHOW CREATE TABLE period_tab;
+# drop bitemporal table
+connection conn1;
+DROP TABLE bitemporal_tab;
+# check metadatas after drop
+connection conn2;
+--error ER_NO_SUCH_TABLE
+SHOW CREATE TABLE bitemporal_tab;
+
+# clear databases in the ending
+connection conn1;
+DROP DATABASE metasync_system_versioning_23500;
+# check databases are cleaned in the ending
+connection conn2;
+--error ER_BAD_DB_ERROR
+SHOW CREATE DATABASE metasync_system_versioning_23500;
+
+--source include/uninstall_sequoiadb.inc
+--source suite/metadata_sync_sequoiadb/inc/insts_disconnect_sequoiadb.inc

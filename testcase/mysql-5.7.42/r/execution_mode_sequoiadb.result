@@ -1,0 +1,451 @@
+set session sequoiadb_execute_only_in_mysql = on;
+Warnings:
+Warning	1287	'sequoiadb_execute_only_in_mysql' is deprecated and will be removed in a future release. Please use 'sequoiadb_execution_mode' instead
+select @@sequoiadb_execute_only_in_mysql;
+@@sequoiadb_execute_only_in_mysql
+1
+select @@sequoiadb_execution_mode;
+@@sequoiadb_execution_mode
+1
+set session sequoiadb_execute_only_in_mysql = off;
+Warnings:
+Warning	1287	'sequoiadb_execute_only_in_mysql' is deprecated and will be removed in a future release. Please use 'sequoiadb_execution_mode' instead
+select @@sequoiadb_execute_only_in_mysql;
+@@sequoiadb_execute_only_in_mysql
+0
+select @@sequoiadb_execution_mode;
+@@sequoiadb_execution_mode
+0
+set global sequoiadb_execute_only_in_mysql = on;
+Warnings:
+Warning	1228	Variable 'sequoiadb_execute_only_in_mysql' is a SESSION variable and can't be used with SET GLOBAL
+select @@sequoiadb_execute_only_in_mysql;
+@@sequoiadb_execute_only_in_mysql
+0
+select @@sequoiadb_execution_mode;
+@@sequoiadb_execution_mode
+0
+set sequoiadb_execute_only_in_mysql = on;
+Warnings:
+Warning	1287	'sequoiadb_execute_only_in_mysql' is deprecated and will be removed in a future release. Please use 'sequoiadb_execution_mode' instead
+select @@sequoiadb_execute_only_in_mysql;
+@@sequoiadb_execute_only_in_mysql
+1
+select @@sequoiadb_execution_mode;
+@@sequoiadb_execution_mode
+1
+set sequoiadb_execute_only_in_mysql = default;
+Warnings:
+Warning	1287	'sequoiadb_execute_only_in_mysql' is deprecated and will be removed in a future release. Please use 'sequoiadb_execution_mode' instead
+select @@sequoiadb_execute_only_in_mysql;
+@@sequoiadb_execute_only_in_mysql
+0
+select @@sequoiadb_execution_mode;
+@@sequoiadb_execution_mode
+0
+set sequoiadb_execute_only_in_mysql = off;
+Warnings:
+Warning	1287	'sequoiadb_execute_only_in_mysql' is deprecated and will be removed in a future release. Please use 'sequoiadb_execution_mode' instead
+select @@sequoiadb_execute_only_in_mysql;
+@@sequoiadb_execute_only_in_mysql
+0
+select @@sequoiadb_execution_mode;
+@@sequoiadb_execution_mode
+0
+set sequoiadb_execute_only_in_mysql = default;
+Warnings:
+Warning	1287	'sequoiadb_execute_only_in_mysql' is deprecated and will be removed in a future release. Please use 'sequoiadb_execution_mode' instead
+select @@sequoiadb_execute_only_in_mysql;
+@@sequoiadb_execute_only_in_mysql
+0
+select @@sequoiadb_execution_mode;
+@@sequoiadb_execution_mode
+0
+set session sequoiadb_execute_only_in_mysql = on;
+set session sequoiadb_execute_only_in_mysql = off;
+set session sequoiadb_execute_only_in_mysql = on;
+set session sequoiadb_execute_only_in_mysql = off;
+set session sequoiadb_execute_only_in_mysql = on;
+set session sequoiadb_execute_only_in_mysql = off;
+set session sequoiadb_execute_only_in_mysql = on;
+set session sequoiadb_execute_only_in_mysql = off;
+set session sequoiadb_execute_only_in_mysql = on;
+set session sequoiadb_execute_only_in_mysql = off;
+set session sequoiadb_execute_only_in_mysql = on;
+set session sequoiadb_execute_only_in_mysql = off;
+set session sequoiadb_execute_only_in_mysql = on;
+set session sequoiadb_execute_only_in_mysql = off;
+set session sequoiadb_execute_only_in_mysql = on;
+set session sequoiadb_execute_only_in_mysql = off;
+set session sequoiadb_execute_only_in_mysql = on;
+set session sequoiadb_execute_only_in_mysql = off;
+set session sequoiadb_execute_only_in_mysql = on;
+set session sequoiadb_execute_only_in_mysql = off;
+set session sequoiadb_execute_only_in_mysql = on;
+set session sequoiadb_execute_only_in_mysql = off;
+set session sequoiadb_execute_only_in_mysql = on;
+set session sequoiadb_execute_only_in_mysql = off;
+set session sequoiadb_execute_only_in_mysql = on;
+set session sequoiadb_execute_only_in_mysql = off;
+set session sequoiadb_execute_only_in_mysql = on;
+set session sequoiadb_execute_only_in_mysql = off;
+set session sequoiadb_execute_only_in_mysql = on;
+set session sequoiadb_execute_only_in_mysql = off;
+set session sequoiadb_execute_only_in_mysql = on;
+set session sequoiadb_execute_only_in_mysql = off;
+set session sequoiadb_execute_only_in_mysql = on;
+set session sequoiadb_execute_only_in_mysql = off;
+set session sequoiadb_execute_only_in_mysql = on;
+set session sequoiadb_execute_only_in_mysql = off;
+set session sequoiadb_execute_only_in_mysql = on;
+set session sequoiadb_execute_only_in_mysql = off;
+set session sequoiadb_execute_only_in_mysql = on;
+set session sequoiadb_execute_only_in_mysql = off;
+set session sequoiadb_execute_only_in_mysql = on;
+set session sequoiadb_execute_only_in_mysql = off;
+set session sequoiadb_execute_only_in_mysql = on;
+set session sequoiadb_execute_only_in_mysql = off;
+set session sequoiadb_execute_only_in_mysql = on;
+set session sequoiadb_execute_only_in_mysql = off;
+set session sequoiadb_execute_only_in_mysql = on;
+set session sequoiadb_execute_only_in_mysql = off;
+set session sequoiadb_execute_only_in_mysql = on;
+set session sequoiadb_execute_only_in_mysql = off;
+set session sequoiadb_execute_only_in_mysql = on;
+set session sequoiadb_execute_only_in_mysql = off;
+set session sequoiadb_execute_only_in_mysql = on;
+set session sequoiadb_execute_only_in_mysql = off;
+set session sequoiadb_execute_only_in_mysql = on;
+set session sequoiadb_execute_only_in_mysql = off;
+set session sequoiadb_execute_only_in_mysql = on;
+set session sequoiadb_execute_only_in_mysql = off;
+set session sequoiadb_execute_only_in_mysql = on;
+set session sequoiadb_execute_only_in_mysql = off;
+select @@sequoiadb_execute_only_in_mysql;
+@@sequoiadb_execute_only_in_mysql
+0
+select @@sequoiadb_execution_mode;
+@@sequoiadb_execution_mode
+0
+set session sequoiadb_execution_mode = 0;
+select @@sequoiadb_execute_only_in_mysql;
+@@sequoiadb_execute_only_in_mysql
+0
+select @@sequoiadb_execution_mode;
+@@sequoiadb_execution_mode
+0
+set session sequoiadb_execution_mode = 1;
+select @@sequoiadb_execute_only_in_mysql;
+@@sequoiadb_execute_only_in_mysql
+1
+select @@sequoiadb_execution_mode;
+@@sequoiadb_execution_mode
+1
+set session sequoiadb_execution_mode = 2;
+select @@sequoiadb_execute_only_in_mysql;
+@@sequoiadb_execute_only_in_mysql
+1
+select @@sequoiadb_execution_mode;
+@@sequoiadb_execution_mode
+2
+set global sequoiadb_execution_mode = 0;
+Warnings:
+Warning	1228	Variable 'sequoiadb_execution_mode' is a SESSION variable and can't be used with SET GLOBAL
+select @@sequoiadb_execute_only_in_mysql;
+@@sequoiadb_execute_only_in_mysql
+1
+select @@sequoiadb_execution_mode;
+@@sequoiadb_execution_mode
+2
+set global sequoiadb_execution_mode = 1;
+Warnings:
+Warning	1228	Variable 'sequoiadb_execution_mode' is a SESSION variable and can't be used with SET GLOBAL
+select @@sequoiadb_execute_only_in_mysql;
+@@sequoiadb_execute_only_in_mysql
+1
+select @@sequoiadb_execution_mode;
+@@sequoiadb_execution_mode
+2
+set global sequoiadb_execution_mode = 2;
+Warnings:
+Warning	1228	Variable 'sequoiadb_execution_mode' is a SESSION variable and can't be used with SET GLOBAL
+select @@sequoiadb_execute_only_in_mysql;
+@@sequoiadb_execute_only_in_mysql
+1
+select @@sequoiadb_execution_mode;
+@@sequoiadb_execution_mode
+2
+set sequoiadb_execution_mode = 0;
+select @@sequoiadb_execute_only_in_mysql;
+@@sequoiadb_execute_only_in_mysql
+0
+select @@sequoiadb_execution_mode;
+@@sequoiadb_execution_mode
+0
+set sequoiadb_execution_mode = 1;
+select @@sequoiadb_execute_only_in_mysql;
+@@sequoiadb_execute_only_in_mysql
+1
+select @@sequoiadb_execution_mode;
+@@sequoiadb_execution_mode
+1
+set sequoiadb_execution_mode = 2;
+select @@sequoiadb_execute_only_in_mysql;
+@@sequoiadb_execute_only_in_mysql
+1
+select @@sequoiadb_execution_mode;
+@@sequoiadb_execution_mode
+2
+set global sequoiadb_execution_mode = default;
+Warnings:
+Warning	1228	Variable 'sequoiadb_execution_mode' is a SESSION variable and can't be used with SET GLOBAL
+select @@sequoiadb_execute_only_in_mysql;
+@@sequoiadb_execute_only_in_mysql
+1
+select @@sequoiadb_execution_mode;
+@@sequoiadb_execution_mode
+2
+set sequoiadb_execution_mode = default;
+select @@sequoiadb_execute_only_in_mysql;
+@@sequoiadb_execute_only_in_mysql
+0
+select @@sequoiadb_execution_mode;
+@@sequoiadb_execution_mode
+0
+set session sequoiadb_execution_mode = default;
+select @@sequoiadb_execute_only_in_mysql;
+@@sequoiadb_execute_only_in_mysql
+0
+select @@sequoiadb_execution_mode;
+@@sequoiadb_execution_mode
+0
+set sequoiadb_execution_mode = default;
+select @@sequoiadb_execute_only_in_mysql;
+@@sequoiadb_execute_only_in_mysql
+0
+select @@sequoiadb_execution_mode;
+@@sequoiadb_execution_mode
+0
+set session sequoiadb_execution_mode = 0;
+set session sequoiadb_execution_mode = 1;
+set session sequoiadb_execution_mode = 2;
+set session sequoiadb_execution_mode = 0;
+set session sequoiadb_execution_mode = 1;
+set session sequoiadb_execution_mode = 2;
+set session sequoiadb_execution_mode = 0;
+set session sequoiadb_execution_mode = 1;
+set session sequoiadb_execution_mode = 2;
+set session sequoiadb_execution_mode = 0;
+set session sequoiadb_execution_mode = 1;
+set session sequoiadb_execution_mode = 2;
+set session sequoiadb_execution_mode = 0;
+set session sequoiadb_execution_mode = 1;
+set session sequoiadb_execution_mode = 2;
+set session sequoiadb_execution_mode = 0;
+set session sequoiadb_execution_mode = 1;
+set session sequoiadb_execution_mode = 2;
+set session sequoiadb_execution_mode = 0;
+set session sequoiadb_execution_mode = 1;
+set session sequoiadb_execution_mode = 2;
+set session sequoiadb_execution_mode = 0;
+set session sequoiadb_execution_mode = 1;
+set session sequoiadb_execution_mode = 2;
+set session sequoiadb_execution_mode = 0;
+set session sequoiadb_execution_mode = 1;
+set session sequoiadb_execution_mode = 2;
+set session sequoiadb_execution_mode = 0;
+set session sequoiadb_execution_mode = 1;
+set session sequoiadb_execution_mode = 2;
+set session sequoiadb_execution_mode = 0;
+set session sequoiadb_execution_mode = 1;
+set session sequoiadb_execution_mode = 2;
+set session sequoiadb_execution_mode = 0;
+set session sequoiadb_execution_mode = 1;
+set session sequoiadb_execution_mode = 2;
+set session sequoiadb_execution_mode = 0;
+set session sequoiadb_execution_mode = 1;
+set session sequoiadb_execution_mode = 2;
+set session sequoiadb_execution_mode = 0;
+set session sequoiadb_execution_mode = 1;
+set session sequoiadb_execution_mode = 2;
+set session sequoiadb_execution_mode = 0;
+set session sequoiadb_execution_mode = 1;
+set session sequoiadb_execution_mode = 2;
+set session sequoiadb_execution_mode = 0;
+set session sequoiadb_execution_mode = 1;
+set session sequoiadb_execution_mode = 2;
+set session sequoiadb_execution_mode = 0;
+set session sequoiadb_execution_mode = 1;
+set session sequoiadb_execution_mode = 2;
+set session sequoiadb_execution_mode = 0;
+set session sequoiadb_execution_mode = 1;
+set session sequoiadb_execution_mode = 2;
+set session sequoiadb_execution_mode = 0;
+set session sequoiadb_execution_mode = 1;
+set session sequoiadb_execution_mode = 2;
+set session sequoiadb_execution_mode = 0;
+set session sequoiadb_execution_mode = 1;
+set session sequoiadb_execution_mode = 2;
+set session sequoiadb_execution_mode = 0;
+set session sequoiadb_execution_mode = 1;
+set session sequoiadb_execution_mode = 2;
+set session sequoiadb_execution_mode = 0;
+set session sequoiadb_execution_mode = 1;
+set session sequoiadb_execution_mode = 2;
+set session sequoiadb_execution_mode = 0;
+set session sequoiadb_execution_mode = 1;
+set session sequoiadb_execution_mode = 2;
+set session sequoiadb_execution_mode = 0;
+set session sequoiadb_execution_mode = 1;
+set session sequoiadb_execution_mode = 2;
+set session sequoiadb_execution_mode = 0;
+set session sequoiadb_execution_mode = 1;
+set session sequoiadb_execution_mode = 2;
+set session sequoiadb_execution_mode = 0;
+set session sequoiadb_execution_mode = 1;
+set session sequoiadb_execution_mode = 2;
+set session sequoiadb_execution_mode = 0;
+set session sequoiadb_execution_mode = 1;
+set session sequoiadb_execution_mode = 2;
+set session sequoiadb_execution_mode = 0;
+set session sequoiadb_execution_mode = 1;
+set session sequoiadb_execution_mode = 2;
+set session sequoiadb_execution_mode = 0;
+set session sequoiadb_execution_mode = 1;
+set session sequoiadb_execution_mode = 2;
+set session sequoiadb_execution_mode = 0;
+set session sequoiadb_execution_mode = 1;
+set session sequoiadb_execution_mode = 2;
+select @@sequoiadb_execute_only_in_mysql;
+@@sequoiadb_execute_only_in_mysql
+1
+select @@sequoiadb_execution_mode;
+@@sequoiadb_execution_mode
+2
+set session sequoiadb_execution_mode = 3;
+Warnings:
+Warning	1292	Truncated incorrect sequoiadb_execution_mode value: '3'
+select @@sequoiadb_execute_only_in_mysql;
+@@sequoiadb_execute_only_in_mysql
+1
+select @@sequoiadb_execution_mode;
+@@sequoiadb_execution_mode
+2
+set session sequoiadb_execution_mode = -1;
+Warnings:
+Warning	1292	Truncated incorrect sequoiadb_execution_mode value: '-1'
+select @@sequoiadb_execute_only_in_mysql;
+@@sequoiadb_execute_only_in_mysql
+0
+select @@sequoiadb_execution_mode;
+@@sequoiadb_execution_mode
+0
+set session sequoiadb_execution_mode = ;
+ERROR 42000: You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near '' at line 1
+set $%& sequoiadb_execution_mode = 0;
+ERROR 42000: You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near '%& sequoiadb_execution_mode = 0' at line 1
+set all sequoiadb_execution_mode = 0;
+ERROR 42000: You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near 'all sequoiadb_execution_mode = 0' at line 1
+set session sequoiadb_execution_mode = 0;
+select @@sequoiadb_execute_only_in_mysql;
+@@sequoiadb_execute_only_in_mysql
+0
+select @@sequoiadb_execution_mode;
+@@sequoiadb_execution_mode
+0
+set session sequoiadb_execution_mode = 1;
+select @@sequoiadb_execute_only_in_mysql;
+@@sequoiadb_execute_only_in_mysql
+1
+select @@sequoiadb_execution_mode;
+@@sequoiadb_execution_mode
+1
+set session sequoiadb_execution_mode = 0;
+set session sequoiadb_execution_mode = 2;
+select @@sequoiadb_execute_only_in_mysql;
+@@sequoiadb_execute_only_in_mysql
+1
+select @@sequoiadb_execution_mode;
+@@sequoiadb_execution_mode
+2
+set session sequoiadb_execution_mode = 1;
+set session sequoiadb_execution_mode = 0;
+select @@sequoiadb_execute_only_in_mysql;
+@@sequoiadb_execute_only_in_mysql
+0
+select @@sequoiadb_execution_mode;
+@@sequoiadb_execution_mode
+0
+set session sequoiadb_execution_mode = 1;
+select @@sequoiadb_execute_only_in_mysql;
+@@sequoiadb_execute_only_in_mysql
+1
+select @@sequoiadb_execution_mode;
+@@sequoiadb_execution_mode
+1
+set session sequoiadb_execution_mode = 2;
+select @@sequoiadb_execute_only_in_mysql;
+@@sequoiadb_execute_only_in_mysql
+1
+select @@sequoiadb_execution_mode;
+@@sequoiadb_execution_mode
+2
+set session sequoiadb_execution_mode = 0;
+select @@sequoiadb_execute_only_in_mysql;
+@@sequoiadb_execute_only_in_mysql
+0
+select @@sequoiadb_execution_mode;
+@@sequoiadb_execution_mode
+0
+set session sequoiadb_execution_mode = 2;
+set session sequoiadb_execution_mode = 1;
+select @@sequoiadb_execute_only_in_mysql;
+@@sequoiadb_execute_only_in_mysql
+1
+select @@sequoiadb_execution_mode;
+@@sequoiadb_execution_mode
+1
+set session sequoiadb_execution_mode = 2;
+set session sequoiadb_execution_mode = 2;
+select @@sequoiadb_execute_only_in_mysql;
+@@sequoiadb_execute_only_in_mysql
+1
+select @@sequoiadb_execution_mode;
+@@sequoiadb_execution_mode
+2
+set session sequoiadb_execute_only_in_mysql = on;
+Warnings:
+Warning	1287	'sequoiadb_execute_only_in_mysql' is deprecated and will be removed in a future release. Please use 'sequoiadb_execution_mode' instead
+select @@sequoiadb_execute_only_in_mysql;
+@@sequoiadb_execute_only_in_mysql
+1
+select @@sequoiadb_execution_mode;
+@@sequoiadb_execution_mode
+2
+set session sequoiadb_execute_only_in_mysql = off;
+Warnings:
+Warning	1287	'sequoiadb_execute_only_in_mysql' is deprecated and will be removed in a future release. Please use 'sequoiadb_execution_mode' instead
+select @@sequoiadb_execute_only_in_mysql;
+@@sequoiadb_execute_only_in_mysql
+0
+select @@sequoiadb_execution_mode;
+@@sequoiadb_execution_mode
+0
+set session sequoiadb_execute_only_in_mysql = on;
+Warnings:
+Warning	1287	'sequoiadb_execute_only_in_mysql' is deprecated and will be removed in a future release. Please use 'sequoiadb_execution_mode' instead
+select @@sequoiadb_execute_only_in_mysql;
+@@sequoiadb_execute_only_in_mysql
+1
+select @@sequoiadb_execution_mode;
+@@sequoiadb_execution_mode
+1
+set session sequoiadb_execute_only_in_mysql = off;
+Warnings:
+Warning	1287	'sequoiadb_execute_only_in_mysql' is deprecated and will be removed in a future release. Please use 'sequoiadb_execution_mode' instead
+select @@sequoiadb_execute_only_in_mysql;
+@@sequoiadb_execute_only_in_mysql
+0
+select @@sequoiadb_execution_mode;
+@@sequoiadb_execution_mode
+0

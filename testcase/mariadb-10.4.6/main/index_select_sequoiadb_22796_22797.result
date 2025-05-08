@@ -1,0 +1,98 @@
+CREATE DATABASE index_select_sequoiadb_22796;
+USE index_select_sequoiadb_22796;
+create table t1 (a int, b int);
+load data infile '../../std_data/loaddata_large_sequoiadb_2.dat' ignore into table t1 fields terminated by ',';
+alter table t1 add primary key(a);
+alter table t1 add unique index idx_b(b);
+alter table t1 add index idx_ab(a, b);
+alter table t1 add index idx_ba(b, a);
+create table t2 (a int, b int);
+load data infile '../../std_data/loaddata_large_sequoiadb_3.dat' ignore into table t2 fields terminated by ',';
+alter table t2 add primary key(a);
+alter table t2 add unique index idx_b(b);
+alter table t2 add index idx_ab(a, b);
+alter table t2 add index idx_ba(b, a);
+explain select a, b, a in (select a from t1 where a=t2.a) Z from t2;
+id	select_type	table	type	possible_keys	key	key_len	ref	rows	Extra
+1	PRIMARY	t2	index	NULL	idx_ab	9	NULL	x	Using index
+2	DEPENDENT SUBQUERY	t1	eq_ref	PRIMARY,idx_ab,idx_ba	PRIMARY	4	index_select_sequoiadb_22796.t2.a	x	Using where; Using index
+analyze table t1;
+Table	Op	Msg_type	Msg_text
+index_select_sequoiadb_22796.t1	analyze	status	Engine-independent statistics collected
+index_select_sequoiadb_22796.t1	analyze	status	OK
+analyze table t2;
+Table	Op	Msg_type	Msg_text
+index_select_sequoiadb_22796.t2	analyze	status	Engine-independent statistics collected
+index_select_sequoiadb_22796.t2	analyze	status	OK
+explain select a, b, a in (select a from t1 where a=t2.a) Z from t2;
+id	select_type	table	type	possible_keys	key	key_len	ref	rows	Extra
+1	PRIMARY	t2	index	NULL	idx_ab	9	NULL	x	Using index
+2	DEPENDENT SUBQUERY	t1	eq_ref	PRIMARY,idx_ab,idx_ba	PRIMARY	4	index_select_sequoiadb_22796.t2.a	x	Using where; Using index
+select a, b, a in (select a from t1 where a=t2.a) Z from t2 limit 10 ;
+a	b	Z
+11	11	1
+12	12	1
+22	22	1
+24	24	0
+29	29	1
+39	39	0
+4	4	1
+40	40	1
+7	7	1
+8	8	1
+explain select a, b, b in (select b from t1 where a=t2.b) Z from t2;
+id	select_type	table	type	possible_keys	key	key_len	ref	rows	Extra
+1	PRIMARY	t2	index	NULL	idx_ab	9	NULL	x	Using index
+2	DEPENDENT SUBQUERY	t1	eq_ref	PRIMARY,idx_b,idx_ab,idx_ba	PRIMARY	4	index_select_sequoiadb_22796.t2.b	x	Using where
+analyze table t1;
+Table	Op	Msg_type	Msg_text
+index_select_sequoiadb_22796.t1	analyze	status	Engine-independent statistics collected
+index_select_sequoiadb_22796.t1	analyze	status	OK
+analyze table t2;
+Table	Op	Msg_type	Msg_text
+index_select_sequoiadb_22796.t2	analyze	status	Engine-independent statistics collected
+index_select_sequoiadb_22796.t2	analyze	status	OK
+explain select a, b, b in (select b from t1 where a=t2.b) Z from t2;
+id	select_type	table	type	possible_keys	key	key_len	ref	rows	Extra
+1	PRIMARY	t2	index	NULL	idx_ab	9	NULL	x	Using index
+2	DEPENDENT SUBQUERY	t1	eq_ref	PRIMARY,idx_b,idx_ab,idx_ba	PRIMARY	4	index_select_sequoiadb_22796.t2.b	x	Using where
+select a, b, b in (select b from t1 where a=t2.b) Z from t2 limit 10;
+a	b	Z
+11	11	1
+12	12	1
+22	22	1
+24	24	0
+29	29	1
+39	39	0
+4	4	1
+40	40	1
+7	7	1
+8	8	1
+explain select * from t1 where a = 1 or b = 1;
+id	select_type	table	type	possible_keys	key	key_len	ref	rows	Extra
+1	SIMPLE	t1	index_merge	PRIMARY,idx_b,idx_ab,idx_ba	PRIMARY,idx_b	4,5	NULL	x	Using sdb_union(PRIMARY,idx_b); Using where with pushed condition
+analyze table t1;
+Table	Op	Msg_type	Msg_text
+index_select_sequoiadb_22796.t1	analyze	status	Engine-independent statistics collected
+index_select_sequoiadb_22796.t1	analyze	status	OK
+analyze table t2;
+Table	Op	Msg_type	Msg_text
+index_select_sequoiadb_22796.t2	analyze	status	Engine-independent statistics collected
+index_select_sequoiadb_22796.t2	analyze	status	OK
+explain select a, b, b in (select b from t1 where a=t2.b) Z from t2;
+id	select_type	table	type	possible_keys	key	key_len	ref	rows	Extra
+1	PRIMARY	t2	index	NULL	idx_ab	9	NULL	x	Using index
+2	DEPENDENT SUBQUERY	t1	eq_ref	PRIMARY,idx_b,idx_ab,idx_ba	PRIMARY	4	index_select_sequoiadb_22796.t2.b	x	Using where
+select a, b, b in (select b from t1 where a=t2.b) Z from t2 limit 10;
+a	b	Z
+11	11	1
+12	12	1
+22	22	1
+24	24	0
+29	29	1
+39	39	0
+4	4	1
+40	40	1
+7	7	1
+8	8	1
+DROP DATABASE index_select_sequoiadb_22796;

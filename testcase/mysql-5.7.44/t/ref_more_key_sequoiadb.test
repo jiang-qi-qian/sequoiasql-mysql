@@ -1,0 +1,60 @@
+#seqDB-32223
+--source include/have_sequoiadb.inc
+
+--disable_warnings
+drop database if exists db_ref_more_key_sequoiadb;
+--enable_warnings
+
+create database db_ref_more_key_sequoiadb;
+drop database db_ref_more_key_sequoiadb;
+create database db_ref_more_key_sequoiadb;
+use db_ref_more_key_sequoiadb;
+
+set session optimizer_trace="enabled=on";
+
+create table t1 (a int,b int,c int,d int);
+alter table t1 add index idx_ac (a,c);
+alter table t1 add index idx_ab (a,b);
+alter table t1 add index idx_abc(a,b,c);
+insert into t1 values(1,1,1,1),(1,2,2,2),(1,3,3,3),(1,4,4,4),(1,5,5,5),(1,6,6,6),(1,7,7,7),(1,8,8,8),(1,9,9,9);
+create table t2 (a int,b int,c int,d int);
+insert into t2 values(1,2,3,4),(2,3,4,5);
+
+let $i = 2;
+while($i){
+flush tables;
+if($i == 2) {set session ref_prefer_more_keypart = off;}
+if($i == 1) {set session ref_prefer_more_keypart = on;}
+
+## cost same
+# ref const and key part count same
+select * from t1 where a=1 and d=1;
+SELECT * FROM information_schema.optimizer_trace;
+explain select * from t1 where a=1 and d=1;
+
+# ref field and key part count same
+select * from t2 join t1 on t2.a=t1.a and t2.b=t1.d;        
+SELECT * FROM information_schema.optimizer_trace;
+explain select * from t2 join t1 on t2.a=t1.a and t2.b=t1.d;
+
+# ref const and key part count different
+select * from t1 where a=1 and b=1 and c=1;
+SELECT * FROM information_schema.optimizer_trace;
+explain select * from t1 where a=1 and b=1 and c=1;
+
+# ref field and key part count different
+select * from t2 join t1 on t2.a=t1.a and t2.b=t1.b and t2.c=t1.c;
+SELECT * FROM information_schema.optimizer_trace;
+explain select * from t2 join t1 on t2.a=t1.a and t2.b=t1.b and t2.c=t1.c;
+
+analyze table t1,t2;
+## cost different
+select * from t1 where a=1 and c=0;      
+SELECT * FROM information_schema.optimizer_trace;
+explain select * from t1 where a=1 and c=0;
+
+dec $i;
+}
+
+drop database db_ref_more_key_sequoiadb;
+--source include/uninstall_sequoiadb.inc

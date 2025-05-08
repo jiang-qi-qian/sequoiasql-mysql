@@ -1,0 +1,36 @@
+connection conn1;
+DROP DATABASE IF EXISTS test;
+connection conn2;
+SHOW CREATE DATABASE test;
+ERROR 42000: Unknown database 'test'
+connection conn1;
+create database test;
+use test;
+set server_ha_wait_sync_timeout = 10;
+create table t1 ( x INT, y INT );
+set server_ha_wait_sync_timeout = 0;
+insert into t1 values (1,1);
+connection conn2;
+select * from test.t1;
+x	y
+1	1
+use test;
+show create table t1;
+Table	Create Table
+t1	CREATE TABLE `t1` (
+  `x` int(11) DEFAULT NULL,
+  `y` int(11) DEFAULT NULL
+) ENGINE=SequoiaDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin
+connection conn1;
+set server_ha_wait_sync_timeout = 10;
+alter table t1 drop column x, add column z int default 1;
+set server_ha_wait_sync_timeout = 0;
+connection conn2;
+select * from t1;
+y	z
+1	1
+connection conn1;
+drop database test;
+connection conn2;
+SHOW CREATE DATABASE test;
+ERROR 42000: Unknown database 'test'

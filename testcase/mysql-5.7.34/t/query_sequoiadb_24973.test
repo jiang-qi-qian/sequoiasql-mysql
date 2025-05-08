@@ -1,0 +1,104 @@
+--source include/have_sequoiadb.inc
+
+--disable_warnings
+DROP TABLE if EXISTS query_sequoiadb_24973_1;
+DROP TABLE if EXISTS query_sequoiadb_24973_2;
+--enable_warnings
+
+CREATE TABLE `query_sequoiadb_24973_1` (
+    `ID` decimal(22, 0) NOT NULL,
+    `USER_NAME` text COLLATE utf8mb4_bin DEFAULT NULL,
+    `PASSWORD` varchar(255) COLLATE utf8mb4_bin DEFAULT NULL,
+    `REAL_NAME` text COLLATE utf8mb4_bin DEFAULT NULL,
+    `MANAGER_ID` decimal(22, 0) DEFAULT NULL,
+    `SEX` decimal(22, 0) DEFAULT NULL,
+    `USER_TYPE` decimal(22, 0) DEFAULT NULL,
+    `ORG_ID` decimal(22, 0) DEFAULT NULL,
+    `OFFICE_PHONE` varchar(50) COLLATE utf8mb4_bin DEFAULT NULL,
+    `MOBILE_PHONE` varchar(50) COLLATE utf8mb4_bin DEFAULT NULL,
+    `EMAIL` varchar(50) COLLATE utf8mb4_bin DEFAULT NULL,
+    `EDIT_STATUS` decimal(22, 0) DEFAULT NULL,
+    `ENDUSERFLAG` decimal(22, 0) DEFAULT NULL,
+    `USER_NO` varchar(50) COLLATE utf8mb4_bin DEFAULT NULL,
+    `IS_PWD_MODIFY` decimal(22, 0) DEFAULT NULL,
+    `LICENSE_TYPE` tinyint(1) DEFAULT NULL,
+    `OTHER_CONN` varchar(100) COLLATE utf8mb4_bin DEFAULT NULL,
+    `F1` text COLLATE utf8mb4_bin DEFAULT NULL,
+    `F2` text COLLATE utf8mb4_bin DEFAULT NULL,
+    `PWD_MODIFY_DATE` datetime DEFAULT NULL,
+    `WECHAT` varchar(150) COLLATE utf8mb4_bin DEFAULT NULL,
+    `F3` text COLLATE utf8mb4_bin DEFAULT NULL,
+    `EXT1` text COLLATE utf8mb4_bin DEFAULT NULL,
+    `EXT2` text COLLATE utf8mb4_bin DEFAULT NULL,
+    `EXT3` text COLLATE utf8mb4_bin DEFAULT NULL,
+    `EXT4` text COLLATE utf8mb4_bin DEFAULT NULL,
+    `EXT5` text COLLATE utf8mb4_bin DEFAULT NULL,
+    `IS_INFO_MODIFY` decimal(22, 0) DEFAULT NULL,
+    `INFO_MODIFY_DATE` datetime DEFAULT NULL,
+    `ENTERPRISE_NO` varchar(100) COLLATE utf8mb4_bin DEFAULT NULL,
+    `ENTERPRISE_NAME` varchar(100) COLLATE utf8mb4_bin DEFAULT NULL,
+    `TYPE` decimal(22, 0) DEFAULT NULL,
+    `ITSM_ID` decimal(22, 0) DEFAULT NULL,
+    `REAL_NAME_E` text COLLATE utf8mb4_bin DEFAULT NULL,
+    `TITLE` varchar(50) COLLATE utf8mb4_bin DEFAULT NULL,
+    `PHYSICAL_OFFICE` varchar(100) COLLATE utf8mb4_bin DEFAULT NULL,
+    `OFFICE_AREA_B` varchar(100) COLLATE utf8mb4_bin DEFAULT NULL,
+    `OFFICE_AREA_S` varchar(100) COLLATE utf8mb4_bin DEFAULT NULL,
+    `POST_ADDRESS` text COLLATE utf8mb4_bin DEFAULT NULL,
+    `IS_VIP` char(1) COLLATE utf8mb4_bin DEFAULT NULL,
+    `USER_CODE` varchar(50) COLLATE utf8mb4_bin DEFAULT NULL,
+    `AGNUM` varchar(20) COLLATE utf8mb4_bin DEFAULT NULL,
+    `TITLE_CLASS` varchar(20) COLLATE utf8mb4_bin DEFAULT NULL,
+    `USERINTRODUCTION` varchar(200) COLLATE utf8mb4_bin DEFAULT NULL,
+    `SAASFLAG` decimal(20, 0) DEFAULT NULL,
+    `SAASROOTFLAG` decimal(20, 0) DEFAULT NULL,
+    `DINGID` varchar(200) COLLATE utf8mb4_bin DEFAULT NULL,
+    `WXANDDINGTALK` decimal(20, 0) DEFAULT NULL,
+    `CREATOR_ID` decimal(22, 0) DEFAULT NULL,
+    `USER_CREATE_DATE` datetime DEFAULT NULL,
+    PRIMARY KEY (`ID`)
+) ENGINE = SequoiaDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin;
+
+CREATE TABLE `query_sequoiadb_24973_2` (
+    `ID` decimal(22, 0) NOT NULL,
+    `FLOW_ID` decimal(22, 0) DEFAULT NULL,
+    `REPO_CODE` varchar(100) COLLATE utf8mb4_bin DEFAULT NULL,
+    `SOUECE` decimal(22, 0) DEFAULT NULL,
+    `SORT_ID` decimal(22, 0) DEFAULT NULL,
+    `OS_ID` decimal(22, 0) DEFAULT NULL,
+    `SERVICE_ID` decimal(22, 0) DEFAULT NULL,
+    `SUMMARY` text COLLATE utf8mb4_bin DEFAULT NULL,
+    `KEY_WORD` text COLLATE utf8mb4_bin DEFAULT NULL,
+    `SYMPTOM` longtext COLLATE utf8mb4_bin DEFAULT NULL,
+    `ORIENTATION` longtext COLLATE utf8mb4_bin DEFAULT NULL,
+    `SOLUTION_TITLE` text COLLATE utf8mb4_bin DEFAULT NULL,
+    `SOLUTION_TYPE` decimal(22, 0) DEFAULT NULL,
+    `SOLUTION` longtext COLLATE utf8mb4_bin DEFAULT NULL,
+    `CAUSE` longtext COLLATE utf8mb4_bin DEFAULT NULL,
+    `AUTHOR_ID` decimal(22, 0) DEFAULT NULL,
+    `CREATOR_GROUP_ID` decimal(22, 0) DEFAULT NULL,
+	`CREATOR` decimal(22, 0) DEFAULT NULL,
+    `CREATE_DATE` datetime DEFAULT NULL,
+    `MODIFIER_GROUP_ID` decimal(22, 0) DEFAULT NULL,
+    `MODIFIER` decimal(22, 0) DEFAULT NULL,
+    `KMMANAGERGROUP` decimal(22, 0) DEFAULT NULL,
+    `KMMANAGERID` decimal(22, 0) DEFAULT NULL,
+    `REFUSE_CAUSE` text COLLATE utf8mb4_bin DEFAULT NULL,
+    `APPROVE_MAN` decimal(22, 0) DEFAULT NULL,
+    `STATUS` decimal(22, 0) DEFAULT NULL,
+    `FLOW_MANGER_USERNAME` text COLLATE utf8mb4_bin DEFAULT NULL,
+    PRIMARY KEY (`ID`),
+    KEY `PK_TBL_ITSM_REPOSITORY_APPLY_S` (`STATUS`)
+) ENGINE = SequoiaDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin;
+
+INSERT INTO query_sequoiadb_24973_2 values(110566631, 110566632, "KM-20210421-0003", NULL, 110052676, NULL, 1000023, NULL, NULL, "2021-04-21 20:04:27", NULL, NULL, NULL, NULL, 123, 100001, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
+
+SELECT count(*) AS col_0_0_ 
+FROM
+query_sequoiadb_24973_2 tblitsmrep0_,
+query_sequoiadb_24973_1 tblsystemu1_
+WHERE
+tblitsmrep0_.CREATOR = tblsystemu1_.id and 'luceneKey' = 'luceneKey' and (tblitsmrep0_.CREATOR = 100001 or (tblsystemu1_.MANAGER_ID is not null ) and tblsystemu1_.MANAGER_ID = 100001 or concat( ',', tblitsmrep0_.FLOW_MANGER_USERNAME, ',') like '%,admin,%' or 'ADMIN' in ( '999999999999', 'DM_APPLICANT', 'DM_BRANCH_APPLICANT', 'init_role', 'DM_VERIFIER', 'DM_EXECUTOR', 'DM_ORDINATOR', 'shuju_table', 'DM_DEVELOPER', 'ADMIN' ) or 'sys_invisibleman' in ( '999999999999', 'DM_APPLICANT', 'DM_BRANCH_APPLICANT', 'init_role', 'DM_VERIFIER', 'DM_EXECUTOR', 'DM_ORDINATOR','shuju_table', 'DM_DEVELOPER', 'ADMIN' ) or 1 = 1) and 'other' = 'other' and 1 = 1 and (tblitsmrep0_.STATUS = 40 or tblitsmrep0_.STATUS = 10 and tblitsmrep0_.CREATOR = 100001 or tblitsmrep0_.STATUS = 20 and tblitsmrep0_.KMMANAGERID = 100001) and 'filter' = 'filter' order by tblitsmrep0_.CREATE_DATE DESC;
+
+DROP TABLE query_sequoiadb_24973_2;
+DROP TABLE query_sequoiadb_24973_1;

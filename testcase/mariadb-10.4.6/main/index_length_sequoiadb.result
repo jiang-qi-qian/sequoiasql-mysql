@@ -1,0 +1,70 @@
+DROP TABLE IF EXISTS t1;
+create table t1(a char(255), primary key(a))default charset =utf8;
+insert into t1 values(repeat('a',255));
+insert into t1 values('a');
+insert into t1 values('aaa');
+select * from t1 where a = 'aaa';
+a
+aaa
+alter table t1 drop primary key;
+create index a on t1(a);
+select * from t1 where a = 'aaa';
+a
+aaa
+drop index a on t1;
+alter table t1 add unique (`a`);
+select * from t1 where a = 'aaa';
+a
+aaa
+drop table t1;
+create table t1(a varchar(65500));
+insert into t1 values(repeat('a',4083));
+insert into t1 values('a');
+insert into t1 values('aaa');
+create index a on t1(a(3072));
+insert into t1 values(repeat('a',4083));
+insert into t1 values(repeat('a',4084));
+ERROR HY000: Index key is too large
+select * from t1 where a = 'aaa';
+a
+aaa
+drop index a on t1;
+insert into t1 values(repeat('a',4084));
+select * from t1 where a = 'aaa';
+a
+aaa
+create index a on t1(a(3073));
+ERROR HY000: Index key is too large
+drop table t1;
+create table t1(a text);
+insert into t1 values(repeat('a',4083));
+insert into t1 values('a');
+insert into t1 values('aaa');
+create index a on t1(a(3072));
+insert into t1 values(repeat('a',4083));
+insert into t1 values(repeat('a',4084));
+ERROR HY000: Index key is too large
+select * from t1 where a = 'aaa';
+a
+aaa
+drop index a on t1;
+insert into t1 values(repeat('a',4084));
+select * from t1 where a = 'aaa';
+a
+aaa
+create index a on t1(a(3073));
+ERROR HY000: Index key is too large
+drop table t1;
+CREATE TABLE t1 (a char,b varchar(3072),KEY (a,b))engine=sequoiadb;
+ERROR 42000: Specified key was too long; max key length is 3072 bytes
+create table t1(a text);
+create index aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa on t1(a(3072));
+ERROR 42000: Identifier name 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa' is too long
+create index aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa on t1(a(3072));
+insert into t1 values(repeat('a',10));
+insert into t1 values('a');
+insert into t1 values(repeat('a',3));
+select * from t1 where a = 'aaa';
+a
+aaa
+drop table t1;

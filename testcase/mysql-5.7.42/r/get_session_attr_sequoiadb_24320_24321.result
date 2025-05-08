@@ -1,0 +1,58 @@
+use information_schema;
+set session transaction_isolation='READ-COMMITTED';
+desc SDB_SESSION_ATTR_CURRENT;
+Field	Type	Null	Key	Default	Extra
+PREFERRED_INSTANCE	varchar(80)	YES		NULL	
+PREFERRED_INSTANCE_MODE	varchar(16)	YES		NULL	
+PREFERRED_STRICT	tinyint(1)	YES		NULL	
+PREFERRED_PERIOD	int(1)	YES		NULL	
+TIMEOUT	int(1)	YES		NULL	
+TRANS_ISOLATION	int(1)	YES		NULL	
+TRANS_TIMEOUT	int(1)	YES		NULL	
+TRANS_USE_RBS	tinyint(1)	YES		NULL	
+TRANS_LOCK_WAIT	tinyint(1)	YES		NULL	
+TRANS_AUTO_COMMIT	tinyint(1)	YES		NULL	
+TRANS_AUTO_ROLLBACK	tinyint(1)	YES		NULL	
+TRANS_RC_COUNT	tinyint(1)	YES		NULL	
+SOURCE	varchar(80)	YES		NULL	
+select PREFERRED_INSTANCE from SDB_SESSION_ATTR_CURRENT;
+PREFERRED_INSTANCE
+M
+select PREFERRED_INSTANCE,PREFERRED_INSTANCE_MODE from SDB_SESSION_ATTR_CURRENT;
+PREFERRED_INSTANCE	PREFERRED_INSTANCE_MODE
+M	random
+select * from SDB_SESSION_ATTR_CURRENT;
+PREFERRED_INSTANCE	PREFERRED_INSTANCE_MODE	PREFERRED_STRICT	PREFERRED_PERIOD	TIMEOUT	TRANS_ISOLATION	TRANS_TIMEOUT	TRANS_USE_RBS	TRANS_LOCK_WAIT	TRANS_AUTO_COMMIT	TRANS_AUTO_ROLLBACK	TRANS_RC_COUNT	SOURCE
+M	random	0	60	-1	1	3	1	0	1	0	1	MySQL:hostname:pid:tid
+set session sequoiadb_preferred_instance='M';
+set session sequoiadb_preferred_strict='on';
+set session sequoiadb_preferred_instance='1';
+select * from SDB_SESSION_ATTR_CURRENT;
+PREFERRED_INSTANCE	PREFERRED_INSTANCE_MODE	PREFERRED_STRICT	PREFERRED_PERIOD	TIMEOUT	TRANS_ISOLATION	TRANS_TIMEOUT	TRANS_USE_RBS	TRANS_LOCK_WAIT	TRANS_AUTO_COMMIT	TRANS_AUTO_ROLLBACK	TRANS_RC_COUNT	SOURCE
+1	random	1	60	-1	1	3	1	0	1	0	1	MySQL:hostname:pid:tid
+set session sequoiadb_preferred_instance='1,2';
+select * from SDB_SESSION_ATTR_CURRENT;
+PREFERRED_INSTANCE	PREFERRED_INSTANCE_MODE	PREFERRED_STRICT	PREFERRED_PERIOD	TIMEOUT	TRANS_ISOLATION	TRANS_TIMEOUT	TRANS_USE_RBS	TRANS_LOCK_WAIT	TRANS_AUTO_COMMIT	TRANS_AUTO_ROLLBACK	TRANS_RC_COUNT	SOURCE
+[ 1, 2 ]	random	1	60	-1	1	3	1	0	1	0	1	MySQL:hostname:pid:tid
+set session sequoiadb_preferred_instance='M';
+set session sequoiadb_preferred_instance_mode='ordered';
+set session sequoiadb_preferred_period=59;
+set session sequoiadb_lock_wait_timeout=59;
+create database test_get_session_attr;
+use test_get_session_attr;
+create table t1( a int primary key );
+insert into t1 values( 1 );
+use information_schema;
+select * from test_get_session_attr.t1;
+a
+1
+select * from SDB_SESSION_ATTR_CURRENT;
+PREFERRED_INSTANCE	PREFERRED_INSTANCE_MODE	PREFERRED_STRICT	PREFERRED_PERIOD	TIMEOUT	TRANS_ISOLATION	TRANS_TIMEOUT	TRANS_USE_RBS	TRANS_LOCK_WAIT	TRANS_AUTO_COMMIT	TRANS_AUTO_ROLLBACK	TRANS_RC_COUNT	SOURCE
+M	ordered	1	59	-1	1	59	1	0	1	0	1	MySQL:hostname:pid:tid
+drop database test_get_session_attr;
+insert into SDB_SESSION_ATTR_CURRENT values ("S","random",1,50,-1,0,60,0,1,1,0,1,"MySQL:hostname:pid:tid");
+ERROR 42000: Access denied for user 'root'@'localhost' to database 'information_schema'
+delete from SDB_SESSION_ATTR_CURRENT where PREFERRED_INSTANCE="M";
+ERROR 42000: Access denied for user 'root'@'localhost' to database 'information_schema'
+update SDB_SESSION_ATTR_CURRENT set PREFERRED_PERIOD=50 where PREFERRED_INSTANCE="M";
+ERROR 42000: Access denied for user 'root'@'localhost' to database 'information_schema'

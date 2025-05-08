@@ -1,0 +1,77 @@
+DROP DATABASE IF EXISTS sort_order_by_sequoiadb;
+SET @@SESSION.sql_mode='ONLY_FULL_GROUP_BY,STRICT_TRANS_TABLES,ERROR_FOR_DIVISION_BY_ZERO,NO_AUTO_CREATE_USER,NO_ENGINE_SUBSTITUTION';
+CREATE DATABASE sort_order_by_sequoiadb;
+DROP DATABASE sort_order_by_sequoiadb;
+CREATE DATABASE sort_order_by_sequoiadb;
+USE sort_order_by_sequoiadb;
+CREATE TABLE normal_table (
+pk int(11) NOT NULL AUTO_INCREMENT,
+col_varchar_16_key varchar(16) COLLATE utf8mb4_bin DEFAULT NULL,
+col_varchar_16 varchar(16) COLLATE utf8mb4_bin DEFAULT NULL,
+col_datetime datetime DEFAULT NULL,
+col_int int(11) DEFAULT NULL,
+col_datetime_key datetime DEFAULT NULL,
+col_int_key int(11) DEFAULT NULL,
+PRIMARY KEY (`pk`),
+KEY col_varchar_16_key (col_varchar_16_key),
+KEY col_datetime_key (col_datetime_key),
+KEY col_int_key (col_int_key)
+) ENGINE=SequoiaDB AUTO_INCREMENT=1001 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin;
+CREATE TABLE insert_table1 (
+pk int(11) NOT NULL AUTO_INCREMENT,
+col_varchar_16_key varchar(16) COLLATE utf8mb4_bin DEFAULT NULL,
+col_varchar_16 varchar(16) COLLATE utf8mb4_bin DEFAULT NULL,
+col_datetime datetime DEFAULT NULL,
+col_int int(11) DEFAULT NULL,
+col_datetime_key datetime DEFAULT NULL,
+col_int_key int(11) DEFAULT NULL,
+PRIMARY KEY (`pk`),
+KEY col_varchar_16_key (col_varchar_16_key),
+KEY col_datetime_key (col_datetime_key),
+KEY col_int_key (col_int_key)
+) ENGINE=SequoiaDB AUTO_INCREMENT=1001 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin;
+CREATE TABLE insert_table2 (
+pk int(11) NOT NULL AUTO_INCREMENT,
+col_varchar_16_key varchar(16) COLLATE utf8mb4_bin DEFAULT NULL,
+col_varchar_16 varchar(16) COLLATE utf8mb4_bin DEFAULT NULL,
+col_datetime datetime DEFAULT NULL,
+col_int int(11) DEFAULT NULL,
+col_datetime_key datetime DEFAULT NULL,
+col_int_key int(11) DEFAULT NULL,
+PRIMARY KEY (`pk`),
+KEY col_varchar_16_key (col_varchar_16_key),
+KEY col_datetime_key (col_datetime_key),
+KEY col_int_key (col_int_key)
+) ENGINE=SequoiaDB AUTO_INCREMENT=1001 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin;
+INSERT INTO normal_table VALUES 
+(5,'v','h',NULL,NULL,'0000-00-00 00:00:00',6),
+(6,NULL,'j',NULL,5,'2008-03-28 00:00:00',9),
+(8,'v','v',NULL,3,'0000-00-00 00:00:00',9),
+(9,'p','for','2005-06-20 04:21:33',1,'0000-00-00 00:00:00',9),
+(11,'u','w','2009-09-08 00:00:00',-1950089216,'2005-01-07 00:00:00',NULL),
+(12,'c','z',NULL,4,'2005-09-24 00:00:00',4),
+(14,'what','r','2006-05-01 00:00:00',7,'0000-00-00 00:00:00',7),
+(15,'l','I',NULL,3,'0000-00-00 00:00:00',6),
+(16,'t','k',NULL,6,'0000-00-00 00:00:00',7),
+(19,'the','x','2009-08-07 10:46:39',3,'2006-03-09 00:00:00',7);
+set session sequoiadb_optimizer_options = "direct_sort,direct_limit,direct_count";
+set session sequoiadb_cls_pushdown_expand = on;
+set session optimizer_switch = "optimizer_sort_pushdown=on";
+set session optimizer_index_sort_prune = on;
+INSERT INTO insert_table1 ( col_datetime_key, col_varchar_16, col_int, col_datetime, col_varchar_16_key, col_int_key ) SELECT col_datetime_key, col_varchar_16, col_int, col_datetime, 
+col_varchar_16_key, col_int_key FROM normal_table WHERE 1 = 1 GROUP BY col_datetime_key, col_varchar_16, col_int, col_datetime, col_varchar_16_key, col_int_key, pk ORDER BY col_int, 
+col_datetime_key, col_datetime, col_datetime_key, col_int, col_int, col_varchar_16;
+SELECT COUNT(1) FROM insert_table1;
+COUNT(1)
+10
+set session sequoiadb_optimizer_options = '';
+set session sequoiadb_cls_pushdown_expand = off;
+set session optimizer_index_sort_prune = off;
+set session optimizer_switch = "optimizer_sort_pushdown=off";
+INSERT INTO insert_table2 ( col_datetime_key, col_varchar_16, col_int, col_datetime, col_varchar_16_key, col_int_key ) SELECT col_datetime_key, col_varchar_16, col_int, col_datetime, 
+col_varchar_16_key, col_int_key FROM normal_table WHERE 1 = 1 GROUP BY col_datetime_key, col_varchar_16, col_int, col_datetime, col_varchar_16_key, col_int_key, pk ORDER BY col_int, 
+col_datetime_key, col_datetime, col_datetime_key, col_int, col_int, col_varchar_16;
+SELECT COUNT(1) FROM insert_table2;
+COUNT(1)
+10
+DROP DATABASE sort_order_by_sequoiadb;

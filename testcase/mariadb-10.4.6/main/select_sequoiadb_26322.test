@@ -1,0 +1,15 @@
+#seqDB-26322:SequoiaDB 5.0 版本未开启 mvccon 情况下，使用元数据映射功能
+--source include/have_sequoiadb.inc
+
+--disable_warnings
+DROP TABLE IF EXISTS select_sequoiadb_26322;
+--enable_warnings
+
+create table select_sequoiadb_26322(id int);
+SET SESSION TRANSACTION ISOLATION LEVEL READ COMMITTED;
+select * from select_sequoiadb_26322 ;
+
+SET SESSION TRANSACTION ISOLATION LEVEL READ UNCOMMITTED;
+select * from select_sequoiadb_26322 ;
+
+DROP TABLE select_sequoiadb_26322;

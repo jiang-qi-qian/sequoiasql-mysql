@@ -1,0 +1,34 @@
+#Case 26756
+--source include/have_sequoiadb.inc
+--source include/skip_release_version.inc
+--source suite/metadata_sync_sequoiadb/inc/insts_connect_sequoiadb.inc
+
+set session sequoiadb_stats_flush_time_threshold = 4;
+--disable_warnings 
+set session debug="d,stats_flush_time_threshold_test"; 
+drop database if exists db_26756;
+--enable_warnings
+
+create database db_26756 ;
+use db_26756 ;
+
+create table t1(id int);
+insert into t1 values(1),(1),(1),(1),(1),(1),(1),(1),(1),(1),(1),(1),
+(1),(1),(1),(1),(1),(1),(1),(1),(1),(1),(1),(1),(1),(1),(1),(1),(1),(1),
+(1),(1),(1),(1),(1),(1),(1),(1),(1),(1),(1),(1),(1),(1),(1),(1),(1),(1),
+(1),(1),(1),(1),(1),(1),(1),(1),(1),(1),(1),(1),(1),(1),(1),(1),(1),(1);
+
+# SEQUOIASQLMAIN-1298
+# Does not include CREATE_TIME and UPDATE_TIME
+select TABLE_CATALOG,TABLE_SCHEMA,TABLE_NAME,PARTITION_NAME,SUBPARTITION_NAME,PARTITION_ORDINAL_POSITION,SUBPARTITION_ORDINAL_POSITION,PARTITION_METHOD,SUBPARTITION_METHOD,PARTITION_EXPRESSION,SUBPARTITION_EXPRESSION,PARTITION_DESCRIPTION,TABLE_ROWS,AVG_ROW_LENGTH,DATA_LENGTH,MAX_DATA_LENGTH,INDEX_LENGTH,DATA_FREE,CHECK_TIME,CHECKSUM,PARTITION_COMMENT,NODEGROUP,TABLESPACE_NAME from information_schema.PARTITIONS where TABLE_SCHEMA = 'db_26756' and TABLE_NAME = 't1';
+
+select count(CREATE_TIME),count(UPDATE_TIME) from information_schema.PARTITIONS where TABLE_SCHEMA = 'db_26756' and TABLE_NAME = 't1' and CREATE_TIME is not null and UPDATE_TIME is not null;
+
+drop database db_26756 ;
+
+set session sequoiadb_stats_flush_time_threshold = default;
+--disable_warnings
+set session debug = default;
+--enable_warnings
+--source include/uninstall_sequoiadb.inc
+--source suite/metadata_sync_sequoiadb/inc/insts_disconnect_sequoiadb.inc

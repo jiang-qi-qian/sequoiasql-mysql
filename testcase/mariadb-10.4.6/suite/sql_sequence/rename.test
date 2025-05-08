@@ -1,0 +1,11 @@
+CREATE DATABASE test_sequence_rename;
+USE test_sequence_rename;
+
+CREATE SEQUENCE seq1;
+--error ER_NO_SUCH_TABLE
+RENAME TABLE seq1 TO seq2, seq3 TO seq4;
+LOCK TABLE seq1 READ;
+UNLOCK TABLES;
+drop table seq1;
+
+DROP DATABASE test_sequence_rename;

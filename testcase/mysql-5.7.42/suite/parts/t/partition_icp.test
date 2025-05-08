@@ -1,0 +1,42 @@
+--source include/have_partition.inc
+
+--echo #
+--echo # test using Index Condition Pushdown for partitioned tables
+--echo #
+
+--echo # Test failure of ICP calls -> don't use ICP (MyISAM does not support
+--echo # ICP on BLOB indexes)
+
+#CREATE TABLE t1 (a int PRIMARY KEY, b BLOB, c varchar(16) DEFAULT 'Filler...', INDEX (b(4), a))
+CREATE TABLE t1 (a int PRIMARY KEY, b BLOB, c varchar(16) DEFAULT 'Filler...')
+ENGINE = SequoiaDB
+PARTITION BY HASH (a) PARTITIONS 3;
+
+SHOW CREATE TABLE t1;
+
+INSERT INTO t1 (a, b) VALUES (1, 0xdeadbeef), (2, "text filler"),
+(3, 'filler...'), (4, " more filler "), (5, "test text"), (6, "testing...");
+
+--disable_result_log
+ANALYZE TABLE t1;
+--enable_result_log
+
+let $query= SELECT a, HEX(b) FROM t1 WHERE b >= 'te' and (a % 2);
+#eval EXPLAIN $query;
+#eval EXPLAIN FORMAT=JSON $query;
+--sorted_result
+eval $query;
+
+--echo Only MyISAM and InnoDB supports both INDEX and BLOBS...
+ALTER TABLE t1 ENGINE = SequoiaDB;
+
+--disable_result_log
+ANALYZE TABLE t1;
+--enable_result_log
+
+#eval EXPLAIN $query;
+#eval EXPLAIN FORMAT=JSON $query;
+--sorted_result
+eval $query;
+
+DROP TABLE t1;

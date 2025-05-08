@@ -1,0 +1,20 @@
+#seqDB-24924
+
+--disable_warnings
+drop table if exists tenseTable;
+--enable_warnings
+
+create table tenseTable ( 
+   id int auto_increment primary key, 
+   name varchar(32), 
+   date_1 date, 
+   date_2 date, 
+   row_start timestamp(6) as row start invisible, 
+   row_end timestamp(6) as row end invisible, 
+   period for application_time(date_1, date_2), 
+   period for system_time(row_start, row_end)) 
+with system versioning;
+
+update tenseTable set name = "123" order by name;
+
+drop table tenseTable;

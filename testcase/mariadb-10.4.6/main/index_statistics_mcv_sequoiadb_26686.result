@@ -1,0 +1,88 @@
+CREATE DATABASE  IF NOT EXISTS index_statistics_mcv_sequoiadb_26686;
+DROP DATABASE IF EXISTS index_statistics_mcv_sequoiadb_26686;
+CREATE DATABASE  IF NOT EXISTS index_statistics_mcv_sequoiadb_26686;
+use index_statistics_mcv_sequoiadb_26686;
+CREATE TABLE t1(
+a INT NOT NULL,
+b INT NOT NULL,
+c INT NOT NULL,
+d INT NOT NULL,
+INDEX idx_a(a),
+INDEX idx_b(b),
+INDEX idx_cd(c,d),
+INDEX idx_dc(d,c)
+)
+PARTITION BY RANGE COLUMNS (a)
+SUBPARTITION BY KEY (b)
+SUBPARTITIONS 2 (
+PARTITION p0 VALUES LESS THAN (4),
+PARTITION p1 VALUES LESS THAN (7),
+PARTITION p2 VALUES LESS THAN (10)
+);
+CREATE PROCEDURE p1()
+BEGIN
+DECLARE i INT;
+DECLARE a_value INT;
+DECLARE b_value INT;
+DECLARE c_value INT;
+DECLARE d_value INT;
+SET i=1;
+WHILE i<=200 DO
+IF (i<101) THEN
+SET a_value=8;
+SET b_value=5;
+SET c_value=5;
+SET d_value=5;
+ELSEIF (i<100 and i<141) THEN
+SET a_value=6;
+SET b_value=1;
+SET c_value=1;
+SET d_value=1;
+ELSEIF (i<140 and i<161) THEN
+SET a_value=3;
+SET b_value=2;
+SET c_value=7;
+SET d_value=9;
+ELSEIF (i<160 and i<171) THEN
+SET a_value=7;
+SET b_value=8;
+SET c_value=9;
+SET d_value=4;
+ELSEIF (i<170 and i<175) THEN
+SET a_value=1;
+SET b_value=3;
+SET c_value=6;
+SET d_value=3;
+ELSE
+SET a_value=2;
+SET b_value=2;
+SET c_value=2;
+SET d_value=2;
+END IF;
+INSERT INTO t1(a,b,c,d) values (a_value, b_value, c_value, d_value);
+SET i=i+1;
+END WHILE;
+END $
+CALL p1();
+SELECT * FROM t1 WHERE a=101 and b=51;
+a	b	c	d
+SELECT * FROM t1 WHERE c=21;
+a	b	c	d
+SELECT * FROM t1 WHERE c=21 and d=11;
+a	b	c	d
+ANALYZE TABLE t1;
+Table	Op	Msg_type	Msg_text
+index_statistics_mcv_sequoiadb_26686.t1	analyze	status	Engine-independent statistics collected
+index_statistics_mcv_sequoiadb_26686.t1	analyze	status	OK
+EXPLAIN SELECT * FROM t1 WHERE a=101 and b=51;
+id	select_type	table	type	possible_keys	key	key_len	ref	rows	Extra
+1	SIMPLE	NULL	NULL	NULL	NULL	NULL	NULL	NULL	Impossible WHERE noticed after reading const tables
+EXPLAIN SELECT * FROM t1 WHERE c=21;
+id	select_type	table	type	possible_keys	key	key_len	ref	rows	Extra
+1	SIMPLE	t1	ref	idx_cd	idx_cd	4	const	2	
+EXPLAIN SELECT * FROM t1 WHERE c=21 and d=11;
+id	select_type	table	type	possible_keys	key	key_len	ref	rows	Extra
+1	SIMPLE	t1	ref	idx_cd,idx_dc	idx_cd	8	const,const	2	
+DROP PROCEDURE p1;
+DROP TABLE t1;
+DROP DATABASE index_statistics_mcv_sequoiadb_26686;

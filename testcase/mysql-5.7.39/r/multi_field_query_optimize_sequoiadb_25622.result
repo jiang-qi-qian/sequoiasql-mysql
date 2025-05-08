@@ -1,0 +1,1646 @@
+drop database if exists multi_field_query_optimize_25622;
+create database multi_field_query_optimize_25622;
+drop database multi_field_query_optimize_25622;
+create database multi_field_query_optimize_25622;
+use multi_field_query_optimize_25622;
+set session optimizer_switch='mrr=on,mrr_cost_based=on,block_nested_loop=on,batched_key_access=on';
+set session sequoiadb_debug_log=on;
+create table t1(a int,b int);
+create table t2(a int,b int,key union_ab4(a,b));
+insert into t1 values(1,1),(2,2),(3,3),(4,4),(5,5),(1,12),(6,3),(10,5),(10,10),(11,4),(11,5),(12,12);
+insert into t2 values(1,1),(2,2),(3,3),(4,4),(5,5),(1,12),(6,3),(10,5),(10,10),(11,4),(11,5),(12,12);
+explain select * from t1,t2 where t1.a = t2.a and t1.b = t2.b and t1.a>=1 and t1.a<=10 and t1.b<=10;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	ALL	NULL	NULL	NULL	NULL	12	8.33	Using where with pushed condition ((`multi_field_query_optimize_25622`.`t1`.`a` >= 1) and (`multi_field_query_optimize_25622`.`t1`.`a` <= 10) and (`multi_field_query_optimize_25622`.`t1`.`b` <= 10) and (`multi_field_query_optimize_25622`.`t1`.`a` is not null) and (`multi_field_query_optimize_25622`.`t1`.`b` is not null))
+1	SIMPLE	t2	NULL	ref	union_ab4	union_ab4	10	multi_field_query_optimize_25622.t1.a,multi_field_query_optimize_25622.t1.b	2	100.00	Using index; Using join buffer (Batched Key Access)
+Warnings:
+Note	1003	/* select#1 */ select `multi_field_query_optimize_25622`.`t1`.`a` AS `a`,`multi_field_query_optimize_25622`.`t1`.`b` AS `b`,`multi_field_query_optimize_25622`.`t2`.`a` AS `a`,`multi_field_query_optimize_25622`.`t2`.`b` AS `b` from `multi_field_query_optimize_25622`.`t1` join `multi_field_query_optimize_25622`.`t2` where ((`multi_field_query_optimize_25622`.`t2`.`b` = `multi_field_query_optimize_25622`.`t1`.`b`) and (`multi_field_query_optimize_25622`.`t2`.`a` = `multi_field_query_optimize_25622`.`t1`.`a`) and (`multi_field_query_optimize_25622`.`t1`.`a` >= 1) and (`multi_field_query_optimize_25622`.`t1`.`a` <= 10) and (`multi_field_query_optimize_25622`.`t1`.`b` <= 10))
+select * from t1,t2 where t1.a = t2.a and t1.b = t2.b and t1.a>=1 and t1.a<=10 and t1.b<=10;
+a	b	a	b
+1	1	1	1
+10	10	10	10
+10	5	10	5
+2	2	2	2
+3	3	3	3
+4	4	4	4
+5	5	5	5
+6	3	6	3
+[Note] SequoiaDB: Query message: condition[{}], selector[{ "a": null, "b": null }], order_by[{ "a": 1, "b": 1 }], hint[{ "$Range": { "IsAllEqual": true, "PrefixNum": 2, "IndexValue": [ { "1": 1, "2": 1 }, { "1": 2, "2": 2 }, { "1": 3, "2": 3 }, { "1": 4, "2": 4 }, { "1": 5, "2": 5 }, { "1": 6, "2": 3 }, { "1": 10, "2": 5 }, { "1": 10, "2": 10 } ] }, "": "union_ab4" }], limit[-1], offset[0], table[multi_field_query_optimize_25622.t2]
+explain select * from t1,t2 where t1.a = t2.a and t1.b = t2.b and t1.a>1 and t1.a<=10 and t1.b<=10;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	ALL	NULL	NULL	NULL	NULL	12	8.33	Using where with pushed condition ((`multi_field_query_optimize_25622`.`t1`.`a` > 1) and (`multi_field_query_optimize_25622`.`t1`.`a` <= 10) and (`multi_field_query_optimize_25622`.`t1`.`b` <= 10) and (`multi_field_query_optimize_25622`.`t1`.`a` is not null) and (`multi_field_query_optimize_25622`.`t1`.`b` is not null))
+1	SIMPLE	t2	NULL	ref	union_ab4	union_ab4	10	multi_field_query_optimize_25622.t1.a,multi_field_query_optimize_25622.t1.b	2	100.00	Using index; Using join buffer (Batched Key Access)
+Warnings:
+Note	1003	/* select#1 */ select `multi_field_query_optimize_25622`.`t1`.`a` AS `a`,`multi_field_query_optimize_25622`.`t1`.`b` AS `b`,`multi_field_query_optimize_25622`.`t2`.`a` AS `a`,`multi_field_query_optimize_25622`.`t2`.`b` AS `b` from `multi_field_query_optimize_25622`.`t1` join `multi_field_query_optimize_25622`.`t2` where ((`multi_field_query_optimize_25622`.`t2`.`b` = `multi_field_query_optimize_25622`.`t1`.`b`) and (`multi_field_query_optimize_25622`.`t2`.`a` = `multi_field_query_optimize_25622`.`t1`.`a`) and (`multi_field_query_optimize_25622`.`t1`.`a` > 1) and (`multi_field_query_optimize_25622`.`t1`.`a` <= 10) and (`multi_field_query_optimize_25622`.`t1`.`b` <= 10))
+select * from t1,t2 where t1.a = t2.a and t1.b = t2.b and t1.a>1 and t1.a<=10 and t1.b<=10;
+a	b	a	b
+10	10	10	10
+10	5	10	5
+2	2	2	2
+3	3	3	3
+4	4	4	4
+5	5	5	5
+6	3	6	3
+[Note] SequoiaDB: Query message: condition[{}], selector[{ "a": null, "b": null }], order_by[{ "a": 1, "b": 1 }], hint[{ "$Range": { "IsAllEqual": true, "PrefixNum": 2, "IndexValue": [ { "1": 2, "2": 2 }, { "1": 3, "2": 3 }, { "1": 4, "2": 4 }, { "1": 5, "2": 5 }, { "1": 6, "2": 3 }, { "1": 10, "2": 5 }, { "1": 10, "2": 10 } ] }, "": "union_ab4" }], limit[-1], offset[0], table[multi_field_query_optimize_25622.t2]
+explain select * from t1,t2 where t1.a = t2.a and t1.b = t2.b and t1.a>=1 and t1.a<10 and t1.b<=10;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	ALL	NULL	NULL	NULL	NULL	12	8.33	Using where with pushed condition ((`multi_field_query_optimize_25622`.`t1`.`a` >= 1) and (`multi_field_query_optimize_25622`.`t1`.`a` < 10) and (`multi_field_query_optimize_25622`.`t1`.`b` <= 10) and (`multi_field_query_optimize_25622`.`t1`.`a` is not null) and (`multi_field_query_optimize_25622`.`t1`.`b` is not null))
+1	SIMPLE	t2	NULL	ref	union_ab4	union_ab4	10	multi_field_query_optimize_25622.t1.a,multi_field_query_optimize_25622.t1.b	2	100.00	Using index; Using join buffer (Batched Key Access)
+Warnings:
+Note	1003	/* select#1 */ select `multi_field_query_optimize_25622`.`t1`.`a` AS `a`,`multi_field_query_optimize_25622`.`t1`.`b` AS `b`,`multi_field_query_optimize_25622`.`t2`.`a` AS `a`,`multi_field_query_optimize_25622`.`t2`.`b` AS `b` from `multi_field_query_optimize_25622`.`t1` join `multi_field_query_optimize_25622`.`t2` where ((`multi_field_query_optimize_25622`.`t2`.`b` = `multi_field_query_optimize_25622`.`t1`.`b`) and (`multi_field_query_optimize_25622`.`t2`.`a` = `multi_field_query_optimize_25622`.`t1`.`a`) and (`multi_field_query_optimize_25622`.`t1`.`a` >= 1) and (`multi_field_query_optimize_25622`.`t1`.`a` < 10) and (`multi_field_query_optimize_25622`.`t1`.`b` <= 10))
+select * from t1,t2 where t1.a = t2.a and t1.b = t2.b and t1.a>=1 and t1.a<10 and t1.b<=10;
+a	b	a	b
+1	1	1	1
+2	2	2	2
+3	3	3	3
+4	4	4	4
+5	5	5	5
+6	3	6	3
+[Note] SequoiaDB: Query message: condition[{}], selector[{ "a": null, "b": null }], order_by[{ "a": 1, "b": 1 }], hint[{ "$Range": { "IsAllEqual": true, "PrefixNum": 2, "IndexValue": [ { "1": 1, "2": 1 }, { "1": 2, "2": 2 }, { "1": 3, "2": 3 }, { "1": 4, "2": 4 }, { "1": 5, "2": 5 }, { "1": 6, "2": 3 } ] }, "": "union_ab4" }], limit[-1], offset[0], table[multi_field_query_optimize_25622.t2]
+explain select * from t1,t2 where t1.a = t2.a and t1.b = t2.b and t1.a>1 and t1.a<10 and t1.b<=10;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	ALL	NULL	NULL	NULL	NULL	12	8.33	Using where with pushed condition ((`multi_field_query_optimize_25622`.`t1`.`a` > 1) and (`multi_field_query_optimize_25622`.`t1`.`a` < 10) and (`multi_field_query_optimize_25622`.`t1`.`b` <= 10) and (`multi_field_query_optimize_25622`.`t1`.`a` is not null) and (`multi_field_query_optimize_25622`.`t1`.`b` is not null))
+1	SIMPLE	t2	NULL	ref	union_ab4	union_ab4	10	multi_field_query_optimize_25622.t1.a,multi_field_query_optimize_25622.t1.b	2	100.00	Using index; Using join buffer (Batched Key Access)
+Warnings:
+Note	1003	/* select#1 */ select `multi_field_query_optimize_25622`.`t1`.`a` AS `a`,`multi_field_query_optimize_25622`.`t1`.`b` AS `b`,`multi_field_query_optimize_25622`.`t2`.`a` AS `a`,`multi_field_query_optimize_25622`.`t2`.`b` AS `b` from `multi_field_query_optimize_25622`.`t1` join `multi_field_query_optimize_25622`.`t2` where ((`multi_field_query_optimize_25622`.`t2`.`b` = `multi_field_query_optimize_25622`.`t1`.`b`) and (`multi_field_query_optimize_25622`.`t2`.`a` = `multi_field_query_optimize_25622`.`t1`.`a`) and (`multi_field_query_optimize_25622`.`t1`.`a` > 1) and (`multi_field_query_optimize_25622`.`t1`.`a` < 10) and (`multi_field_query_optimize_25622`.`t1`.`b` <= 10))
+select * from t1,t2 where t1.a = t2.a and t1.b = t2.b and t1.a>1 and t1.a<10 and t1.b<=10;
+a	b	a	b
+2	2	2	2
+3	3	3	3
+4	4	4	4
+5	5	5	5
+6	3	6	3
+[Note] SequoiaDB: Query message: condition[{}], selector[{ "a": null, "b": null }], order_by[{ "a": 1, "b": 1 }], hint[{ "$Range": { "IsAllEqual": true, "PrefixNum": 2, "IndexValue": [ { "1": 2, "2": 2 }, { "1": 3, "2": 3 }, { "1": 4, "2": 4 }, { "1": 5, "2": 5 }, { "1": 6, "2": 3 } ] }, "": "union_ab4" }], limit[-1], offset[0], table[multi_field_query_optimize_25622.t2]
+explain select * from t1,t2 where t1.a = t2.a and t1.b = t2.b and t1.a>=1 and t1.a<=10 and t1.b<10;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	ALL	NULL	NULL	NULL	NULL	12	8.33	Using where with pushed condition ((`multi_field_query_optimize_25622`.`t1`.`a` >= 1) and (`multi_field_query_optimize_25622`.`t1`.`a` <= 10) and (`multi_field_query_optimize_25622`.`t1`.`b` < 10) and (`multi_field_query_optimize_25622`.`t1`.`a` is not null) and (`multi_field_query_optimize_25622`.`t1`.`b` is not null))
+1	SIMPLE	t2	NULL	ref	union_ab4	union_ab4	10	multi_field_query_optimize_25622.t1.a,multi_field_query_optimize_25622.t1.b	2	100.00	Using index; Using join buffer (Batched Key Access)
+Warnings:
+Note	1003	/* select#1 */ select `multi_field_query_optimize_25622`.`t1`.`a` AS `a`,`multi_field_query_optimize_25622`.`t1`.`b` AS `b`,`multi_field_query_optimize_25622`.`t2`.`a` AS `a`,`multi_field_query_optimize_25622`.`t2`.`b` AS `b` from `multi_field_query_optimize_25622`.`t1` join `multi_field_query_optimize_25622`.`t2` where ((`multi_field_query_optimize_25622`.`t2`.`b` = `multi_field_query_optimize_25622`.`t1`.`b`) and (`multi_field_query_optimize_25622`.`t2`.`a` = `multi_field_query_optimize_25622`.`t1`.`a`) and (`multi_field_query_optimize_25622`.`t1`.`a` >= 1) and (`multi_field_query_optimize_25622`.`t1`.`a` <= 10) and (`multi_field_query_optimize_25622`.`t1`.`b` < 10))
+select * from t1,t2 where t1.a = t2.a and t1.b = t2.b and t1.a>=1 and t1.a<=10 and t1.b<10;
+a	b	a	b
+1	1	1	1
+10	5	10	5
+2	2	2	2
+3	3	3	3
+4	4	4	4
+5	5	5	5
+6	3	6	3
+[Note] SequoiaDB: Query message: condition[{}], selector[{ "a": null, "b": null }], order_by[{ "a": 1, "b": 1 }], hint[{ "$Range": { "IsAllEqual": true, "PrefixNum": 2, "IndexValue": [ { "1": 1, "2": 1 }, { "1": 2, "2": 2 }, { "1": 3, "2": 3 }, { "1": 4, "2": 4 }, { "1": 5, "2": 5 }, { "1": 6, "2": 3 }, { "1": 10, "2": 5 } ] }, "": "union_ab4" }], limit[-1], offset[0], table[multi_field_query_optimize_25622.t2]
+explain select * from t1,t2 where t1.a = t2.a and t1.b = t2.b and t1.a>1 and t1.a<=10 and t1.b<10;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	ALL	NULL	NULL	NULL	NULL	12	8.33	Using where with pushed condition ((`multi_field_query_optimize_25622`.`t1`.`a` > 1) and (`multi_field_query_optimize_25622`.`t1`.`a` <= 10) and (`multi_field_query_optimize_25622`.`t1`.`b` < 10) and (`multi_field_query_optimize_25622`.`t1`.`a` is not null) and (`multi_field_query_optimize_25622`.`t1`.`b` is not null))
+1	SIMPLE	t2	NULL	ref	union_ab4	union_ab4	10	multi_field_query_optimize_25622.t1.a,multi_field_query_optimize_25622.t1.b	2	100.00	Using index; Using join buffer (Batched Key Access)
+Warnings:
+Note	1003	/* select#1 */ select `multi_field_query_optimize_25622`.`t1`.`a` AS `a`,`multi_field_query_optimize_25622`.`t1`.`b` AS `b`,`multi_field_query_optimize_25622`.`t2`.`a` AS `a`,`multi_field_query_optimize_25622`.`t2`.`b` AS `b` from `multi_field_query_optimize_25622`.`t1` join `multi_field_query_optimize_25622`.`t2` where ((`multi_field_query_optimize_25622`.`t2`.`b` = `multi_field_query_optimize_25622`.`t1`.`b`) and (`multi_field_query_optimize_25622`.`t2`.`a` = `multi_field_query_optimize_25622`.`t1`.`a`) and (`multi_field_query_optimize_25622`.`t1`.`a` > 1) and (`multi_field_query_optimize_25622`.`t1`.`a` <= 10) and (`multi_field_query_optimize_25622`.`t1`.`b` < 10))
+select * from t1,t2 where t1.a = t2.a and t1.b = t2.b and t1.a>1 and t1.a<=10 and t1.b<10;
+a	b	a	b
+10	5	10	5
+2	2	2	2
+3	3	3	3
+4	4	4	4
+5	5	5	5
+6	3	6	3
+[Note] SequoiaDB: Query message: condition[{}], selector[{ "a": null, "b": null }], order_by[{ "a": 1, "b": 1 }], hint[{ "$Range": { "IsAllEqual": true, "PrefixNum": 2, "IndexValue": [ { "1": 2, "2": 2 }, { "1": 3, "2": 3 }, { "1": 4, "2": 4 }, { "1": 5, "2": 5 }, { "1": 6, "2": 3 }, { "1": 10, "2": 5 } ] }, "": "union_ab4" }], limit[-1], offset[0], table[multi_field_query_optimize_25622.t2]
+explain select * from t1,t2 where t1.a = t2.a and t1.b = t2.b and t1.a>=1 and t1.a<10 and t1.b<10;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	ALL	NULL	NULL	NULL	NULL	12	8.33	Using where with pushed condition ((`multi_field_query_optimize_25622`.`t1`.`a` >= 1) and (`multi_field_query_optimize_25622`.`t1`.`a` < 10) and (`multi_field_query_optimize_25622`.`t1`.`b` < 10) and (`multi_field_query_optimize_25622`.`t1`.`a` is not null) and (`multi_field_query_optimize_25622`.`t1`.`b` is not null))
+1	SIMPLE	t2	NULL	ref	union_ab4	union_ab4	10	multi_field_query_optimize_25622.t1.a,multi_field_query_optimize_25622.t1.b	2	100.00	Using index; Using join buffer (Batched Key Access)
+Warnings:
+Note	1003	/* select#1 */ select `multi_field_query_optimize_25622`.`t1`.`a` AS `a`,`multi_field_query_optimize_25622`.`t1`.`b` AS `b`,`multi_field_query_optimize_25622`.`t2`.`a` AS `a`,`multi_field_query_optimize_25622`.`t2`.`b` AS `b` from `multi_field_query_optimize_25622`.`t1` join `multi_field_query_optimize_25622`.`t2` where ((`multi_field_query_optimize_25622`.`t2`.`b` = `multi_field_query_optimize_25622`.`t1`.`b`) and (`multi_field_query_optimize_25622`.`t2`.`a` = `multi_field_query_optimize_25622`.`t1`.`a`) and (`multi_field_query_optimize_25622`.`t1`.`a` >= 1) and (`multi_field_query_optimize_25622`.`t1`.`a` < 10) and (`multi_field_query_optimize_25622`.`t1`.`b` < 10))
+select * from t1,t2 where t1.a = t2.a and t1.b = t2.b and t1.a>=1 and t1.a<10 and t1.b<10;
+a	b	a	b
+1	1	1	1
+2	2	2	2
+3	3	3	3
+4	4	4	4
+5	5	5	5
+6	3	6	3
+[Note] SequoiaDB: Query message: condition[{}], selector[{ "a": null, "b": null }], order_by[{ "a": 1, "b": 1 }], hint[{ "$Range": { "IsAllEqual": true, "PrefixNum": 2, "IndexValue": [ { "1": 1, "2": 1 }, { "1": 2, "2": 2 }, { "1": 3, "2": 3 }, { "1": 4, "2": 4 }, { "1": 5, "2": 5 }, { "1": 6, "2": 3 } ] }, "": "union_ab4" }], limit[-1], offset[0], table[multi_field_query_optimize_25622.t2]
+explain select * from t1,t2 where t1.a = t2.a and t1.b = t2.b and t1.a>1 and t1.a<10 and t1.b<10;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	ALL	NULL	NULL	NULL	NULL	12	8.33	Using where with pushed condition ((`multi_field_query_optimize_25622`.`t1`.`a` > 1) and (`multi_field_query_optimize_25622`.`t1`.`a` < 10) and (`multi_field_query_optimize_25622`.`t1`.`b` < 10) and (`multi_field_query_optimize_25622`.`t1`.`a` is not null) and (`multi_field_query_optimize_25622`.`t1`.`b` is not null))
+1	SIMPLE	t2	NULL	ref	union_ab4	union_ab4	10	multi_field_query_optimize_25622.t1.a,multi_field_query_optimize_25622.t1.b	2	100.00	Using index; Using join buffer (Batched Key Access)
+Warnings:
+Note	1003	/* select#1 */ select `multi_field_query_optimize_25622`.`t1`.`a` AS `a`,`multi_field_query_optimize_25622`.`t1`.`b` AS `b`,`multi_field_query_optimize_25622`.`t2`.`a` AS `a`,`multi_field_query_optimize_25622`.`t2`.`b` AS `b` from `multi_field_query_optimize_25622`.`t1` join `multi_field_query_optimize_25622`.`t2` where ((`multi_field_query_optimize_25622`.`t2`.`b` = `multi_field_query_optimize_25622`.`t1`.`b`) and (`multi_field_query_optimize_25622`.`t2`.`a` = `multi_field_query_optimize_25622`.`t1`.`a`) and (`multi_field_query_optimize_25622`.`t1`.`a` > 1) and (`multi_field_query_optimize_25622`.`t1`.`a` < 10) and (`multi_field_query_optimize_25622`.`t1`.`b` < 10))
+select * from t1,t2 where t1.a = t2.a and t1.b = t2.b and t1.a>1 and t1.a<10 and t1.b<10;
+a	b	a	b
+2	2	2	2
+3	3	3	3
+4	4	4	4
+5	5	5	5
+6	3	6	3
+[Note] SequoiaDB: Query message: condition[{}], selector[{ "a": null, "b": null }], order_by[{ "a": 1, "b": 1 }], hint[{ "$Range": { "IsAllEqual": true, "PrefixNum": 2, "IndexValue": [ { "1": 2, "2": 2 }, { "1": 3, "2": 3 }, { "1": 4, "2": 4 }, { "1": 5, "2": 5 }, { "1": 6, "2": 3 } ] }, "": "union_ab4" }], limit[-1], offset[0], table[multi_field_query_optimize_25622.t2]
+explain select * from t1,t2 where t1.a = t2.a and t1.b = t2.b and t1.a>=1 and t1.a<=10 and t1.b>=5 and t1.b<=10;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	ALL	NULL	NULL	NULL	NULL	12	8.33	Using where with pushed condition ((`multi_field_query_optimize_25622`.`t1`.`a` >= 1) and (`multi_field_query_optimize_25622`.`t1`.`a` <= 10) and (`multi_field_query_optimize_25622`.`t1`.`b` >= 5) and (`multi_field_query_optimize_25622`.`t1`.`b` <= 10) and (`multi_field_query_optimize_25622`.`t1`.`a` is not null) and (`multi_field_query_optimize_25622`.`t1`.`b` is not null))
+1	SIMPLE	t2	NULL	ref	union_ab4	union_ab4	10	multi_field_query_optimize_25622.t1.a,multi_field_query_optimize_25622.t1.b	2	100.00	Using index; Using join buffer (Batched Key Access)
+Warnings:
+Note	1003	/* select#1 */ select `multi_field_query_optimize_25622`.`t1`.`a` AS `a`,`multi_field_query_optimize_25622`.`t1`.`b` AS `b`,`multi_field_query_optimize_25622`.`t2`.`a` AS `a`,`multi_field_query_optimize_25622`.`t2`.`b` AS `b` from `multi_field_query_optimize_25622`.`t1` join `multi_field_query_optimize_25622`.`t2` where ((`multi_field_query_optimize_25622`.`t2`.`b` = `multi_field_query_optimize_25622`.`t1`.`b`) and (`multi_field_query_optimize_25622`.`t2`.`a` = `multi_field_query_optimize_25622`.`t1`.`a`) and (`multi_field_query_optimize_25622`.`t1`.`a` >= 1) and (`multi_field_query_optimize_25622`.`t1`.`a` <= 10) and (`multi_field_query_optimize_25622`.`t1`.`b` >= 5) and (`multi_field_query_optimize_25622`.`t1`.`b` <= 10))
+select * from t1,t2 where t1.a = t2.a and t1.b = t2.b and t1.a>=1 and t1.a<=10 and t1.b>=5 and t1.b<=10;
+a	b	a	b
+10	10	10	10
+10	5	10	5
+5	5	5	5
+[Note] SequoiaDB: Query message: condition[{}], selector[{ "a": null, "b": null }], order_by[{ "a": 1, "b": 1 }], hint[{ "$Range": { "IsAllEqual": true, "PrefixNum": 2, "IndexValue": [ { "1": 5, "2": 5 }, { "1": 10, "2": 5 }, { "1": 10, "2": 10 } ] }, "": "union_ab4" }], limit[-1], offset[0], table[multi_field_query_optimize_25622.t2]
+explain select * from t1,t2 where t1.a = t2.a and t1.b = t2.b and t1.a>=1 and t1.a<=10 and t1.b>5 and t1.b<=10;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	ALL	NULL	NULL	NULL	NULL	12	8.33	Using where with pushed condition ((`multi_field_query_optimize_25622`.`t1`.`a` >= 1) and (`multi_field_query_optimize_25622`.`t1`.`a` <= 10) and (`multi_field_query_optimize_25622`.`t1`.`b` > 5) and (`multi_field_query_optimize_25622`.`t1`.`b` <= 10) and (`multi_field_query_optimize_25622`.`t1`.`a` is not null) and (`multi_field_query_optimize_25622`.`t1`.`b` is not null))
+1	SIMPLE	t2	NULL	ref	union_ab4	union_ab4	10	multi_field_query_optimize_25622.t1.a,multi_field_query_optimize_25622.t1.b	2	100.00	Using index; Using join buffer (Batched Key Access)
+Warnings:
+Note	1003	/* select#1 */ select `multi_field_query_optimize_25622`.`t1`.`a` AS `a`,`multi_field_query_optimize_25622`.`t1`.`b` AS `b`,`multi_field_query_optimize_25622`.`t2`.`a` AS `a`,`multi_field_query_optimize_25622`.`t2`.`b` AS `b` from `multi_field_query_optimize_25622`.`t1` join `multi_field_query_optimize_25622`.`t2` where ((`multi_field_query_optimize_25622`.`t2`.`b` = `multi_field_query_optimize_25622`.`t1`.`b`) and (`multi_field_query_optimize_25622`.`t2`.`a` = `multi_field_query_optimize_25622`.`t1`.`a`) and (`multi_field_query_optimize_25622`.`t1`.`a` >= 1) and (`multi_field_query_optimize_25622`.`t1`.`a` <= 10) and (`multi_field_query_optimize_25622`.`t1`.`b` > 5) and (`multi_field_query_optimize_25622`.`t1`.`b` <= 10))
+select * from t1,t2 where t1.a = t2.a and t1.b = t2.b and t1.a>=1 and t1.a<=10 and t1.b>5 and t1.b<=10;
+a	b	a	b
+10	10	10	10
+[Note] SequoiaDB: Query message: condition[{ "a": { "$et": 10 }, "b": { "$et": 10 } }], selector[{ "a": null, "b": null }], order_by[{ "a": 1, "b": 1 }], hint[{ "": "union_ab4" }], limit[-1], offset[0], table[multi_field_query_optimize_25622.t2]
+explain select * from t1,t2 where t1.a = t2.a and t1.b = t2.b and t1.a>=1 and t1.a<=10 and t1.b>=5 and t1.b<10;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	ALL	NULL	NULL	NULL	NULL	12	8.33	Using where with pushed condition ((`multi_field_query_optimize_25622`.`t1`.`a` >= 1) and (`multi_field_query_optimize_25622`.`t1`.`a` <= 10) and (`multi_field_query_optimize_25622`.`t1`.`b` >= 5) and (`multi_field_query_optimize_25622`.`t1`.`b` < 10) and (`multi_field_query_optimize_25622`.`t1`.`a` is not null) and (`multi_field_query_optimize_25622`.`t1`.`b` is not null))
+1	SIMPLE	t2	NULL	ref	union_ab4	union_ab4	10	multi_field_query_optimize_25622.t1.a,multi_field_query_optimize_25622.t1.b	2	100.00	Using index; Using join buffer (Batched Key Access)
+Warnings:
+Note	1003	/* select#1 */ select `multi_field_query_optimize_25622`.`t1`.`a` AS `a`,`multi_field_query_optimize_25622`.`t1`.`b` AS `b`,`multi_field_query_optimize_25622`.`t2`.`a` AS `a`,`multi_field_query_optimize_25622`.`t2`.`b` AS `b` from `multi_field_query_optimize_25622`.`t1` join `multi_field_query_optimize_25622`.`t2` where ((`multi_field_query_optimize_25622`.`t2`.`b` = `multi_field_query_optimize_25622`.`t1`.`b`) and (`multi_field_query_optimize_25622`.`t2`.`a` = `multi_field_query_optimize_25622`.`t1`.`a`) and (`multi_field_query_optimize_25622`.`t1`.`a` >= 1) and (`multi_field_query_optimize_25622`.`t1`.`a` <= 10) and (`multi_field_query_optimize_25622`.`t1`.`b` >= 5) and (`multi_field_query_optimize_25622`.`t1`.`b` < 10))
+select * from t1,t2 where t1.a = t2.a and t1.b = t2.b and t1.a>=1 and t1.a<=10 and t1.b>=5 and t1.b<10;
+a	b	a	b
+10	5	10	5
+5	5	5	5
+[Note] SequoiaDB: Query message: condition[{}], selector[{ "a": null, "b": null }], order_by[{ "a": 1, "b": 1 }], hint[{ "$Range": { "IsAllEqual": true, "PrefixNum": 2, "IndexValue": [ { "1": 5, "2": 5 }, { "1": 10, "2": 5 } ] }, "": "union_ab4" }], limit[-1], offset[0], table[multi_field_query_optimize_25622.t2]
+explain select * from t1,t2 where t1.a = t2.a and t1.b = t2.b and t1.a>=1 and t1.a<=10 and t1.b>5 and t1.b<10;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	ALL	NULL	NULL	NULL	NULL	12	8.33	Using where with pushed condition ((`multi_field_query_optimize_25622`.`t1`.`a` >= 1) and (`multi_field_query_optimize_25622`.`t1`.`a` <= 10) and (`multi_field_query_optimize_25622`.`t1`.`b` > 5) and (`multi_field_query_optimize_25622`.`t1`.`b` < 10) and (`multi_field_query_optimize_25622`.`t1`.`a` is not null) and (`multi_field_query_optimize_25622`.`t1`.`b` is not null))
+1	SIMPLE	t2	NULL	ref	union_ab4	union_ab4	10	multi_field_query_optimize_25622.t1.a,multi_field_query_optimize_25622.t1.b	2	100.00	Using index; Using join buffer (Batched Key Access)
+Warnings:
+Note	1003	/* select#1 */ select `multi_field_query_optimize_25622`.`t1`.`a` AS `a`,`multi_field_query_optimize_25622`.`t1`.`b` AS `b`,`multi_field_query_optimize_25622`.`t2`.`a` AS `a`,`multi_field_query_optimize_25622`.`t2`.`b` AS `b` from `multi_field_query_optimize_25622`.`t1` join `multi_field_query_optimize_25622`.`t2` where ((`multi_field_query_optimize_25622`.`t2`.`b` = `multi_field_query_optimize_25622`.`t1`.`b`) and (`multi_field_query_optimize_25622`.`t2`.`a` = `multi_field_query_optimize_25622`.`t1`.`a`) and (`multi_field_query_optimize_25622`.`t1`.`a` >= 1) and (`multi_field_query_optimize_25622`.`t1`.`a` <= 10) and (`multi_field_query_optimize_25622`.`t1`.`b` > 5) and (`multi_field_query_optimize_25622`.`t1`.`b` < 10))
+select * from t1,t2 where t1.a = t2.a and t1.b = t2.b and t1.a>=1 and t1.a<=10 and t1.b>5 and t1.b<10;
+a	b	a	b
+[Note] SequoiaDB: Query message: condition[{ "$and": [ { "a": { "$gte": 1 } }, { "a": { "$lte": 10 } }, { "b": { "$gt": 5 } }, { "b": { "$lt": 10 } }, { "a": { "$isnull": 0 } }, { "b": { "$isnull": 0 } } ] }], selector[{}], order_by[{}], hint[{}], limit[-1], offset[0], table[multi_field_query_optimize_25622.t1]
+explain select * from t1,t2 where t1.a = t2.a and t1.b = t2.b and t1.a>1 and t1.a<=10 and t1.b>5 and t1.b<=10;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	ALL	NULL	NULL	NULL	NULL	12	8.33	Using where with pushed condition ((`multi_field_query_optimize_25622`.`t1`.`a` > 1) and (`multi_field_query_optimize_25622`.`t1`.`a` <= 10) and (`multi_field_query_optimize_25622`.`t1`.`b` > 5) and (`multi_field_query_optimize_25622`.`t1`.`b` <= 10) and (`multi_field_query_optimize_25622`.`t1`.`a` is not null) and (`multi_field_query_optimize_25622`.`t1`.`b` is not null))
+1	SIMPLE	t2	NULL	ref	union_ab4	union_ab4	10	multi_field_query_optimize_25622.t1.a,multi_field_query_optimize_25622.t1.b	2	100.00	Using index; Using join buffer (Batched Key Access)
+Warnings:
+Note	1003	/* select#1 */ select `multi_field_query_optimize_25622`.`t1`.`a` AS `a`,`multi_field_query_optimize_25622`.`t1`.`b` AS `b`,`multi_field_query_optimize_25622`.`t2`.`a` AS `a`,`multi_field_query_optimize_25622`.`t2`.`b` AS `b` from `multi_field_query_optimize_25622`.`t1` join `multi_field_query_optimize_25622`.`t2` where ((`multi_field_query_optimize_25622`.`t2`.`b` = `multi_field_query_optimize_25622`.`t1`.`b`) and (`multi_field_query_optimize_25622`.`t2`.`a` = `multi_field_query_optimize_25622`.`t1`.`a`) and (`multi_field_query_optimize_25622`.`t1`.`a` > 1) and (`multi_field_query_optimize_25622`.`t1`.`a` <= 10) and (`multi_field_query_optimize_25622`.`t1`.`b` > 5) and (`multi_field_query_optimize_25622`.`t1`.`b` <= 10))
+select * from t1,t2 where t1.a = t2.a and t1.b = t2.b and t1.a>1 and t1.a<=10 and t1.b>5 and t1.b<=10;
+a	b	a	b
+10	10	10	10
+[Note] SequoiaDB: Query message: condition[{ "a": { "$et": 10 }, "b": { "$et": 10 } }], selector[{ "a": null, "b": null }], order_by[{ "a": 1, "b": 1 }], hint[{ "": "union_ab4" }], limit[-1], offset[0], table[multi_field_query_optimize_25622.t2]
+explain select * from t1,t2 where t1.a = t2.a and t1.b = t2.b and t1.a>1 and t1.a<=10 and t1.b>=5 and t1.b<10;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	ALL	NULL	NULL	NULL	NULL	12	8.33	Using where with pushed condition ((`multi_field_query_optimize_25622`.`t1`.`a` > 1) and (`multi_field_query_optimize_25622`.`t1`.`a` <= 10) and (`multi_field_query_optimize_25622`.`t1`.`b` >= 5) and (`multi_field_query_optimize_25622`.`t1`.`b` < 10) and (`multi_field_query_optimize_25622`.`t1`.`a` is not null) and (`multi_field_query_optimize_25622`.`t1`.`b` is not null))
+1	SIMPLE	t2	NULL	ref	union_ab4	union_ab4	10	multi_field_query_optimize_25622.t1.a,multi_field_query_optimize_25622.t1.b	2	100.00	Using index; Using join buffer (Batched Key Access)
+Warnings:
+Note	1003	/* select#1 */ select `multi_field_query_optimize_25622`.`t1`.`a` AS `a`,`multi_field_query_optimize_25622`.`t1`.`b` AS `b`,`multi_field_query_optimize_25622`.`t2`.`a` AS `a`,`multi_field_query_optimize_25622`.`t2`.`b` AS `b` from `multi_field_query_optimize_25622`.`t1` join `multi_field_query_optimize_25622`.`t2` where ((`multi_field_query_optimize_25622`.`t2`.`b` = `multi_field_query_optimize_25622`.`t1`.`b`) and (`multi_field_query_optimize_25622`.`t2`.`a` = `multi_field_query_optimize_25622`.`t1`.`a`) and (`multi_field_query_optimize_25622`.`t1`.`a` > 1) and (`multi_field_query_optimize_25622`.`t1`.`a` <= 10) and (`multi_field_query_optimize_25622`.`t1`.`b` >= 5) and (`multi_field_query_optimize_25622`.`t1`.`b` < 10))
+select * from t1,t2 where t1.a = t2.a and t1.b = t2.b and t1.a>1 and t1.a<=10 and t1.b>=5 and t1.b<10;
+a	b	a	b
+10	5	10	5
+5	5	5	5
+[Note] SequoiaDB: Query message: condition[{}], selector[{ "a": null, "b": null }], order_by[{ "a": 1, "b": 1 }], hint[{ "$Range": { "IsAllEqual": true, "PrefixNum": 2, "IndexValue": [ { "1": 5, "2": 5 }, { "1": 10, "2": 5 } ] }, "": "union_ab4" }], limit[-1], offset[0], table[multi_field_query_optimize_25622.t2]
+explain select * from t1,t2 where t1.a = t2.a and t1.b = t2.b and t1.a>=1 and t1.a<10 and t1.b>5 and t1.b<=10;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	ALL	NULL	NULL	NULL	NULL	12	8.33	Using where with pushed condition ((`multi_field_query_optimize_25622`.`t1`.`a` >= 1) and (`multi_field_query_optimize_25622`.`t1`.`a` < 10) and (`multi_field_query_optimize_25622`.`t1`.`b` > 5) and (`multi_field_query_optimize_25622`.`t1`.`b` <= 10) and (`multi_field_query_optimize_25622`.`t1`.`a` is not null) and (`multi_field_query_optimize_25622`.`t1`.`b` is not null))
+1	SIMPLE	t2	NULL	ref	union_ab4	union_ab4	10	multi_field_query_optimize_25622.t1.a,multi_field_query_optimize_25622.t1.b	2	100.00	Using index; Using join buffer (Batched Key Access)
+Warnings:
+Note	1003	/* select#1 */ select `multi_field_query_optimize_25622`.`t1`.`a` AS `a`,`multi_field_query_optimize_25622`.`t1`.`b` AS `b`,`multi_field_query_optimize_25622`.`t2`.`a` AS `a`,`multi_field_query_optimize_25622`.`t2`.`b` AS `b` from `multi_field_query_optimize_25622`.`t1` join `multi_field_query_optimize_25622`.`t2` where ((`multi_field_query_optimize_25622`.`t2`.`b` = `multi_field_query_optimize_25622`.`t1`.`b`) and (`multi_field_query_optimize_25622`.`t2`.`a` = `multi_field_query_optimize_25622`.`t1`.`a`) and (`multi_field_query_optimize_25622`.`t1`.`a` >= 1) and (`multi_field_query_optimize_25622`.`t1`.`a` < 10) and (`multi_field_query_optimize_25622`.`t1`.`b` > 5) and (`multi_field_query_optimize_25622`.`t1`.`b` <= 10))
+select * from t1,t2 where t1.a = t2.a and t1.b = t2.b and t1.a>=1 and t1.a<10 and t1.b>5 and t1.b<=10;
+a	b	a	b
+[Note] SequoiaDB: Query message: condition[{ "$and": [ { "a": { "$gte": 1 } }, { "a": { "$lt": 10 } }, { "b": { "$gt": 5 } }, { "b": { "$lte": 10 } }, { "a": { "$isnull": 0 } }, { "b": { "$isnull": 0 } } ] }], selector[{}], order_by[{}], hint[{}], limit[-1], offset[0], table[multi_field_query_optimize_25622.t1]
+explain select * from t1,t2 where t1.a = t2.a and t1.b = t2.b and t1.a>=1 and t1.a<10 and t1.b>=5 and t1.b<10;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	ALL	NULL	NULL	NULL	NULL	12	8.33	Using where with pushed condition ((`multi_field_query_optimize_25622`.`t1`.`a` >= 1) and (`multi_field_query_optimize_25622`.`t1`.`a` < 10) and (`multi_field_query_optimize_25622`.`t1`.`b` >= 5) and (`multi_field_query_optimize_25622`.`t1`.`b` < 10) and (`multi_field_query_optimize_25622`.`t1`.`a` is not null) and (`multi_field_query_optimize_25622`.`t1`.`b` is not null))
+1	SIMPLE	t2	NULL	ref	union_ab4	union_ab4	10	multi_field_query_optimize_25622.t1.a,multi_field_query_optimize_25622.t1.b	2	100.00	Using index; Using join buffer (Batched Key Access)
+Warnings:
+Note	1003	/* select#1 */ select `multi_field_query_optimize_25622`.`t1`.`a` AS `a`,`multi_field_query_optimize_25622`.`t1`.`b` AS `b`,`multi_field_query_optimize_25622`.`t2`.`a` AS `a`,`multi_field_query_optimize_25622`.`t2`.`b` AS `b` from `multi_field_query_optimize_25622`.`t1` join `multi_field_query_optimize_25622`.`t2` where ((`multi_field_query_optimize_25622`.`t2`.`b` = `multi_field_query_optimize_25622`.`t1`.`b`) and (`multi_field_query_optimize_25622`.`t2`.`a` = `multi_field_query_optimize_25622`.`t1`.`a`) and (`multi_field_query_optimize_25622`.`t1`.`a` >= 1) and (`multi_field_query_optimize_25622`.`t1`.`a` < 10) and (`multi_field_query_optimize_25622`.`t1`.`b` >= 5) and (`multi_field_query_optimize_25622`.`t1`.`b` < 10))
+select * from t1,t2 where t1.a = t2.a and t1.b = t2.b and t1.a>=1 and t1.a<10 and t1.b>=5 and t1.b<10;
+a	b	a	b
+5	5	5	5
+[Note] SequoiaDB: Query message: condition[{ "a": { "$et": 5 }, "b": { "$et": 5 } }], selector[{ "a": null, "b": null }], order_by[{ "a": 1, "b": 1 }], hint[{ "": "union_ab4" }], limit[-1], offset[0], table[multi_field_query_optimize_25622.t2]
+explain select * from t1,t2 where t1.a = t2.a and t1.b = t2.b and t1.a>1 and t1.a<10 and t1.b>5 and t1.b<=10;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	ALL	NULL	NULL	NULL	NULL	12	8.33	Using where with pushed condition ((`multi_field_query_optimize_25622`.`t1`.`a` > 1) and (`multi_field_query_optimize_25622`.`t1`.`a` < 10) and (`multi_field_query_optimize_25622`.`t1`.`b` > 5) and (`multi_field_query_optimize_25622`.`t1`.`b` <= 10) and (`multi_field_query_optimize_25622`.`t1`.`a` is not null) and (`multi_field_query_optimize_25622`.`t1`.`b` is not null))
+1	SIMPLE	t2	NULL	ref	union_ab4	union_ab4	10	multi_field_query_optimize_25622.t1.a,multi_field_query_optimize_25622.t1.b	2	100.00	Using index; Using join buffer (Batched Key Access)
+Warnings:
+Note	1003	/* select#1 */ select `multi_field_query_optimize_25622`.`t1`.`a` AS `a`,`multi_field_query_optimize_25622`.`t1`.`b` AS `b`,`multi_field_query_optimize_25622`.`t2`.`a` AS `a`,`multi_field_query_optimize_25622`.`t2`.`b` AS `b` from `multi_field_query_optimize_25622`.`t1` join `multi_field_query_optimize_25622`.`t2` where ((`multi_field_query_optimize_25622`.`t2`.`b` = `multi_field_query_optimize_25622`.`t1`.`b`) and (`multi_field_query_optimize_25622`.`t2`.`a` = `multi_field_query_optimize_25622`.`t1`.`a`) and (`multi_field_query_optimize_25622`.`t1`.`a` > 1) and (`multi_field_query_optimize_25622`.`t1`.`a` < 10) and (`multi_field_query_optimize_25622`.`t1`.`b` > 5) and (`multi_field_query_optimize_25622`.`t1`.`b` <= 10))
+select * from t1,t2 where t1.a = t2.a and t1.b = t2.b and t1.a>1 and t1.a<10 and t1.b>5 and t1.b<=10;
+a	b	a	b
+[Note] SequoiaDB: Query message: condition[{ "$and": [ { "a": { "$gt": 1 } }, { "a": { "$lt": 10 } }, { "b": { "$gt": 5 } }, { "b": { "$lte": 10 } }, { "a": { "$isnull": 0 } }, { "b": { "$isnull": 0 } } ] }], selector[{}], order_by[{}], hint[{}], limit[-1], offset[0], table[multi_field_query_optimize_25622.t1]
+explain select * from t1,t2 where t1.a = t2.a and t1.b = t2.b and t1.a>1 and t1.a<10 and t1.b>=5 and t1.b<10;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	ALL	NULL	NULL	NULL	NULL	12	8.33	Using where with pushed condition ((`multi_field_query_optimize_25622`.`t1`.`a` > 1) and (`multi_field_query_optimize_25622`.`t1`.`a` < 10) and (`multi_field_query_optimize_25622`.`t1`.`b` >= 5) and (`multi_field_query_optimize_25622`.`t1`.`b` < 10) and (`multi_field_query_optimize_25622`.`t1`.`a` is not null) and (`multi_field_query_optimize_25622`.`t1`.`b` is not null))
+1	SIMPLE	t2	NULL	ref	union_ab4	union_ab4	10	multi_field_query_optimize_25622.t1.a,multi_field_query_optimize_25622.t1.b	2	100.00	Using index; Using join buffer (Batched Key Access)
+Warnings:
+Note	1003	/* select#1 */ select `multi_field_query_optimize_25622`.`t1`.`a` AS `a`,`multi_field_query_optimize_25622`.`t1`.`b` AS `b`,`multi_field_query_optimize_25622`.`t2`.`a` AS `a`,`multi_field_query_optimize_25622`.`t2`.`b` AS `b` from `multi_field_query_optimize_25622`.`t1` join `multi_field_query_optimize_25622`.`t2` where ((`multi_field_query_optimize_25622`.`t2`.`b` = `multi_field_query_optimize_25622`.`t1`.`b`) and (`multi_field_query_optimize_25622`.`t2`.`a` = `multi_field_query_optimize_25622`.`t1`.`a`) and (`multi_field_query_optimize_25622`.`t1`.`a` > 1) and (`multi_field_query_optimize_25622`.`t1`.`a` < 10) and (`multi_field_query_optimize_25622`.`t1`.`b` >= 5) and (`multi_field_query_optimize_25622`.`t1`.`b` < 10))
+select * from t1,t2 where t1.a = t2.a and t1.b = t2.b and t1.a>1 and t1.a<10 and t1.b>=5 and t1.b<10;
+a	b	a	b
+5	5	5	5
+[Note] SequoiaDB: Query message: condition[{ "a": { "$et": 5 }, "b": { "$et": 5 } }], selector[{ "a": null, "b": null }], order_by[{ "a": 1, "b": 1 }], hint[{ "": "union_ab4" }], limit[-1], offset[0], table[multi_field_query_optimize_25622.t2]
+explain select * from t1,t2 where t1.a = t2.a and t1.b = t2.b and (t1.a>=1 and t1.a<=10) or t1.b<=10;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	ALL	NULL	NULL	NULL	NULL	12	40.74	Using where with pushed condition (((`multi_field_query_optimize_25622`.`t1`.`a` >= 1) and (`multi_field_query_optimize_25622`.`t1`.`a` <= 10)) or (`multi_field_query_optimize_25622`.`t1`.`b` <= 10))
+1	SIMPLE	t2	NULL	index	union_ab4	union_ab4	10	NULL	12	100.00	Using where; Using index; Using join buffer (Block Nested Loop)
+Warnings:
+Note	1003	/* select#1 */ select `multi_field_query_optimize_25622`.`t1`.`a` AS `a`,`multi_field_query_optimize_25622`.`t1`.`b` AS `b`,`multi_field_query_optimize_25622`.`t2`.`a` AS `a`,`multi_field_query_optimize_25622`.`t2`.`b` AS `b` from `multi_field_query_optimize_25622`.`t1` join `multi_field_query_optimize_25622`.`t2` where (((`multi_field_query_optimize_25622`.`t2`.`b` = `multi_field_query_optimize_25622`.`t1`.`b`) and (`multi_field_query_optimize_25622`.`t2`.`a` = `multi_field_query_optimize_25622`.`t1`.`a`) and (`multi_field_query_optimize_25622`.`t1`.`a` >= 1) and (`multi_field_query_optimize_25622`.`t1`.`a` <= 10)) or (`multi_field_query_optimize_25622`.`t1`.`b` <= 10))
+select * from t1,t2 where t1.a = t2.a and t1.b = t2.b and (t1.a>=1 and t1.a<=10) or t1.b<=10;
+a	b	a	b
+1	1	1	1
+1	1	1	12
+1	1	10	10
+1	1	10	5
+1	1	11	4
+1	1	11	5
+1	1	12	12
+1	1	2	2
+1	1	3	3
+1	1	4	4
+1	1	5	5
+1	1	6	3
+1	12	1	12
+10	10	1	1
+10	10	1	12
+10	10	10	10
+10	10	10	5
+10	10	11	4
+10	10	11	5
+10	10	12	12
+10	10	2	2
+10	10	3	3
+10	10	4	4
+10	10	5	5
+10	10	6	3
+10	5	1	1
+10	5	1	12
+10	5	10	10
+10	5	10	5
+10	5	11	4
+10	5	11	5
+10	5	12	12
+10	5	2	2
+10	5	3	3
+10	5	4	4
+10	5	5	5
+10	5	6	3
+11	4	1	1
+11	4	1	12
+11	4	10	10
+11	4	10	5
+11	4	11	4
+11	4	11	5
+11	4	12	12
+11	4	2	2
+11	4	3	3
+11	4	4	4
+11	4	5	5
+11	4	6	3
+11	5	1	1
+11	5	1	12
+11	5	10	10
+11	5	10	5
+11	5	11	4
+11	5	11	5
+11	5	12	12
+11	5	2	2
+11	5	3	3
+11	5	4	4
+11	5	5	5
+11	5	6	3
+2	2	1	1
+2	2	1	12
+2	2	10	10
+2	2	10	5
+2	2	11	4
+2	2	11	5
+2	2	12	12
+2	2	2	2
+2	2	3	3
+2	2	4	4
+2	2	5	5
+2	2	6	3
+3	3	1	1
+3	3	1	12
+3	3	10	10
+3	3	10	5
+3	3	11	4
+3	3	11	5
+3	3	12	12
+3	3	2	2
+3	3	3	3
+3	3	4	4
+3	3	5	5
+3	3	6	3
+4	4	1	1
+4	4	1	12
+4	4	10	10
+4	4	10	5
+4	4	11	4
+4	4	11	5
+4	4	12	12
+4	4	2	2
+4	4	3	3
+4	4	4	4
+4	4	5	5
+4	4	6	3
+5	5	1	1
+5	5	1	12
+5	5	10	10
+5	5	10	5
+5	5	11	4
+5	5	11	5
+5	5	12	12
+5	5	2	2
+5	5	3	3
+5	5	4	4
+5	5	5	5
+5	5	6	3
+6	3	1	1
+6	3	1	12
+6	3	10	10
+6	3	10	5
+6	3	11	4
+6	3	11	5
+6	3	12	12
+6	3	2	2
+6	3	3	3
+6	3	4	4
+6	3	5	5
+6	3	6	3
+[Note] SequoiaDB: Query message: condition[{}], selector[{ "a": null, "b": null }], order_by[{ "a": 1, "b": 1 }], hint[{ "": "union_ab4" }], limit[-1], offset[0], table[multi_field_query_optimize_25622.t2]
+explain select * from t1,t2 where t1.a = t2.a and t1.b = t2.b and (t1.a>1 and t1.a<=10) or t1.b<=10;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	ALL	NULL	NULL	NULL	NULL	12	40.74	Using where with pushed condition (((`multi_field_query_optimize_25622`.`t1`.`a` > 1) and (`multi_field_query_optimize_25622`.`t1`.`a` <= 10)) or (`multi_field_query_optimize_25622`.`t1`.`b` <= 10))
+1	SIMPLE	t2	NULL	index	union_ab4	union_ab4	10	NULL	12	100.00	Using where; Using index; Using join buffer (Block Nested Loop)
+Warnings:
+Note	1003	/* select#1 */ select `multi_field_query_optimize_25622`.`t1`.`a` AS `a`,`multi_field_query_optimize_25622`.`t1`.`b` AS `b`,`multi_field_query_optimize_25622`.`t2`.`a` AS `a`,`multi_field_query_optimize_25622`.`t2`.`b` AS `b` from `multi_field_query_optimize_25622`.`t1` join `multi_field_query_optimize_25622`.`t2` where (((`multi_field_query_optimize_25622`.`t2`.`b` = `multi_field_query_optimize_25622`.`t1`.`b`) and (`multi_field_query_optimize_25622`.`t2`.`a` = `multi_field_query_optimize_25622`.`t1`.`a`) and (`multi_field_query_optimize_25622`.`t1`.`a` > 1) and (`multi_field_query_optimize_25622`.`t1`.`a` <= 10)) or (`multi_field_query_optimize_25622`.`t1`.`b` <= 10))
+select * from t1,t2 where t1.a = t2.a and t1.b = t2.b and (t1.a>1 and t1.a<=10) or t1.b<=10;
+a	b	a	b
+1	1	1	1
+1	1	1	12
+1	1	10	10
+1	1	10	5
+1	1	11	4
+1	1	11	5
+1	1	12	12
+1	1	2	2
+1	1	3	3
+1	1	4	4
+1	1	5	5
+1	1	6	3
+10	10	1	1
+10	10	1	12
+10	10	10	10
+10	10	10	5
+10	10	11	4
+10	10	11	5
+10	10	12	12
+10	10	2	2
+10	10	3	3
+10	10	4	4
+10	10	5	5
+10	10	6	3
+10	5	1	1
+10	5	1	12
+10	5	10	10
+10	5	10	5
+10	5	11	4
+10	5	11	5
+10	5	12	12
+10	5	2	2
+10	5	3	3
+10	5	4	4
+10	5	5	5
+10	5	6	3
+11	4	1	1
+11	4	1	12
+11	4	10	10
+11	4	10	5
+11	4	11	4
+11	4	11	5
+11	4	12	12
+11	4	2	2
+11	4	3	3
+11	4	4	4
+11	4	5	5
+11	4	6	3
+11	5	1	1
+11	5	1	12
+11	5	10	10
+11	5	10	5
+11	5	11	4
+11	5	11	5
+11	5	12	12
+11	5	2	2
+11	5	3	3
+11	5	4	4
+11	5	5	5
+11	5	6	3
+2	2	1	1
+2	2	1	12
+2	2	10	10
+2	2	10	5
+2	2	11	4
+2	2	11	5
+2	2	12	12
+2	2	2	2
+2	2	3	3
+2	2	4	4
+2	2	5	5
+2	2	6	3
+3	3	1	1
+3	3	1	12
+3	3	10	10
+3	3	10	5
+3	3	11	4
+3	3	11	5
+3	3	12	12
+3	3	2	2
+3	3	3	3
+3	3	4	4
+3	3	5	5
+3	3	6	3
+4	4	1	1
+4	4	1	12
+4	4	10	10
+4	4	10	5
+4	4	11	4
+4	4	11	5
+4	4	12	12
+4	4	2	2
+4	4	3	3
+4	4	4	4
+4	4	5	5
+4	4	6	3
+5	5	1	1
+5	5	1	12
+5	5	10	10
+5	5	10	5
+5	5	11	4
+5	5	11	5
+5	5	12	12
+5	5	2	2
+5	5	3	3
+5	5	4	4
+5	5	5	5
+5	5	6	3
+6	3	1	1
+6	3	1	12
+6	3	10	10
+6	3	10	5
+6	3	11	4
+6	3	11	5
+6	3	12	12
+6	3	2	2
+6	3	3	3
+6	3	4	4
+6	3	5	5
+6	3	6	3
+[Note] SequoiaDB: Query message: condition[{}], selector[{ "a": null, "b": null }], order_by[{ "a": 1, "b": 1 }], hint[{ "": "union_ab4" }], limit[-1], offset[0], table[multi_field_query_optimize_25622.t2]
+explain select * from t1,t2 where t1.a = t2.a and t1.b = t2.b and (t1.a>1 and t1.a<10) or t1.b<=10;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	ALL	NULL	NULL	NULL	NULL	12	40.74	Using where with pushed condition (((`multi_field_query_optimize_25622`.`t1`.`a` > 1) and (`multi_field_query_optimize_25622`.`t1`.`a` < 10)) or (`multi_field_query_optimize_25622`.`t1`.`b` <= 10))
+1	SIMPLE	t2	NULL	index	union_ab4	union_ab4	10	NULL	12	100.00	Using where; Using index; Using join buffer (Block Nested Loop)
+Warnings:
+Note	1003	/* select#1 */ select `multi_field_query_optimize_25622`.`t1`.`a` AS `a`,`multi_field_query_optimize_25622`.`t1`.`b` AS `b`,`multi_field_query_optimize_25622`.`t2`.`a` AS `a`,`multi_field_query_optimize_25622`.`t2`.`b` AS `b` from `multi_field_query_optimize_25622`.`t1` join `multi_field_query_optimize_25622`.`t2` where (((`multi_field_query_optimize_25622`.`t2`.`b` = `multi_field_query_optimize_25622`.`t1`.`b`) and (`multi_field_query_optimize_25622`.`t2`.`a` = `multi_field_query_optimize_25622`.`t1`.`a`) and (`multi_field_query_optimize_25622`.`t1`.`a` > 1) and (`multi_field_query_optimize_25622`.`t1`.`a` < 10)) or (`multi_field_query_optimize_25622`.`t1`.`b` <= 10))
+select * from t1,t2 where t1.a = t2.a and t1.b = t2.b and (t1.a>1 and t1.a<10) or t1.b<=10;
+a	b	a	b
+1	1	1	1
+1	1	1	12
+1	1	10	10
+1	1	10	5
+1	1	11	4
+1	1	11	5
+1	1	12	12
+1	1	2	2
+1	1	3	3
+1	1	4	4
+1	1	5	5
+1	1	6	3
+10	10	1	1
+10	10	1	12
+10	10	10	10
+10	10	10	5
+10	10	11	4
+10	10	11	5
+10	10	12	12
+10	10	2	2
+10	10	3	3
+10	10	4	4
+10	10	5	5
+10	10	6	3
+10	5	1	1
+10	5	1	12
+10	5	10	10
+10	5	10	5
+10	5	11	4
+10	5	11	5
+10	5	12	12
+10	5	2	2
+10	5	3	3
+10	5	4	4
+10	5	5	5
+10	5	6	3
+11	4	1	1
+11	4	1	12
+11	4	10	10
+11	4	10	5
+11	4	11	4
+11	4	11	5
+11	4	12	12
+11	4	2	2
+11	4	3	3
+11	4	4	4
+11	4	5	5
+11	4	6	3
+11	5	1	1
+11	5	1	12
+11	5	10	10
+11	5	10	5
+11	5	11	4
+11	5	11	5
+11	5	12	12
+11	5	2	2
+11	5	3	3
+11	5	4	4
+11	5	5	5
+11	5	6	3
+2	2	1	1
+2	2	1	12
+2	2	10	10
+2	2	10	5
+2	2	11	4
+2	2	11	5
+2	2	12	12
+2	2	2	2
+2	2	3	3
+2	2	4	4
+2	2	5	5
+2	2	6	3
+3	3	1	1
+3	3	1	12
+3	3	10	10
+3	3	10	5
+3	3	11	4
+3	3	11	5
+3	3	12	12
+3	3	2	2
+3	3	3	3
+3	3	4	4
+3	3	5	5
+3	3	6	3
+4	4	1	1
+4	4	1	12
+4	4	10	10
+4	4	10	5
+4	4	11	4
+4	4	11	5
+4	4	12	12
+4	4	2	2
+4	4	3	3
+4	4	4	4
+4	4	5	5
+4	4	6	3
+5	5	1	1
+5	5	1	12
+5	5	10	10
+5	5	10	5
+5	5	11	4
+5	5	11	5
+5	5	12	12
+5	5	2	2
+5	5	3	3
+5	5	4	4
+5	5	5	5
+5	5	6	3
+6	3	1	1
+6	3	1	12
+6	3	10	10
+6	3	10	5
+6	3	11	4
+6	3	11	5
+6	3	12	12
+6	3	2	2
+6	3	3	3
+6	3	4	4
+6	3	5	5
+6	3	6	3
+[Note] SequoiaDB: Query message: condition[{}], selector[{ "a": null, "b": null }], order_by[{ "a": 1, "b": 1 }], hint[{ "": "union_ab4" }], limit[-1], offset[0], table[multi_field_query_optimize_25622.t2]
+explain select * from t1,t2 where t1.a = t2.a and t1.b = t2.b and (t1.a>=1 and t1.a<10) or t1.b<=10;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	ALL	NULL	NULL	NULL	NULL	12	40.74	Using where with pushed condition (((`multi_field_query_optimize_25622`.`t1`.`a` >= 1) and (`multi_field_query_optimize_25622`.`t1`.`a` < 10)) or (`multi_field_query_optimize_25622`.`t1`.`b` <= 10))
+1	SIMPLE	t2	NULL	index	union_ab4	union_ab4	10	NULL	12	100.00	Using where; Using index; Using join buffer (Block Nested Loop)
+Warnings:
+Note	1003	/* select#1 */ select `multi_field_query_optimize_25622`.`t1`.`a` AS `a`,`multi_field_query_optimize_25622`.`t1`.`b` AS `b`,`multi_field_query_optimize_25622`.`t2`.`a` AS `a`,`multi_field_query_optimize_25622`.`t2`.`b` AS `b` from `multi_field_query_optimize_25622`.`t1` join `multi_field_query_optimize_25622`.`t2` where (((`multi_field_query_optimize_25622`.`t2`.`b` = `multi_field_query_optimize_25622`.`t1`.`b`) and (`multi_field_query_optimize_25622`.`t2`.`a` = `multi_field_query_optimize_25622`.`t1`.`a`) and (`multi_field_query_optimize_25622`.`t1`.`a` >= 1) and (`multi_field_query_optimize_25622`.`t1`.`a` < 10)) or (`multi_field_query_optimize_25622`.`t1`.`b` <= 10))
+select * from t1,t2 where t1.a = t2.a and t1.b = t2.b and (t1.a>=1 and t1.a<10) or t1.b<=10;
+a	b	a	b
+1	1	1	1
+1	1	1	12
+1	1	10	10
+1	1	10	5
+1	1	11	4
+1	1	11	5
+1	1	12	12
+1	1	2	2
+1	1	3	3
+1	1	4	4
+1	1	5	5
+1	1	6	3
+1	12	1	12
+10	10	1	1
+10	10	1	12
+10	10	10	10
+10	10	10	5
+10	10	11	4
+10	10	11	5
+10	10	12	12
+10	10	2	2
+10	10	3	3
+10	10	4	4
+10	10	5	5
+10	10	6	3
+10	5	1	1
+10	5	1	12
+10	5	10	10
+10	5	10	5
+10	5	11	4
+10	5	11	5
+10	5	12	12
+10	5	2	2
+10	5	3	3
+10	5	4	4
+10	5	5	5
+10	5	6	3
+11	4	1	1
+11	4	1	12
+11	4	10	10
+11	4	10	5
+11	4	11	4
+11	4	11	5
+11	4	12	12
+11	4	2	2
+11	4	3	3
+11	4	4	4
+11	4	5	5
+11	4	6	3
+11	5	1	1
+11	5	1	12
+11	5	10	10
+11	5	10	5
+11	5	11	4
+11	5	11	5
+11	5	12	12
+11	5	2	2
+11	5	3	3
+11	5	4	4
+11	5	5	5
+11	5	6	3
+2	2	1	1
+2	2	1	12
+2	2	10	10
+2	2	10	5
+2	2	11	4
+2	2	11	5
+2	2	12	12
+2	2	2	2
+2	2	3	3
+2	2	4	4
+2	2	5	5
+2	2	6	3
+3	3	1	1
+3	3	1	12
+3	3	10	10
+3	3	10	5
+3	3	11	4
+3	3	11	5
+3	3	12	12
+3	3	2	2
+3	3	3	3
+3	3	4	4
+3	3	5	5
+3	3	6	3
+4	4	1	1
+4	4	1	12
+4	4	10	10
+4	4	10	5
+4	4	11	4
+4	4	11	5
+4	4	12	12
+4	4	2	2
+4	4	3	3
+4	4	4	4
+4	4	5	5
+4	4	6	3
+5	5	1	1
+5	5	1	12
+5	5	10	10
+5	5	10	5
+5	5	11	4
+5	5	11	5
+5	5	12	12
+5	5	2	2
+5	5	3	3
+5	5	4	4
+5	5	5	5
+5	5	6	3
+6	3	1	1
+6	3	1	12
+6	3	10	10
+6	3	10	5
+6	3	11	4
+6	3	11	5
+6	3	12	12
+6	3	2	2
+6	3	3	3
+6	3	4	4
+6	3	5	5
+6	3	6	3
+[Note] SequoiaDB: Query message: condition[{}], selector[{ "a": null, "b": null }], order_by[{ "a": 1, "b": 1 }], hint[{ "": "union_ab4" }], limit[-1], offset[0], table[multi_field_query_optimize_25622.t2]
+explain select * from t1,t2 where t1.a = t2.a and t1.b = t2.b and (t1.a>=1 and t1.a<=10) or t1.b<10;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	ALL	NULL	NULL	NULL	NULL	12	40.74	Using where with pushed condition (((`multi_field_query_optimize_25622`.`t1`.`a` >= 1) and (`multi_field_query_optimize_25622`.`t1`.`a` <= 10)) or (`multi_field_query_optimize_25622`.`t1`.`b` < 10))
+1	SIMPLE	t2	NULL	index	union_ab4	union_ab4	10	NULL	12	100.00	Using where; Using index; Using join buffer (Block Nested Loop)
+Warnings:
+Note	1003	/* select#1 */ select `multi_field_query_optimize_25622`.`t1`.`a` AS `a`,`multi_field_query_optimize_25622`.`t1`.`b` AS `b`,`multi_field_query_optimize_25622`.`t2`.`a` AS `a`,`multi_field_query_optimize_25622`.`t2`.`b` AS `b` from `multi_field_query_optimize_25622`.`t1` join `multi_field_query_optimize_25622`.`t2` where (((`multi_field_query_optimize_25622`.`t2`.`b` = `multi_field_query_optimize_25622`.`t1`.`b`) and (`multi_field_query_optimize_25622`.`t2`.`a` = `multi_field_query_optimize_25622`.`t1`.`a`) and (`multi_field_query_optimize_25622`.`t1`.`a` >= 1) and (`multi_field_query_optimize_25622`.`t1`.`a` <= 10)) or (`multi_field_query_optimize_25622`.`t1`.`b` < 10))
+select * from t1,t2 where t1.a = t2.a and t1.b = t2.b and (t1.a>=1 and t1.a<=10) or t1.b<10;
+a	b	a	b
+1	1	1	1
+1	1	1	12
+1	1	10	10
+1	1	10	5
+1	1	11	4
+1	1	11	5
+1	1	12	12
+1	1	2	2
+1	1	3	3
+1	1	4	4
+1	1	5	5
+1	1	6	3
+1	12	1	12
+10	10	10	10
+10	5	1	1
+10	5	1	12
+10	5	10	10
+10	5	10	5
+10	5	11	4
+10	5	11	5
+10	5	12	12
+10	5	2	2
+10	5	3	3
+10	5	4	4
+10	5	5	5
+10	5	6	3
+11	4	1	1
+11	4	1	12
+11	4	10	10
+11	4	10	5
+11	4	11	4
+11	4	11	5
+11	4	12	12
+11	4	2	2
+11	4	3	3
+11	4	4	4
+11	4	5	5
+11	4	6	3
+11	5	1	1
+11	5	1	12
+11	5	10	10
+11	5	10	5
+11	5	11	4
+11	5	11	5
+11	5	12	12
+11	5	2	2
+11	5	3	3
+11	5	4	4
+11	5	5	5
+11	5	6	3
+2	2	1	1
+2	2	1	12
+2	2	10	10
+2	2	10	5
+2	2	11	4
+2	2	11	5
+2	2	12	12
+2	2	2	2
+2	2	3	3
+2	2	4	4
+2	2	5	5
+2	2	6	3
+3	3	1	1
+3	3	1	12
+3	3	10	10
+3	3	10	5
+3	3	11	4
+3	3	11	5
+3	3	12	12
+3	3	2	2
+3	3	3	3
+3	3	4	4
+3	3	5	5
+3	3	6	3
+4	4	1	1
+4	4	1	12
+4	4	10	10
+4	4	10	5
+4	4	11	4
+4	4	11	5
+4	4	12	12
+4	4	2	2
+4	4	3	3
+4	4	4	4
+4	4	5	5
+4	4	6	3
+5	5	1	1
+5	5	1	12
+5	5	10	10
+5	5	10	5
+5	5	11	4
+5	5	11	5
+5	5	12	12
+5	5	2	2
+5	5	3	3
+5	5	4	4
+5	5	5	5
+5	5	6	3
+6	3	1	1
+6	3	1	12
+6	3	10	10
+6	3	10	5
+6	3	11	4
+6	3	11	5
+6	3	12	12
+6	3	2	2
+6	3	3	3
+6	3	4	4
+6	3	5	5
+6	3	6	3
+[Note] SequoiaDB: Query message: condition[{}], selector[{ "a": null, "b": null }], order_by[{ "a": 1, "b": 1 }], hint[{ "": "union_ab4" }], limit[-1], offset[0], table[multi_field_query_optimize_25622.t2]
+explain select * from t1,t2 where t1.a = t2.a and t1.b = t2.b and (t1.a>1 and t1.a<=10) or t1.b<10;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	ALL	NULL	NULL	NULL	NULL	12	40.74	Using where with pushed condition (((`multi_field_query_optimize_25622`.`t1`.`a` > 1) and (`multi_field_query_optimize_25622`.`t1`.`a` <= 10)) or (`multi_field_query_optimize_25622`.`t1`.`b` < 10))
+1	SIMPLE	t2	NULL	index	union_ab4	union_ab4	10	NULL	12	100.00	Using where; Using index; Using join buffer (Block Nested Loop)
+Warnings:
+Note	1003	/* select#1 */ select `multi_field_query_optimize_25622`.`t1`.`a` AS `a`,`multi_field_query_optimize_25622`.`t1`.`b` AS `b`,`multi_field_query_optimize_25622`.`t2`.`a` AS `a`,`multi_field_query_optimize_25622`.`t2`.`b` AS `b` from `multi_field_query_optimize_25622`.`t1` join `multi_field_query_optimize_25622`.`t2` where (((`multi_field_query_optimize_25622`.`t2`.`b` = `multi_field_query_optimize_25622`.`t1`.`b`) and (`multi_field_query_optimize_25622`.`t2`.`a` = `multi_field_query_optimize_25622`.`t1`.`a`) and (`multi_field_query_optimize_25622`.`t1`.`a` > 1) and (`multi_field_query_optimize_25622`.`t1`.`a` <= 10)) or (`multi_field_query_optimize_25622`.`t1`.`b` < 10))
+select * from t1,t2 where t1.a = t2.a and t1.b = t2.b and (t1.a>1 and t1.a<=10) or t1.b<10;
+a	b	a	b
+1	1	1	1
+1	1	1	12
+1	1	10	10
+1	1	10	5
+1	1	11	4
+1	1	11	5
+1	1	12	12
+1	1	2	2
+1	1	3	3
+1	1	4	4
+1	1	5	5
+1	1	6	3
+10	10	10	10
+10	5	1	1
+10	5	1	12
+10	5	10	10
+10	5	10	5
+10	5	11	4
+10	5	11	5
+10	5	12	12
+10	5	2	2
+10	5	3	3
+10	5	4	4
+10	5	5	5
+10	5	6	3
+11	4	1	1
+11	4	1	12
+11	4	10	10
+11	4	10	5
+11	4	11	4
+11	4	11	5
+11	4	12	12
+11	4	2	2
+11	4	3	3
+11	4	4	4
+11	4	5	5
+11	4	6	3
+11	5	1	1
+11	5	1	12
+11	5	10	10
+11	5	10	5
+11	5	11	4
+11	5	11	5
+11	5	12	12
+11	5	2	2
+11	5	3	3
+11	5	4	4
+11	5	5	5
+11	5	6	3
+2	2	1	1
+2	2	1	12
+2	2	10	10
+2	2	10	5
+2	2	11	4
+2	2	11	5
+2	2	12	12
+2	2	2	2
+2	2	3	3
+2	2	4	4
+2	2	5	5
+2	2	6	3
+3	3	1	1
+3	3	1	12
+3	3	10	10
+3	3	10	5
+3	3	11	4
+3	3	11	5
+3	3	12	12
+3	3	2	2
+3	3	3	3
+3	3	4	4
+3	3	5	5
+3	3	6	3
+4	4	1	1
+4	4	1	12
+4	4	10	10
+4	4	10	5
+4	4	11	4
+4	4	11	5
+4	4	12	12
+4	4	2	2
+4	4	3	3
+4	4	4	4
+4	4	5	5
+4	4	6	3
+5	5	1	1
+5	5	1	12
+5	5	10	10
+5	5	10	5
+5	5	11	4
+5	5	11	5
+5	5	12	12
+5	5	2	2
+5	5	3	3
+5	5	4	4
+5	5	5	5
+5	5	6	3
+6	3	1	1
+6	3	1	12
+6	3	10	10
+6	3	10	5
+6	3	11	4
+6	3	11	5
+6	3	12	12
+6	3	2	2
+6	3	3	3
+6	3	4	4
+6	3	5	5
+6	3	6	3
+[Note] SequoiaDB: Query message: condition[{}], selector[{ "a": null, "b": null }], order_by[{ "a": 1, "b": 1 }], hint[{ "": "union_ab4" }], limit[-1], offset[0], table[multi_field_query_optimize_25622.t2]
+explain select * from t1,t2 where t1.a = t2.a and t1.b = t2.b and (t1.a>1 and t1.a<10) or t1.b<10;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	ALL	NULL	NULL	NULL	NULL	12	40.74	Using where with pushed condition (((`multi_field_query_optimize_25622`.`t1`.`a` > 1) and (`multi_field_query_optimize_25622`.`t1`.`a` < 10)) or (`multi_field_query_optimize_25622`.`t1`.`b` < 10))
+1	SIMPLE	t2	NULL	index	union_ab4	union_ab4	10	NULL	12	100.00	Using where; Using index; Using join buffer (Block Nested Loop)
+Warnings:
+Note	1003	/* select#1 */ select `multi_field_query_optimize_25622`.`t1`.`a` AS `a`,`multi_field_query_optimize_25622`.`t1`.`b` AS `b`,`multi_field_query_optimize_25622`.`t2`.`a` AS `a`,`multi_field_query_optimize_25622`.`t2`.`b` AS `b` from `multi_field_query_optimize_25622`.`t1` join `multi_field_query_optimize_25622`.`t2` where (((`multi_field_query_optimize_25622`.`t2`.`b` = `multi_field_query_optimize_25622`.`t1`.`b`) and (`multi_field_query_optimize_25622`.`t2`.`a` = `multi_field_query_optimize_25622`.`t1`.`a`) and (`multi_field_query_optimize_25622`.`t1`.`a` > 1) and (`multi_field_query_optimize_25622`.`t1`.`a` < 10)) or (`multi_field_query_optimize_25622`.`t1`.`b` < 10))
+select * from t1,t2 where t1.a = t2.a and t1.b = t2.b and (t1.a>1 and t1.a<10) or t1.b<10;
+a	b	a	b
+1	1	1	1
+1	1	1	12
+1	1	10	10
+1	1	10	5
+1	1	11	4
+1	1	11	5
+1	1	12	12
+1	1	2	2
+1	1	3	3
+1	1	4	4
+1	1	5	5
+1	1	6	3
+10	5	1	1
+10	5	1	12
+10	5	10	10
+10	5	10	5
+10	5	11	4
+10	5	11	5
+10	5	12	12
+10	5	2	2
+10	5	3	3
+10	5	4	4
+10	5	5	5
+10	5	6	3
+11	4	1	1
+11	4	1	12
+11	4	10	10
+11	4	10	5
+11	4	11	4
+11	4	11	5
+11	4	12	12
+11	4	2	2
+11	4	3	3
+11	4	4	4
+11	4	5	5
+11	4	6	3
+11	5	1	1
+11	5	1	12
+11	5	10	10
+11	5	10	5
+11	5	11	4
+11	5	11	5
+11	5	12	12
+11	5	2	2
+11	5	3	3
+11	5	4	4
+11	5	5	5
+11	5	6	3
+2	2	1	1
+2	2	1	12
+2	2	10	10
+2	2	10	5
+2	2	11	4
+2	2	11	5
+2	2	12	12
+2	2	2	2
+2	2	3	3
+2	2	4	4
+2	2	5	5
+2	2	6	3
+3	3	1	1
+3	3	1	12
+3	3	10	10
+3	3	10	5
+3	3	11	4
+3	3	11	5
+3	3	12	12
+3	3	2	2
+3	3	3	3
+3	3	4	4
+3	3	5	5
+3	3	6	3
+4	4	1	1
+4	4	1	12
+4	4	10	10
+4	4	10	5
+4	4	11	4
+4	4	11	5
+4	4	12	12
+4	4	2	2
+4	4	3	3
+4	4	4	4
+4	4	5	5
+4	4	6	3
+5	5	1	1
+5	5	1	12
+5	5	10	10
+5	5	10	5
+5	5	11	4
+5	5	11	5
+5	5	12	12
+5	5	2	2
+5	5	3	3
+5	5	4	4
+5	5	5	5
+5	5	6	3
+6	3	1	1
+6	3	1	12
+6	3	10	10
+6	3	10	5
+6	3	11	4
+6	3	11	5
+6	3	12	12
+6	3	2	2
+6	3	3	3
+6	3	4	4
+6	3	5	5
+6	3	6	3
+[Note] SequoiaDB: Query message: condition[{}], selector[{ "a": null, "b": null }], order_by[{ "a": 1, "b": 1 }], hint[{ "": "union_ab4" }], limit[-1], offset[0], table[multi_field_query_optimize_25622.t2]
+explain select * from t1,t2 where t1.a = t2.a and t1.b = t2.b and (t1.a>=1 and t1.a<10) or t1.b<10;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	ALL	NULL	NULL	NULL	NULL	12	40.74	Using where with pushed condition (((`multi_field_query_optimize_25622`.`t1`.`a` >= 1) and (`multi_field_query_optimize_25622`.`t1`.`a` < 10)) or (`multi_field_query_optimize_25622`.`t1`.`b` < 10))
+1	SIMPLE	t2	NULL	index	union_ab4	union_ab4	10	NULL	12	100.00	Using where; Using index; Using join buffer (Block Nested Loop)
+Warnings:
+Note	1003	/* select#1 */ select `multi_field_query_optimize_25622`.`t1`.`a` AS `a`,`multi_field_query_optimize_25622`.`t1`.`b` AS `b`,`multi_field_query_optimize_25622`.`t2`.`a` AS `a`,`multi_field_query_optimize_25622`.`t2`.`b` AS `b` from `multi_field_query_optimize_25622`.`t1` join `multi_field_query_optimize_25622`.`t2` where (((`multi_field_query_optimize_25622`.`t2`.`b` = `multi_field_query_optimize_25622`.`t1`.`b`) and (`multi_field_query_optimize_25622`.`t2`.`a` = `multi_field_query_optimize_25622`.`t1`.`a`) and (`multi_field_query_optimize_25622`.`t1`.`a` >= 1) and (`multi_field_query_optimize_25622`.`t1`.`a` < 10)) or (`multi_field_query_optimize_25622`.`t1`.`b` < 10))
+select * from t1,t2 where t1.a = t2.a and t1.b = t2.b and (t1.a>=1 and t1.a<10) or t1.b<10;
+a	b	a	b
+1	1	1	1
+1	1	1	12
+1	1	10	10
+1	1	10	5
+1	1	11	4
+1	1	11	5
+1	1	12	12
+1	1	2	2
+1	1	3	3
+1	1	4	4
+1	1	5	5
+1	1	6	3
+1	12	1	12
+10	5	1	1
+10	5	1	12
+10	5	10	10
+10	5	10	5
+10	5	11	4
+10	5	11	5
+10	5	12	12
+10	5	2	2
+10	5	3	3
+10	5	4	4
+10	5	5	5
+10	5	6	3
+11	4	1	1
+11	4	1	12
+11	4	10	10
+11	4	10	5
+11	4	11	4
+11	4	11	5
+11	4	12	12
+11	4	2	2
+11	4	3	3
+11	4	4	4
+11	4	5	5
+11	4	6	3
+11	5	1	1
+11	5	1	12
+11	5	10	10
+11	5	10	5
+11	5	11	4
+11	5	11	5
+11	5	12	12
+11	5	2	2
+11	5	3	3
+11	5	4	4
+11	5	5	5
+11	5	6	3
+2	2	1	1
+2	2	1	12
+2	2	10	10
+2	2	10	5
+2	2	11	4
+2	2	11	5
+2	2	12	12
+2	2	2	2
+2	2	3	3
+2	2	4	4
+2	2	5	5
+2	2	6	3
+3	3	1	1
+3	3	1	12
+3	3	10	10
+3	3	10	5
+3	3	11	4
+3	3	11	5
+3	3	12	12
+3	3	2	2
+3	3	3	3
+3	3	4	4
+3	3	5	5
+3	3	6	3
+4	4	1	1
+4	4	1	12
+4	4	10	10
+4	4	10	5
+4	4	11	4
+4	4	11	5
+4	4	12	12
+4	4	2	2
+4	4	3	3
+4	4	4	4
+4	4	5	5
+4	4	6	3
+5	5	1	1
+5	5	1	12
+5	5	10	10
+5	5	10	5
+5	5	11	4
+5	5	11	5
+5	5	12	12
+5	5	2	2
+5	5	3	3
+5	5	4	4
+5	5	5	5
+5	5	6	3
+6	3	1	1
+6	3	1	12
+6	3	10	10
+6	3	10	5
+6	3	11	4
+6	3	11	5
+6	3	12	12
+6	3	2	2
+6	3	3	3
+6	3	4	4
+6	3	5	5
+6	3	6	3
+[Note] SequoiaDB: Query message: condition[{}], selector[{ "a": null, "b": null }], order_by[{ "a": 1, "b": 1 }], hint[{ "": "union_ab4" }], limit[-1], offset[0], table[multi_field_query_optimize_25622.t2]
+explain select * from t1,t2 where t1.a = t2.a and t1.b = t2.b and ((t1.a>1 and t1.a<5 and t1.b<10) or (t1.a>5 and t1.b>10));
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	ALL	NULL	NULL	NULL	NULL	12	14.40	Using where with pushed condition ((((`multi_field_query_optimize_25622`.`t1`.`a` > 1) and (`multi_field_query_optimize_25622`.`t1`.`a` < 5) and (`multi_field_query_optimize_25622`.`t1`.`b` < 10)) or ((`multi_field_query_optimize_25622`.`t1`.`a` > 5) and (`multi_field_query_optimize_25622`.`t1`.`b` > 10))) and (`multi_field_query_optimize_25622`.`t1`.`a` is not null) and (`multi_field_query_optimize_25622`.`t1`.`b` is not null))
+1	SIMPLE	t2	NULL	ref	union_ab4	union_ab4	10	multi_field_query_optimize_25622.t1.a,multi_field_query_optimize_25622.t1.b	2	100.00	Using index; Using join buffer (Batched Key Access)
+Warnings:
+Note	1003	/* select#1 */ select `multi_field_query_optimize_25622`.`t1`.`a` AS `a`,`multi_field_query_optimize_25622`.`t1`.`b` AS `b`,`multi_field_query_optimize_25622`.`t2`.`a` AS `a`,`multi_field_query_optimize_25622`.`t2`.`b` AS `b` from `multi_field_query_optimize_25622`.`t1` join `multi_field_query_optimize_25622`.`t2` where ((`multi_field_query_optimize_25622`.`t2`.`b` = `multi_field_query_optimize_25622`.`t1`.`b`) and (`multi_field_query_optimize_25622`.`t2`.`a` = `multi_field_query_optimize_25622`.`t1`.`a`) and (((`multi_field_query_optimize_25622`.`t1`.`a` > 1) and (`multi_field_query_optimize_25622`.`t1`.`a` < 5) and (`multi_field_query_optimize_25622`.`t1`.`b` < 10)) or ((`multi_field_query_optimize_25622`.`t1`.`a` > 5) and (`multi_field_query_optimize_25622`.`t1`.`b` > 10))))
+select * from t1,t2 where t1.a = t2.a and t1.b = t2.b and ((t1.a>1 and t1.a<5 and t1.b<10) or (t1.a>5 and t1.b>10));
+a	b	a	b
+12	12	12	12
+2	2	2	2
+3	3	3	3
+4	4	4	4
+[Note] SequoiaDB: Query message: condition[{}], selector[{ "a": null, "b": null }], order_by[{ "a": 1, "b": 1 }], hint[{ "$Range": { "IsAllEqual": true, "PrefixNum": 2, "IndexValue": [ { "1": 2, "2": 2 }, { "1": 3, "2": 3 }, { "1": 4, "2": 4 }, { "1": 12, "2": 12 } ] }, "": "union_ab4" }], limit[-1], offset[0], table[multi_field_query_optimize_25622.t2]
+explain select * from t1,t2 where t1.a = t2.a and t1.b = t2.b and ((t1.a>=1 and t1.a<5 and t1.b<10) or (t1.a>5 and t1.b>10));
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	ALL	NULL	NULL	NULL	NULL	12	14.40	Using where with pushed condition ((((`multi_field_query_optimize_25622`.`t1`.`a` >= 1) and (`multi_field_query_optimize_25622`.`t1`.`a` < 5) and (`multi_field_query_optimize_25622`.`t1`.`b` < 10)) or ((`multi_field_query_optimize_25622`.`t1`.`a` > 5) and (`multi_field_query_optimize_25622`.`t1`.`b` > 10))) and (`multi_field_query_optimize_25622`.`t1`.`a` is not null) and (`multi_field_query_optimize_25622`.`t1`.`b` is not null))
+1	SIMPLE	t2	NULL	ref	union_ab4	union_ab4	10	multi_field_query_optimize_25622.t1.a,multi_field_query_optimize_25622.t1.b	2	100.00	Using index; Using join buffer (Batched Key Access)
+Warnings:
+Note	1003	/* select#1 */ select `multi_field_query_optimize_25622`.`t1`.`a` AS `a`,`multi_field_query_optimize_25622`.`t1`.`b` AS `b`,`multi_field_query_optimize_25622`.`t2`.`a` AS `a`,`multi_field_query_optimize_25622`.`t2`.`b` AS `b` from `multi_field_query_optimize_25622`.`t1` join `multi_field_query_optimize_25622`.`t2` where ((`multi_field_query_optimize_25622`.`t2`.`b` = `multi_field_query_optimize_25622`.`t1`.`b`) and (`multi_field_query_optimize_25622`.`t2`.`a` = `multi_field_query_optimize_25622`.`t1`.`a`) and (((`multi_field_query_optimize_25622`.`t1`.`a` >= 1) and (`multi_field_query_optimize_25622`.`t1`.`a` < 5) and (`multi_field_query_optimize_25622`.`t1`.`b` < 10)) or ((`multi_field_query_optimize_25622`.`t1`.`a` > 5) and (`multi_field_query_optimize_25622`.`t1`.`b` > 10))))
+select * from t1,t2 where t1.a = t2.a and t1.b = t2.b and ((t1.a>=1 and t1.a<5 and t1.b<10) or (t1.a>5 and t1.b>10));
+a	b	a	b
+1	1	1	1
+12	12	12	12
+2	2	2	2
+3	3	3	3
+4	4	4	4
+[Note] SequoiaDB: Query message: condition[{}], selector[{ "a": null, "b": null }], order_by[{ "a": 1, "b": 1 }], hint[{ "$Range": { "IsAllEqual": true, "PrefixNum": 2, "IndexValue": [ { "1": 1, "2": 1 }, { "1": 2, "2": 2 }, { "1": 3, "2": 3 }, { "1": 4, "2": 4 }, { "1": 12, "2": 12 } ] }, "": "union_ab4" }], limit[-1], offset[0], table[multi_field_query_optimize_25622.t2]
+explain select * from t1,t2 where t1.a = t2.a and t1.b = t2.b and ((t1.a>1 and t1.a<5 and t1.b<10) or (t1.a>=5 and t1.b>10));
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	ALL	NULL	NULL	NULL	NULL	12	14.40	Using where with pushed condition ((((`multi_field_query_optimize_25622`.`t1`.`a` > 1) and (`multi_field_query_optimize_25622`.`t1`.`a` < 5) and (`multi_field_query_optimize_25622`.`t1`.`b` < 10)) or ((`multi_field_query_optimize_25622`.`t1`.`a` >= 5) and (`multi_field_query_optimize_25622`.`t1`.`b` > 10))) and (`multi_field_query_optimize_25622`.`t1`.`a` is not null) and (`multi_field_query_optimize_25622`.`t1`.`b` is not null))
+1	SIMPLE	t2	NULL	ref	union_ab4	union_ab4	10	multi_field_query_optimize_25622.t1.a,multi_field_query_optimize_25622.t1.b	2	100.00	Using index; Using join buffer (Batched Key Access)
+Warnings:
+Note	1003	/* select#1 */ select `multi_field_query_optimize_25622`.`t1`.`a` AS `a`,`multi_field_query_optimize_25622`.`t1`.`b` AS `b`,`multi_field_query_optimize_25622`.`t2`.`a` AS `a`,`multi_field_query_optimize_25622`.`t2`.`b` AS `b` from `multi_field_query_optimize_25622`.`t1` join `multi_field_query_optimize_25622`.`t2` where ((`multi_field_query_optimize_25622`.`t2`.`b` = `multi_field_query_optimize_25622`.`t1`.`b`) and (`multi_field_query_optimize_25622`.`t2`.`a` = `multi_field_query_optimize_25622`.`t1`.`a`) and (((`multi_field_query_optimize_25622`.`t1`.`a` > 1) and (`multi_field_query_optimize_25622`.`t1`.`a` < 5) and (`multi_field_query_optimize_25622`.`t1`.`b` < 10)) or ((`multi_field_query_optimize_25622`.`t1`.`a` >= 5) and (`multi_field_query_optimize_25622`.`t1`.`b` > 10))))
+select * from t1,t2 where t1.a = t2.a and t1.b = t2.b and ((t1.a>1 and t1.a<5 and t1.b<10) or (t1.a>=5 and t1.b>10));
+a	b	a	b
+12	12	12	12
+2	2	2	2
+3	3	3	3
+4	4	4	4
+[Note] SequoiaDB: Query message: condition[{}], selector[{ "a": null, "b": null }], order_by[{ "a": 1, "b": 1 }], hint[{ "$Range": { "IsAllEqual": true, "PrefixNum": 2, "IndexValue": [ { "1": 2, "2": 2 }, { "1": 3, "2": 3 }, { "1": 4, "2": 4 }, { "1": 12, "2": 12 } ] }, "": "union_ab4" }], limit[-1], offset[0], table[multi_field_query_optimize_25622.t2]
+explain select * from t1,t2 where t1.a = t2.a and t1.b = t2.b and ((t1.a>=1 and t1.a<5 and t1.b<=10) or (t1.a>5 and t1.b>10));
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	ALL	NULL	NULL	NULL	NULL	12	14.40	Using where with pushed condition ((((`multi_field_query_optimize_25622`.`t1`.`a` >= 1) and (`multi_field_query_optimize_25622`.`t1`.`a` < 5) and (`multi_field_query_optimize_25622`.`t1`.`b` <= 10)) or ((`multi_field_query_optimize_25622`.`t1`.`a` > 5) and (`multi_field_query_optimize_25622`.`t1`.`b` > 10))) and (`multi_field_query_optimize_25622`.`t1`.`a` is not null) and (`multi_field_query_optimize_25622`.`t1`.`b` is not null))
+1	SIMPLE	t2	NULL	ref	union_ab4	union_ab4	10	multi_field_query_optimize_25622.t1.a,multi_field_query_optimize_25622.t1.b	2	100.00	Using index; Using join buffer (Batched Key Access)
+Warnings:
+Note	1003	/* select#1 */ select `multi_field_query_optimize_25622`.`t1`.`a` AS `a`,`multi_field_query_optimize_25622`.`t1`.`b` AS `b`,`multi_field_query_optimize_25622`.`t2`.`a` AS `a`,`multi_field_query_optimize_25622`.`t2`.`b` AS `b` from `multi_field_query_optimize_25622`.`t1` join `multi_field_query_optimize_25622`.`t2` where ((`multi_field_query_optimize_25622`.`t2`.`b` = `multi_field_query_optimize_25622`.`t1`.`b`) and (`multi_field_query_optimize_25622`.`t2`.`a` = `multi_field_query_optimize_25622`.`t1`.`a`) and (((`multi_field_query_optimize_25622`.`t1`.`a` >= 1) and (`multi_field_query_optimize_25622`.`t1`.`a` < 5) and (`multi_field_query_optimize_25622`.`t1`.`b` <= 10)) or ((`multi_field_query_optimize_25622`.`t1`.`a` > 5) and (`multi_field_query_optimize_25622`.`t1`.`b` > 10))))
+select * from t1,t2 where t1.a = t2.a and t1.b = t2.b and ((t1.a>=1 and t1.a<5 and t1.b<=10) or (t1.a>5 and t1.b>10));
+a	b	a	b
+1	1	1	1
+12	12	12	12
+2	2	2	2
+3	3	3	3
+4	4	4	4
+[Note] SequoiaDB: Query message: condition[{}], selector[{ "a": null, "b": null }], order_by[{ "a": 1, "b": 1 }], hint[{ "$Range": { "IsAllEqual": true, "PrefixNum": 2, "IndexValue": [ { "1": 1, "2": 1 }, { "1": 2, "2": 2 }, { "1": 3, "2": 3 }, { "1": 4, "2": 4 }, { "1": 12, "2": 12 } ] }, "": "union_ab4" }], limit[-1], offset[0], table[multi_field_query_optimize_25622.t2]
+explain select * from t1,t2 where t1.a = t2.a and t1.b = t2.b and ((t1.a>1 and t1.a<5 and t1.b<10) or (t1.a>=5 and t1.b>=10));
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	ALL	NULL	NULL	NULL	NULL	12	14.40	Using where with pushed condition ((((`multi_field_query_optimize_25622`.`t1`.`a` > 1) and (`multi_field_query_optimize_25622`.`t1`.`a` < 5) and (`multi_field_query_optimize_25622`.`t1`.`b` < 10)) or ((`multi_field_query_optimize_25622`.`t1`.`a` >= 5) and (`multi_field_query_optimize_25622`.`t1`.`b` >= 10))) and (`multi_field_query_optimize_25622`.`t1`.`a` is not null) and (`multi_field_query_optimize_25622`.`t1`.`b` is not null))
+1	SIMPLE	t2	NULL	ref	union_ab4	union_ab4	10	multi_field_query_optimize_25622.t1.a,multi_field_query_optimize_25622.t1.b	2	100.00	Using index; Using join buffer (Batched Key Access)
+Warnings:
+Note	1003	/* select#1 */ select `multi_field_query_optimize_25622`.`t1`.`a` AS `a`,`multi_field_query_optimize_25622`.`t1`.`b` AS `b`,`multi_field_query_optimize_25622`.`t2`.`a` AS `a`,`multi_field_query_optimize_25622`.`t2`.`b` AS `b` from `multi_field_query_optimize_25622`.`t1` join `multi_field_query_optimize_25622`.`t2` where ((`multi_field_query_optimize_25622`.`t2`.`b` = `multi_field_query_optimize_25622`.`t1`.`b`) and (`multi_field_query_optimize_25622`.`t2`.`a` = `multi_field_query_optimize_25622`.`t1`.`a`) and (((`multi_field_query_optimize_25622`.`t1`.`a` > 1) and (`multi_field_query_optimize_25622`.`t1`.`a` < 5) and (`multi_field_query_optimize_25622`.`t1`.`b` < 10)) or ((`multi_field_query_optimize_25622`.`t1`.`a` >= 5) and (`multi_field_query_optimize_25622`.`t1`.`b` >= 10))))
+select * from t1,t2 where t1.a = t2.a and t1.b = t2.b and ((t1.a>1 and t1.a<5 and t1.b<10) or (t1.a>=5 and t1.b>=10));
+a	b	a	b
+10	10	10	10
+12	12	12	12
+2	2	2	2
+3	3	3	3
+4	4	4	4
+[Note] SequoiaDB: Query message: condition[{}], selector[{ "a": null, "b": null }], order_by[{ "a": 1, "b": 1 }], hint[{ "$Range": { "IsAllEqual": true, "PrefixNum": 2, "IndexValue": [ { "1": 2, "2": 2 }, { "1": 3, "2": 3 }, { "1": 4, "2": 4 }, { "1": 10, "2": 10 }, { "1": 12, "2": 12 } ] }, "": "union_ab4" }], limit[-1], offset[0], table[multi_field_query_optimize_25622.t2]
+explain select * from t1,t2 where t1.a = t2.a and t1.b = t2.b and ((t1.a>=1 and t1.a<=5 and t1.b<=10) or (t1.a>=5 and t1.b>=10));
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	ALL	NULL	NULL	NULL	NULL	12	14.40	Using where with pushed condition ((((`multi_field_query_optimize_25622`.`t1`.`a` >= 1) and (`multi_field_query_optimize_25622`.`t1`.`a` <= 5) and (`multi_field_query_optimize_25622`.`t1`.`b` <= 10)) or ((`multi_field_query_optimize_25622`.`t1`.`a` >= 5) and (`multi_field_query_optimize_25622`.`t1`.`b` >= 10))) and (`multi_field_query_optimize_25622`.`t1`.`a` is not null) and (`multi_field_query_optimize_25622`.`t1`.`b` is not null))
+1	SIMPLE	t2	NULL	ref	union_ab4	union_ab4	10	multi_field_query_optimize_25622.t1.a,multi_field_query_optimize_25622.t1.b	2	100.00	Using index; Using join buffer (Batched Key Access)
+Warnings:
+Note	1003	/* select#1 */ select `multi_field_query_optimize_25622`.`t1`.`a` AS `a`,`multi_field_query_optimize_25622`.`t1`.`b` AS `b`,`multi_field_query_optimize_25622`.`t2`.`a` AS `a`,`multi_field_query_optimize_25622`.`t2`.`b` AS `b` from `multi_field_query_optimize_25622`.`t1` join `multi_field_query_optimize_25622`.`t2` where ((`multi_field_query_optimize_25622`.`t2`.`b` = `multi_field_query_optimize_25622`.`t1`.`b`) and (`multi_field_query_optimize_25622`.`t2`.`a` = `multi_field_query_optimize_25622`.`t1`.`a`) and (((`multi_field_query_optimize_25622`.`t1`.`a` >= 1) and (`multi_field_query_optimize_25622`.`t1`.`a` <= 5) and (`multi_field_query_optimize_25622`.`t1`.`b` <= 10)) or ((`multi_field_query_optimize_25622`.`t1`.`a` >= 5) and (`multi_field_query_optimize_25622`.`t1`.`b` >= 10))))
+select * from t1,t2 where t1.a = t2.a and t1.b = t2.b and ((t1.a>=1 and t1.a<=5 and t1.b<=10) or (t1.a>=5 and t1.b>=10));
+a	b	a	b
+1	1	1	1
+10	10	10	10
+12	12	12	12
+2	2	2	2
+3	3	3	3
+4	4	4	4
+5	5	5	5
+[Note] SequoiaDB: Query message: condition[{}], selector[{ "a": null, "b": null }], order_by[{ "a": 1, "b": 1 }], hint[{ "$Range": { "IsAllEqual": true, "PrefixNum": 2, "IndexValue": [ { "1": 1, "2": 1 }, { "1": 2, "2": 2 }, { "1": 3, "2": 3 }, { "1": 4, "2": 4 }, { "1": 5, "2": 5 }, { "1": 10, "2": 10 }, { "1": 12, "2": 12 } ] }, "": "union_ab4" }], limit[-1], offset[0], table[multi_field_query_optimize_25622.t2]
+explain select * from t1,t2 where t1.a = t2.a and t1.b = t2.b and ((t1.a>=1 and t1.a<=10) or (t1.b>=5 and t1.b<=10));
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	ALL	NULL	NULL	NULL	NULL	12	20.98	Using where with pushed condition ((((`multi_field_query_optimize_25622`.`t1`.`a` >= 1) and (`multi_field_query_optimize_25622`.`t1`.`a` <= 10)) or ((`multi_field_query_optimize_25622`.`t1`.`b` >= 5) and (`multi_field_query_optimize_25622`.`t1`.`b` <= 10))) and (`multi_field_query_optimize_25622`.`t1`.`a` is not null) and (`multi_field_query_optimize_25622`.`t1`.`b` is not null))
+1	SIMPLE	t2	NULL	ref	union_ab4	union_ab4	10	multi_field_query_optimize_25622.t1.a,multi_field_query_optimize_25622.t1.b	2	100.00	Using index; Using join buffer (Batched Key Access)
+Warnings:
+Note	1003	/* select#1 */ select `multi_field_query_optimize_25622`.`t1`.`a` AS `a`,`multi_field_query_optimize_25622`.`t1`.`b` AS `b`,`multi_field_query_optimize_25622`.`t2`.`a` AS `a`,`multi_field_query_optimize_25622`.`t2`.`b` AS `b` from `multi_field_query_optimize_25622`.`t1` join `multi_field_query_optimize_25622`.`t2` where ((`multi_field_query_optimize_25622`.`t2`.`b` = `multi_field_query_optimize_25622`.`t1`.`b`) and (`multi_field_query_optimize_25622`.`t2`.`a` = `multi_field_query_optimize_25622`.`t1`.`a`) and (((`multi_field_query_optimize_25622`.`t1`.`a` >= 1) and (`multi_field_query_optimize_25622`.`t1`.`a` <= 10)) or ((`multi_field_query_optimize_25622`.`t1`.`b` >= 5) and (`multi_field_query_optimize_25622`.`t1`.`b` <= 10))))
+select * from t1,t2 where t1.a = t2.a and t1.b = t2.b and (t1.a>=1 and t1.a<=10) or (t1.b>=5 and t1.b<=10);
+a	b	a	b
+1	1	1	1
+1	12	1	12
+10	10	1	1
+10	10	1	12
+10	10	10	10
+10	10	10	5
+10	10	11	4
+10	10	11	5
+10	10	12	12
+10	10	2	2
+10	10	3	3
+10	10	4	4
+10	10	5	5
+10	10	6	3
+10	5	1	1
+10	5	1	12
+10	5	10	10
+10	5	10	5
+10	5	11	4
+10	5	11	5
+10	5	12	12
+10	5	2	2
+10	5	3	3
+10	5	4	4
+10	5	5	5
+10	5	6	3
+11	5	1	1
+11	5	1	12
+11	5	10	10
+11	5	10	5
+11	5	11	4
+11	5	11	5
+11	5	12	12
+11	5	2	2
+11	5	3	3
+11	5	4	4
+11	5	5	5
+11	5	6	3
+2	2	2	2
+3	3	3	3
+4	4	4	4
+5	5	1	1
+5	5	1	12
+5	5	10	10
+5	5	10	5
+5	5	11	4
+5	5	11	5
+5	5	12	12
+5	5	2	2
+5	5	3	3
+5	5	4	4
+5	5	5	5
+5	5	6	3
+6	3	6	3
+[Note] SequoiaDB: Query message: condition[{}], selector[{ "a": null, "b": null }], order_by[{ "a": 1, "b": 1 }], hint[{ "": "union_ab4" }], limit[-1], offset[0], table[multi_field_query_optimize_25622.t2]
+explain select * from t1,t2 where t1.a = t2.a and t1.b = t2.b and (t1.a>1 and t1.a<=10) or (t1.b>=5 and t1.b<=10);
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	ALL	NULL	NULL	NULL	NULL	12	20.98	Using where with pushed condition (((`multi_field_query_optimize_25622`.`t1`.`a` > 1) and (`multi_field_query_optimize_25622`.`t1`.`a` <= 10)) or ((`multi_field_query_optimize_25622`.`t1`.`b` >= 5) and (`multi_field_query_optimize_25622`.`t1`.`b` <= 10)))
+1	SIMPLE	t2	NULL	index	union_ab4	union_ab4	10	NULL	12	100.00	Using where; Using index; Using join buffer (Block Nested Loop)
+Warnings:
+Note	1003	/* select#1 */ select `multi_field_query_optimize_25622`.`t1`.`a` AS `a`,`multi_field_query_optimize_25622`.`t1`.`b` AS `b`,`multi_field_query_optimize_25622`.`t2`.`a` AS `a`,`multi_field_query_optimize_25622`.`t2`.`b` AS `b` from `multi_field_query_optimize_25622`.`t1` join `multi_field_query_optimize_25622`.`t2` where (((`multi_field_query_optimize_25622`.`t2`.`b` = `multi_field_query_optimize_25622`.`t1`.`b`) and (`multi_field_query_optimize_25622`.`t2`.`a` = `multi_field_query_optimize_25622`.`t1`.`a`) and (`multi_field_query_optimize_25622`.`t1`.`a` > 1) and (`multi_field_query_optimize_25622`.`t1`.`a` <= 10)) or ((`multi_field_query_optimize_25622`.`t1`.`b` >= 5) and (`multi_field_query_optimize_25622`.`t1`.`b` <= 10)))
+select * from t1,t2 where t1.a = t2.a and t1.b = t2.b and (t1.a>1 and t1.a<=10) or (t1.b>=5 and t1.b<=10);
+a	b	a	b
+10	10	1	1
+10	10	1	12
+10	10	10	10
+10	10	10	5
+10	10	11	4
+10	10	11	5
+10	10	12	12
+10	10	2	2
+10	10	3	3
+10	10	4	4
+10	10	5	5
+10	10	6	3
+10	5	1	1
+10	5	1	12
+10	5	10	10
+10	5	10	5
+10	5	11	4
+10	5	11	5
+10	5	12	12
+10	5	2	2
+10	5	3	3
+10	5	4	4
+10	5	5	5
+10	5	6	3
+11	5	1	1
+11	5	1	12
+11	5	10	10
+11	5	10	5
+11	5	11	4
+11	5	11	5
+11	5	12	12
+11	5	2	2
+11	5	3	3
+11	5	4	4
+11	5	5	5
+11	5	6	3
+2	2	2	2
+3	3	3	3
+4	4	4	4
+5	5	1	1
+5	5	1	12
+5	5	10	10
+5	5	10	5
+5	5	11	4
+5	5	11	5
+5	5	12	12
+5	5	2	2
+5	5	3	3
+5	5	4	4
+5	5	5	5
+5	5	6	3
+6	3	6	3
+[Note] SequoiaDB: Query message: condition[{}], selector[{ "a": null, "b": null }], order_by[{ "a": 1, "b": 1 }], hint[{ "": "union_ab4" }], limit[-1], offset[0], table[multi_field_query_optimize_25622.t2]
+explain select * from t1,t2 where t1.a = t2.a and t1.b = t2.b and (t1.a>=1 and t1.a<10) or (t1.b>=5 and t1.b<=10);
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	ALL	NULL	NULL	NULL	NULL	12	20.98	Using where with pushed condition (((`multi_field_query_optimize_25622`.`t1`.`a` >= 1) and (`multi_field_query_optimize_25622`.`t1`.`a` < 10)) or ((`multi_field_query_optimize_25622`.`t1`.`b` >= 5) and (`multi_field_query_optimize_25622`.`t1`.`b` <= 10)))
+1	SIMPLE	t2	NULL	index	union_ab4	union_ab4	10	NULL	12	100.00	Using where; Using index; Using join buffer (Block Nested Loop)
+Warnings:
+Note	1003	/* select#1 */ select `multi_field_query_optimize_25622`.`t1`.`a` AS `a`,`multi_field_query_optimize_25622`.`t1`.`b` AS `b`,`multi_field_query_optimize_25622`.`t2`.`a` AS `a`,`multi_field_query_optimize_25622`.`t2`.`b` AS `b` from `multi_field_query_optimize_25622`.`t1` join `multi_field_query_optimize_25622`.`t2` where (((`multi_field_query_optimize_25622`.`t2`.`b` = `multi_field_query_optimize_25622`.`t1`.`b`) and (`multi_field_query_optimize_25622`.`t2`.`a` = `multi_field_query_optimize_25622`.`t1`.`a`) and (`multi_field_query_optimize_25622`.`t1`.`a` >= 1) and (`multi_field_query_optimize_25622`.`t1`.`a` < 10)) or ((`multi_field_query_optimize_25622`.`t1`.`b` >= 5) and (`multi_field_query_optimize_25622`.`t1`.`b` <= 10)))
+select * from t1,t2 where t1.a = t2.a and t1.b = t2.b and (t1.a>=1 and t1.a<10) or (t1.b>=5 and t1.b<=10);
+a	b	a	b
+1	1	1	1
+1	12	1	12
+10	10	1	1
+10	10	1	12
+10	10	10	10
+10	10	10	5
+10	10	11	4
+10	10	11	5
+10	10	12	12
+10	10	2	2
+10	10	3	3
+10	10	4	4
+10	10	5	5
+10	10	6	3
+10	5	1	1
+10	5	1	12
+10	5	10	10
+10	5	10	5
+10	5	11	4
+10	5	11	5
+10	5	12	12
+10	5	2	2
+10	5	3	3
+10	5	4	4
+10	5	5	5
+10	5	6	3
+11	5	1	1
+11	5	1	12
+11	5	10	10
+11	5	10	5
+11	5	11	4
+11	5	11	5
+11	5	12	12
+11	5	2	2
+11	5	3	3
+11	5	4	4
+11	5	5	5
+11	5	6	3
+2	2	2	2
+3	3	3	3
+4	4	4	4
+5	5	1	1
+5	5	1	12
+5	5	10	10
+5	5	10	5
+5	5	11	4
+5	5	11	5
+5	5	12	12
+5	5	2	2
+5	5	3	3
+5	5	4	4
+5	5	5	5
+5	5	6	3
+6	3	6	3
+[Note] SequoiaDB: Query message: condition[{}], selector[{ "a": null, "b": null }], order_by[{ "a": 1, "b": 1 }], hint[{ "": "union_ab4" }], limit[-1], offset[0], table[multi_field_query_optimize_25622.t2]
+explain select * from t1,t2 where t1.a = t2.a and t1.b = t2.b and (t1.a>1 and t1.a<10) or (t1.b>5 and t1.b<10);
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	ALL	NULL	NULL	NULL	NULL	12	20.98	Using where with pushed condition (((`multi_field_query_optimize_25622`.`t1`.`a` > 1) and (`multi_field_query_optimize_25622`.`t1`.`a` < 10)) or ((`multi_field_query_optimize_25622`.`t1`.`b` > 5) and (`multi_field_query_optimize_25622`.`t1`.`b` < 10)))
+1	SIMPLE	t2	NULL	index	union_ab4	union_ab4	10	NULL	12	100.00	Using where; Using index; Using join buffer (Block Nested Loop)
+Warnings:
+Note	1003	/* select#1 */ select `multi_field_query_optimize_25622`.`t1`.`a` AS `a`,`multi_field_query_optimize_25622`.`t1`.`b` AS `b`,`multi_field_query_optimize_25622`.`t2`.`a` AS `a`,`multi_field_query_optimize_25622`.`t2`.`b` AS `b` from `multi_field_query_optimize_25622`.`t1` join `multi_field_query_optimize_25622`.`t2` where (((`multi_field_query_optimize_25622`.`t2`.`b` = `multi_field_query_optimize_25622`.`t1`.`b`) and (`multi_field_query_optimize_25622`.`t2`.`a` = `multi_field_query_optimize_25622`.`t1`.`a`) and (`multi_field_query_optimize_25622`.`t1`.`a` > 1) and (`multi_field_query_optimize_25622`.`t1`.`a` < 10)) or ((`multi_field_query_optimize_25622`.`t1`.`b` > 5) and (`multi_field_query_optimize_25622`.`t1`.`b` < 10)))
+select * from t1,t2 where t1.a = t2.a and t1.b = t2.b and (t1.a>1 and t1.a<10) or (t1.b>5 and t1.b<10);
+a	b	a	b
+2	2	2	2
+3	3	3	3
+4	4	4	4
+5	5	5	5
+6	3	6	3
+[Note] SequoiaDB: Query message: condition[{}], selector[{ "a": null, "b": null }], order_by[{ "a": 1, "b": 1 }], hint[{ "": "union_ab4" }], limit[-1], offset[0], table[multi_field_query_optimize_25622.t2]
+explain select * from t1,t2 where t1.a = t2.a and t1.b = t2.b and (t1.a>=1 and t1.a<=10) or (t1.b>=5 and t1.b<=10);
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	ALL	NULL	NULL	NULL	NULL	12	20.98	Using where with pushed condition (((`multi_field_query_optimize_25622`.`t1`.`a` >= 1) and (`multi_field_query_optimize_25622`.`t1`.`a` <= 10)) or ((`multi_field_query_optimize_25622`.`t1`.`b` >= 5) and (`multi_field_query_optimize_25622`.`t1`.`b` <= 10)))
+1	SIMPLE	t2	NULL	index	union_ab4	union_ab4	10	NULL	12	100.00	Using where; Using index; Using join buffer (Block Nested Loop)
+Warnings:
+Note	1003	/* select#1 */ select `multi_field_query_optimize_25622`.`t1`.`a` AS `a`,`multi_field_query_optimize_25622`.`t1`.`b` AS `b`,`multi_field_query_optimize_25622`.`t2`.`a` AS `a`,`multi_field_query_optimize_25622`.`t2`.`b` AS `b` from `multi_field_query_optimize_25622`.`t1` join `multi_field_query_optimize_25622`.`t2` where (((`multi_field_query_optimize_25622`.`t2`.`b` = `multi_field_query_optimize_25622`.`t1`.`b`) and (`multi_field_query_optimize_25622`.`t2`.`a` = `multi_field_query_optimize_25622`.`t1`.`a`) and (`multi_field_query_optimize_25622`.`t1`.`a` >= 1) and (`multi_field_query_optimize_25622`.`t1`.`a` <= 10)) or ((`multi_field_query_optimize_25622`.`t1`.`b` >= 5) and (`multi_field_query_optimize_25622`.`t1`.`b` <= 10)))
+select * from t1,t2 where t1.a = t2.a and t1.b = t2.b and (t1.a>=1 and t1.a<=10) or (t1.b>=5 and t1.b<=10);
+a	b	a	b
+1	1	1	1
+1	12	1	12
+10	10	1	1
+10	10	1	12
+10	10	10	10
+10	10	10	5
+10	10	11	4
+10	10	11	5
+10	10	12	12
+10	10	2	2
+10	10	3	3
+10	10	4	4
+10	10	5	5
+10	10	6	3
+10	5	1	1
+10	5	1	12
+10	5	10	10
+10	5	10	5
+10	5	11	4
+10	5	11	5
+10	5	12	12
+10	5	2	2
+10	5	3	3
+10	5	4	4
+10	5	5	5
+10	5	6	3
+11	5	1	1
+11	5	1	12
+11	5	10	10
+11	5	10	5
+11	5	11	4
+11	5	11	5
+11	5	12	12
+11	5	2	2
+11	5	3	3
+11	5	4	4
+11	5	5	5
+11	5	6	3
+2	2	2	2
+3	3	3	3
+4	4	4	4
+5	5	1	1
+5	5	1	12
+5	5	10	10
+5	5	10	5
+5	5	11	4
+5	5	11	5
+5	5	12	12
+5	5	2	2
+5	5	3	3
+5	5	4	4
+5	5	5	5
+5	5	6	3
+6	3	6	3
+[Note] SequoiaDB: Query message: condition[{}], selector[{ "a": null, "b": null }], order_by[{ "a": 1, "b": 1 }], hint[{ "": "union_ab4" }], limit[-1], offset[0], table[multi_field_query_optimize_25622.t2]
+explain select * from t1,t2 where t1.a = t2.a and t1.b = t2.b and ((t1.a>=1 and t1.a<=10) or (t1.b>=5 and t1.b<=10));
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	ALL	NULL	NULL	NULL	NULL	12	20.98	Using where with pushed condition ((((`multi_field_query_optimize_25622`.`t1`.`a` >= 1) and (`multi_field_query_optimize_25622`.`t1`.`a` <= 10)) or ((`multi_field_query_optimize_25622`.`t1`.`b` >= 5) and (`multi_field_query_optimize_25622`.`t1`.`b` <= 10))) and (`multi_field_query_optimize_25622`.`t1`.`a` is not null) and (`multi_field_query_optimize_25622`.`t1`.`b` is not null))
+1	SIMPLE	t2	NULL	ref	union_ab4	union_ab4	10	multi_field_query_optimize_25622.t1.a,multi_field_query_optimize_25622.t1.b	2	100.00	Using index; Using join buffer (Batched Key Access)
+Warnings:
+Note	1003	/* select#1 */ select `multi_field_query_optimize_25622`.`t1`.`a` AS `a`,`multi_field_query_optimize_25622`.`t1`.`b` AS `b`,`multi_field_query_optimize_25622`.`t2`.`a` AS `a`,`multi_field_query_optimize_25622`.`t2`.`b` AS `b` from `multi_field_query_optimize_25622`.`t1` join `multi_field_query_optimize_25622`.`t2` where ((`multi_field_query_optimize_25622`.`t2`.`b` = `multi_field_query_optimize_25622`.`t1`.`b`) and (`multi_field_query_optimize_25622`.`t2`.`a` = `multi_field_query_optimize_25622`.`t1`.`a`) and (((`multi_field_query_optimize_25622`.`t1`.`a` >= 1) and (`multi_field_query_optimize_25622`.`t1`.`a` <= 10)) or ((`multi_field_query_optimize_25622`.`t1`.`b` >= 5) and (`multi_field_query_optimize_25622`.`t1`.`b` <= 10))))
+select * from t1,t2 where t1.a = t2.a and t1.b = t2.b and ((t1.a>=1 and t1.a<=10) or (t1.b>=5 and t1.b<10));
+a	b	a	b
+1	1	1	1
+1	12	1	12
+10	10	10	10
+10	5	10	5
+11	5	11	5
+2	2	2	2
+3	3	3	3
+4	4	4	4
+5	5	5	5
+6	3	6	3
+[Note] SequoiaDB: Query message: condition[{}], selector[{ "a": null, "b": null }], order_by[{ "a": 1, "b": 1 }], hint[{ "$Range": { "IsAllEqual": true, "PrefixNum": 2, "IndexValue": [ { "1": 1, "2": 1 }, { "1": 2, "2": 2 }, { "1": 3, "2": 3 }, { "1": 4, "2": 4 }, { "1": 5, "2": 5 }, { "1": 1, "2": 12 }, { "1": 6, "2": 3 }, { "1": 10, "2": 5 }, { "1": 10, "2": 10 }, { "1": 11, "2": 5 } ] }, "": "union_ab4" }], limit[-1], offset[0], table[multi_field_query_optimize_25622.t2]
+explain select * from t1,t2 where t1.a = t2.a and t1.b = t2.b and ((t1.a>1 and t1.a<=10) or (t1.b>=5 and t1.b<10));
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	ALL	NULL	NULL	NULL	NULL	12	20.98	Using where with pushed condition ((((`multi_field_query_optimize_25622`.`t1`.`a` > 1) and (`multi_field_query_optimize_25622`.`t1`.`a` <= 10)) or ((`multi_field_query_optimize_25622`.`t1`.`b` >= 5) and (`multi_field_query_optimize_25622`.`t1`.`b` < 10))) and (`multi_field_query_optimize_25622`.`t1`.`a` is not null) and (`multi_field_query_optimize_25622`.`t1`.`b` is not null))
+1	SIMPLE	t2	NULL	ref	union_ab4	union_ab4	10	multi_field_query_optimize_25622.t1.a,multi_field_query_optimize_25622.t1.b	2	100.00	Using index; Using join buffer (Batched Key Access)
+Warnings:
+Note	1003	/* select#1 */ select `multi_field_query_optimize_25622`.`t1`.`a` AS `a`,`multi_field_query_optimize_25622`.`t1`.`b` AS `b`,`multi_field_query_optimize_25622`.`t2`.`a` AS `a`,`multi_field_query_optimize_25622`.`t2`.`b` AS `b` from `multi_field_query_optimize_25622`.`t1` join `multi_field_query_optimize_25622`.`t2` where ((`multi_field_query_optimize_25622`.`t2`.`b` = `multi_field_query_optimize_25622`.`t1`.`b`) and (`multi_field_query_optimize_25622`.`t2`.`a` = `multi_field_query_optimize_25622`.`t1`.`a`) and (((`multi_field_query_optimize_25622`.`t1`.`a` > 1) and (`multi_field_query_optimize_25622`.`t1`.`a` <= 10)) or ((`multi_field_query_optimize_25622`.`t1`.`b` >= 5) and (`multi_field_query_optimize_25622`.`t1`.`b` < 10))))
+select * from t1,t2 where t1.a = t2.a and t1.b = t2.b and ((t1.a>1 and t1.a<=10) or (t1.b>=5 and t1.b<10));
+a	b	a	b
+10	10	10	10
+10	5	10	5
+11	5	11	5
+2	2	2	2
+3	3	3	3
+4	4	4	4
+5	5	5	5
+6	3	6	3
+[Note] SequoiaDB: Query message: condition[{}], selector[{ "a": null, "b": null }], order_by[{ "a": 1, "b": 1 }], hint[{ "$Range": { "IsAllEqual": true, "PrefixNum": 2, "IndexValue": [ { "1": 2, "2": 2 }, { "1": 3, "2": 3 }, { "1": 4, "2": 4 }, { "1": 5, "2": 5 }, { "1": 6, "2": 3 }, { "1": 10, "2": 5 }, { "1": 10, "2": 10 }, { "1": 11, "2": 5 } ] }, "": "union_ab4" }], limit[-1], offset[0], table[multi_field_query_optimize_25622.t2]
+explain select * from t1,t2 where t1.a = t2.a and t1.b = t2.b and ((t1.a>=1 and t1.a<10) or (t1.b>=5 and t1.b<10));
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	ALL	NULL	NULL	NULL	NULL	12	20.98	Using where with pushed condition ((((`multi_field_query_optimize_25622`.`t1`.`a` >= 1) and (`multi_field_query_optimize_25622`.`t1`.`a` < 10)) or ((`multi_field_query_optimize_25622`.`t1`.`b` >= 5) and (`multi_field_query_optimize_25622`.`t1`.`b` < 10))) and (`multi_field_query_optimize_25622`.`t1`.`a` is not null) and (`multi_field_query_optimize_25622`.`t1`.`b` is not null))
+1	SIMPLE	t2	NULL	ref	union_ab4	union_ab4	10	multi_field_query_optimize_25622.t1.a,multi_field_query_optimize_25622.t1.b	2	100.00	Using index; Using join buffer (Batched Key Access)
+Warnings:
+Note	1003	/* select#1 */ select `multi_field_query_optimize_25622`.`t1`.`a` AS `a`,`multi_field_query_optimize_25622`.`t1`.`b` AS `b`,`multi_field_query_optimize_25622`.`t2`.`a` AS `a`,`multi_field_query_optimize_25622`.`t2`.`b` AS `b` from `multi_field_query_optimize_25622`.`t1` join `multi_field_query_optimize_25622`.`t2` where ((`multi_field_query_optimize_25622`.`t2`.`b` = `multi_field_query_optimize_25622`.`t1`.`b`) and (`multi_field_query_optimize_25622`.`t2`.`a` = `multi_field_query_optimize_25622`.`t1`.`a`) and (((`multi_field_query_optimize_25622`.`t1`.`a` >= 1) and (`multi_field_query_optimize_25622`.`t1`.`a` < 10)) or ((`multi_field_query_optimize_25622`.`t1`.`b` >= 5) and (`multi_field_query_optimize_25622`.`t1`.`b` < 10))))
+select * from t1,t2 where t1.a = t2.a and t1.b = t2.b and ((t1.a>=1 and t1.a<10) or (t1.b>=5 and t1.b<10));
+a	b	a	b
+1	1	1	1
+1	12	1	12
+10	5	10	5
+11	5	11	5
+2	2	2	2
+3	3	3	3
+4	4	4	4
+5	5	5	5
+6	3	6	3
+[Note] SequoiaDB: Query message: condition[{}], selector[{ "a": null, "b": null }], order_by[{ "a": 1, "b": 1 }], hint[{ "$Range": { "IsAllEqual": true, "PrefixNum": 2, "IndexValue": [ { "1": 1, "2": 1 }, { "1": 2, "2": 2 }, { "1": 3, "2": 3 }, { "1": 4, "2": 4 }, { "1": 5, "2": 5 }, { "1": 1, "2": 12 }, { "1": 6, "2": 3 }, { "1": 10, "2": 5 }, { "1": 11, "2": 5 } ] }, "": "union_ab4" }], limit[-1], offset[0], table[multi_field_query_optimize_25622.t2]
+explain select * from t1,t2 where t1.a = t2.a and t1.b = t2.b and ((t1.a>1 and t1.a<10) or (t1.b>=5 and t1.b<10));
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	ALL	NULL	NULL	NULL	NULL	12	20.98	Using where with pushed condition ((((`multi_field_query_optimize_25622`.`t1`.`a` > 1) and (`multi_field_query_optimize_25622`.`t1`.`a` < 10)) or ((`multi_field_query_optimize_25622`.`t1`.`b` >= 5) and (`multi_field_query_optimize_25622`.`t1`.`b` < 10))) and (`multi_field_query_optimize_25622`.`t1`.`a` is not null) and (`multi_field_query_optimize_25622`.`t1`.`b` is not null))
+1	SIMPLE	t2	NULL	ref	union_ab4	union_ab4	10	multi_field_query_optimize_25622.t1.a,multi_field_query_optimize_25622.t1.b	2	100.00	Using index; Using join buffer (Batched Key Access)
+Warnings:
+Note	1003	/* select#1 */ select `multi_field_query_optimize_25622`.`t1`.`a` AS `a`,`multi_field_query_optimize_25622`.`t1`.`b` AS `b`,`multi_field_query_optimize_25622`.`t2`.`a` AS `a`,`multi_field_query_optimize_25622`.`t2`.`b` AS `b` from `multi_field_query_optimize_25622`.`t1` join `multi_field_query_optimize_25622`.`t2` where ((`multi_field_query_optimize_25622`.`t2`.`b` = `multi_field_query_optimize_25622`.`t1`.`b`) and (`multi_field_query_optimize_25622`.`t2`.`a` = `multi_field_query_optimize_25622`.`t1`.`a`) and (((`multi_field_query_optimize_25622`.`t1`.`a` > 1) and (`multi_field_query_optimize_25622`.`t1`.`a` < 10)) or ((`multi_field_query_optimize_25622`.`t1`.`b` >= 5) and (`multi_field_query_optimize_25622`.`t1`.`b` < 10))))
+select * from t1,t2 where t1.a = t2.a and t1.b = t2.b and ((t1.a>1 and t1.a<10) or (t1.b>=5 and t1.b<10));
+a	b	a	b
+10	5	10	5
+11	5	11	5
+2	2	2	2
+3	3	3	3
+4	4	4	4
+5	5	5	5
+6	3	6	3
+[Note] SequoiaDB: Query message: condition[{}], selector[{ "a": null, "b": null }], order_by[{ "a": 1, "b": 1 }], hint[{ "$Range": { "IsAllEqual": true, "PrefixNum": 2, "IndexValue": [ { "1": 2, "2": 2 }, { "1": 3, "2": 3 }, { "1": 4, "2": 4 }, { "1": 5, "2": 5 }, { "1": 6, "2": 3 }, { "1": 10, "2": 5 }, { "1": 11, "2": 5 } ] }, "": "union_ab4" }], limit[-1], offset[0], table[multi_field_query_optimize_25622.t2]
+drop table t1,t2;
+set session optimizer_switch=default;
+set session sequoiadb_debug_log=off;
+drop database multi_field_query_optimize_25622;

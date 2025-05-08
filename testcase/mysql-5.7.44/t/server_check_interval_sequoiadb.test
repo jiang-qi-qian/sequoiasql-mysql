@@ -1,0 +1,72 @@
+# Case 32237, Case 32240
+--source include/have_sequoiadb.inc
+
+set global server_ha_sql_log_check_interval = 0;
+select @@server_ha_sql_log_check_interval;
+
+set global server_ha_sql_log_check_interval = 60000;
+select @@server_ha_sql_log_check_interval;
+
+set global server_ha_sql_log_check_interval = default;
+select @@server_ha_sql_log_check_interval;
+
+set global server_ha_sql_log_check_interval = -1;
+select @@server_ha_sql_log_check_interval;
+
+set global server_ha_sql_log_check_interval = 60001;
+select @@server_ha_sql_log_check_interval;
+
+--error 1232
+set global server_ha_sql_log_check_interval = 'a';
+select @@server_ha_sql_log_check_interval;
+
+--error 1232
+set global server_ha_sql_log_check_interval = @#;
+select @@server_ha_sql_log_check_interval;
+
+--error 1229
+set session server_ha_sql_log_check_interval = default;
+select @@server_ha_sql_log_check_interval;
+
+--error 1229
+set server_ha_sql_log_check_interval = default;
+select @@server_ha_sql_log_check_interval;
+
+set global server_ha_sql_log_check_interval = default;
+select @@server_ha_sql_log_check_interval;
+
+set global server_ha_pending_log_check_interval = 0;
+select @@server_ha_pending_log_check_interval;
+
+set global server_ha_pending_log_check_interval = 3600000;
+select @@server_ha_pending_log_check_interval;
+
+set global server_ha_pending_log_check_interval = default;
+select @@server_ha_pending_log_check_interval;
+
+set global server_ha_pending_log_check_interval = -1;
+select @@server_ha_pending_log_check_interval;
+
+set global server_ha_pending_log_check_interval = 3600001;
+select @@server_ha_pending_log_check_interval;
+
+--error 1232
+set global server_ha_pending_log_check_interval = 'a';
+select @@server_ha_pending_log_check_interval;
+
+--error 1232
+set global server_ha_pending_log_check_interval = @#;
+select @@server_ha_pending_log_check_interval;
+
+--error 1229
+set session server_ha_pending_log_check_interval = default;
+select @@server_ha_pending_log_check_interval;
+
+--error 1229
+set server_ha_pending_log_check_interval = default;
+select @@server_ha_pending_log_check_interval;
+
+set global server_ha_pending_log_check_interval = default;
+select @@server_ha_pending_log_check_interval;
+
+--source include/uninstall_sequoiadb.inc

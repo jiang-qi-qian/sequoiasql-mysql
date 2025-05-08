@@ -1,0 +1,1 @@
+http://gitlab.sequoiadb.com/sequoiadb/mysql/-/archive/v5.7.42/mysql-v5.7.42.tar.gz

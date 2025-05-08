@@ -1,0 +1,108 @@
+drop database if exists multi_key_bka_sequoiadb_30423;
+create database multi_key_bka_sequoiadb_30423;
+drop database if exists multi_key_bka_sequoiadb_30423;
+create database multi_key_bka_sequoiadb_30423;
+use multi_key_bka_sequoiadb_30423;
+set session join_cache_level=8;
+set session optimizer_switch='mrr=on,mrr_cost_based=off';
+create table t1(a int,b int,c int,d int,key(a),key(a,b),key(a,b,c),key(a,b,c,d) );
+insert into t1 values(null, null, null, null);
+insert into t1 values(null, null, null, null);
+insert into t1 values(null, null, null, null);
+insert into t1 values(null, null, null, null);
+insert into t1 values(null, null, null, null);
+insert into t1 values(null, null, null, null);
+insert into t1 values(null, null, null, null);
+insert into t1 values(null, 1, 2, 3);
+insert into t1 values(null, 6, 4, 1);
+insert into t1 values(2, null, 4, 1);
+insert into t1 values(2, null, 4, 1);
+insert into t1 values(2, 4, null, 1);
+insert into t1 values(2, 4, null, 1);
+insert into t1 values(2, 4, 6, null);
+insert into t1 values(2, 4, 7, null);
+insert into t1 values(null, 4, null, null);
+insert into t1 values(null, 4, null, null);
+insert into t1 values(4, null, null, null);
+insert into t1 values(4, null, null, null);
+insert into t1 values(null, null, 4, null);
+insert into t1 values(null, null, 4, null);
+insert into t1 values(null, null, null, 4);
+insert into t1 values(null, null, null, 4);
+select * from t1 tt1 join t1 tt2 where tt1.a=tt2.a and tt1.a is null;
+a	b	c	d	a	b	c	d
+explain select * from t1 tt1 join t1 tt2 where tt1.a=tt2.a and tt1.a is null;
+id	select_type	table	type	possible_keys	key	key_len	ref	rows	Extra
+1	SIMPLE	tt1	range	a,a_2,a_3,a_4	a_4	5	NULL	2	Using where with pushed condition; Using index
+1	SIMPLE	tt2	ref	a,a_2,a_3,a_4	a_4	5	multi_key_bka_sequoiadb_30423.tt1.a	3	Using index; Using join buffer (flat, BKAH join); Using MRR
+select * from t1 tt1 join t1 tt2 where tt1.a=tt2.a and tt2.a is null;
+a	b	c	d	a	b	c	d
+explain select * from t1 tt1 join t1 tt2 where tt1.a=tt2.a and tt2.a is null;
+id	select_type	table	type	possible_keys	key	key_len	ref	rows	Extra
+1	SIMPLE	tt1	range	a,a_2,a_3,a_4	a_4	5	NULL	2	Using where with pushed condition; Using index
+1	SIMPLE	tt2	ref	a,a_2,a_3,a_4	a_4	5	multi_key_bka_sequoiadb_30423.tt1.a	3	Using index; Using join buffer (flat, BKAH join); Using MRR
+select * from t1 tt1 join t1 tt2 where tt1.a=tt2.a and tt1.a is null and tt1.b is null;
+a	b	c	d	a	b	c	d
+explain select * from t1 tt1 join t1 tt2 where tt1.a=tt2.a and tt1.a is null and tt1.b is null;
+id	select_type	table	type	possible_keys	key	key_len	ref	rows	Extra
+1	SIMPLE	tt1	range	a,a_2,a_3,a_4	a_4	10	NULL	2	Using where with pushed condition; Using index
+1	SIMPLE	tt2	ref	a,a_2,a_3,a_4	a_4	5	multi_key_bka_sequoiadb_30423.tt1.a	3	Using index; Using join buffer (flat, BKAH join); Using MRR
+select * from t1 tt1 join t1 tt2 where tt1.a=tt2.a and tt2.a is null and tt2.b is null;
+a	b	c	d	a	b	c	d
+explain select * from t1 tt1 join t1 tt2 where tt1.a=tt2.a and tt2.a is null and tt2.b is null;
+id	select_type	table	type	possible_keys	key	key_len	ref	rows	Extra
+1	SIMPLE	tt1	range	a,a_2,a_3,a_4	a_4	5	NULL	2	Using where with pushed condition; Using index
+1	SIMPLE	tt2	ref	a,a_2,a_3,a_4	a_4	10	multi_key_bka_sequoiadb_30423.tt1.a,const	3	Using where with pushed condition; Using index; Using join buffer (flat, BKAH join); Using MRR
+select * from t1 tt1 join t1 tt2 where tt1.a=tt2.a and tt1.a is null and tt1.b is null and tt1.c is null;
+a	b	c	d	a	b	c	d
+explain select * from t1 tt1 join t1 tt2 where tt1.a=tt2.a and tt1.a is null and tt1.b is null and tt1.c is null;
+id	select_type	table	type	possible_keys	key	key_len	ref	rows	Extra
+1	SIMPLE	tt1	range	a,a_2,a_3,a_4	a_4	15	NULL	2	Using where with pushed condition; Using index
+1	SIMPLE	tt2	ref	a,a_2,a_3,a_4	a_4	5	multi_key_bka_sequoiadb_30423.tt1.a	3	Using index; Using join buffer (flat, BKAH join); Using MRR
+select * from t1 tt1 join t1 tt2 where tt1.a=tt2.a and tt2.a is null and tt2.b is null and tt2.c is null;
+a	b	c	d	a	b	c	d
+explain select * from t1 tt1 join t1 tt2 where tt1.a=tt2.a and tt2.a is null and tt2.b is null and tt2.c is null;
+id	select_type	table	type	possible_keys	key	key_len	ref	rows	Extra
+1	SIMPLE	tt1	range	a,a_2,a_3,a_4	a_4	5	NULL	2	Using where with pushed condition; Using index
+1	SIMPLE	tt2	ref	a,a_2,a_3,a_4	a_4	15	multi_key_bka_sequoiadb_30423.tt1.a,const,const	3	Using where with pushed condition; Using index; Using join buffer (flat, BKAH join); Using MRR
+select * from t1 tt1 join t1 tt2 where tt1.a=tt2.a and tt1.a is null and tt1.b is null and tt1.c is null and tt1.d is null;
+a	b	c	d	a	b	c	d
+explain select * from t1 tt1 join t1 tt2 where tt1.a=tt2.a and tt1.a is null and tt1.b is null and tt1.c is null and tt1.d is null;
+id	select_type	table	type	possible_keys	key	key_len	ref	rows	Extra
+1	SIMPLE	tt2	range	a,a_2,a_3,a_4	a_4	5	NULL	2	Using where with pushed condition; Using index
+1	SIMPLE	tt1	ref	a,a_2,a_3,a_4	a_4	20	multi_key_bka_sequoiadb_30423.tt2.a,const,const,const	2	Using where with pushed condition; Using index; Using join buffer (flat, BKAH join); Using MRR
+select * from t1 tt1 join t1 tt2 where tt1.a=tt2.a and tt2.a is null and tt2.b is null and tt2.c is null and tt2.d is null;
+a	b	c	d	a	b	c	d
+explain select * from t1 tt1 join t1 tt2 where tt1.a=tt2.a and tt2.a is null and tt2.b is null and tt2.c is null and tt2.d is null;
+id	select_type	table	type	possible_keys	key	key_len	ref	rows	Extra
+1	SIMPLE	tt1	range	a,a_2,a_3,a_4	a_4	5	NULL	2	Using where with pushed condition; Using index
+1	SIMPLE	tt2	ref	a,a_2,a_3,a_4	a_4	20	multi_key_bka_sequoiadb_30423.tt1.a,const,const,const	2	Using where with pushed condition; Using index; Using join buffer (flat, BKAH join); Using MRR
+select * from t1 tt1 join t1 tt2 where tt1.a=tt2.a and tt2.a is null and tt2.b =4 and tt2.c is null and tt2.d is null;
+a	b	c	d	a	b	c	d
+explain select * from t1 tt1 join t1 tt2 where tt1.a=tt2.a and tt2.a is null and tt2.b =4 and tt2.c is null and tt2.d is null;
+id	select_type	table	type	possible_keys	key	key_len	ref	rows	Extra
+1	SIMPLE	tt1	range	a,a_2,a_3,a_4	a_4	5	NULL	2	Using where with pushed condition; Using index
+1	SIMPLE	tt2	ref	a,a_2,a_3,a_4	a_4	20	multi_key_bka_sequoiadb_30423.tt1.a,const,const,const	2	Using where with pushed condition; Using index; Using join buffer (flat, BKAH join); Using MRR
+select * from t1 tt1 join t1 tt2 where tt1.a=tt2.a and tt2.a =4 and tt2.b is null and tt2.c is null and tt2.d is null;
+a	b	c	d	a	b	c	d
+4	NULL	NULL	NULL	4	NULL	NULL	NULL
+4	NULL	NULL	NULL	4	NULL	NULL	NULL
+4	NULL	NULL	NULL	4	NULL	NULL	NULL
+4	NULL	NULL	NULL	4	NULL	NULL	NULL
+explain select * from t1 tt1 join t1 tt2 where tt1.a=tt2.a and tt2.a =4 and tt2.b is null and tt2.c is null and tt2.d is null;
+id	select_type	table	type	possible_keys	key	key_len	ref	rows	Extra
+1	SIMPLE	tt1	ref	a,a_2,a_3,a_4	a_4	5	const	2	Using index
+1	SIMPLE	tt2	ref	a,a_2,a_3,a_4	a_4	20	const,const,const,const	2	Using where with pushed condition; Using index; Using join buffer (flat, BKAH join); Using MRR
+select * from t1 tt1 join t1 tt2 where tt1.a=tt2.a and tt2.a is null and tt2.b is null and tt2.c =4 and tt2.d is null;
+a	b	c	d	a	b	c	d
+explain select * from t1 tt1 join t1 tt2 where tt1.a=tt2.a and tt2.a is null and tt2.b is null and tt2.c =4 and tt2.d is null;
+id	select_type	table	type	possible_keys	key	key_len	ref	rows	Extra
+1	SIMPLE	tt1	range	a,a_2,a_3,a_4	a_4	5	NULL	2	Using where with pushed condition; Using index
+1	SIMPLE	tt2	ref	a,a_2,a_3,a_4	a_4	20	multi_key_bka_sequoiadb_30423.tt1.a,const,const,const	2	Using where with pushed condition; Using index; Using join buffer (flat, BKAH join); Using MRR
+select * from t1 tt1 join t1 tt2 where tt1.a=tt2.a and tt2.a is null and tt2.b is null and tt2.c is null and tt2.d =4;
+a	b	c	d	a	b	c	d
+explain select * from t1 tt1 join t1 tt2 where tt1.a=tt2.a and tt2.a is null and tt2.b is null and tt2.c is null and tt2.d =4;
+id	select_type	table	type	possible_keys	key	key_len	ref	rows	Extra
+1	SIMPLE	tt1	range	a,a_2,a_3,a_4	a_4	5	NULL	2	Using where with pushed condition; Using index
+1	SIMPLE	tt2	ref	a,a_2,a_3,a_4	a_4	20	multi_key_bka_sequoiadb_30423.tt1.a,const,const,const	2	Using where with pushed condition; Using index; Using join buffer (flat, BKAH join); Using MRR
+drop database multi_key_bka_sequoiadb_30423;

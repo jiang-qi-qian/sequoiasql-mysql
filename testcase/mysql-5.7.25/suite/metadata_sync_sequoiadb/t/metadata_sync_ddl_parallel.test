@@ -1,0 +1,854 @@
+--source include/have_sequoiadb.inc
+--source suite/metadata_sync_sequoiadb/inc/insts_connect_sequoiadb.inc
+
+#seqDB-19228
+#Bug SEQUOIASQLMAINSTREAM-360
+connection conn2;
+--disable_warnings
+set sql_mode=TRADITIONAL;
+--enable_warnings
+select @@SESSION.sql_mode;
+
+connection conn1;
+--disable_warnings
+set sql_mode=NO_ENGINE_SUBSTITUTION;
+select @@SESSION.sql_mode;
+drop database if exists metasync_19228;
+--enable_warnings
+create database metasync_19228;
+use metasync_19228;
+CREATE TABLE t1 (
+  eintrag date NOT NULL default '0000-00-00'
+);
+--disable_warnings
+set sql_mode=default;
+--enable_warnings
+show create table t1;
+
+connection conn2;
+show create table metasync_19228.t1;
+select @@SESSION.sql_mode;
+--disable_warnings
+set sql_mode=default;
+--enable_warnings
+connection conn1;
+drop database metasync_19228;
+connection conn2;
+--error ER_BAD_DB_ERROR
+show create database metasync_19228;
+
+#Case 22556
+connection conn1;
+--disable_warnings
+drop database if exists metasync_22556;
+--enable_warnings
+create database if not exists metasync_22556 character set = 'latin1';
+connection conn2;
+create table metasync_22556.t1 (a int key auto_increment);
+connection conn1;
+alter database metasync_22556 character set = 'utf8';
+connection conn2;
+alter table metasync_22556.t1 add column b int not null;
+
+#check metaData
+connection conn1;
+show create database metasync_22556;
+#Bug SEQUOIASQLMAINSTREAM-864
+show create table metasync_22556.t1;
+connection conn2;
+show create database metasync_22556;
+show create table metasync_22556.t1;
+
+connection conn1;
+alter database metasync_22556 character set = 'latin2';
+connection conn2;
+drop table metasync_22556.t1;
+
+#check metaData
+#Bug SEQUOIASQLMAINSTREAM-771
+connection conn1;
+show create database metasync_22556;
+--error 1146
+show create table metasync_22556.t1;
+connection conn2;
+show create database metasync_22556;
+--error 1146
+show create table metasync_22556.t1;
+
+connection conn1;
+drop database metasync_22556;
+
+#Case 22557
+connection conn1;
+--disable_warnings
+drop database if exists metasync_22557;
+--enable_warnings
+create database if not exists metasync_22557 character set = 'latin1';
+create table metasync_22557.t1 (a int key auto_increment);
+connection conn2;
+delimiter //;
+CREATE FUNCTION metasync_22557.f1() RETURNS INTEGER
+BEGIN
+  DECLARE retn INTEGER;
+  SELECT a FROM metasync_22557.t1 INTO retn;
+  RETURN retn;
+END//
+delimiter ;//
+connection conn1;
+alter database metasync_22557 character set = 'utf8';
+connection conn2;
+alter function metasync_22557.f1 comment 'modify function';
+
+#check metaData
+connection conn1;
+show create database metasync_22557;
+#Bug SEQUOIASQLMAINSTREAM-864
+--replace_regex /DEFINER=`.*`@/DEFINER=`x`@/
+show create function metasync_22557.f1;
+connection conn2;
+show create database metasync_22557;
+--replace_regex /DEFINER=`.*`@/DEFINER=`x`@/
+show create function metasync_22557.f1;
+
+connection conn1;
+alter database metasync_22557 character set = 'latin2';
+connection conn2;
+drop function metasync_22557.f1;
+
+#check metaData
+#Bug SEQUOIASQLMAINSTREAM-771
+connection conn1;
+show create database metasync_22557;
+--error 1305
+show create function metasync_22557.f1;
+connection conn2;
+show create database metasync_22557;
+--error 1305
+show create function metasync_22557.f1;
+
+connection conn1;
+drop database metasync_22557;
+
+#Case 22558
+connection conn1;
+--disable_warnings
+drop database if exists metasync_22558;
+--enable_warnings
+create database if not exists metasync_22558 character set = 'latin1';
+create table metasync_22558.account (acct_num int, amount decimal(10,2));
+connection conn2;
+create trigger metasync_22558.ins_num1 before insert on account for each row set @sum = @sum + NEW.amount;
+--replace_column 7 x
+--replace_regex /DEFINER=`.*`@/DEFINER=`x`@/
+show create trigger metasync_22558.ins_num1;
+
+#Bug SEQUOIASQLMAINSTREAM-771
+connection conn1;
+--replace_column 7 x
+--replace_regex /DEFINER=`.*`@/DEFINER=`x`@/
+show create trigger metasync_22558.ins_num1;
+alter database metasync_22558 character set = 'utf8';
+connection conn2;
+drop trigger metasync_22558.ins_num1;
+
+#Bug SEQUOIASQLMAINSTREAM-771
+connection conn1;
+show create database metasync_22558;
+--error 1360
+show create trigger metasync_22558.ins_num1;
+connection conn2;
+show create database metasync_22558;
+--error 1360
+show create trigger metasync_22558.ins_num1;
+
+connection conn1;
+drop database metasync_22558;
+
+#Case 22560
+connection conn1;
+--disable_warnings
+drop database if exists metasync_22560;
+--enable_warnings
+create database if not exists metasync_22560 character set = 'latin1';
+create table metasync_22560.t1(a int);
+connection conn2;
+create index a on metasync_22560.t1(a);
+
+connection conn1;
+show create database metasync_22560;
+show create table metasync_22560.t1;
+connection conn2;
+show create database metasync_22560;
+show create table metasync_22560.t1;
+
+connection conn1;
+alter database metasync_22560 character set = 'utf8';
+connection conn2;
+drop index a on metasync_22560.t1;
+
+connection conn1;
+show create database metasync_22560;
+show create table metasync_22560.t1;
+connection conn2;
+show create database metasync_22560;
+show create table metasync_22560.t1;
+
+connection conn1;
+drop database metasync_22560;
+
+#Case 22562
+connection conn1;
+--disable_warnings
+drop database if exists meta_sync_test;
+--enable_warnings
+create database if not exists meta_sync_test character set = 'latin1';
+create table meta_sync_test.t1 (a int key auto_increment,b char(255));
+
+connection conn2;
+delimiter //;
+CREATE FUNCTION meta_sync_test.f1() RETURNS INTEGER
+BEGIN
+  DECLARE retn INTEGER;
+  SELECT a FROM meta_sync_test.t1 INTO retn;
+  RETURN retn;
+END//
+delimiter ;//
+connection conn1;
+alter table meta_sync_test.t1 add c int not null default 10;
+connection conn2;
+alter function meta_sync_test.f1 comment 'modify function';
+
+#check metaData
+#Bug SEQUOIASQLMAINSTREAM-771
+connection conn1;
+show create table meta_sync_test.t1;
+--replace_regex /DEFINER=`.*`@/DEFINER=`x`@/
+show create function meta_sync_test.f1;
+connection conn2;
+show create table meta_sync_test.t1;
+--replace_regex /DEFINER=`.*`@/DEFINER=`x`@/
+show create function meta_sync_test.f1;
+
+connection conn1;
+alter table meta_sync_test.t1 change column c d bigint not null;
+connection conn2;
+drop function meta_sync_test.f1;
+
+#check metaData
+#Bug SEQUOIASQLMAINSTREAM-771
+connection conn1;
+show create table meta_sync_test.t1;
+--error 1305
+show create function meta_sync_test.f1;
+connection conn2;
+show create table meta_sync_test.t1;
+--error 1305
+show create function meta_sync_test.f1;
+
+connection conn1;
+drop table meta_sync_test.t1;
+
+#Case 22563
+connection conn1;
+drop table if exists meta_sync_test.account;
+create table meta_sync_test.account (acct_num int, amount decimal(10,2));
+connection conn2;
+create trigger meta_sync_test.ins_num1 before insert on account for each row set @sum = @sum + NEW.amount;
+
+#Bug SEQUOIASQLMAINSTREAM-771
+connection conn1;
+show create table meta_sync_test.account;
+--replace_column 7 x
+--replace_regex /DEFINER=`.*`@/DEFINER=`x`@/
+show create trigger meta_sync_test.ins_num1;
+connection conn2;
+show create table meta_sync_test.account;
+--replace_column 7 x
+--replace_regex /DEFINER=`.*`@/DEFINER=`x`@/
+show create trigger meta_sync_test.ins_num1;
+
+connection conn1;
+alter table meta_sync_test.account add c int not null default 10;
+connection conn2;
+drop trigger meta_sync_test.ins_num1;
+
+#Bug SEQUOIASQLMAINSTREAM-771
+connection conn1;
+show create table meta_sync_test.account;
+--error 1360
+show create trigger meta_sync_test.ins_num1;
+connection conn2;
+show create table meta_sync_test.account;
+--error 1360
+show create trigger meta_sync_test.ins_num1;
+
+connection conn1;
+drop table meta_sync_test.account;
+
+#Case 22565
+connection conn1;
+drop table if exists meta_sync_test.t1;
+drop table if exists meta_sync_test.t2;
+create table meta_sync_test.t1(a int)engine=innodb;
+connection conn2;
+create index a on meta_sync_test.t1(a);
+
+connection conn1;
+show create table meta_sync_test.t1;
+connection conn2;
+show create table meta_sync_test.t1;
+
+connection conn1;
+alter table meta_sync_test.t1 rename as meta_sync_test.t2;
+#Bug SEQUOIASQLMAINSTREAM-773
+connection conn2;
+alter table meta_sync_test.t2 rename index a to b;
+
+connection conn1;
+--error 1146
+show create table meta_sync_test.t1;
+show create table meta_sync_test.t2;
+connection conn2;
+--error 1146
+show create table meta_sync_test.t1;
+show create table meta_sync_test.t2;
+
+connection conn1;
+drop table meta_sync_test.t2;
+
+#Case 22695
+connection conn1;
+create table meta_sync_test.t1(a int,b int);
+connection conn2;
+create table meta_sync_test.t2 like meta_sync_test.t1;
+connection conn1;
+create or replace view meta_sync_test.v1 as select * from meta_sync_test.t1 where a >0;
+connection conn2;
+alter table meta_sync_test.t1 add column c int;
+connection conn1;
+create or replace view meta_sync_test.v1 as select * from meta_sync_test.t2 where exists(select 1 from meta_sync_test.t1 where meta_sync_test.t1.a=meta_sync_test.t2.a);
+
+#check metaData
+#Bug SEQUOIASQLMAINSTREAM-771
+connection conn1;
+show create table meta_sync_test.t1;
+--replace_regex /DEFINER=`.*`@/DEFINER=`x`@/
+show create view meta_sync_test.v1;
+connection conn2;
+show create table meta_sync_test.t1;
+--replace_regex /DEFINER=`.*`@/DEFINER=`x`@/
+show create view meta_sync_test.v1;
+
+connection conn1;
+drop table meta_sync_test.t1;
+connection conn2;
+drop view meta_sync_test.v1;
+drop table meta_sync_test.t2;
+
+#check metaData
+#Bug SEQUOIASQLMAINSTREAM-771
+connection conn1;
+--error 1146
+show create table meta_sync_test.t1;
+--error 1146
+show create table meta_sync_test.v1;
+connection conn2;
+--error 1146
+show create table meta_sync_test.t1;
+--error 1146
+show create table meta_sync_test.v1;
+
+#Case 22696
+connection conn1;
+create table meta_sync_test.t1 (a int key auto_increment,b int);
+create table meta_sync_test.t2 like meta_sync_test.t1;
+create or replace view meta_sync_test.v1 as select * from meta_sync_test.t1 where a >0;
+connection conn2;
+delimiter //;
+CREATE FUNCTION meta_sync_test.f1() RETURNS INTEGER
+BEGIN
+  DECLARE retn INTEGER;
+  SELECT a FROM meta_sync_test.v1 INTO retn;
+  RETURN retn;
+END//
+delimiter ;//
+
+#check metaData
+#Bug SEQUOIASQLMAINSTREAM-771
+connection conn1;
+--replace_regex /DEFINER=`.*`@/DEFINER=`x`@/
+show create table meta_sync_test.v1;
+--replace_regex /DEFINER=`.*`@/DEFINER=`x`@/
+show create function meta_sync_test.f1;
+connection conn2;
+--replace_regex /DEFINER=`.*`@/DEFINER=`x`@/
+show create table meta_sync_test.t1;
+--replace_regex /DEFINER=`.*`@/DEFINER=`x`@/
+show create function meta_sync_test.f1;
+
+connection conn1;
+drop view meta_sync_test.v1;
+
+connection conn2;
+alter function meta_sync_test.f1 comment 'modify function';
+#check metaData
+#Bug SEQUOIASQLMAINSTREAM-771
+connection conn1;
+--error 1146
+show create table meta_sync_test.v1;
+--replace_regex /DEFINER=`.*`@/DEFINER=`x`@/
+show create function meta_sync_test.f1;
+connection conn2;
+--error 1146
+show create table meta_sync_test.v1;
+--replace_regex /DEFINER=`.*`@/DEFINER=`x`@/
+show create function meta_sync_test.f1;
+
+connection conn1;
+create or replace view meta_sync_test.v1 as select * from meta_sync_test.t2 where exists(select 1 from meta_sync_test.t1 where meta_sync_test.t1.a=meta_sync_test.t2.a);
+connection conn2;
+drop function meta_sync_test.f1;
+
+#check metaData
+connection conn1;
+drop view meta_sync_test.v1;
+#Bug SEQUOIASQLMAINSTREAM-771
+--error 1146
+show create table meta_sync_test.v1;
+--error 1305
+show create function meta_sync_test.f1;
+connection conn2;
+--error 1146
+show create table meta_sync_test.v1;
+--error 1305
+show create function meta_sync_test.f1;
+
+connection conn1;
+drop table meta_sync_test.t1;
+drop table meta_sync_test.t2;
+
+
+
+#Case 22698
+connection conn1;
+create table meta_sync_test.t1 (id int, name char(255));
+connection conn2;
+delimiter //;
+create procedure meta_sync_test.p1()
+begin
+   insert into meta_sync_test.t1(name) values('name is null');
+end //
+
+create procedure meta_sync_test.p2()
+begin
+   insert into meta_sync_test.t1(name) values('name is not null');
+end //
+delimiter ;//
+
+connection conn1;
+delimiter //;
+create function meta_sync_test.f(num int) returns int
+begin
+   declare a int;
+   if num <0 then
+      call meta_sync_test.p1();
+      set a= 1;
+   else
+      call meta_sync_test.p2();
+      set a=2;
+   end if;
+   return a;
+end //
+delimiter ;//
+
+#Bug SEQUOIASQLMAINSTREAM-771
+connection conn2;
+create view meta_sync_test.v1 as select * from meta_sync_test.t1 where id = meta_sync_test.f(-1);
+
+#check metaData
+#Bug SEQUOIASQLMAINSTREAM-771
+connection conn1;
+--replace_regex /DEFINER=`.*`@/DEFINER=`x`@/
+show create table meta_sync_test.v1;
+--replace_regex /DEFINER=`.*`@/DEFINER=`x`@/
+show create function meta_sync_test.f;
+--replace_regex /DEFINER=`.*`@/DEFINER=`x`@/
+show create procedure meta_sync_test.p1;
+--replace_regex /DEFINER=`.*`@/DEFINER=`x`@/
+show create procedure meta_sync_test.p2;
+show create table meta_sync_test.t1;
+connection conn2;
+--replace_regex /DEFINER=`.*`@/DEFINER=`x`@/
+show create table meta_sync_test.v1;
+--replace_regex /DEFINER=`.*`@/DEFINER=`x`@/
+show create function meta_sync_test.f;
+--replace_regex /DEFINER=`.*`@/DEFINER=`x`@/
+show create procedure meta_sync_test.p1;
+--replace_regex /DEFINER=`.*`@/DEFINER=`x`@/
+show create procedure meta_sync_test.p2;
+show create table meta_sync_test.t1;
+
+connection conn1;
+drop table meta_sync_test.t1;
+connection conn2;
+drop procedure meta_sync_test.p1;
+drop procedure meta_sync_test.p2;
+connection conn1;
+drop function meta_sync_test.f;
+connection conn2;
+drop view meta_sync_test.v1;
+
+#check metaData
+#Bug SEQUOIASQLMAINSTREAM-771
+connection conn1;
+connection conn1;
+--error 1146
+show create table meta_sync_test.v1;
+--error 1305
+show create function meta_sync_test.f;
+--error 1305
+show create procedure meta_sync_test.p1;
+--error 1305
+show create procedure meta_sync_test.p2;
+--error 1146
+show create table meta_sync_test.t1;
+connection conn2;
+--error 1146
+show create table meta_sync_test.v1;
+--error 1305
+show create function meta_sync_test.f;
+--error 1305
+show create procedure meta_sync_test.p1;
+--error 1305
+show create procedure meta_sync_test.p2;
+--error 1146
+show create table meta_sync_test.t1;
+connection conn1;
+drop database meta_sync_test;
+connection conn2;
+--error ER_BAD_DB_ERROR
+show create database meta_sync_test;
+
+#Case 22567
+connection conn1;
+--disable_warnings
+drop database if exists meta_sync_22567;
+drop user if exists user_22567;
+--enable_warnings
+create database meta_sync_22567;
+create table meta_sync_22567.t1(a int);
+create view meta_sync_22567.v1 as select * from meta_sync_22567.t1;
+delimiter //;
+create procedure meta_sync_22567.p1()
+begin
+   insert into meta_sync_22567.t1(name) values('name is null');
+end //
+CREATE FUNCTION meta_sync_22567.f1() RETURNS INTEGER 
+BEGIN
+  DECLARE retn INTEGER;
+  insert into meta_sync_22567.t1(a) values(1) ;
+  SELECT a FROM meta_sync_22567.t1 INTO retn;
+  RETURN retn;
+END//
+delimiter ;//
+create user user_22567 identified by 'meta_sync_22567';
+flush privileges;
+connection conn2;
+grant insert on table meta_sync_22567.t1 to 'user_22567';
+grant select on table meta_sync_22567.v1 to 'user_22567';
+grant execute on function meta_sync_22567.f1 to 'user_22567';
+grant execute on procedure meta_sync_22567.p1 to 'user_22567';
+flush privileges;
+
+--sorted_result
+connection conn1;
+show grants for user_22567;
+--sorted_result
+connection conn2;
+show grants for user_22567;
+
+connection conn1;
+revoke insert on table meta_sync_22567.t1 from user_22567;
+revoke select on table meta_sync_22567.v1 from user_22567;
+revoke execute on function meta_sync_22567.f1 from user_22567;
+revoke execute on procedure meta_sync_22567.p1 from user_22567;
+flush privileges;
+
+connection conn1;
+show grants for user_22567;
+connection conn2;
+show grants for user_22567;
+
+connection conn1;
+grant all on meta_sync_22567.* to 'user_22567';
+flush privileges;
+
+connection conn1;
+show grants for user_22567;
+connection conn2;
+show grants for user_22567;
+
+connection conn1;
+alter database meta_sync_22567 character set = 'latin2';
+connection conn2;
+revoke all on meta_sync_22567.* from user_22567;
+flush privileges;
+
+connection conn1;
+show grants for user_22567;
+connection conn2;
+show grants for user_22567;
+
+connection conn1;
+drop table meta_sync_22567.t1;
+connection conn2;
+drop view meta_sync_22567.v1;
+connection conn1;
+drop function meta_sync_22567.f1;
+connection conn2;
+drop procedure meta_sync_22567.p1;
+
+connection conn1;
+show grants for user_22567;
+connection conn2;
+show grants for user_22567;
+
+connection conn1;
+drop database meta_sync_22567;
+drop user user_22567;
+
+# seqDB-22559, seqDB-22564
+# begin testing
+#
+# test database, table and procedure
+connection conn1;
+--disable_warnings
+DROP DATABASE IF EXISTS metasync_22559_22564;
+--enable_warnings
+connection conn2;
+--error ER_BAD_DB_ERROR 
+SHOW CREATE DATABASE metasync_22559_22564;
+connection conn1;
+CREATE DATABASE metasync_22559_22564;
+USE metasync_22559_22564;
+# conn1 create table
+CREATE TABLE t1 ( a INT, b CHAR(8), c BLOB );
+# conn2 create procedure
+connection conn2;
+DELIMITER |;
+CREATE PROCEDURE metasync_22559_22564.p1 ( x1 char(16), x2 char(16), y int )
+BEGIN
+  CREATE TABLE metasync_22559_22564.t2 ( a INT DEFAULT 1, b CHAR(8) DEFAULT '' );
+  INSERT INTO metasync_22559_22564.t1 VALUES ( y, x1, x1 );
+  INSERT INTO metasync_22559_22564.t2 VALUES ( y, x2 );
+END|
+DELIMITER ;|
+USE metasync_22559_22564;
+# conn1 call sp
+connection conn1;
+SET @x1 = "test1";
+SET @x2 = "test2";
+SET @y = 1;
+CALL p1( @x1, @x2, @y );
+--replace_regex /DEFINER=`.*`@/DEFINER=`x`@/
+SHOW CREATE PROCEDURE p1;
+# conn2 alter database
+connection conn2;
+ALTER DATABASE metasync_22559_22564 DEFAULT CHARACTER SET = ucs2 DEFAULT COLLATE = ucs2_general_ci;
+# conn1 alter table
+connection conn1;
+ALTER TABLE t1 ADD COLUMN d DATE, MODIFY c LONGBLOB, ADD PRIMARY KEY(a);
+ALTER TABLE t2 PARTITION BY KEY (a) PARTITIONS 10; 
+# conn2 alter procedure
+connection conn2;
+ALTER PROCEDURE p1
+    language sql
+    sql security definer
+    comment 'alter procedure comment';
+# check metadatas after alter 
+connection conn1;
+SHOW CREATE DATABASE metasync_22559_22564;
+--replace_regex /DEFINER=`.*`@/DEFINER=`x`@/
+SHOW CREATE PROCEDURE p1;
+connection conn2;
+SHOW CREATE TABLE t1;
+SHOW CREATE TABLE t2;
+# conn1 alter database
+connection conn1;
+ALTER DATABASE metasync_22559_22564 CHARACTER SET cp1251;
+# conn2 drop table
+connection conn2;
+DROP TABLE t1,t2;
+# conn1 drop procedure
+connection conn1;
+DROP PROCEDURE p1;
+# check metadatas after alter and drop
+connection conn1;
+--error ER_NO_SUCH_TABLE
+SHOW CREATE TABLE t1;
+--error ER_NO_SUCH_TABLE
+SHOW CREATE TABLE t2;
+connection conn2;
+SHOW CREATE DATABASE metasync_22559_22564;
+--error ER_SP_DOES_NOT_EXIST
+SHOW CREATE PROCEDURE p1;
+# clear databases in the ending
+DROP DATABASE metasync_22559_22564;
+# check databases are cleaned in the ending
+connection conn1;
+--error ER_BAD_DB_ERROR
+SHOW CREATE DATABASE metasync_22559_22564;
+
+# seqDB-22561, seqDB-22566
+# begin testing
+#
+# test database, table and autoincrement
+connection conn1;
+--disable_warnings
+DROP DATABASE IF EXISTS metasync_22561_22566;
+--enable_warnings
+connection conn2;
+--error ER_BAD_DB_ERROR
+SHOW CREATE DATABASE metasync_22561_22566;
+# conn1 create database, table
+connection conn1;
+CREATE DATABASE metasync_22561_22566;
+USE metasync_22561_22566;
+CREATE TABLE t1 ( a TINYINT PRIMARY KEY, e ENUM('y','n','giveup') );
+# conn2 create auto_increment
+connection conn2;
+ALTER TABLE metasync_22561_22566.t1 MODIFY a TINYINT AUTO_INCREMENT;
+INSERT INTO metasync_22561_22566.t1(e) VALUES ('y'),('n');
+# check metadatas after create
+connection conn1;
+SHOW CREATE TABLE t1;
+connection conn2;
+USE metasync_22561_22566;
+SHOW CREATE DATABASE metasync_22561_22566;
+SHOW CREATE TABLE t1;
+# conn1 alter database
+connection conn1;
+ALTER DATABASE metasync_22561_22566 DEFAULT CHARACTER SET = ucs2 DEFAULT COLLATE = ucs2_general_ci;
+# conn2 alter table
+connection conn2;
+ALTER TABLE t1 ADD COLUMN c CHAR(8) DEFAULT 'char';
+ALTER TABLE t1 PARTITION BY HASH (a) PARTITIONS 4;
+# conn1 alter auto_increment
+connection conn1;
+ALTER TABLE t1 AUTO_INCREMENT 120;                   
+INSERT INTO t1(e,c) VALUES ('giveup','charnew1'),('giveup','charnew2');
+# check metadatas after alter
+connection conn2;
+SELECT * FROM t1 ORDER BY a;
+SHOW CREATE TABLE t1;
+SHOW CREATE DATABASE metasync_22561_22566;
+connection conn1;
+SELECT * FROM t1 ORDER BY a;
+SHOW CREATE TABLE t1;
+# conn2 alter database
+connection conn2;
+ALTER DATABASE metasync_22561_22566 CHARACTER SET cp1251;
+# conn1 drop auto_increment
+connection conn1;
+ALTER TABLE t1 MODIFY a TINYINT;
+INSERT INTO t1(a,e) VALUES (-1, 'giveup');
+# check metadatas after alter, drop
+connection conn2;
+SELECT * FROM t1 ORDER BY a;
+SHOW CREATE TABLE t1;
+connection conn1;
+SHOW CREATE DATABASE metasync_22561_22566;
+# conn1 drop table
+DROP TABLE t1;
+# check metadatas after drop table
+connection conn2;
+--error ER_NO_SUCH_TABLE
+SHOW CREATE TABLE t1;
+# clear databases in the ending
+connection conn1;
+DROP DATABASE metasync_22561_22566;
+# check databases are cleaned in the ending
+connection conn2;
+--error ER_BAD_DB_ERROR
+SHOW CREATE DATABASE metasync_22561_22566;
+
+# seqDB-22697 
+# begin testing
+#
+# test view and procedure
+connection conn1;
+--disable_warnings
+DROP DATABASE IF EXISTS metasync_22697;
+--enable_warnings
+connection conn2;
+--error ER_BAD_DB_ERROR
+SHOW CREATE DATABASE metasync_22697;
+connection conn1;
+CREATE DATABASE metasync_22697;
+USE metasync_22697;
+# conn1 create view
+CREATE TABLE t1 ( id INT AUTO_INCREMENT PRIMARY KEY, name CHAR(8) );
+CREATE VIEW v1 AS SELECT id FROM t1 WHERE id > 1;
+# conn2 create procedure
+connection conn2;
+DELIMITER |;
+CREATE PROCEDURE metasync_22697.p1 ( x CHAR(8) )
+BEGIN
+  ALTER TABLE metasync_22697.t1 MODIFY name CHAR(16) DEFAULT 'zhangsan';
+  INSERT INTO metasync_22697.t1 VALUES ();
+  INSERT INTO metasync_22697.t1(name) VALUES (x);
+  SELECT * FROM metasync_22697.v1;
+END|
+DELIMITER ;|
+USE metasync_22697;
+# conn1 call procedure
+connection conn1;
+SET @x = "Jack";
+CALL p1( @x );
+# check metadatas after create
+connection conn2;
+--replace_regex /DEFINER=`.*`@/DEFINER=`x`@/
+SHOW CREATE VIEW v1;
+SHOW CREATE TABLE t1;
+SELECT * FROM t1 ORDER BY id;
+connection conn1;
+--replace_regex /DEFINER=`.*`@/DEFINER=`x`@/
+SHOW CREATE PROCEDURE p1;
+# conn2 alter view
+connection conn2;
+ALTER ALGORITHM = MERGE DEFINER = "root"@"localhost" SQL SECURITY INVOKER VIEW v1 AS SELECT id, name FROM t1 WHERE name IS NOT NULL;
+# conn1 alter procedure
+connection conn1;
+ALTER PROCEDURE p1
+    language sql
+    sql security definer
+    comment 'alter procedure comment';
+# check metadatas after alter 
+connection conn1;
+SHOW CREATE VIEW v1;
+SELECT * FROM v1;
+connection conn2;
+--replace_regex /DEFINER=`.*`@/DEFINER=`x`@/
+SHOW CREATE PROCEDURE p1;
+# conn1 drop view
+connection conn1;
+DROP VIEW v1;
+# conn2 drop procedure
+connection conn2;
+DROP PROCEDURE p1;
+# check metadatas after drop
+connection conn1;
+--error ER_SP_DOES_NOT_EXIST
+SHOW CREATE PROCEDURE p1;
+connection conn2;
+--error ER_NO_SUCH_TABLE
+SHOW CREATE TABLE v1;
+# clear databases in the ending
+DROP DATABASE metasync_22697;
+# check databases are cleaned in the ending
+connection conn1;
+--error ER_BAD_DB_ERROR
+SHOW CREATE DATABASE metasync_22697;
+
+--source include/uninstall_sequoiadb.inc
+--source suite/metadata_sync_sequoiadb/inc/insts_disconnect_sequoiadb.inc

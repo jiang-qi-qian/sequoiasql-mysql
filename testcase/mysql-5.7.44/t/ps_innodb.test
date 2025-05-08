@@ -1,0 +1,172 @@
+--source include/have_sequoiadb.inc
+
+--echo #
+--echo # MDEV-17042: prepared statement does not return error with
+--echo # SQL_MODE STRICT_TRANS_TABLES. (Part 2)
+--echo #
+
+--disable_warnings
+drop table if exists t1;
+--enable_warnings
+create table t1(a int);
+drop table t1;
+
+set @save_sql_mode=@@sql_mode;
+set sql_mode='STRICT_TRANS_TABLES';
+
+# int
+CREATE TABLE t1 (id int, count int) engine=sequoiadb;
+insert into t1 values (1,1),(0,2);
+select * from t1 order by id;
+select * from t1 where id = '1bad';
+--error ER_TRUNCATED_WRONG_VALUE
+update t1 set count = count + 1 where id = '1bad';
+select * from t1 order by id;
+--error ER_TRUNCATED_WRONG_VALUE
+delete from t1 where id = '1bad';
+select * from t1 order by id;
+
+prepare stmt from "update t1 set count = count + 1 where id = '1bad'";
+--error ER_TRUNCATED_WRONG_VALUE
+execute stmt;
+deallocate prepare stmt;
+
+prepare stmt from 'update t1 set count = count + 1 where id = ?';
+set @a = '1bad';
+# SEQUOIASQLMAINSTREAM-1939
+--error ER_TRUNCATED_WRONG_VALUE
+execute stmt using @a;
+deallocate prepare stmt;
+drop table t1;
+
+# decimal
+CREATE TABLE t1 (id decimal(10,5), count int) engine=sequoiadb;
+insert into t1 values (1,1),(0,2);
+select * from t1 order by id;
+select * from t1 where id = '1bad';
+#SEQUOIASQLMAINSTREAM-1939
+--error ER_TRUNCATED_WRONG_VALUE
+update t1 set count = count + 1 where id = '1bad';
+select * from t1 order by id;
+--error ER_TRUNCATED_WRONG_VALUE
+delete from t1 where id = '1bad';
+select * from t1 order by id;
+
+prepare stmt from "update t1 set count = count + 1 where id = '1bad'";
+--error ER_TRUNCATED_WRONG_VALUE
+execute stmt;
+deallocate prepare stmt;
+
+prepare stmt from 'update t1 set count = count + 1 where id = ?';
+set @a = '1bad';
+# SEQUOIASQLMAINSTREAM-1939
+--error ER_TRUNCATED_WRONG_VALUE
+execute stmt using @a;
+deallocate prepare stmt;
+drop table t1;
+
+# double
+CREATE TABLE t1 (id double, count int) engine=sequoiadb;
+insert into t1 values (1,1),(0,2);
+select * from t1 order by id;
+select * from t1 where id = '1bad';
+# SEQUOIASQLMAINSTREAM-1929
+--error ER_TRUNCATED_WRONG_VALUE
+update t1 set count = count + 1 where id = '1bad';
+select * from t1 order by id;
+--error ER_TRUNCATED_WRONG_VALUE
+delete from t1 where id = '1bad';
+select * from t1 order by id;
+
+prepare stmt from "update t1 set count = count + 1 where id = '1bad'";
+--error ER_TRUNCATED_WRONG_VALUE
+execute stmt;
+deallocate prepare stmt;
+
+prepare stmt from 'update t1 set count = count + 1 where id = ?';
+set @a = '1bad';
+# SEQUOIASQLMAINSTREAM-1939
+--error ER_TRUNCATED_WRONG_VALUE
+execute stmt using @a;
+deallocate prepare stmt;
+drop table t1;
+
+# date
+CREATE TABLE t1 (id date, count int) engine=sequoiadb;
+insert into t1 values ("2019-06-11",1),("2019-06-12",2);
+select * from t1 order by id;
+select * from t1 where id = '1bad';
+# SEQUOIASQLMAINSTREAM-1938
+--error ER_TRUNCATED_WRONG_VALUE
+update t1 set count = count + 1 where id = '1bad';
+select * from t1 order by id;
+--error ER_TRUNCATED_WRONG_VALUE
+delete from t1 where id = '1bad';
+select * from t1 order by id;
+
+prepare stmt from "update t1 set count = count + 1 where id = '1bad'";
+--error ER_TRUNCATED_WRONG_VALUE
+execute stmt;
+deallocate prepare stmt;
+
+prepare stmt from 'update t1 set count = count + 1 where id = ?';
+set @a = '1bad';
+--error ER_TRUNCATED_WRONG_VALUE
+execute stmt using @a;
+deallocate prepare stmt;
+drop table t1;
+set sql_mode=@save_sql_mode;
+
+# time
+CREATE TABLE t1 (id time, count int) engine=sequoiadb;
+insert into t1 values ("10:00:00",1),("11:00:00",2);
+select * from t1 order by id;
+select * from t1 where id = '1bad';
+# SEQUOIASQLMAINSTREAM-1938
+--error ER_TRUNCATED_WRONG_VALUE
+update t1 set count = count + 1 where id = '1bad';
+select * from t1 order by id;
+--error ER_TRUNCATED_WRONG_VALUE
+delete from t1 where id = '1bad';
+select * from t1 order by id;
+
+prepare stmt from "update t1 set count = count + 1 where id = '1bad'";
+--error ER_TRUNCATED_WRONG_VALUE
+execute stmt;
+deallocate prepare stmt;
+
+prepare stmt from 'update t1 set count = count + 1 where id = ?';
+set @a = '1bad';
+--error ER_TRUNCATED_WRONG_VALUE
+execute stmt using @a;
+deallocate prepare stmt;
+drop table t1;
+set sql_mode=@save_sql_mode;
+
+# timestamp
+CREATE TABLE t1 (id timestamp, count int) engine=sequoiadb;
+insert into t1 values ("2023-01-01 10:00:00",1),("2023-01-01 11:00:00",2);
+select * from t1 order by id;
+select * from t1 where id = '1bad';
+# SEQUOIASQLMAINSTREAM-1938
+--error ER_TRUNCATED_WRONG_VALUE
+update t1 set count = count + 1 where id = '1bad';
+select * from t1 order by id;
+--error ER_TRUNCATED_WRONG_VALUE
+delete from t1 where id = '1bad';
+select * from t1 order by id;
+
+prepare stmt from "update t1 set count = count + 1 where id = '1bad'";
+--error ER_TRUNCATED_WRONG_VALUE
+execute stmt;
+deallocate prepare stmt;
+
+prepare stmt from 'update t1 set count = count + 1 where id = ?';
+set @a = '1bad';
+--error ER_TRUNCATED_WRONG_VALUE
+execute stmt using @a;
+deallocate prepare stmt;
+drop table t1;
+set sql_mode=@save_sql_mode;
+
+--echo # End of 5.5 tests

@@ -1,0 +1,74 @@
+#Case 30315
+--source include/not_embedded.inc
+
+--disable_warnings
+drop database if exists mysqlpump_sequoiadb;
+--enable_warnings
+
+CREATE DATABASE mysqlpump_sequoiadb;
+use mysqlpump_sequoiadb;
+create TABLE t1(id int);
+
+--echo "socket wrong"
+--exec $MYSQLPUMP -B mysqlpump_sequoiadb -S $MYSQLTEST_VARDIR/tmp/error.socket -uroot > $MYSQLTEST_VARDIR/tmp/pump.log 2>&1
+--exec sed 's/socket.*error.socket/error.socket/g'  $MYSQLTEST_VARDIR/tmp/pump.log
+--exec $MYSQLPUMP -B mysqlpump_sequoiadb -S $MYSQLTEST_VARDIR/tmp/error.socket -uroot --single-transaction> $MYSQLTEST_VARDIR/tmp/pump.log 2>&1
+--exec sed 's/socket.*error.socket/error.socket/g'  $MYSQLTEST_VARDIR/tmp/pump.log
+
+--echo "socket success"
+--exec $MYSQLPUMP -B mysqlpump_sequoiadb -S $MASTER_MYSOCK -uroot > $MYSQLTEST_VARDIR/tmp/pumpbugsdb.dump
+--exec $MYSQLPUMP -B mysqlpump_sequoiadb -S $MASTER_MYSOCK -uroot --single-transaction> $MYSQLTEST_VARDIR/tmp/pumpbugsdb.dump
+
+--echo "host&port wrong"
+--exec $MYSQLPUMP -B mysqlpump_sequoiadb -h 123 -P 123 -uroot >  $MYSQLTEST_VARDIR/tmp/pump.log 2>&1
+--exec cat $MYSQLTEST_VARDIR/tmp/pump.log
+--exec $MYSQLPUMP -B mysqlpump_sequoiadb -h 123 -P 123 -uroot --single-transaction>  $MYSQLTEST_VARDIR/tmp/pump.log 2>&1
+--exec cat $MYSQLTEST_VARDIR/tmp/pump.log
+
+--echo "host&port success"
+--exec $MYSQLPUMP -B mysqlpump_sequoiadb -h 127.0.0.1 -P $MASTER_MYPORT -uroot >  $MYSQLTEST_VARDIR/tmp/pumpbugsdb.dump
+--exec $MYSQLPUMP -B mysqlpump_sequoiadb -h 127.0.0.1 -P $MASTER_MYPORT -uroot --single-transaction >  $MYSQLTEST_VARDIR/tmp/pumpbugsdb.dump
+
+--echo "user wrong"
+--exec $MYSQLPUMP -B mysqlpump_sequoiadb -h 127.0.0.1 -P $MASTER_MYPORT -u error > $MYSQLTEST_VARDIR/tmp/pump.log 2>&1
+--exec cat $MYSQLTEST_VARDIR/tmp/pump.log
+--exec $MYSQLPUMP -B mysqlpump_sequoiadb -h 127.0.0.1 -P $MASTER_MYPORT -u error --single-transaction> $MYSQLTEST_VARDIR/tmp/pump.log 2>&1
+--exec cat $MYSQLTEST_VARDIR/tmp/pump.log
+
+create user mysqlpump_sequoiadb@'%' IDENTIFIED BY 'pump';
+grant all privileges on *.* to mysqlpump_sequoiadb@'%' with grant option;
+flush privileges;
+
+--echo "password wrong"
+--exec $MYSQLPUMP -B mysqlpump_sequoiadb -h 127.0.0.1 -P $MASTER_MYPORT -u mysqlpump_sequoiadb -perror> $MYSQLTEST_VARDIR/tmp/pump.log 2>&1
+--exec cat $MYSQLTEST_VARDIR/tmp/pump.log
+--exec $MYSQLPUMP -B mysqlpump_sequoiadb -h 127.0.0.1 -P $MASTER_MYPORT  -u mysqlpump_sequoiadb -perror --single-transaction> $MYSQLTEST_VARDIR/tmp/pump.log 2>&1
+--exec cat $MYSQLTEST_VARDIR/tmp/pump.log
+
+--echo "password success"
+--exec $MYSQLPUMP -B mysqlpump_sequoiadb -h 127.0.0.1 -P $MASTER_MYPORT -u mysqlpump_sequoiadb -ppump >  $MYSQLTEST_VARDIR/tmp/pumpbugsdb.dump
+--exec $MYSQLPUMP -B mysqlpump_sequoiadb -h 127.0.0.1 -P $MASTER_MYPORT -u mysqlpump_sequoiadb -ppump --single-transaction >  $MYSQLTEST_VARDIR/tmp/pumpbugsdb.dump
+
+drop user 'mysqlpump_sequoiadb';
+
+--exec $MYSQLPUMP -B mysqlpump_sequoiadb -S $MASTER_MYSOCK -P $MASTER_MYPORT -uroot > $MYSQLTEST_VARDIR/tmp/pumpbugsdb.dump
+
+drop database mysqlpump_sequoiadb;
+
+--echo "before mysqlpump"
+show databases like 'mysqlpump_sequoiadb';
+
+--exec $MYSQL < $MYSQLTEST_VARDIR/tmp/pumpbugsdb.dump
+
+--echo "after mysqlpump"
+show databases like 'mysqlpump_sequoiadb';
+
+use mysqlpump_sequoiadb;
+desc t1;
+drop database mysqlpump_sequoiadb;
+
+--remove_file $MYSQLTEST_VARDIR/tmp/pumpbugsdb.dump
+--remove_file $MYSQLTEST_VARDIR/tmp/pump.log
+
+--echo # End
+

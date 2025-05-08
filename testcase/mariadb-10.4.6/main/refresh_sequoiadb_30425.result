@@ -1,0 +1,63 @@
+drop database if exists refresh_sequoiadb_30425;
+create database refresh_sequoiadb_30425;
+drop database refresh_sequoiadb_30425;
+create database refresh_sequoiadb_30425;
+use refresh_sequoiadb_30425;
+create table t1(a int);
+insert into t1 values(1),(2),(3);
+connect conn1,localhost,root,,refresh_sequoiadb_30425;
+select @@refresh_all_cached_tables_supported;
+@@refresh_all_cached_tables_supported
+0
+refresh table stats;
+ERROR 42000: This version of MariaDB doesn't yet support 'REFRESH TABLES STATS.'
+refresh table t1 stats;
+set session refresh_all_cached_tables_supported=off;
+select @@refresh_all_cached_tables_supported;
+@@refresh_all_cached_tables_supported
+0
+refresh table stats;
+ERROR 42000: This version of MariaDB doesn't yet support 'REFRESH TABLES STATS.'
+refresh table t1 stats;
+set session refresh_all_cached_tables_supported=on;
+select @@refresh_all_cached_tables_supported;
+@@refresh_all_cached_tables_supported
+1
+refresh table stats;
+refresh table t1 stats;
+prepare stmt from 'refresh table stats';
+ERROR HY000: This command is not supported in the prepared statement protocol yet
+prepare stmt from 'refresh table t1 stats';
+ERROR HY000: This command is not supported in the prepared statement protocol yet
+set refresh_all_cached_tables_supported=on;
+select @@refresh_all_cached_tables_supported;
+@@refresh_all_cached_tables_supported
+1
+connect conn2,localhost,root,,refresh_sequoiadb_30425;
+select @@refresh_all_cached_tables_supported;
+@@refresh_all_cached_tables_supported
+0
+refresh table stats;
+ERROR 42000: This version of MariaDB doesn't yet support 'REFRESH TABLES STATS.'
+set session refresh_all_cached_tables_supported=1;
+select @@refresh_all_cached_tables_supported;
+@@refresh_all_cached_tables_supported
+1
+refresh table stats;
+set session refresh_all_cached_tables_supported=0;
+select @@refresh_all_cached_tables_supported;
+@@refresh_all_cached_tables_supported
+0
+refresh table stats;
+ERROR 42000: This version of MariaDB doesn't yet support 'REFRESH TABLES STATS.'
+set session refresh_all_cached_tables_supported=-1;
+ERROR 42000: Variable 'refresh_all_cached_tables_supported' can't be set to the value of '-1'
+set session refresh_all_cached_tables_supported=2;
+ERROR 42000: Variable 'refresh_all_cached_tables_supported' can't be set to the value of '2'
+set session refresh_all_cached_tables_supported=null;
+ERROR 42000: Variable 'refresh_all_cached_tables_supported' can't be set to the value of 'NULL'
+set session refresh_all_cached_tables_supported=str;
+ERROR 42000: Variable 'refresh_all_cached_tables_supported' can't be set to the value of 'str'
+set session refresh_all_cached_tables_supported=$#%;
+ERROR 42000: Variable 'refresh_all_cached_tables_supported' can't be set to the value of '$'
+drop database refresh_sequoiadb_30425;

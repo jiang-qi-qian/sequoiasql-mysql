@@ -1,0 +1,16 @@
+# sequoiasql-mariadb service file
+
+[Unit]
+Description=SequoiaSQL-MariaDB Server
+After=network.target
+
+[Install]
+WantedBy=multi-user.target
+
+[Service]
+Type=simple
+User=XXXX
+Environment="LD_LIBRARY_PATH=/opt/sequoiasql/mariadb/lib"
+LimitNOFILE=65535
+ExecStart=/opt/sequoiasql/mariadb/bin/sequoiasql-mariadb-daemon
+ExecStop=/opt/sequoiasql/mariadb/bin/sequoiasql-mariadb-daemon --stop --with-inst

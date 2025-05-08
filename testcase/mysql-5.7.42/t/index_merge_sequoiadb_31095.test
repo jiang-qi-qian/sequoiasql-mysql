@@ -1,0 +1,57 @@
+#seqDB-31095
+--source include/have_partition.inc
+--source include/have_sequoiadb.inc
+
+--disable_warnings
+drop database if exists index_merge_sequoiadb_31095;
+--enable_warnings
+
+create database index_merge_sequoiadb_31095;
+drop database index_merge_sequoiadb_31095;
+create database index_merge_sequoiadb_31095;
+use index_merge_sequoiadb_31095;
+
+CREATE TABLE `son_part_table` (
+  `pk` int(11) NOT NULL,
+  `col_int` int(11) DEFAULT NULL,
+  `col_int_key` int(11) DEFAULT NULL,
+  `col_varchar_16` varchar(16) COLLATE utf8mb4_bin DEFAULT NULL,
+  `col_varchar_16_key` varchar(16) COLLATE utf8mb4_bin DEFAULT NULL,
+  PRIMARY KEY (`pk`),
+  KEY `col_int_key` (`col_int_key`),
+  KEY `col_varchar_16_key` (`col_varchar_16_key`)
+) ENGINE=SequoiaDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin
+ PARTITION BY LIST COLUMNS(`pk`)
+SUBPARTITION BY KEY (`pk`)
+SUBPARTITIONS 4
+(PARTITION `p0` VALUES IN (1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,44,45,46,47,48,49,50) ENGINE = SequoiaDB,
+ PARTITION `p1` VALUES IN (51,52,53,54,55,56,57,58,59,60,61,62,63,64,65,66,67,68,69,70,71,72,73,74,75,76,77,78,79,80,81,82,83,84,85,86,87,88,89,90,91,92,93,94,95,96,97,98,99,100) ENGINE = SequoiaDB,
+ PARTITION `p2` VALUES IN (101,102,103,104,105,106,107,108,109,110,111,112,113,114,115,116,117,118,119,120,121,122,123,124,125,126,127,128,129,130,131,132,133,134,135,136,137,138,139,140,141,142,143,144,145,146,147,148,149,150) ENGINE = SequoiaDB,
+ PARTITION `p3` VALUES IN (151,152,153,154,155,156,157,158,159,160,161,162,163,164,165,166,167,168,169,170,171,172,173,174,175,176,177,178,179,180,181,182,183,184,185,186,187,188,189,190,191,192,193,194,195,196,197,198,199,200) ENGINE = SequoiaDB);
+
+INSERT INTO `son_part_table` VALUES (5,5,6,'know','now'),(6,NULL,8,'for','look'),(8,6,NULL,'v','k'),(9,9,NULL,'w','your'),(12,1,NULL,'can\'t','k'),(15,0,8,'w','your'),(16,7,NULL,'k','a'),(25,1,9,'d','w'),(26,0,0,'i','i'),(27,NULL,1,'e','just'),(29,9,5,NULL,'would'),(30,2,NULL,'c','about'),(35,7,NULL,'e','at'),(36,4,1,NULL,'u'),(48,6,5,'go','could'),(50,8,8,'d','z'),(1,9,NULL,'t',NULL),(11,8,1,'say','z'),(13,NULL,0,'z','n'),(14,4,3,'you','e'),(54,2,1,NULL,'q'),(55,8,7,NULL,'n'),(57,3,6,NULL,'a'),(59,NULL,NULL,NULL,'the'),(63,0,6,NULL,'z'),(74,7,7,'e','y'),(78,6,2,'j','d'),(81,3,6,'v','o'),(88,1,8,'r','was'),(90,6,9,'m','f'),(93,4,0,'k','g'),(94,7,2,'who',NULL),(99,NULL,4,'f','k'),(65,9,8,NULL,'at'),(66,NULL,5,'g','y'),(68,5,1,'t',NULL),(76,NULL,0,'a','s'),(79,NULL,4,'at','w'),(83,NULL,6,NULL,'q'),(85,7,0,'l','u'),(86,9,0,'l','this'),(87,NULL,1,'that\'s','really'),(89,0,NULL,'c','n'),(92,1,5,'a','h'),(96,4,NULL,'it\'s','and'),(103,0,1,'o','r'),(104,9,7,'t','d'),(109,6,9,'d','a'),(111,2,5,'g','g'),(113,6,0,'b','p'),(114,0,7,NULL,'a'),(117,8,9,'got',NULL),(118,3,NULL,'l','m'),(120,3,3,'i','i'),(122,6,3,'j','u'),(123,0,2,NULL,NULL),(124,9,6,'y','d'),(126,5,4,'d','l'),(128,NULL,6,'i','or'),(129,0,1,NULL,'a'),(132,NULL,NULL,'f','p'),(138,3,1,'what','l'),(139,NULL,2,'m',NULL),(140,1,9,NULL,'n'),(145,0,6,'n','w'),(101,NULL,3,'q','h'),(102,9,NULL,NULL,'now'),(106,5,NULL,'o','for'),(108,8,5,'j','y'),(112,8,3,'would','really'),(115,NULL,6,'will','d'),(116,NULL,7,'h','g'),(119,NULL,NULL,'g','p'),(125,NULL,NULL,'of','b'),(151,NULL,5,'a','o'),(152,9,8,'w',NULL),(153,NULL,2,'i',NULL),(154,8,NULL,'m','v'),(157,9,4,'l','there'),(167,1,NULL,'c','r'),(169,NULL,2,'f','v'),(171,4,6,'w','q'),(179,NULL,NULL,'j','no'),(180,5,8,'s','w'),(182,8,8,'g',NULL),(183,3,4,NULL,NULL),(185,5,0,NULL,NULL),(188,7,NULL,'for',NULL),(189,NULL,NULL,'would','one'),(190,4,0,'z','her'),(191,4,NULL,'going','i'),(193,4,5,'who','h'),(194,5,4,'d','so'),(200,9,NULL,'not','y'),(155,6,9,'z','a'),(159,NULL,6,'w','u'),(161,0,6,'you\'re','o'),(163,4,NULL,'j','p'),(164,8,4,NULL,NULL),(168,NULL,6,'d',NULL),(170,4,4,'with','are'),(172,NULL,3,'d','j'),(175,6,NULL,'h','l'),(176,1,7,'w','g'),(178,1,NULL,'p','e'),(181,NULL,NULL,'t','n'),(186,8,4,'n','this'),(187,9,1,'y','q'),(196,0,5,NULL,'n'),(197,1,8,'k','ok'),(198,3,NULL,'v',NULL);
+
+analyze table son_part_table;
+set session  optimizer_switch='index_merge_intersection=on';
+
+#index_merge union
+explain SELECT DISTINCT SQL_BIG_RESULT MAX( col_int_key ) AS field1 FROM son_part_table PARTITION (p3 , p2 ) force index(col_int_key,col_varchar_16_key) WHERE col_int_key = 5 or col_varchar_16_key = 'n' HAVING field1 > 0;
+SELECT DISTINCT SQL_BIG_RESULT MAX( col_int_key ) AS field1 FROM son_part_table PARTITION (p3 , p2 ) force index(col_int_key,col_varchar_16_key) WHERE col_int_key = 5 or col_varchar_16_key = 'n' HAVING field1 > 0;
+explain SELECT DISTINCT SQL_BIG_RESULT MAX( col_int_key ) AS field1 FROM son_part_table PARTITION (p3 , p2 ) WHERE col_int_key = 5 OR col_varchar_16_key = 'z' HAVING field1 > 0;
+SELECT DISTINCT SQL_BIG_RESULT MAX( col_int_key ) AS field1 FROM son_part_table PARTITION (p3 , p2 ) WHERE col_int_key = 5 OR col_varchar_16_key = 'z' HAVING field1 > 0;
+
+#index_merge intersect
+explain SELECT DISTINCT SQL_BIG_RESULT MAX( col_int_key ) AS field1 FROM son_part_table PARTITION (p3 , p2 ) force index(col_int_key,col_varchar_16_key) WHERE col_int_key = 5 and col_varchar_16_key = 'n' HAVING field1 > 0;
+SELECT DISTINCT SQL_BIG_RESULT MAX( col_int_key ) AS field1 FROM son_part_table PARTITION (p3 , p2 ) force index(col_int_key,col_varchar_16_key) WHERE col_int_key = 5 and col_varchar_16_key = 'n' HAVING field1 > 0;
+explain SELECT COUNT(*) FROM son_part_table PARTITION (p1,p2) force index(col_int_key,col_varchar_16_key) WHERE col_int_key = 8 and col_varchar_16_key = 'z';
+SELECT COUNT(*) FROM son_part_table PARTITION (p1,p2) force index(col_int_key,col_varchar_16_key) WHERE col_int_key = 8 and col_varchar_16_key = 'z';
+
+#index_merge sort_union
+explain SELECT DISTINCT SQL_BIG_RESULT MAX( col_int_key ) AS field1 FROM son_part_table PARTITION (p3 , p2 ) force index(col_int_key,col_varchar_16_key) WHERE col_int_key >= 5 or col_varchar_16_key > 'n' HAVING field1 > 0;
+SELECT DISTINCT SQL_BIG_RESULT MAX( col_int_key ) AS field1 FROM son_part_table PARTITION (p3 , p2 ) force index(col_int_key,col_varchar_16_key) WHERE col_int_key >= 5 or col_varchar_16_key > 'n' HAVING field1 > 0;
+explain SELECT COUNT(*) FROM son_part_table PARTITION (p1,p2) force index(col_int_key,col_varchar_16_key) WHERE col_int_key > 10 or col_varchar_16_key = 'n';
+SELECT COUNT(*) FROM son_part_table PARTITION (p1,p2) force index(col_int_key,col_varchar_16_key) WHERE col_int_key > 10 or col_varchar_16_key = 'n';
+
+
+drop database index_merge_sequoiadb_31095;
+--source include/uninstall_sequoiadb.inc

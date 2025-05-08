@@ -1,0 +1,73 @@
+#seqDB-27692 分区表查询
+--source include/have_sequoiadb.inc
+--source include/have_partition.inc
+--disable_warnings
+drop database if exists explain_direct_sort_27692;
+--enable_warnings
+create database explain_direct_sort_27692;
+drop database explain_direct_sort_27692;
+create database explain_direct_sort_27692;
+
+use explain_direct_sort_27692;
+set session sequoiadb_debug_log=on;
+set session optimizer_switch='mrr=on';
+--disable_warnings
+drop table if exists t1_range,t2_hash;
+--enable_warnings
+create table t1_range(
+id int primary key,
+col1 int
+) partition by range(id)(
+partition p0 values less than(10),
+partition p1 values less than(20),
+partition p2 values less than(30),
+partition p3 values less than(40),
+partition p4 values less than(50)
+);
+insert into t1_range values(1,30),(30,10),(10,27),(15,22),(11,20),(40,30),(20,10),(17,25);
+--sorted_result
+select * from t1_range;
+--sorted_result
+select * from t1_range;
+
+create table t2_hash(
+id int not null,
+col1 int not null
+) partition by hash(id)
+partitions 4;
+insert into t2_hash values(4,6),(6,12),(3,2),(5,11),(7,9),(8,2),(2,10),(1,5),(10,1),(12,8),(9,7),(11,4);
+--sorted_result
+select * from t2_hash;
+--sorted_result
+select * from t2_hash;
+
+#range分区全表扫，并带有order by
+explain select * from t1_range order by id;
+select * from t1_range order by id;
+--source include/query_pushdown_condition_sequoiadb.inc
+explain select * from t1_range where id < 20 order by id desc;
+select * from t1_range where id < 20 order by id desc;
+--source include/query_pushdown_condition_sequoiadb.inc
+explain select * from t1_range where id < 20 order by col1;
+select * from t1_range where id < 20 order by col1;
+--source include/query_pushdown_condition_sequoiadb.inc
+
+#指定单个分区查询，并带有order by
+explain select * from t1_range partition(p1) order by id;
+select * from t1_range partition(p1) order by id;
+--source include/query_pushdown_condition_sequoiadb.inc
+
+#hash全表扫
+explain select * from t2_hash;
+--sorted_result
+select * from t2_hash;
+--source include/query_pushdown_condition_sequoiadb.inc
+explain select * from t2_hash order by id;
+select * from t2_hash order by id;
+--source include/query_pushdown_condition_sequoiadb.inc
+drop table t1_range,t2_hash;
+
+set session sequoiadb_debug_log=off;
+set session optimizer_switch=default;
+drop database explain_direct_sort_27692;
+--source include/uninstall_sequoiadb.inc

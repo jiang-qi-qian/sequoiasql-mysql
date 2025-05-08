@@ -1,0 +1,10 @@
+create database check_constraint;
+use check_constraint;
+create table t1 (a int, b smallint) engine=SequoiaDB;
+connect con1,localhost,root,,check_constraint;
+alter table t1 add constraint check (b < 8);
+alter table t1 modify column b int, algorithm=inplace;
+connection default;
+alter table t1 add primary key (a);
+drop database check_constraint;
+disconnect con1;

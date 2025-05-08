@@ -1,0 +1,916 @@
+# Testcase: seqDB-26685:单个复合分区表ref方式查询，表数据不均匀，命中MCV（覆盖所有数据类型）
+
+#
+# clear residual data
+#
+CREATE DATABASE  IF NOT EXISTS index_statistics_mcv_sequoiadb_26685;
+DROP DATABASE IF EXISTS index_statistics_mcv_sequoiadb_26685;
+
+#
+# set env
+#
+--source include/have_sequoiadb.inc
+--source include/have_partition.inc
+
+CREATE DATABASE  IF NOT EXISTS index_statistics_mcv_sequoiadb_26685;
+use index_statistics_mcv_sequoiadb_26685;
+# set debug='d:i:t:o,/tmp/mysqld26685.trace:f,Sdb_match_cnt_estimator::eval_mcv';
+
+#
+# testcase process
+#
+#
+# TINYINT
+#
+CREATE TABLE t1(
+    a TINYINT UNSIGNED,
+    b TINYINT UNSIGNED,
+    c TINYINT UNSIGNED,
+    INDEX idx_a(a),
+    INDEX idx_b(b)
+)
+PARTITION BY RANGE COLUMNS (a)
+SUBPARTITION BY KEY (b)
+SUBPARTITIONS 2 (
+    PARTITION p0 VALUES LESS THAN (4),
+    PARTITION p1 VALUES LESS THAN (7),
+    PARTITION p2 VALUES LESS THAN (10)
+);
+
+# insert 20 rows
+INSERT INTO t1 VALUES
+(1,4,9),(5,1,9),(1,3,9),(5,2,9),(1,4,9),(5,3,9),(1,2,9),(5,2,9),(1,4,9),(5,1,9),
+(2,3,9),(5,5,9),(3,5,9),(2,5,9),(4,1,9),(2,5,9),(3,1,9),(4,5,9),(2,1,9),(3,5,9);
+--sorted_result
+SELECT * FROM t1 WHERE a=5;
+--sorted_result
+SELECT * FROM t1 WHERE b=1;
+--sorted_result
+SELECT * FROM t1 WHERE a=5 and b=1;
+ANALYZE TABLE t1;
+EXPLAIN SELECT * FROM t1 WHERE a=5;
+EXPLAIN SELECT * FROM t1 WHERE b=1;
+EXPLAIN SELECT * FROM t1 WHERE a=5 and b=1;
+DROP TABLE t1;
+
+#
+# SMALLINT
+#
+CREATE TABLE t1(
+    a SMALLINT UNSIGNED,
+    b SMALLINT UNSIGNED,
+    c SMALLINT UNSIGNED,
+    INDEX idx_a(a),
+    INDEX idx_b(b)
+)
+PARTITION BY RANGE COLUMNS (a)
+SUBPARTITION BY KEY (b)
+SUBPARTITIONS 2 (
+    PARTITION p0 VALUES LESS THAN (4),
+    PARTITION p1 VALUES LESS THAN (7),
+    PARTITION p2 VALUES LESS THAN (10)
+);
+
+# insert 20 rows
+INSERT INTO t1 VALUES
+(1,4,9),(5,1,9),(1,3,9),(5,2,9),(1,4,9),(5,3,9),(1,2,9),(5,2,9),(1,4,9),(5,1,9),
+(2,3,9),(5,5,9),(3,5,9),(2,5,9),(4,1,9),(2,5,9),(3,1,9),(4,5,9),(2,1,9),(3,5,9);
+--sorted_result
+SELECT * FROM t1 WHERE a=5;
+--sorted_result
+SELECT * FROM t1 WHERE b=1;
+--sorted_result
+SELECT * FROM t1 WHERE a=5 and b=1;
+ANALYZE TABLE t1;
+EXPLAIN SELECT * FROM t1 WHERE a=5;
+EXPLAIN SELECT * FROM t1 WHERE b=1;
+EXPLAIN SELECT * FROM t1 WHERE a=5 and b=1;
+DROP TABLE t1;
+#
+# MEDIUMINT
+#
+CREATE TABLE t1(
+    a MEDIUMINT UNSIGNED,
+    b MEDIUMINT UNSIGNED,
+    c MEDIUMINT UNSIGNED,
+    INDEX idx_a(a),
+    INDEX idx_b(b)
+)
+PARTITION BY RANGE COLUMNS (a)
+SUBPARTITION BY KEY (b)
+SUBPARTITIONS 2 (
+    PARTITION p0 VALUES LESS THAN (4),
+    PARTITION p1 VALUES LESS THAN (7),
+    PARTITION p2 VALUES LESS THAN (10)
+);
+
+# insert 20 rows
+INSERT INTO t1 VALUES
+(1,4,9),(5,1,9),(1,3,9),(5,2,9),(1,4,9),(5,3,9),(1,2,9),(5,2,9),(1,4,9),(5,1,9),
+(2,3,9),(5,5,9),(3,5,9),(2,5,9),(4,1,9),(2,5,9),(3,1,9),(4,5,9),(2,1,9),(3,5,9);
+--sorted_result
+SELECT * FROM t1 WHERE a=5;
+--sorted_result
+SELECT * FROM t1 WHERE b=1;
+--sorted_result
+SELECT * FROM t1 WHERE a=5 and b=1;
+ANALYZE TABLE t1;
+EXPLAIN SELECT * FROM t1 WHERE a=5;
+EXPLAIN SELECT * FROM t1 WHERE b=1;
+EXPLAIN SELECT * FROM t1 WHERE a=5 and b=1;
+DROP TABLE t1;
+#
+# INT
+#
+CREATE TABLE t1(
+    a INT UNSIGNED,
+    b INT UNSIGNED,
+    c INT UNSIGNED,
+    INDEX idx_a(a),
+    INDEX idx_b(b)
+
+)
+PARTITION BY RANGE COLUMNS (a)
+SUBPARTITION BY KEY (b)
+SUBPARTITIONS 2 (
+    PARTITION p0 VALUES LESS THAN (4),
+    PARTITION p1 VALUES LESS THAN (7),
+    PARTITION p2 VALUES LESS THAN (10)
+);
+
+# insert 20 rows
+INSERT INTO t1 VALUES
+(1,4,9),(5,1,9),(1,3,9),(5,2,9),(1,4,9),(5,3,9),(1,2,9),(5,2,9),(1,4,9),(5,1,9),
+(2,3,9),(5,5,9),(3,5,9),(2,5,9),(4,1,9),(2,5,9),(3,1,9),(4,5,9),(2,1,9),(3,5,9);
+--sorted_result
+SELECT * FROM t1 WHERE a=5;
+--sorted_result
+SELECT * FROM t1 WHERE b=1;
+--sorted_result
+SELECT * FROM t1 WHERE a=5 and b=1;
+ANALYZE TABLE t1;
+EXPLAIN SELECT * FROM t1 WHERE a=5;
+EXPLAIN SELECT * FROM t1 WHERE b=1;
+EXPLAIN SELECT * FROM t1 WHERE a=5 and b=1;
+DROP TABLE t1;
+#
+# BIGINT
+#
+CREATE TABLE t1(
+    a BIGINT UNSIGNED,
+    b BIGINT UNSIGNED,
+    c BIGINT UNSIGNED,
+    INDEX idx_a(a),
+    INDEX idx_b(b)
+)
+PARTITION BY RANGE COLUMNS (a)
+SUBPARTITION BY KEY (b)
+SUBPARTITIONS 2 (
+    PARTITION p0 VALUES LESS THAN (4),
+    PARTITION p1 VALUES LESS THAN (7),
+    PARTITION p2 VALUES LESS THAN (10)
+);
+
+# insert 20 rows
+INSERT INTO t1 VALUES
+(1,4,9),(5,1,9),(1,3,9),(5,2,9),(1,4,9),(5,3,9),(1,2,9),(5,2,9),(1,4,9),(5,1,9),
+(2,3,9),(5,5,9),(3,5,9),(2,5,9),(4,1,9),(2,5,9),(3,1,9),(4,5,9),(2,1,9),(3,5,9);
+--sorted_result
+SELECT * FROM t1 WHERE a=5;
+--sorted_result
+SELECT * FROM t1 WHERE b=1;
+--sorted_result
+SELECT * FROM t1 WHERE a=5 and b=1;
+ANALYZE TABLE t1;
+EXPLAIN SELECT * FROM t1 WHERE a=5;
+EXPLAIN SELECT * FROM t1 WHERE b=1;
+EXPLAIN SELECT * FROM t1 WHERE a=5 and b=1;
+DROP TABLE t1;
+
+#
+# FLOAT
+#
+CREATE TABLE t1(
+    a INT,
+    b INT,
+    c FLOAT,
+    INDEX idx_a(a),
+    INDEX idx_b(b)
+)
+PARTITION BY RANGE COLUMNS (a)
+SUBPARTITION BY KEY (b)
+SUBPARTITIONS 2 (
+    PARTITION p0 VALUES LESS THAN (4),
+    PARTITION p1 VALUES LESS THAN (7),
+    PARTITION p2 VALUES LESS THAN (10)
+);
+
+CREATE TABLE t2(
+    a INT,
+    b INT,
+    c FLOAT,
+    INDEX idx_a(a),
+    INDEX idx_b(b)
+)
+PARTITION BY RANGE COLUMNS (a)
+SUBPARTITION BY KEY (b)
+SUBPARTITIONS 2 (
+    PARTITION p0 VALUES LESS THAN (4),
+    PARTITION p1 VALUES LESS THAN (7),
+    PARTITION p2 VALUES LESS THAN (10)
+);
+
+# insert 20 rows in t1
+INSERT INTO t1 VALUES
+(1,4,9.1),(5,1,9.1),(1,3,9.1),(5,2,9.1),
+(1,4,9.1),(5,3,9.1),(1,2,9.1),(5,2,9.1),
+(1,4,9.1),(5,1,9.1),(2,3,9.1),(5,5,9.1),
+(3,5,9.1),(2,5,9.1),(4,1,9.1),(2,5,9.1),
+(3,1,9.1),(4,5,9.1),(2,1,9.1),(3,5,9.1);
+
+# insert 20 rows in t2
+INSERT INTO t2 VALUES
+(1,4,-9.1),(5,1,-9.1),(1,3,-9.1),(5,2,-9.1),
+(1,4,-9.1),(5,3,-9.1),(1,2,-9.1),(5,2,-9.1),
+(1,4,-9.1),(5,1,-9.1),(2,3,-9.1),(5,5,-9.1),
+(3,5,-9.1),(2,5,-9.1),(4,1,-9.1),(2,5,-9.1),
+(3,1,-9.1),(4,5,-9.1),(2,1,-9.1),(3,5,-9.1);
+
+# t1
+--sorted_result
+SELECT * FROM t1 WHERE a=5;
+--sorted_result
+SELECT * FROM t1 WHERE b=1;
+--sorted_result
+SELECT * FROM t1 WHERE a=5 and b=1;
+ANALYZE TABLE t1;
+EXPLAIN SELECT * FROM t1 WHERE a=5;
+EXPLAIN SELECT * FROM t1 WHERE b=1;
+EXPLAIN SELECT * FROM t1 WHERE a=5 and b=1;
+DROP TABLE t1;
+
+# t2
+--sorted_result
+SELECT * FROM t2 WHERE a=5;
+--sorted_result
+SELECT * FROM t2 WHERE b=1;
+--sorted_result
+SELECT * FROM t2 WHERE a=5 and b=1;
+ANALYZE TABLE t2;
+EXPLAIN SELECT * FROM t2 WHERE a=5;
+EXPLAIN SELECT * FROM t2 WHERE b=1;
+EXPLAIN SELECT * FROM t2 WHERE a=5 and b=1;
+DROP TABLE t2;
+
+#
+# DOUBLE
+#
+CREATE TABLE t1(
+    a INT,
+    b INT,
+    c DOUBLE,
+    INDEX idx_a(a),
+    INDEX idx_b(b)
+)
+PARTITION BY RANGE COLUMNS (a)
+SUBPARTITION BY KEY (b)
+SUBPARTITIONS 2 (
+    PARTITION p0 VALUES LESS THAN (4),
+    PARTITION p1 VALUES LESS THAN (7),
+    PARTITION p2 VALUES LESS THAN (10)
+);
+
+CREATE TABLE t2(
+    a INT,
+    b INT,
+    c DOUBLE,
+    INDEX idx_a(a),
+    INDEX idx_b(b)
+)
+PARTITION BY RANGE COLUMNS (a)
+SUBPARTITION BY KEY (b)
+SUBPARTITIONS 2 (
+    PARTITION p0 VALUES LESS THAN (4),
+    PARTITION p1 VALUES LESS THAN (7),
+    PARTITION p2 VALUES LESS THAN (10)
+);
+
+# insert 20 rows in t1
+INSERT INTO t1 VALUES
+(1,4,92602.1),(5,1,92602.1),(1,3,92602.1),(5,2,92602.1),
+(1,4,92602.1),(5,3,92602.1),(1,2,92602.1),(5,2,92602.1),
+(1,4,92602.1),(5,1,92602.1),(2,3,92602.1),(5,5,92602.1),
+(3,5,92602.1),(2,5,92602.1),(4,1,92602.1),(2,5,92602.1),
+(3,1,92602.1),(4,5,92602.1),(2,1,92602.1),(3,5,92602.1);
+
+# insert 20 rows in t2
+INSERT INTO t2 VALUES
+(1,4,-92602.1),(5,1,-92602.1),(1,3,-92602.1),(5,2,-92602.1),
+(1,4,-92602.1),(5,3,-92602.1),(1,2,-92602.1),(5,2,-92602.1),
+(1,4,-92602.1),(5,1,-92602.1),(2,3,-92602.1),(5,5,-92602.1),
+(3,5,-92602.1),(2,5,-92602.1),(4,1,-92602.1),(2,5,-92602.1),
+(3,1,-92602.1),(4,5,-92602.1),(2,1,-92602.1),(3,5,-92602.1);
+
+# t1
+--sorted_result
+SELECT * FROM t1 WHERE a=5;
+--sorted_result
+SELECT * FROM t1 WHERE b=1;
+--sorted_result
+SELECT * FROM t1 WHERE a=5 and b=1;
+ANALYZE TABLE t1;
+EXPLAIN SELECT * FROM t1 WHERE a=5;
+EXPLAIN SELECT * FROM t1 WHERE b=1;
+EXPLAIN SELECT * FROM t1 WHERE a=5 and b=1;
+DROP TABLE t1;
+
+# t2
+--sorted_result
+SELECT * FROM t2 WHERE a=5;
+--sorted_result
+SELECT * FROM t2 WHERE b=1;
+--sorted_result
+SELECT * FROM t2 WHERE a=5 and b=1;
+ANALYZE TABLE t2;
+EXPLAIN SELECT * FROM t2 WHERE a=5;
+EXPLAIN SELECT * FROM t2 WHERE b=1;
+EXPLAIN SELECT * FROM t2 WHERE a=5 and b=1;
+DROP TABLE t2;
+
+#
+# DECIMAL
+#
+CREATE TABLE t1(
+    a INT,
+    b INT,
+    c DECIMAL,
+    INDEX idx_a(a),
+    INDEX idx_b(b)
+)
+PARTITION BY RANGE COLUMNS (a)
+SUBPARTITION BY KEY (b)
+SUBPARTITIONS 2 (
+    PARTITION p0 VALUES LESS THAN (4),
+    PARTITION p1 VALUES LESS THAN (7),
+    PARTITION p2 VALUES LESS THAN (10)
+);
+
+CREATE TABLE t2(
+    a INT,
+    b INT,
+    c DECIMAL,
+    INDEX idx_a(a),
+    INDEX idx_b(b)
+)
+PARTITION BY RANGE COLUMNS (a)
+SUBPARTITION BY KEY (b)
+SUBPARTITIONS 2 (
+    PARTITION p0 VALUES LESS THAN (4),
+    PARTITION p1 VALUES LESS THAN (7),
+    PARTITION p2 VALUES LESS THAN (10)
+);
+
+# insert 20 rows in t1
+INSERT INTO t1 VALUES
+(1,4,9.1),(5,1,9.1),(1,3,9.1),(5,2,9.1),
+(1,4,9.1),(5,3,9.1),(1,2,9.1),(5,2,9.1),
+(1,4,9.1),(5,1,9.1),(2,3,9.1),(5,5,9.1),
+(3,5,9.1),(2,5,9.1),(4,1,9.1),(2,5,9.1),
+(3,1,9.1),(4,5,9.1),(2,1,9.1),(3,5,9.1);
+
+# insert 20 rows in t2
+INSERT INTO t2 VALUES
+(1,4,-9.1),(5,1,-9.1),(1,3,-9.1),(5,2,-9.1),
+(1,4,-9.1),(5,3,-9.1),(1,2,-9.1),(5,2,-9.1),
+(1,4,-9.1),(5,1,-9.1),(2,3,-9.1),(5,5,-9.1),
+(3,5,-9.1),(2,5,-9.1),(4,1,-9.1),(2,5,-9.1),
+(3,1,-9.1),(4,5,-9.1),(2,1,-9.1),(3,5,-9.1);
+
+# t1
+--sorted_result
+SELECT * FROM t1 WHERE a=5;
+--sorted_result
+SELECT * FROM t1 WHERE b=1;
+--sorted_result
+SELECT * FROM t1 WHERE a=5 and b=1;
+ANALYZE TABLE t1;
+EXPLAIN SELECT * FROM t1 WHERE a=5;
+EXPLAIN SELECT * FROM t1 WHERE b=1;
+EXPLAIN SELECT * FROM t1 WHERE a=5 and b=1;
+DROP TABLE t1;
+
+# t2
+--sorted_result
+SELECT * FROM t2 WHERE a=5;
+--sorted_result
+SELECT * FROM t2 WHERE b=1;
+--sorted_result
+SELECT * FROM t2 WHERE a=5 and b=1;
+ANALYZE TABLE t2;
+EXPLAIN SELECT * FROM t2 WHERE a=5;
+EXPLAIN SELECT * FROM t2 WHERE b=1;
+EXPLAIN SELECT * FROM t2 WHERE a=5 and b=1;
+DROP TABLE t2;
+
+#
+# CHAR
+#
+CREATE TABLE t1(
+    a CHAR,
+    b CHAR,
+    c CHAR,
+    INDEX idx_a(a),
+    INDEX idx_b(b)
+)
+PARTITION BY RANGE COLUMNS (a)
+SUBPARTITION BY KEY (b)
+SUBPARTITIONS 2 (
+    PARTITION p0 VALUES LESS THAN ('d'),
+    PARTITION p1 VALUES LESS THAN ('g'),
+    PARTITION p2 VALUES LESS THAN ('j')
+);
+
+# insert 20 rows
+INSERT INTO t1 VALUES
+('a','d','i'),('e','a','i'),('a','c','i'),('e','b','i'),('a','d','i'),('e','c','i'),
+('a','b','i'),('e','b','i'),('a','d','i'),('e','a','i'),('b','c','i'),('e','e','i'),
+('c','e','i'),('b','e','i'),('d','a','i'),('b','e','i'),('c','a','i'),('d','e','i'),
+('b','a','i'),('c','e','i');
+--sorted_result
+SELECT * FROM t1 WHERE a='e';
+--sorted_result
+SELECT * FROM t1 WHERE b='a';
+--sorted_result
+SELECT * FROM t1 WHERE a='e' and b='a';
+ANALYZE TABLE t1;
+EXPLAIN SELECT * FROM t1 WHERE a='e';
+EXPLAIN SELECT * FROM t1 WHERE b='a';
+EXPLAIN SELECT * FROM t1 WHERE a='e' and b='a';
+DROP TABLE t1;
+#
+# VARCHAR
+#
+CREATE TABLE t1(
+    a VARCHAR(255),
+    b VARCHAR(255),
+    c VARCHAR(255),
+    INDEX idx_a(a),
+    INDEX idx_b(b)
+)
+PARTITION BY RANGE COLUMNS (a)
+SUBPARTITION BY KEY (b)
+SUBPARTITIONS 2 (
+    PARTITION p0 VALUES LESS THAN ('d'),
+    PARTITION p1 VALUES LESS THAN ('g'),
+    PARTITION p2 VALUES LESS THAN ('j')
+);
+
+# insert 20 rows
+INSERT INTO t1 VALUES
+('a','d','i'),('e','a','i'),('a','c','i'),('e','b','i'),('a','d','i'),('e','c','i'),
+('a','b','i'),('e','b','i'),('a','d','i'),('e','a','i'),('b','c','i'),('e','e','i'),
+('c','e','i'),('b','e','i'),('d','a','i'),('b','e','i'),('c','a','i'),('d','e','i'),
+('b','a','i'),('c','e','i');
+--sorted_result
+SELECT * FROM t1 WHERE a='e';
+--sorted_result
+SELECT * FROM t1 WHERE b='a';
+--sorted_result
+SELECT * FROM t1 WHERE a='e' and b='a';
+ANALYZE TABLE t1;
+EXPLAIN SELECT * FROM t1 WHERE a='e';
+EXPLAIN SELECT * FROM t1 WHERE b='a';
+EXPLAIN SELECT * FROM t1 WHERE a='e' and b='a';
+DROP TABLE t1;
+#
+# TINYTEXT
+#
+CREATE TABLE t1(
+    a VARCHAR(255),
+    b VARCHAR(255),
+    c TINYTEXT,
+    INDEX idx_a(a),
+    INDEX idx_b(b)
+)
+PARTITION BY RANGE COLUMNS (a)
+SUBPARTITION BY KEY (b)
+SUBPARTITIONS 2 (
+    PARTITION p0 VALUES LESS THAN ('d123abc'),
+    PARTITION p1 VALUES LESS THAN ('g123abc'),
+    PARTITION p2 VALUES LESS THAN ('j123abc')
+);
+
+# insert 20 rows
+INSERT INTO t1 VALUES
+('a123abc','d123abc','i123abc'),('e123abc','a123abc','i123abc'),('a123abc','c123abc','i123abc'),('e123abc','b123abc','i123abc'),('a123abc','d123abc','i123abc'),('e123abc','c123abc','i123abc'),
+('a123abc','b123abc','i123abc'),('e123abc','b123abc','i123abc'),('a123abc','d123abc','i123abc'),('e123abc','a123abc','i123abc'),('b123abc','c123abc','i123abc'),('e123abc','e123abc','i123abc'),
+('c123abc','e123abc','i123abc'),('b123abc','e123abc','i123abc'),('d123abc','a123abc','i123abc'),('b123abc','e123abc','i123abc'),('c123abc','a123abc','i123abc'),('d123abc','e123abc','i123abc'),
+('b123abc','a123abc','i123abc'),('c123abc','e123abc','i123abc');
+--sorted_result
+SELECT * FROM t1 WHERE a='e123abc';
+--sorted_result
+SELECT * FROM t1 WHERE b='a123abc';
+--sorted_result
+SELECT * FROM t1 WHERE a='e123abc' and b='a123abc';
+ANALYZE TABLE t1;
+EXPLAIN SELECT * FROM t1 WHERE a='e123abc';
+EXPLAIN SELECT * FROM t1 WHERE b='a123abc';
+EXPLAIN SELECT * FROM t1 WHERE a='e123abc' and b='a123abc';
+DROP TABLE t1;
+#
+# MEDIUMTEXT
+#
+CREATE TABLE t1(
+    a VARCHAR(255),
+    b VARCHAR(255),
+    c MEDIUMTEXT,
+    INDEX idx_a(a),
+    INDEX idx_b(b)
+)
+PARTITION BY RANGE COLUMNS (a)
+SUBPARTITION BY KEY (b)
+SUBPARTITIONS 2 (
+    PARTITION p0 VALUES LESS THAN ('d123abc'),
+    PARTITION p1 VALUES LESS THAN ('g123abc'),
+    PARTITION p2 VALUES LESS THAN ('j123abc')
+);
+
+# insert 20 rows
+INSERT INTO t1 VALUES
+('a123abc','d123abc','i123abc'),('e123abc','a123abc','i123abc'),('a123abc','c123abc','i123abc'),('e123abc','b123abc','i123abc'),('a123abc','d123abc','i123abc'),('e123abc','c123abc','i123abc'),
+('a123abc','b123abc','i123abc'),('e123abc','b123abc','i123abc'),('a123abc','d123abc','i123abc'),('e123abc','a123abc','i123abc'),('b123abc','c123abc','i123abc'),('e123abc','e123abc','i123abc'),
+('c123abc','e123abc','i123abc'),('b123abc','e123abc','i123abc'),('d123abc','a123abc','i123abc'),('b123abc','e123abc','i123abc'),('c123abc','a123abc','i123abc'),('d123abc','e123abc','i123abc'),
+('b123abc','a123abc','i123abc'),('c123abc','e123abc','i123abc');
+--sorted_result
+SELECT * FROM t1 WHERE a='e123abc';
+--sorted_result
+SELECT * FROM t1 WHERE b='a123abc';
+--sorted_result
+SELECT * FROM t1 WHERE a='e123abc' and b='a123abc';
+ANALYZE TABLE t1;
+EXPLAIN SELECT * FROM t1 WHERE a='e123abc';
+EXPLAIN SELECT * FROM t1 WHERE b='a123abc';
+EXPLAIN SELECT * FROM t1 WHERE a='e123abc' and b='a123abc';
+DROP TABLE t1;
+#
+# TEXT
+#
+CREATE TABLE t1(
+    a VARCHAR(255),
+    b VARCHAR(255),
+    c TEXT,
+    INDEX idx_a(a),
+    INDEX idx_b(b)
+)
+PARTITION BY RANGE COLUMNS (a)
+SUBPARTITION BY KEY (b)
+SUBPARTITIONS 2 (
+    PARTITION p0 VALUES LESS THAN ('d123abc'),
+    PARTITION p1 VALUES LESS THAN ('g123abc'),
+    PARTITION p2 VALUES LESS THAN ('j123abc')
+);
+
+# insert 20 rows
+INSERT INTO t1 VALUES
+('a123abc','d123abc','i123abc'),('e123abc','a123abc','i123abc'),('a123abc','c123abc','i123abc'),('e123abc','b123abc','i123abc'),('a123abc','d123abc','i123abc'),('e123abc','c123abc','i123abc'),
+('a123abc','b123abc','i123abc'),('e123abc','b123abc','i123abc'),('a123abc','d123abc','i123abc'),('e123abc','a123abc','i123abc'),('b123abc','c123abc','i123abc'),('e123abc','e123abc','i123abc'),
+('c123abc','e123abc','i123abc'),('b123abc','e123abc','i123abc'),('d123abc','a123abc','i123abc'),('b123abc','e123abc','i123abc'),('c123abc','a123abc','i123abc'),('d123abc','e123abc','i123abc'),
+('b123abc','a123abc','i123abc'),('c123abc','e123abc','i123abc');
+--sorted_result
+SELECT * FROM t1 WHERE a='e123abc';
+--sorted_result
+SELECT * FROM t1 WHERE b='a123abc';
+--sorted_result
+SELECT * FROM t1 WHERE a='e123abc' and b='a123abc';
+ANALYZE TABLE t1;
+EXPLAIN SELECT * FROM t1 WHERE a='e123abc';
+EXPLAIN SELECT * FROM t1 WHERE b='a123abc';
+EXPLAIN SELECT * FROM t1 WHERE a='e123abc' and b='a123abc';
+DROP TABLE t1;
+#
+# LONGTEXT
+#
+CREATE TABLE t1(
+    a VARCHAR(255),
+    b VARCHAR(255),
+    c LONGTEXT,
+    INDEX idx_a(a),
+    INDEX idx_b(b)
+)
+PARTITION BY RANGE COLUMNS (a)
+SUBPARTITION BY KEY (b)
+SUBPARTITIONS 2 (
+    PARTITION p0 VALUES LESS THAN ('d123abc'),
+    PARTITION p1 VALUES LESS THAN ('g123abc'),
+    PARTITION p2 VALUES LESS THAN ('j123abc')
+);
+
+# insert 20 rows
+INSERT INTO t1 VALUES
+('a123abc','d123abc','i123abc'),('e123abc','a123abc','i123abc'),('a123abc','c123abc','i123abc'),('e123abc','b123abc','i123abc'),('a123abc','d123abc','i123abc'),('e123abc','c123abc','i123abc'),
+('a123abc','b123abc','i123abc'),('e123abc','b123abc','i123abc'),('a123abc','d123abc','i123abc'),('e123abc','a123abc','i123abc'),('b123abc','c123abc','i123abc'),('e123abc','e123abc','i123abc'),
+('c123abc','e123abc','i123abc'),('b123abc','e123abc','i123abc'),('d123abc','a123abc','i123abc'),('b123abc','e123abc','i123abc'),('c123abc','a123abc','i123abc'),('d123abc','e123abc','i123abc'),
+('b123abc','a123abc','i123abc'),('c123abc','e123abc','i123abc');
+--sorted_result
+SELECT * FROM t1 WHERE a='e123abc';
+--sorted_result
+SELECT * FROM t1 WHERE b='a123abc';
+--sorted_result
+SELECT * FROM t1 WHERE a='e123abc' and b='a123abc';
+ANALYZE TABLE t1;
+EXPLAIN SELECT * FROM t1 WHERE a='e123abc';
+EXPLAIN SELECT * FROM t1 WHERE b='a123abc';
+EXPLAIN SELECT * FROM t1 WHERE a='e123abc' and b='a123abc';
+DROP TABLE t1;
+#
+# BIT
+#
+CREATE TABLE t1(
+    a INT,
+    b INT,
+    c BIT(8),
+    INDEX idx_a(a),
+    INDEX idx_b(b)
+)
+PARTITION BY RANGE COLUMNS (a)
+SUBPARTITION BY KEY (b)
+SUBPARTITIONS 2 (
+    PARTITION p0 VALUES LESS THAN (4),
+    PARTITION p1 VALUES LESS THAN (7),
+    PARTITION p2 VALUES LESS THAN (10)
+);
+
+# insert 20 rows
+INSERT INTO t1 VALUES
+(1,4,9),(5,1,9),(1,3,9),(5,2,9),(1,4,9),(5,3,9),(1,2,9),(5,2,9),(1,4,9),(5,1,9),
+(2,3,9),(5,5,9),(3,5,9),(2,5,9),(4,1,9),(2,5,9),(3,1,9),(4,5,9),(2,1,9),(3,5,9);
+--sorted_result
+SELECT a, b, c+0 FROM t1 WHERE a=5;
+--sorted_result
+SELECT a, b, c+0 FROM t1 WHERE b=1;
+--sorted_result
+SELECT a, b, c+0 FROM t1 WHERE a=5 and b=1;
+ANALYZE TABLE t1;
+EXPLAIN SELECT a, b, c+0 FROM t1 WHERE a=5;
+EXPLAIN SELECT a, b, c+0 FROM t1 WHERE b=1;
+EXPLAIN SELECT a, b, c+0 FROM t1 WHERE a=5 and b=1;
+DROP TABLE t1;
+
+#
+# YEAR
+#
+CREATE TABLE t1(
+    a INT,
+    b INT,
+    c YEAR,
+    INDEX idx_a(a),
+    INDEX idx_b(b)
+)
+PARTITION BY RANGE COLUMNS (a)
+SUBPARTITION BY KEY (b)
+SUBPARTITIONS 2 (
+    PARTITION p0 VALUES LESS THAN (4),
+    PARTITION p1 VALUES LESS THAN (7),
+    PARTITION p2 VALUES LESS THAN (10)
+);
+
+# insert 20 rows
+INSERT INTO t1 VALUES
+(1,4,'2001'),(5,1,'2001'),(1,3,'2001'),(5,2,'2001'),
+(1,4,'2001'),(5,3,'2001'),(1,2,'2001'),(5,2,'2001'),
+(1,4,'2001'),(5,1,'2001'),(2,3,'2001'),(5,5,'2001'),
+(3,5,'2001'),(2,5,'2001'),(4,1,'2001'),(2,5,'2001'),
+(3,1,'2001'),(4,5,'2001'),(2,1,'2001'),(3,5,'2001');
+--sorted_result
+SELECT * FROM t1 WHERE a=5;
+--sorted_result
+SELECT * FROM t1 WHERE b=1;
+--sorted_result
+SELECT * FROM t1 WHERE a=5 and b=1;
+ANALYZE TABLE t1;
+EXPLAIN SELECT * FROM t1 WHERE a=5;
+EXPLAIN SELECT * FROM t1 WHERE b=1;
+EXPLAIN SELECT * FROM t1 WHERE a=5 and b=1;
+DROP TABLE t1;
+
+#
+# DATE
+#
+CREATE TABLE t1(
+    a DATE,
+    b DATE,
+    c DATE,
+    INDEX idx_a(a),
+    INDEX idx_b(b)
+)
+PARTITION BY RANGE COLUMNS (a)
+SUBPARTITION BY KEY (b)
+SUBPARTITIONS 2 (
+    PARTITION p0 VALUES LESS THAN ('4001-11-01'),
+    PARTITION p1 VALUES LESS THAN ('6001-11-01'),
+    PARTITION p2 VALUES LESS THAN ('9001-11-01')
+);
+
+# insert 20 rows
+INSERT INTO t1 VALUES
+('2001-11-01','5001-11-01','9001-11-01'),('6001-11-01','2001-11-01','9001-11-01'),('2001-11-01','4001-11-01','9001-11-01'),('6001-11-01','3001-11-01','9001-11-01'),
+('2001-11-01','5001-11-01','9001-11-01'),('6001-11-01','4001-11-01','9001-11-01'),('2001-11-01','3001-11-01','9001-11-01'),('6001-11-01','3001-11-01','9001-11-01'),
+('2001-11-01','5001-11-01','9001-11-01'),('6001-11-01','2001-11-01','9001-11-01'),('3001-11-01','4001-11-01','9001-11-01'),('6001-11-01','6001-11-01','9001-11-01'),
+('4001-11-01','6001-11-01','9001-11-01'),('3001-11-01','6001-11-01','9001-11-01'),('5001-11-01','2001-11-01','9001-11-01'),('3001-11-01','6001-11-01','9001-11-01'),
+('4001-11-01','2001-11-01','9001-11-01'),('5001-11-01','6001-11-01','9001-11-01'),('3001-11-01','2001-11-01','9001-11-01'),('4001-11-01','6001-11-01','9001-11-01');
+--sorted_result
+SELECT * FROM t1 WHERE a='6001-11-01';
+--sorted_result
+SELECT * FROM t1 WHERE b='2001-11-01';
+--sorted_result
+SELECT * FROM t1 WHERE a='6001-11-01' and b='2001-11-01';
+ANALYZE TABLE t1;
+EXPLAIN SELECT * FROM t1 WHERE a='6001-11-01';
+EXPLAIN SELECT * FROM t1 WHERE b='2001-11-01';
+EXPLAIN SELECT * FROM t1 WHERE a='6001-11-01' and b='2001-11-01';
+DROP TABLE t1;
+#
+# DATETIME
+#
+CREATE TABLE t1(
+    a DATETIME,
+    b DATETIME,
+    c DATETIME,
+    INDEX idx_a(a),
+    INDEX idx_b(b)
+)
+PARTITION BY RANGE COLUMNS (a)
+SUBPARTITION BY KEY (b)
+SUBPARTITIONS 2 (
+    PARTITION p0 VALUES LESS THAN ('4001-11-01 00:00:00'),
+    PARTITION p1 VALUES LESS THAN ('6001-11-01 00:00:00'),
+    PARTITION p2 VALUES LESS THAN ('9001-11-01 00:00:00')
+);
+
+# insert 20 rows
+INSERT INTO t1 VALUES
+('2001-11-01 00:00:00','5001-11-01 00:00:00','9001-11-01 00:00:00'),('6001-11-01 00:00:00','2001-11-01 00:00:00','9001-11-01 00:00:00'),('2001-11-01 00:00:00','4001-11-01 00:00:00','9001-11-01 00:00:00'),('6001-11-01 00:00:00','3001-11-01 00:00:00','9001-11-01 00:00:00'),
+('2001-11-01 00:00:00','5001-11-01 00:00:00','9001-11-01 00:00:00'),('6001-11-01 00:00:00','4001-11-01 00:00:00','9001-11-01 00:00:00'),('2001-11-01 00:00:00','3001-11-01 00:00:00','9001-11-01 00:00:00'),('6001-11-01 00:00:00','3001-11-01 00:00:00','9001-11-01 00:00:00'),
+('2001-11-01 00:00:00','5001-11-01 00:00:00','9001-11-01 00:00:00'),('6001-11-01 00:00:00','2001-11-01 00:00:00','9001-11-01 00:00:00'),('3001-11-01 00:00:00','4001-11-01 00:00:00','9001-11-01 00:00:00'),('6001-11-01 00:00:00','6001-11-01 00:00:00','9001-11-01 00:00:00'),
+('4001-11-01 00:00:00','6001-11-01 00:00:00','9001-11-01 00:00:00'),('3001-11-01 00:00:00','6001-11-01 00:00:00','9001-11-01 00:00:00'),('5001-11-01 00:00:00','2001-11-01 00:00:00','9001-11-01 00:00:00'),('3001-11-01 00:00:00','6001-11-01 00:00:00','9001-11-01 00:00:00'),
+('4001-11-01 00:00:00','2001-11-01 00:00:00','9001-11-01 00:00:00'),('5001-11-01 00:00:00','6001-11-01 00:00:00','9001-11-01 00:00:00'),('3001-11-01 00:00:00','2001-11-01 00:00:00','9001-11-01 00:00:00'),('4001-11-01 00:00:00','6001-11-01 00:00:00','9001-11-01 00:00:00');
+--sorted_result
+SELECT * FROM t1 WHERE a='6001-11-01 00:00:00';
+--sorted_result
+SELECT * FROM t1 WHERE b='2001-11-01 00:00:00';
+--sorted_result
+SELECT * FROM t1 WHERE a='6001-11-01 00:00:00' and b='2001-11-01 00:00:00';
+ANALYZE TABLE t1;
+EXPLAIN SELECT * FROM t1 WHERE a='6001-11-01 00:00:00';
+EXPLAIN SELECT * FROM t1 WHERE b='2001-11-01 00:00:00';
+EXPLAIN SELECT * FROM t1 WHERE a='6001-11-01 00:00:00' and b='2001-11-01 00:00:00';
+DROP TABLE t1;
+#
+# TIME
+#
+CREATE TABLE t1(
+    a TIME,
+    b TIME,
+    c TIME,
+    INDEX idx_a(a),
+    INDEX idx_b(b)
+)
+PARTITION BY RANGE COLUMNS (a)
+SUBPARTITION BY KEY (b)
+SUBPARTITIONS 2 (
+    PARTITION p0 VALUES LESS THAN ('41:07:35'),
+    PARTITION p1 VALUES LESS THAN ('61:07:35'),
+    PARTITION p2 VALUES LESS THAN ('91:07:35')
+);
+
+# insert 20 rows
+INSERT INTO t1 VALUES
+('21:07:35','51:07:35','91:07:35'),('61:07:35','21:07:35','91:07:35'),('21:07:35','41:07:35','91:07:35'),('61:07:35','31:07:35','91:07:35'),
+('21:07:35','51:07:35','91:07:35'),('61:07:35','41:07:35','91:07:35'),('21:07:35','31:07:35','91:07:35'),('61:07:35','31:07:35','91:07:35'),
+('21:07:35','51:07:35','91:07:35'),('61:07:35','21:07:35','91:07:35'),('31:07:35','41:07:35','91:07:35'),('61:07:35','61:07:35','91:07:35'),
+('41:07:35','61:07:35','91:07:35'),('31:07:35','61:07:35','91:07:35'),('51:07:35','21:07:35','91:07:35'),('31:07:35','61:07:35','91:07:35'),
+('41:07:35','21:07:35','91:07:35'),('51:07:35','61:07:35','91:07:35'),('31:07:35','21:07:35','91:07:35'),('41:07:35','61:07:35','91:07:35');
+--sorted_result
+SELECT * FROM t1 WHERE a='61:07:35';
+--sorted_result
+SELECT * FROM t1 WHERE b='21:07:35';
+--sorted_result
+SELECT * FROM t1 WHERE a='61:07:35' and b='21:07:35';
+ANALYZE TABLE t1;
+EXPLAIN SELECT * FROM t1 WHERE a='61:07:35';
+EXPLAIN SELECT * FROM t1 WHERE b='21:07:35';
+EXPLAIN SELECT * FROM t1 WHERE a='61:07:35' and b='21:07:35';
+DROP TABLE t1;
+#
+# TIMESTAMP
+#
+CREATE TABLE t1(
+    a INT,
+    b INT,
+    c TIMESTAMP,
+    INDEX idx_a(a),
+    INDEX idx_b(b)
+)
+PARTITION BY RANGE COLUMNS (a)
+SUBPARTITION BY KEY (b)
+SUBPARTITIONS 2 (
+    PARTITION p0 VALUES LESS THAN (4),
+    PARTITION p1 VALUES LESS THAN (7),
+    PARTITION p2 VALUES LESS THAN (10)
+);
+
+# insert 20 rows
+INSERT INTO t1 VALUES
+(1,4,'2001-11-01 05:00:00'),(5,1,'2001-11-01 05:00:00'),(1,3,'2001-11-01 05:00:00'),(5,2,'2001-11-01 05:00:00'),
+(1,4,'2001-11-01 05:00:00'),(5,3,'2001-11-01 05:00:00'),(1,2,'2001-11-01 05:00:00'),(5,2,'2001-11-01 05:00:00'),
+(1,4,'2001-11-01 05:00:00'),(5,1,'2001-11-01 05:00:00'),(2,3,'2001-11-01 05:00:00'),(5,5,'2001-11-01 05:00:00'),
+(3,5,'2001-11-01 05:00:00'),(2,5,'2001-11-01 05:00:00'),(4,1,'2001-11-01 05:00:00'),(2,5,'2001-11-01 05:00:00'),
+(3,1,'2001-11-01 05:00:00'),(4,5,'2001-11-01 05:00:00'),(2,1,'2001-11-01 05:00:00'),(3,5,'2001-11-01 05:00:00');
+--sorted_result
+SELECT * FROM t1 WHERE a=5;
+--sorted_result
+SELECT * FROM t1 WHERE b=1;
+--sorted_result
+SELECT * FROM t1 WHERE a=5 and b=1;
+ANALYZE TABLE t1;
+EXPLAIN SELECT * FROM t1 WHERE a=5;
+EXPLAIN SELECT * FROM t1 WHERE b=1;
+EXPLAIN SELECT * FROM t1 WHERE a=5 and b=1;
+DROP TABLE t1;
+
+#
+# SET
+#
+CREATE TABLE t1(
+    a INT,
+    b INT,
+    c SET('1','2','3','4','5','6','7','8','9','10'),
+    INDEX idx_a(a),
+    INDEX idx_b(b)
+)
+PARTITION BY RANGE COLUMNS (a)
+SUBPARTITION BY KEY (b)
+SUBPARTITIONS 2 (
+    PARTITION p0 VALUES LESS THAN (4),
+    PARTITION p1 VALUES LESS THAN (7),
+    PARTITION p2 VALUES LESS THAN (10)
+);
+
+# insert 20 rows
+INSERT INTO t1 VALUES
+(1,4,'9'),(5,1,'9'),(1,3,'9'),(5,2,'9'),(1,4,'9'),(5,3,'9'),(1,2,'9'),(5,2,'9'),(1,4,'9'),(5,1,'9'),
+(2,3,'9'),(5,5,'9'),(3,5,'9'),(2,5,'9'),(4,1,'9'),(2,5,'9'),(3,1,'9'),(4,5,'9'),(2,1,'9'),(3,5,'9');
+--sorted_result
+SELECT * FROM t1 WHERE a=5;
+--sorted_result
+SELECT * FROM t1 WHERE b=1;
+--sorted_result
+SELECT * FROM t1 WHERE a=5 and b=1;
+ANALYZE TABLE t1;
+EXPLAIN SELECT * FROM t1 WHERE a=5;
+EXPLAIN SELECT * FROM t1 WHERE b=1;
+EXPLAIN SELECT * FROM t1 WHERE a=5 and b=1;
+DROP TABLE t1;
+
+#
+# ENUM
+#
+CREATE TABLE t1(
+    a INT,
+    b INT,
+    c ENUM('1','2','3','4','5','6','7','8','9','10'),
+    INDEX idx_a(a),
+    INDEX idx_b(b)
+)
+PARTITION BY RANGE COLUMNS (a)
+SUBPARTITION BY KEY (b)
+SUBPARTITIONS 2 (
+    PARTITION p0 VALUES LESS THAN (4),
+    PARTITION p1 VALUES LESS THAN (7),
+    PARTITION p2 VALUES LESS THAN (10)
+);
+
+# insert 20 rows
+INSERT INTO t1 VALUES
+(1,4,'9'),(5,1,'9'),(1,3,'9'),(5,2,'9'),(1,4,'9'),(5,3,'9'),(1,2,'9'),(5,2,'9'),(1,4,'9'),(5,1,'9'),
+(2,3,'9'),(5,5,'9'),(3,5,'9'),(2,5,'9'),(4,1,'9'),(2,5,'9'),(3,1,'9'),(4,5,'9'),(2,1,'9'),(3,5,'9');
+--sorted_result
+SELECT * FROM t1 WHERE a=5;
+--sorted_result
+SELECT * FROM t1 WHERE b=1;
+--sorted_result
+SELECT * FROM t1 WHERE a=5 and b=1;
+ANALYZE TABLE t1;
+
+EXPLAIN SELECT * FROM t1 WHERE a=5;
+EXPLAIN SELECT * FROM t1 WHERE b=1;
+EXPLAIN SELECT * FROM t1 WHERE a=5 and b=1;
+
+DROP TABLE t1;
+
+#
+# clear env
+#
+DROP DATABASE index_statistics_mcv_sequoiadb_26685;
+--source include/uninstall_sequoiadb.inc
+# set debug='';

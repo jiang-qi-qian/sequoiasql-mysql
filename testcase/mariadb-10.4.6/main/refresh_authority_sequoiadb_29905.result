@@ -1,0 +1,149 @@
+drop database if exists refresh_tables_stats_29905_01;
+drop database if exists refresh_tables_stats_29905_02;
+connect root,localhost,root,,;
+flush tables;
+create database refresh_tables_stats_29905_01;
+drop database refresh_tables_stats_29905_01;
+create database refresh_tables_stats_29905_01;
+use refresh_tables_stats_29905_01;
+create table tb_normal(a int primary key,b varchar(128),c date,key (b));
+create table tb_part(a int,b varchar(128),key (a))
+PARTITION BY RANGE COLUMNS (a)
+SUBPARTITION BY KEY (b)
+SUBPARTITIONS 2 (
+PARTITION p0 VALUES LESS THAN (4),
+PARTITION p1 VALUES LESS THAN (7),
+PARTITION p2 VALUES LESS THAN (10));
+insert into tb_normal values (1,"sequoiadb","2020-01-01"),
+(2,"sequoiadb","2020-01-02"),(3,"sequoiadb","2020-01-03"),(4,"sequoiadb","2020-01-04"),
+(5,"sequoiadb","2020-01-05"),(6,"sequoiadb","2020-01-06"),(7,"sequoiadb","2020-01-07"),
+(8,"sequoiadb","2020-01-08"),(9,"sequoiadb","2020-01-09"),(10,"sequoiadb","2020-01-10");
+insert into tb_part values (1,"one"),(2,"two"),(3,"three"),(4,"four"),(5,"five"),(6,"six"),(7,"seven"),(8,"eight"),(9,"nine");
+create database refresh_tables_stats_29905_02;
+drop database refresh_tables_stats_29905_02;
+create database refresh_tables_stats_29905_02;
+use refresh_tables_stats_29905_02;
+create table tb_normal(a int primary key,b varchar(128),c date,key (b));
+create table tb_part(a int,b varchar(128),key (a))
+PARTITION BY RANGE COLUMNS (a)
+SUBPARTITION BY KEY (b)
+SUBPARTITIONS 2 (
+PARTITION p0 VALUES LESS THAN (4),
+PARTITION p1 VALUES LESS THAN (7),
+PARTITION p2 VALUES LESS THAN (10));
+insert into tb_normal values (1,"sequoiadb","2020-01-01"),
+(2,"sequoiadb","2020-01-02"),(3,"sequoiadb","2020-01-03"),(4,"sequoiadb","2020-01-04"),
+(5,"sequoiadb","2020-01-05"),(6,"sequoiadb","2020-01-06"),(7,"sequoiadb","2020-01-07"),
+(8,"sequoiadb","2020-01-08"),(9,"sequoiadb","2020-01-09"),(10,"sequoiadb","2020-01-10");
+insert into tb_part values (1,"one"),(2,"two"),(3,"three"),(4,"four"),(5,"five"),(6,"six"),(7,"seven"),(8,"eight"),(9,"nine");
+drop user if exists u1;
+create user u1;
+grant all on *.* to u1@'%';
+flush privileges;
+##拥有全部权限
+connect conn,localhost,u1,,;
+set session refresh_all_cached_tables_supported=on;
+show grants for u1;
+Grants for u1@%
+GRANT ALL PRIVILEGES ON *.* TO 'u1'@'%'
+refresh tables stats;
+refresh tables refresh_tables_stats_29905_01.tb_normal,refresh_tables_stats_29905_01.tb_part,refresh_tables_stats_29905_02.tb_normal,refresh_tables_stats_29905_02.tb_part stats;
+refresh tables refresh_tables_stats_29905_01.tb_part stats;
+disconnect conn;
+connection root;
+revoke all on *.* from  u1@'%';
+grant all on refresh_tables_stats_29905_01.* to u1@'%';
+flush privileges;
+##拥有某个数据库权限
+connect conn,localhost,u1,,;
+set session refresh_all_cached_tables_supported=on;
+show grants for u1;
+Grants for u1@%
+GRANT USAGE ON *.* TO 'u1'@'%'
+GRANT ALL PRIVILEGES ON `refresh_tables_stats_29905_01`.* TO 'u1'@'%'
+refresh tables stats;
+ERROR 42000: Access denied for user 'u1'@'%' to database 'refresh_tables_stats_29905_02'
+refresh tables refresh_tables_stats_29905_01.tb_normal,refresh_tables_stats_29905_02.tb_part stats;
+ERROR 42000: Access denied for user 'u1'@'%' to database 'refresh_tables_stats_29905_02'
+refresh tables refresh_tables_stats_29905_02.tb_part stats;
+ERROR 42000: Access denied for user 'u1'@'%' to database 'refresh_tables_stats_29905_02'
+disconnect conn;
+connection root;
+revoke all on refresh_tables_stats_29905_01.* from u1@'%';
+grant all on refresh_tables_stats_29905_01.tb_normal to u1@'%';
+flush privileges;
+##拥有一个数据库部分表权限
+connect conn,localhost,u1,,;
+set session refresh_all_cached_tables_supported=on;
+show grants for u1;
+Grants for u1@%
+GRANT USAGE ON *.* TO 'u1'@'%'
+GRANT ALL PRIVILEGES ON `refresh_tables_stats_29905_01`.`tb_normal` TO 'u1'@'%'
+refresh tables stats;
+ERROR 42000: Access denied for user 'u1'@'%' to database 'refresh_tables_stats_29905_02'
+refresh tables refresh_tables_stats_29905_01.tb_normal,refresh_tables_stats_29905_01.tb_part stats;
+ERROR 42000: REFRESH command denied to user 'u1'@'localhost' for table 'tb_part'
+refresh tables refresh_tables_stats_29905_01.tb_part stats;
+ERROR 42000: REFRESH command denied to user 'u1'@'localhost' for table 'tb_part'
+refresh tables refresh_tables_stats_29905_01.tb_normal stats;
+disconnect conn;
+connection root;
+revoke all on refresh_tables_stats_29905_01.tb_normal from  u1@'%';
+grant select on *.* to u1@'%';
+flush privileges;
+##只有查询权限
+connect conn,localhost,u1,,;
+set session refresh_all_cached_tables_supported=on;
+show grants for u1;
+Grants for u1@%
+GRANT SELECT ON *.* TO 'u1'@'%'
+refresh tables stats;
+refresh tables refresh_tables_stats_29905_01.tb_normal,refresh_tables_stats_29905_02.tb_part stats;
+refresh tables refresh_tables_stats_29905_02.tb_part stats;
+disconnect conn;
+connection root;
+revoke select on *.* from u1@'%';
+grant update on *.* to u1@'%';
+flush privileges;
+##只有更新权限
+connect conn,localhost,u1,,;
+set session refresh_all_cached_tables_supported=on;
+show grants for u1;
+Grants for u1@%
+GRANT UPDATE ON *.* TO 'u1'@'%'
+refresh tables stats;
+refresh tables refresh_tables_stats_29905_01.tb_normal,refresh_tables_stats_29905_02.tb_part stats;
+refresh tables refresh_tables_stats_29905_02.tb_part stats;
+disconnect conn;
+connection root;
+revoke update on *.* from u1@'%';
+grant insert on *.* to u1@'%';
+flush privileges;
+##只有插入权限
+connect conn,localhost,u1,,;
+set session refresh_all_cached_tables_supported=on;
+show grants for u1;
+Grants for u1@%
+GRANT INSERT ON *.* TO 'u1'@'%'
+refresh tables stats;
+refresh tables refresh_tables_stats_29905_01.tb_normal,refresh_tables_stats_29905_02.tb_part stats;
+refresh tables refresh_tables_stats_29905_02.tb_part stats;
+disconnect conn;
+connection root;
+revoke insert on *.* from u1@'%';
+grant delete on *.* to u1@'%';
+flush privileges;
+##只有删除权限
+connect conn,localhost,u1,,;
+set session refresh_all_cached_tables_supported=on;
+show grants for u1;
+Grants for u1@%
+GRANT DELETE ON *.* TO 'u1'@'%'
+refresh tables stats;
+refresh tables refresh_tables_stats_29905_01.tb_normal,refresh_tables_stats_29905_02.tb_part stats;
+refresh tables refresh_tables_stats_29905_02.tb_part stats;
+disconnect conn;
+connection root;
+drop user u1;
+drop database refresh_tables_stats_29905_01;
+drop database refresh_tables_stats_29905_02;

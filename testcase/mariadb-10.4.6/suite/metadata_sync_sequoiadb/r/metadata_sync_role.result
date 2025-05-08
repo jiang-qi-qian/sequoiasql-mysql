@@ -1,0 +1,29 @@
+connection conn1;
+DROP ROLE IF EXISTS metaSync_role1;
+DROP ROLE IF EXISTS metaSync_role2;
+FLUSH PRIVILEGES;
+connection conn2;
+SELECT * FROM mysql.roles_mapping WHERE role = 'metaSync_role1';
+Host	User	Role	Admin_option
+SELECT * FROM mysql.roles_mapping WHERE role = 'metaSync_role2';
+Host	User	Role	Admin_option
+connection conn1;
+CREATE ROLE metaSync_role1 WITH ADMIN metaSync_ruser1;
+CREATE OR REPLACE ROLE metaSync_role1 WITH ADMIN metaSync_ruser2;
+CREATE ROLE IF NOT EXISTS metaSync_role2;
+FLUSH PRIVILEGES;
+connection conn2;
+SELECT * FROM mysql.roles_mapping WHERE Role='metaSync_role1' AND user LIKE 'metaSync_ruser%';
+Host	User	Role	Admin_option
+%	metaSync_ruser2	metaSync_role1	Y
+SELECT * FROM mysql.roles_mapping WHERE Role='metaSync_role2';
+Host	User	Role	Admin_option
+%	x	metaSync_role2	Y
+DROP ROLE IF EXISTS metaSync_role1;
+DROP ROLE metaSync_role2;
+FLUSH PRIVILEGES;
+connection conn1;
+SELECT * FROM mysql.roles_mapping WHERE Role = 'metaSync_role1';
+Host	User	Role	Admin_option
+SELECT * FROM mysql.roles_mapping WHERE Role = 'metaSync_role2';
+Host	User	Role	Admin_option

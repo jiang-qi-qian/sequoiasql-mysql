@@ -1,0 +1,521 @@
+drop database if exists explain_direct_sort_27683;
+create database explain_direct_sort_27683;
+drop database explain_direct_sort_27683;
+create database explain_direct_sort_27683;
+use explain_direct_sort_27683;
+set session sequoiadb_debug_log=on;
+set session optimizer_switch='mrr=on';
+drop table if exists t1,t3,t4;
+create table t1(
+col1 int,
+col2 varchar(10),
+col3 varchar(10),
+col4 varchar(10),
+key idx_col1(col1),
+key idx_col2(col2),
+key idx_col12(col1,col2),
+unique key uniq_idx4(col4)
+);
+insert into t1 values(6,'def','defg','abcdef');
+insert into t1 values(null,null,null,null);
+insert into t1 values(4,'abcdef','abde','abc');
+insert into t1 values(2,'defg','abd','efg');
+insert into t1 values(5,'xyz','abc','abd');
+insert into t1 values(3,'abde','xyz','def');
+insert into t1 values(0,'abc','abcdef','xyz');
+insert into t1 values(1,'abd','def','defg');
+select * from t1 order by col1;
+col1	col2	col3	col4
+NULL	NULL	NULL	NULL
+0	abc	abcdef	xyz
+1	abd	def	defg
+2	defg	abd	efg
+3	abde	xyz	def
+4	abcdef	abde	abc
+5	xyz	abc	abd
+6	def	defg	abcdef
+select * from t1 order by col2;
+col1	col2	col3	col4
+NULL	NULL	NULL	NULL
+0	abc	abcdef	xyz
+4	abcdef	abde	abc
+1	abd	def	defg
+3	abde	xyz	def
+6	def	defg	abcdef
+2	defg	abd	efg
+5	xyz	abc	abd
+select * from t1 order by col3;
+col1	col2	col3	col4
+NULL	NULL	NULL	NULL
+5	xyz	abc	abd
+0	abc	abcdef	xyz
+2	defg	abd	efg
+4	abcdef	abde	abc
+1	abd	def	defg
+6	def	defg	abcdef
+3	abde	xyz	def
+select * from t1 order by col4;
+col1	col2	col3	col4
+NULL	NULL	NULL	NULL
+4	abcdef	abde	abc
+6	def	defg	abcdef
+5	xyz	abc	abd
+3	abde	xyz	def
+1	abd	def	defg
+2	defg	abd	efg
+0	abc	abcdef	xyz
+create table t3(
+col1 int primary key,
+col2 varchar(10),
+col3 varchar(10)
+);
+create table t4 like t3;
+insert into t3 values(1,'user03','def');
+insert into t3 values(2,'user02','ghi');
+insert into t3 values(3,'user01','abc');
+select * from t3 order by col1;
+col1	col2	col3
+1	user03	def
+2	user02	ghi
+3	user01	abc
+select * from t3 order by col2;
+col1	col2	col3
+3	user01	abc
+2	user02	ghi
+1	user03	def
+select * from t3 order by col3;
+col1	col2	col3
+3	user01	abc
+1	user03	def
+2	user02	ghi
+insert into t4 select * from t3;
+explain select * from t1 where col1 = 1;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	ref	idx_col1,idx_col12	idx_col1	5	const	2	100.00	NULL
+Warnings:
+Note	1003	/* select#1 */ select `explain_direct_sort_27683`.`t1`.`col1` AS `col1`,`explain_direct_sort_27683`.`t1`.`col2` AS `col2`,`explain_direct_sort_27683`.`t1`.`col3` AS `col3`,`explain_direct_sort_27683`.`t1`.`col4` AS `col4` from `explain_direct_sort_27683`.`t1` where (`explain_direct_sort_27683`.`t1`.`col1` = 1)
+select * from t1 where col1 = 1;
+col1	col2	col3	col4
+1	abd	def	defg
+[Note] SequoiaDB: Query message: condition[{ "col1": { "$et": 1 } }], selector[{}], order_by[{}], hint[{ "": "idx_col1" }], limit[-1], offset[0], table[explain_direct_sort_27683.t1]
+explain select * from t1 where col1 = 1 order by col1,col2;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	ref	idx_col1,idx_col12	idx_col12	5	const	2	100.00	Using where
+Warnings:
+Note	1003	/* select#1 */ select `explain_direct_sort_27683`.`t1`.`col1` AS `col1`,`explain_direct_sort_27683`.`t1`.`col2` AS `col2`,`explain_direct_sort_27683`.`t1`.`col3` AS `col3`,`explain_direct_sort_27683`.`t1`.`col4` AS `col4` from `explain_direct_sort_27683`.`t1` where (`explain_direct_sort_27683`.`t1`.`col1` = 1) order by `explain_direct_sort_27683`.`t1`.`col1`,`explain_direct_sort_27683`.`t1`.`col2`
+select * from t1 where col1 = 1 order by col1,col2;
+col1	col2	col3	col4
+1	abd	def	defg
+[Note] SequoiaDB: Query message: condition[{ "col1": { "$et": 1 } }], selector[{}], order_by[{ "col1": 1, "col2": 1 }], hint[{ "": "idx_col12" }], limit[-1], offset[0], table[explain_direct_sort_27683.t1]
+explain select * from t1 where col1 = 1 order by col1 desc, col2 desc;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	ref	idx_col1,idx_col12	idx_col12	5	const	2	100.00	Using where
+Warnings:
+Note	1003	/* select#1 */ select `explain_direct_sort_27683`.`t1`.`col1` AS `col1`,`explain_direct_sort_27683`.`t1`.`col2` AS `col2`,`explain_direct_sort_27683`.`t1`.`col3` AS `col3`,`explain_direct_sort_27683`.`t1`.`col4` AS `col4` from `explain_direct_sort_27683`.`t1` where (`explain_direct_sort_27683`.`t1`.`col1` = 1) order by `explain_direct_sort_27683`.`t1`.`col1` desc,`explain_direct_sort_27683`.`t1`.`col2` desc
+select * from t1 where col1 = 1 order by col1 desc,col2 desc;
+col1	col2	col3	col4
+1	abd	def	defg
+[Note] SequoiaDB: Query message: condition[{ "col1": { "$et": 1 } }], selector[{}], order_by[{ "col1": -1, "col2": -1 }], hint[{ "": "idx_col12" }], limit[-1], offset[0], table[explain_direct_sort_27683.t1]
+explain select * from t1 where col2 = 'abd' order by col1,col2;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	ref	idx_col2	idx_col2	13	const	2	100.00	Using where; Using filesort
+Warnings:
+Note	1003	/* select#1 */ select `explain_direct_sort_27683`.`t1`.`col1` AS `col1`,`explain_direct_sort_27683`.`t1`.`col2` AS `col2`,`explain_direct_sort_27683`.`t1`.`col3` AS `col3`,`explain_direct_sort_27683`.`t1`.`col4` AS `col4` from `explain_direct_sort_27683`.`t1` where (`explain_direct_sort_27683`.`t1`.`col2` = 'abd') order by `explain_direct_sort_27683`.`t1`.`col1`
+select * from t1 where col2 = 'abd' order by col1,col2;
+col1	col2	col3	col4
+1	abd	def	defg
+[Note] SequoiaDB: Query message: condition[{ "col2": { "$et": "abd" } }], selector[{}], order_by[{}], hint[{ "": "idx_col2" }], limit[-1], offset[0], table[explain_direct_sort_27683.t1]
+explain select * from t1 where col2 = 'abd' order by col1 desc,col2 desc;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	ref	idx_col2	idx_col2	13	const	2	100.00	Using where; Using filesort
+Warnings:
+Note	1003	/* select#1 */ select `explain_direct_sort_27683`.`t1`.`col1` AS `col1`,`explain_direct_sort_27683`.`t1`.`col2` AS `col2`,`explain_direct_sort_27683`.`t1`.`col3` AS `col3`,`explain_direct_sort_27683`.`t1`.`col4` AS `col4` from `explain_direct_sort_27683`.`t1` where (`explain_direct_sort_27683`.`t1`.`col2` = 'abd') order by `explain_direct_sort_27683`.`t1`.`col1` desc
+select * from t1 where col2 = 'abd' order by col1 desc,col2 desc;
+col1	col2	col3	col4
+1	abd	def	defg
+[Note] SequoiaDB: Query message: condition[{ "col2": { "$et": "abd" } }], selector[{}], order_by[{}], hint[{ "": "idx_col2" }], limit[-1], offset[0], table[explain_direct_sort_27683.t1]
+explain select * from t1 where col1 = 1 or col1 is null;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	ref_or_null	idx_col1,idx_col12	idx_col1	5	const	4	100.00	Using where with pushed condition ((`explain_direct_sort_27683`.`t1`.`col1` = 1) or isnull(`explain_direct_sort_27683`.`t1`.`col1`))
+Warnings:
+Note	1003	/* select#1 */ select `explain_direct_sort_27683`.`t1`.`col1` AS `col1`,`explain_direct_sort_27683`.`t1`.`col2` AS `col2`,`explain_direct_sort_27683`.`t1`.`col3` AS `col3`,`explain_direct_sort_27683`.`t1`.`col4` AS `col4` from `explain_direct_sort_27683`.`t1` where ((`explain_direct_sort_27683`.`t1`.`col1` = 1) or isnull(`explain_direct_sort_27683`.`t1`.`col1`))
+select * from t1 where col1 = 1 or col1 is null;
+col1	col2	col3	col4
+1	abd	def	defg
+NULL	NULL	NULL	NULL
+[Note] SequoiaDB: Query message: condition[{ "col1": { "$isnull": 1 } }], selector[{}], order_by[{}], hint[{ "": "idx_col1" }], limit[-1], offset[0], table[explain_direct_sort_27683.t1]
+explain select * from t1 where col1 = 1 or col1 is null order by col1;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	ref_or_null	idx_col1,idx_col12	idx_col1	5	const	4	100.00	Using where with pushed condition ((`explain_direct_sort_27683`.`t1`.`col1` = 1) or isnull(`explain_direct_sort_27683`.`t1`.`col1`)); Using filesort
+Warnings:
+Note	1003	/* select#1 */ select `explain_direct_sort_27683`.`t1`.`col1` AS `col1`,`explain_direct_sort_27683`.`t1`.`col2` AS `col2`,`explain_direct_sort_27683`.`t1`.`col3` AS `col3`,`explain_direct_sort_27683`.`t1`.`col4` AS `col4` from `explain_direct_sort_27683`.`t1` where ((`explain_direct_sort_27683`.`t1`.`col1` = 1) or isnull(`explain_direct_sort_27683`.`t1`.`col1`)) order by `explain_direct_sort_27683`.`t1`.`col1`
+select * from t1 where col1 = 1 or col1 is null order by col1;
+col1	col2	col3	col4
+NULL	NULL	NULL	NULL
+1	abd	def	defg
+[Note] SequoiaDB: Query message: condition[{ "$or": [ { "col1": { "$et": 1 } }, { "col1": { "$isnull": 1 } } ] }], selector[{}], order_by[{}], hint[{ "$Range": { "IsAllEqual": false, "IndexValueIncluded": [ [ true, true ], [ true, true ] ], "PrefixNum": [ 1, 1 ], "IndexValue": [ [ { "1": 1 }, { "1": 1 } ], [ { "1": {"$minKey":1} }, { "1": null } ] ] }, "": "idx_col1" }], limit[-1], offset[0], table[explain_direct_sort_27683.t1]
+explain select * from t1 where col1 = 1 or col1 is null order by col1 desc;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	ref_or_null	idx_col1,idx_col12	idx_col1	5	const	4	100.00	Using where with pushed condition ((`explain_direct_sort_27683`.`t1`.`col1` = 1) or isnull(`explain_direct_sort_27683`.`t1`.`col1`)); Using filesort
+Warnings:
+Note	1003	/* select#1 */ select `explain_direct_sort_27683`.`t1`.`col1` AS `col1`,`explain_direct_sort_27683`.`t1`.`col2` AS `col2`,`explain_direct_sort_27683`.`t1`.`col3` AS `col3`,`explain_direct_sort_27683`.`t1`.`col4` AS `col4` from `explain_direct_sort_27683`.`t1` where ((`explain_direct_sort_27683`.`t1`.`col1` = 1) or isnull(`explain_direct_sort_27683`.`t1`.`col1`)) order by `explain_direct_sort_27683`.`t1`.`col1` desc
+select * from t1 where col1 = 1 or col1 is null order by col1 desc;
+col1	col2	col3	col4
+1	abd	def	defg
+NULL	NULL	NULL	NULL
+[Note] SequoiaDB: Query message: condition[{ "$or": [ { "col1": { "$et": 1 } }, { "col1": { "$isnull": 1 } } ] }], selector[{}], order_by[{}], hint[{ "$Range": { "IsAllEqual": false, "IndexValueIncluded": [ [ true, true ], [ true, true ] ], "PrefixNum": [ 1, 1 ], "IndexValue": [ [ { "1": 1 }, { "1": 1 } ], [ { "1": {"$minKey":1} }, { "1": null } ] ] }, "": "idx_col1" }], limit[-1], offset[0], table[explain_direct_sort_27683.t1]
+explain select * from t1 where col1 = 1 or col1 is null order by col3;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	ref_or_null	idx_col1,idx_col12	idx_col1	5	const	4	100.00	Using where with pushed condition ((`explain_direct_sort_27683`.`t1`.`col1` = 1) or isnull(`explain_direct_sort_27683`.`t1`.`col1`)); Using filesort
+Warnings:
+Note	1003	/* select#1 */ select `explain_direct_sort_27683`.`t1`.`col1` AS `col1`,`explain_direct_sort_27683`.`t1`.`col2` AS `col2`,`explain_direct_sort_27683`.`t1`.`col3` AS `col3`,`explain_direct_sort_27683`.`t1`.`col4` AS `col4` from `explain_direct_sort_27683`.`t1` where ((`explain_direct_sort_27683`.`t1`.`col1` = 1) or isnull(`explain_direct_sort_27683`.`t1`.`col1`)) order by `explain_direct_sort_27683`.`t1`.`col3`
+select * from t1 where col1 = 1 or col1 is null order by col3;
+col1	col2	col3	col4
+NULL	NULL	NULL	NULL
+1	abd	def	defg
+[Note] SequoiaDB: Query message: condition[{ "$or": [ { "col1": { "$et": 1 } }, { "col1": { "$isnull": 1 } } ] }], selector[{}], order_by[{}], hint[{ "$Range": { "IsAllEqual": false, "IndexValueIncluded": [ [ true, true ], [ true, true ] ], "PrefixNum": [ 1, 1 ], "IndexValue": [ [ { "1": 1 }, { "1": 1 } ], [ { "1": {"$minKey":1} }, { "1": null } ] ] }, "": "idx_col1" }], limit[-1], offset[0], table[explain_direct_sort_27683.t1]
+explain select * from t1 where col1 > 1 and col1 < 5;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	range	idx_col1,idx_col12	idx_col1	5	NULL	2	100.00	Using where with pushed condition ((`explain_direct_sort_27683`.`t1`.`col1` > 1) and (`explain_direct_sort_27683`.`t1`.`col1` < 5))
+Warnings:
+Note	1003	/* select#1 */ select `explain_direct_sort_27683`.`t1`.`col1` AS `col1`,`explain_direct_sort_27683`.`t1`.`col2` AS `col2`,`explain_direct_sort_27683`.`t1`.`col3` AS `col3`,`explain_direct_sort_27683`.`t1`.`col4` AS `col4` from `explain_direct_sort_27683`.`t1` where ((`explain_direct_sort_27683`.`t1`.`col1` > 1) and (`explain_direct_sort_27683`.`t1`.`col1` < 5))
+select * from t1 where col1 > 1 and col1 < 5;
+col1	col2	col3	col4
+2	defg	abd	efg
+3	abde	xyz	def
+4	abcdef	abde	abc
+[Note] SequoiaDB: Query message: condition[{ "$and": [ { "col1": { "$gt": 1 } }, { "col1": { "$lt": 5 } } ] }], selector[{}], order_by[{}], hint[{ "": "idx_col1" }], limit[-1], offset[0], table[explain_direct_sort_27683.t1]
+explain select * from t1 where col1 > 1 and col1 < 5 order by col1;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	range	idx_col1,idx_col12	idx_col1	5	NULL	2	100.00	Using where with pushed condition ((`explain_direct_sort_27683`.`t1`.`col1` > 1) and (`explain_direct_sort_27683`.`t1`.`col1` < 5))
+Warnings:
+Note	1003	/* select#1 */ select `explain_direct_sort_27683`.`t1`.`col1` AS `col1`,`explain_direct_sort_27683`.`t1`.`col2` AS `col2`,`explain_direct_sort_27683`.`t1`.`col3` AS `col3`,`explain_direct_sort_27683`.`t1`.`col4` AS `col4` from `explain_direct_sort_27683`.`t1` where ((`explain_direct_sort_27683`.`t1`.`col1` > 1) and (`explain_direct_sort_27683`.`t1`.`col1` < 5)) order by `explain_direct_sort_27683`.`t1`.`col1`
+select * from t1 where col1 > 1 and col1 < 5 order by col1;
+col1	col2	col3	col4
+2	defg	abd	efg
+3	abde	xyz	def
+4	abcdef	abde	abc
+[Note] SequoiaDB: Query message: condition[{ "$and": [ { "col1": { "$gt": 1 } }, { "col1": { "$lt": 5 } } ] }], selector[{}], order_by[{ "col1": 1 }], hint[{ "": "idx_col1" }], limit[-1], offset[0], table[explain_direct_sort_27683.t1]
+explain select * from t1 where col1 > 1 and col1 < 5 order by col1 desc;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	range	idx_col1,idx_col12	idx_col1	5	NULL	2	100.00	Using where with pushed condition ((`explain_direct_sort_27683`.`t1`.`col1` > 1) and (`explain_direct_sort_27683`.`t1`.`col1` < 5))
+Warnings:
+Note	1003	/* select#1 */ select `explain_direct_sort_27683`.`t1`.`col1` AS `col1`,`explain_direct_sort_27683`.`t1`.`col2` AS `col2`,`explain_direct_sort_27683`.`t1`.`col3` AS `col3`,`explain_direct_sort_27683`.`t1`.`col4` AS `col4` from `explain_direct_sort_27683`.`t1` where ((`explain_direct_sort_27683`.`t1`.`col1` > 1) and (`explain_direct_sort_27683`.`t1`.`col1` < 5)) order by `explain_direct_sort_27683`.`t1`.`col1` desc
+select * from t1 where col1 > 1 and col1 < 5 order by col1 desc;
+col1	col2	col3	col4
+4	abcdef	abde	abc
+3	abde	xyz	def
+2	defg	abd	efg
+[Note] SequoiaDB: Query message: condition[{ "$and": [ { "col1": { "$gt": 1 } }, { "col1": { "$lt": 5 } } ] }], selector[{}], order_by[{ "col1": -1 }], hint[{ "": "idx_col1" }], limit[-1], offset[0], table[explain_direct_sort_27683.t1]
+explain select * from t1 where col1 > 1 and col1 < 5 order by col3;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	range	idx_col1,idx_col12	idx_col1	5	NULL	2	100.00	Using where with pushed condition ((`explain_direct_sort_27683`.`t1`.`col1` > 1) and (`explain_direct_sort_27683`.`t1`.`col1` < 5)); Using pushed sort (`explain_direct_sort_27683`.`t1`.`col3`)
+Warnings:
+Note	1003	/* select#1 */ select `explain_direct_sort_27683`.`t1`.`col1` AS `col1`,`explain_direct_sort_27683`.`t1`.`col2` AS `col2`,`explain_direct_sort_27683`.`t1`.`col3` AS `col3`,`explain_direct_sort_27683`.`t1`.`col4` AS `col4` from `explain_direct_sort_27683`.`t1` where ((`explain_direct_sort_27683`.`t1`.`col1` > 1) and (`explain_direct_sort_27683`.`t1`.`col1` < 5)) order by `explain_direct_sort_27683`.`t1`.`col3`
+select * from t1 where col1 > 1 and col1 < 5 order by col3;
+col1	col2	col3	col4
+2	defg	abd	efg
+4	abcdef	abde	abc
+3	abde	xyz	def
+[Note] SequoiaDB: Query message: condition[{ "$and": [ { "col1": { "$gt": 1 } }, { "col1": { "$lt": 5 } } ] }], selector[{}], order_by[{ "col3": 1 }], hint[{ "": "idx_col1" }], limit[-1], offset[0], table[explain_direct_sort_27683.t1]
+explain select * from t1 where col2 > 'abc' and col2 < 'def';
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	range	idx_col2	idx_col2	13	NULL	2	100.00	Using where with pushed condition ((`explain_direct_sort_27683`.`t1`.`col2` > 'abc') and (`explain_direct_sort_27683`.`t1`.`col2` < 'def'))
+Warnings:
+Note	1003	/* select#1 */ select `explain_direct_sort_27683`.`t1`.`col1` AS `col1`,`explain_direct_sort_27683`.`t1`.`col2` AS `col2`,`explain_direct_sort_27683`.`t1`.`col3` AS `col3`,`explain_direct_sort_27683`.`t1`.`col4` AS `col4` from `explain_direct_sort_27683`.`t1` where ((`explain_direct_sort_27683`.`t1`.`col2` > 'abc') and (`explain_direct_sort_27683`.`t1`.`col2` < 'def'))
+select * from t1 where col2 > 'abc' and col2 < 'def';
+col1	col2	col3	col4
+4	abcdef	abde	abc
+1	abd	def	defg
+3	abde	xyz	def
+[Note] SequoiaDB: Query message: condition[{ "$and": [ { "col2": { "$gt": "abc" } }, { "col2": { "$lt": "def" } } ] }], selector[{}], order_by[{}], hint[{ "": "idx_col2" }], limit[-1], offset[0], table[explain_direct_sort_27683.t1]
+explain select * from t1 where col2 > 'abc' and col2 < 'def' order by col2;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	range	idx_col2	idx_col2	13	NULL	2	100.00	Using where with pushed condition ((`explain_direct_sort_27683`.`t1`.`col2` > 'abc') and (`explain_direct_sort_27683`.`t1`.`col2` < 'def'))
+Warnings:
+Note	1003	/* select#1 */ select `explain_direct_sort_27683`.`t1`.`col1` AS `col1`,`explain_direct_sort_27683`.`t1`.`col2` AS `col2`,`explain_direct_sort_27683`.`t1`.`col3` AS `col3`,`explain_direct_sort_27683`.`t1`.`col4` AS `col4` from `explain_direct_sort_27683`.`t1` where ((`explain_direct_sort_27683`.`t1`.`col2` > 'abc') and (`explain_direct_sort_27683`.`t1`.`col2` < 'def')) order by `explain_direct_sort_27683`.`t1`.`col2`
+select * from t1 where col2 > 'abc' and col2 < 'def' order by col2;
+col1	col2	col3	col4
+4	abcdef	abde	abc
+1	abd	def	defg
+3	abde	xyz	def
+[Note] SequoiaDB: Query message: condition[{ "$and": [ { "col2": { "$gt": "abc" } }, { "col2": { "$lt": "def" } } ] }], selector[{}], order_by[{ "col2": 1 }], hint[{ "": "idx_col2" }], limit[-1], offset[0], table[explain_direct_sort_27683.t1]
+explain select * from t1 where col2 > 'abc' and col2 < 'def' order by col2 desc;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	range	idx_col2	idx_col2	13	NULL	2	100.00	Using where with pushed condition ((`explain_direct_sort_27683`.`t1`.`col2` > 'abc') and (`explain_direct_sort_27683`.`t1`.`col2` < 'def'))
+Warnings:
+Note	1003	/* select#1 */ select `explain_direct_sort_27683`.`t1`.`col1` AS `col1`,`explain_direct_sort_27683`.`t1`.`col2` AS `col2`,`explain_direct_sort_27683`.`t1`.`col3` AS `col3`,`explain_direct_sort_27683`.`t1`.`col4` AS `col4` from `explain_direct_sort_27683`.`t1` where ((`explain_direct_sort_27683`.`t1`.`col2` > 'abc') and (`explain_direct_sort_27683`.`t1`.`col2` < 'def')) order by `explain_direct_sort_27683`.`t1`.`col2` desc
+select * from t1 where col2 > 'abc' and col2 < 'def' order by col2 desc;
+col1	col2	col3	col4
+3	abde	xyz	def
+1	abd	def	defg
+4	abcdef	abde	abc
+[Note] SequoiaDB: Query message: condition[{ "$and": [ { "col2": { "$gt": "abc" } }, { "col2": { "$lt": "def" } } ] }], selector[{}], order_by[{ "col2": -1 }], hint[{ "": "idx_col2" }], limit[-1], offset[0], table[explain_direct_sort_27683.t1]
+explain select * from t1 where col2 in ('abc','def','xyz') order by col2;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	range	idx_col2	idx_col2	13	NULL	6	100.00	Using where with pushed condition (`explain_direct_sort_27683`.`t1`.`col2` in ('abc','def','xyz')); Using MRR
+Warnings:
+Note	1003	/* select#1 */ select `explain_direct_sort_27683`.`t1`.`col1` AS `col1`,`explain_direct_sort_27683`.`t1`.`col2` AS `col2`,`explain_direct_sort_27683`.`t1`.`col3` AS `col3`,`explain_direct_sort_27683`.`t1`.`col4` AS `col4` from `explain_direct_sort_27683`.`t1` where (`explain_direct_sort_27683`.`t1`.`col2` in ('abc','def','xyz')) order by `explain_direct_sort_27683`.`t1`.`col2`
+select * from t1 where col2 in ('abc','def','xyz') order by col2;
+col1	col2	col3	col4
+0	abc	abcdef	xyz
+6	def	defg	abcdef
+5	xyz	abc	abd
+[Note] SequoiaDB: Query message: condition[{ "col2": { "$in": [ "abc", "def", "xyz" ] } }], selector[{}], order_by[{ "col2": 1 }], hint[{ "": "idx_col2" }], limit[-1], offset[0], table[explain_direct_sort_27683.t1]
+explain select * from t1 where col2 like 'a%';
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	range	idx_col2	idx_col2	13	NULL	2	100.00	Using where with pushed condition (`explain_direct_sort_27683`.`t1`.`col2` like 'a%')
+Warnings:
+Note	1003	/* select#1 */ select `explain_direct_sort_27683`.`t1`.`col1` AS `col1`,`explain_direct_sort_27683`.`t1`.`col2` AS `col2`,`explain_direct_sort_27683`.`t1`.`col3` AS `col3`,`explain_direct_sort_27683`.`t1`.`col4` AS `col4` from `explain_direct_sort_27683`.`t1` where (`explain_direct_sort_27683`.`t1`.`col2` like 'a%')
+select * from t1 where col2 like 'a%';
+col1	col2	col3	col4
+0	abc	abcdef	xyz
+4	abcdef	abde	abc
+1	abd	def	defg
+3	abde	xyz	def
+[Note] SequoiaDB: Query message: condition[{ "$and": [ { "$and": [ { "col2": { "$gte": "a" } }, { "col2": { "$lt": "a�" } } ] }, { "$and": [ { "col2": { "$gte": "a" } }, { "col2": { "$lte": "aÿÿÿÿÿÿÿÿÿ" } } ] } ] }], selector[{}], order_by[{}], hint[{ "": "idx_col2" }], limit[-1], offset[0], table[explain_direct_sort_27683.t1]
+explain select * from t1 where col2 like 'a%' order by col2;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	range	idx_col2	idx_col2	13	NULL	2	100.00	Using where with pushed condition (`explain_direct_sort_27683`.`t1`.`col2` like 'a%')
+Warnings:
+Note	1003	/* select#1 */ select `explain_direct_sort_27683`.`t1`.`col1` AS `col1`,`explain_direct_sort_27683`.`t1`.`col2` AS `col2`,`explain_direct_sort_27683`.`t1`.`col3` AS `col3`,`explain_direct_sort_27683`.`t1`.`col4` AS `col4` from `explain_direct_sort_27683`.`t1` where (`explain_direct_sort_27683`.`t1`.`col2` like 'a%') order by `explain_direct_sort_27683`.`t1`.`col2`
+select * from t1 where col2 like 'a%' order by col2;
+col1	col2	col3	col4
+0	abc	abcdef	xyz
+4	abcdef	abde	abc
+1	abd	def	defg
+3	abde	xyz	def
+[Note] SequoiaDB: Query message: condition[{ "$and": [ { "$and": [ { "col2": { "$gte": "a" } }, { "col2": { "$lt": "a�" } } ] }, { "$and": [ { "col2": { "$gte": "a" } }, { "col2": { "$lte": "aÿÿÿÿÿÿÿÿÿ" } } ] } ] }], selector[{}], order_by[{ "col2": 1 }], hint[{ "": "idx_col2" }], limit[-1], offset[0], table[explain_direct_sort_27683.t1]
+explain select * from t1 force index(idx_col1,idx_col2) where col1 = 1 or col2 = 'xyz';
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	index_merge	idx_col1,idx_col2	idx_col1,idx_col2	5,13	NULL	4	100.00	Using sdb_union(idx_col1,idx_col2); Using where with pushed condition ((`explain_direct_sort_27683`.`t1`.`col1` = 1) or (`explain_direct_sort_27683`.`t1`.`col2` = 'xyz'))
+Warnings:
+Note	1003	/* select#1 */ select `explain_direct_sort_27683`.`t1`.`col1` AS `col1`,`explain_direct_sort_27683`.`t1`.`col2` AS `col2`,`explain_direct_sort_27683`.`t1`.`col3` AS `col3`,`explain_direct_sort_27683`.`t1`.`col4` AS `col4` from `explain_direct_sort_27683`.`t1` FORCE INDEX (`idx_col2`) FORCE INDEX (`idx_col1`) where ((`explain_direct_sort_27683`.`t1`.`col1` = 1) or (`explain_direct_sort_27683`.`t1`.`col2` = 'xyz'))
+select * from t1 force index(idx_col1,idx_col2) where col1 = 1 or col2 = 'xyz';
+col1	col2	col3	col4
+1	abd	def	defg
+5	xyz	abc	abd
+[Note] SequoiaDB: Query message: condition[{ "col1": { "$et": 1 } }], selector[{}], order_by[{}], hint[{ "": "idx_col1" }], limit[-1], offset[0], table[explain_direct_sort_27683.t1]
+[Note] SequoiaDB: Query message: condition[{ "col2": { "$et": "xyz" } }], selector[{}], order_by[{}], hint[{ "": "idx_col2" }], limit[-1], offset[0], table[explain_direct_sort_27683.t1]
+explain select * from t1 force index(idx_col1,idx_col2) where col1 = 1 or col2 = 'xyz' order by col1;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	index_merge	idx_col1,idx_col2	idx_col1,idx_col2	5,13	NULL	4	100.00	Using sdb_union(idx_col1,idx_col2); Using where with pushed condition ((`explain_direct_sort_27683`.`t1`.`col1` = 1) or (`explain_direct_sort_27683`.`t1`.`col2` = 'xyz')); Using filesort
+Warnings:
+Note	1003	/* select#1 */ select `explain_direct_sort_27683`.`t1`.`col1` AS `col1`,`explain_direct_sort_27683`.`t1`.`col2` AS `col2`,`explain_direct_sort_27683`.`t1`.`col3` AS `col3`,`explain_direct_sort_27683`.`t1`.`col4` AS `col4` from `explain_direct_sort_27683`.`t1` FORCE INDEX (`idx_col2`) FORCE INDEX (`idx_col1`) where ((`explain_direct_sort_27683`.`t1`.`col1` = 1) or (`explain_direct_sort_27683`.`t1`.`col2` = 'xyz')) order by `explain_direct_sort_27683`.`t1`.`col1`
+select * from t1 force index(idx_col1,idx_col2) where col1 = 1 or col2 = 'xyz' order by col1;
+col1	col2	col3	col4
+1	abd	def	defg
+5	xyz	abc	abd
+[Note] SequoiaDB: Query message: condition[{ "col1": { "$et": 1 } }], selector[{}], order_by[{}], hint[{ "": "idx_col1" }], limit[-1], offset[0], table[explain_direct_sort_27683.t1]
+[Note] SequoiaDB: Query message: condition[{ "col2": { "$et": "xyz" } }], selector[{}], order_by[{}], hint[{ "": "idx_col2" }], limit[-1], offset[0], table[explain_direct_sort_27683.t1]
+explain select * from t1 force index(idx_col1,idx_col2) where col1 = 1 or col2 = 'xyz' order by col1 desc;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	index_merge	idx_col1,idx_col2	idx_col1,idx_col2	5,13	NULL	4	100.00	Using sdb_union(idx_col1,idx_col2); Using where with pushed condition ((`explain_direct_sort_27683`.`t1`.`col1` = 1) or (`explain_direct_sort_27683`.`t1`.`col2` = 'xyz')); Using filesort
+Warnings:
+Note	1003	/* select#1 */ select `explain_direct_sort_27683`.`t1`.`col1` AS `col1`,`explain_direct_sort_27683`.`t1`.`col2` AS `col2`,`explain_direct_sort_27683`.`t1`.`col3` AS `col3`,`explain_direct_sort_27683`.`t1`.`col4` AS `col4` from `explain_direct_sort_27683`.`t1` FORCE INDEX (`idx_col2`) FORCE INDEX (`idx_col1`) where ((`explain_direct_sort_27683`.`t1`.`col1` = 1) or (`explain_direct_sort_27683`.`t1`.`col2` = 'xyz')) order by `explain_direct_sort_27683`.`t1`.`col1` desc
+select * from t1 force index(idx_col1,idx_col2) where col1 = 1 or col2 = 'xyz' order by col1 desc;
+col1	col2	col3	col4
+5	xyz	abc	abd
+1	abd	def	defg
+[Note] SequoiaDB: Query message: condition[{ "col1": { "$et": 1 } }], selector[{}], order_by[{}], hint[{ "": "idx_col1" }], limit[-1], offset[0], table[explain_direct_sort_27683.t1]
+[Note] SequoiaDB: Query message: condition[{ "col2": { "$et": "xyz" } }], selector[{}], order_by[{}], hint[{ "": "idx_col2" }], limit[-1], offset[0], table[explain_direct_sort_27683.t1]
+explain select * from t1 force index(idx_col1,idx_col2) where col1 = 1 or col2 = 'xyz' order by col3;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	index_merge	idx_col1,idx_col2	idx_col1,idx_col2	5,13	NULL	4	100.00	Using sdb_union(idx_col1,idx_col2); Using where with pushed condition ((`explain_direct_sort_27683`.`t1`.`col1` = 1) or (`explain_direct_sort_27683`.`t1`.`col2` = 'xyz')); Using filesort
+Warnings:
+Note	1003	/* select#1 */ select `explain_direct_sort_27683`.`t1`.`col1` AS `col1`,`explain_direct_sort_27683`.`t1`.`col2` AS `col2`,`explain_direct_sort_27683`.`t1`.`col3` AS `col3`,`explain_direct_sort_27683`.`t1`.`col4` AS `col4` from `explain_direct_sort_27683`.`t1` FORCE INDEX (`idx_col2`) FORCE INDEX (`idx_col1`) where ((`explain_direct_sort_27683`.`t1`.`col1` = 1) or (`explain_direct_sort_27683`.`t1`.`col2` = 'xyz')) order by `explain_direct_sort_27683`.`t1`.`col3`
+select * from t1 force index(idx_col1,idx_col2) where col1 = 1 or col2 = 'xyz' order by col3;
+col1	col2	col3	col4
+5	xyz	abc	abd
+1	abd	def	defg
+[Note] SequoiaDB: Query message: condition[{ "col1": { "$et": 1 } }], selector[{}], order_by[{}], hint[{ "": "idx_col1" }], limit[-1], offset[0], table[explain_direct_sort_27683.t1]
+[Note] SequoiaDB: Query message: condition[{ "col2": { "$et": "xyz" } }], selector[{}], order_by[{}], hint[{ "": "idx_col2" }], limit[-1], offset[0], table[explain_direct_sort_27683.t1]
+explain select * from t1 force index(idx_col1,idx_col2) where (col1 > 1 and col1 < 5) or (col2 > 'abc' and col2 < 'def') order by col1;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	index_merge	idx_col1,idx_col2	idx_col1,idx_col2	5,13	NULL	4	100.00	Using sdb_sort_union(idx_col1,idx_col2); Using where with pushed condition (((`explain_direct_sort_27683`.`t1`.`col1` > 1) and (`explain_direct_sort_27683`.`t1`.`col1` < 5)) or ((`explain_direct_sort_27683`.`t1`.`col2` > 'abc') and (`explain_direct_sort_27683`.`t1`.`col2` < 'def'))); Using filesort
+Warnings:
+Note	1003	/* select#1 */ select `explain_direct_sort_27683`.`t1`.`col1` AS `col1`,`explain_direct_sort_27683`.`t1`.`col2` AS `col2`,`explain_direct_sort_27683`.`t1`.`col3` AS `col3`,`explain_direct_sort_27683`.`t1`.`col4` AS `col4` from `explain_direct_sort_27683`.`t1` FORCE INDEX (`idx_col2`) FORCE INDEX (`idx_col1`) where (((`explain_direct_sort_27683`.`t1`.`col1` > 1) and (`explain_direct_sort_27683`.`t1`.`col1` < 5)) or ((`explain_direct_sort_27683`.`t1`.`col2` > 'abc') and (`explain_direct_sort_27683`.`t1`.`col2` < 'def'))) order by `explain_direct_sort_27683`.`t1`.`col1`
+select * from t1 force index(idx_col1,idx_col2) where (col1 > 1 and col1 < 5) or (col2 > 'abc' and col2 < 'def') order by col1;
+col1	col2	col3	col4
+1	abd	def	defg
+2	defg	abd	efg
+3	abde	xyz	def
+4	abcdef	abde	abc
+[Note] SequoiaDB: Query message: condition[{ "$and": [ { "col1": { "$gt": 1 } }, { "col1": { "$lt": 5 } } ] }], selector[{}], order_by[{}], hint[{ "": "idx_col1" }], limit[-1], offset[0], table[explain_direct_sort_27683.t1]
+[Note] SequoiaDB: Query message: condition[{ "$and": [ { "col2": { "$gt": "abc" } }, { "col2": { "$lt": "def" } } ] }], selector[{}], order_by[{}], hint[{ "": "idx_col2" }], limit[-1], offset[0], table[explain_direct_sort_27683.t1]
+explain select * from t1 force index(idx_col1,idx_col2) where (col1 > 1 and col1 < 5) or (col2 > 'abc' and col2 < 'def') order by col2;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	index_merge	idx_col1,idx_col2	idx_col1,idx_col2	5,13	NULL	4	100.00	Using sdb_sort_union(idx_col1,idx_col2); Using where with pushed condition (((`explain_direct_sort_27683`.`t1`.`col1` > 1) and (`explain_direct_sort_27683`.`t1`.`col1` < 5)) or ((`explain_direct_sort_27683`.`t1`.`col2` > 'abc') and (`explain_direct_sort_27683`.`t1`.`col2` < 'def'))); Using filesort
+Warnings:
+Note	1003	/* select#1 */ select `explain_direct_sort_27683`.`t1`.`col1` AS `col1`,`explain_direct_sort_27683`.`t1`.`col2` AS `col2`,`explain_direct_sort_27683`.`t1`.`col3` AS `col3`,`explain_direct_sort_27683`.`t1`.`col4` AS `col4` from `explain_direct_sort_27683`.`t1` FORCE INDEX (`idx_col2`) FORCE INDEX (`idx_col1`) where (((`explain_direct_sort_27683`.`t1`.`col1` > 1) and (`explain_direct_sort_27683`.`t1`.`col1` < 5)) or ((`explain_direct_sort_27683`.`t1`.`col2` > 'abc') and (`explain_direct_sort_27683`.`t1`.`col2` < 'def'))) order by `explain_direct_sort_27683`.`t1`.`col2`
+select * from t1 force index(idx_col1,idx_col2) where (col1 > 1 and col1 < 5) or (col2 > 'abc' and col2 < 'def') order by col2;
+col1	col2	col3	col4
+4	abcdef	abde	abc
+1	abd	def	defg
+3	abde	xyz	def
+2	defg	abd	efg
+[Note] SequoiaDB: Query message: condition[{ "$and": [ { "col1": { "$gt": 1 } }, { "col1": { "$lt": 5 } } ] }], selector[{}], order_by[{}], hint[{ "": "idx_col1" }], limit[-1], offset[0], table[explain_direct_sort_27683.t1]
+[Note] SequoiaDB: Query message: condition[{ "$and": [ { "col2": { "$gt": "abc" } }, { "col2": { "$lt": "def" } } ] }], selector[{}], order_by[{}], hint[{ "": "idx_col2" }], limit[-1], offset[0], table[explain_direct_sort_27683.t1]
+explain select * from t1 force index(idx_col1,idx_col2) where (col1 > 1 and col1 < 5) or (col2 > 'abc' and col2 < 'def') order by col3;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	index_merge	idx_col1,idx_col2	idx_col1,idx_col2	5,13	NULL	4	100.00	Using sdb_sort_union(idx_col1,idx_col2); Using where with pushed condition (((`explain_direct_sort_27683`.`t1`.`col1` > 1) and (`explain_direct_sort_27683`.`t1`.`col1` < 5)) or ((`explain_direct_sort_27683`.`t1`.`col2` > 'abc') and (`explain_direct_sort_27683`.`t1`.`col2` < 'def'))); Using filesort
+Warnings:
+Note	1003	/* select#1 */ select `explain_direct_sort_27683`.`t1`.`col1` AS `col1`,`explain_direct_sort_27683`.`t1`.`col2` AS `col2`,`explain_direct_sort_27683`.`t1`.`col3` AS `col3`,`explain_direct_sort_27683`.`t1`.`col4` AS `col4` from `explain_direct_sort_27683`.`t1` FORCE INDEX (`idx_col2`) FORCE INDEX (`idx_col1`) where (((`explain_direct_sort_27683`.`t1`.`col1` > 1) and (`explain_direct_sort_27683`.`t1`.`col1` < 5)) or ((`explain_direct_sort_27683`.`t1`.`col2` > 'abc') and (`explain_direct_sort_27683`.`t1`.`col2` < 'def'))) order by `explain_direct_sort_27683`.`t1`.`col3`
+select * from t1 force index(idx_col1,idx_col2) where (col1 > 1 and col1 < 5) or (col2 > 'abc' and col2 < 'def') order by col3;
+col1	col2	col3	col4
+2	defg	abd	efg
+4	abcdef	abde	abc
+1	abd	def	defg
+3	abde	xyz	def
+[Note] SequoiaDB: Query message: condition[{ "$and": [ { "col1": { "$gt": 1 } }, { "col1": { "$lt": 5 } } ] }], selector[{}], order_by[{}], hint[{ "": "idx_col1" }], limit[-1], offset[0], table[explain_direct_sort_27683.t1]
+[Note] SequoiaDB: Query message: condition[{ "$and": [ { "col2": { "$gt": "abc" } }, { "col2": { "$lt": "def" } } ] }], selector[{}], order_by[{}], hint[{ "": "idx_col2" }], limit[-1], offset[0], table[explain_direct_sort_27683.t1]
+explain select * from t1;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	ALL	NULL	NULL	NULL	NULL	8	100.00	NULL
+Warnings:
+Note	1003	/* select#1 */ select `explain_direct_sort_27683`.`t1`.`col1` AS `col1`,`explain_direct_sort_27683`.`t1`.`col2` AS `col2`,`explain_direct_sort_27683`.`t1`.`col3` AS `col3`,`explain_direct_sort_27683`.`t1`.`col4` AS `col4` from `explain_direct_sort_27683`.`t1`
+select * from t1;
+col1	col2	col3	col4
+6	def	defg	abcdef
+NULL	NULL	NULL	NULL
+4	abcdef	abde	abc
+2	defg	abd	efg
+5	xyz	abc	abd
+3	abde	xyz	def
+0	abc	abcdef	xyz
+1	abd	def	defg
+[Note] SequoiaDB: Query message: condition[{}], selector[{}], order_by[{}], hint[{}], limit[-1], offset[0], table[explain_direct_sort_27683.t1]
+explain select * from t1 order by col1;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	ALL	NULL	NULL	NULL	NULL	8	100.00	Using pushed sort (`explain_direct_sort_27683`.`t1`.`col1`)
+Warnings:
+Note	1003	/* select#1 */ select `explain_direct_sort_27683`.`t1`.`col1` AS `col1`,`explain_direct_sort_27683`.`t1`.`col2` AS `col2`,`explain_direct_sort_27683`.`t1`.`col3` AS `col3`,`explain_direct_sort_27683`.`t1`.`col4` AS `col4` from `explain_direct_sort_27683`.`t1` order by `explain_direct_sort_27683`.`t1`.`col1`
+select * from t1 order by col1;
+col1	col2	col3	col4
+NULL	NULL	NULL	NULL
+0	abc	abcdef	xyz
+1	abd	def	defg
+2	defg	abd	efg
+3	abde	xyz	def
+4	abcdef	abde	abc
+5	xyz	abc	abd
+6	def	defg	abcdef
+[Note] SequoiaDB: Query message: condition[{}], selector[{}], order_by[{ "col1": 1 }], hint[{}], limit[-1], offset[0], table[explain_direct_sort_27683.t1]
+explain select * from t1 where col4 = 'abc';
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	const	uniq_idx4	uniq_idx4	13	const	1	100.00	NULL
+Warnings:
+Note	1003	/* select#1 */ select '4' AS `col1`,'abcdef' AS `col2`,'abde' AS `col3`,'abc' AS `col4` from `explain_direct_sort_27683`.`t1` where 1
+select * from t1 where col4 = 'abc';
+col1	col2	col3	col4
+4	abcdef	abde	abc
+[Note] SequoiaDB: Query message: condition[{ "col4": { "$et": "abc" } }], selector[{}], order_by[{}], hint[{ "": "uniq_idx4" }], limit[-1], offset[0], table[explain_direct_sort_27683.t1]
+explain select * from t1 where col4 = 'abc' order by col4;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	const	uniq_idx4	uniq_idx4	13	const	1	100.00	NULL
+Warnings:
+Note	1003	/* select#1 */ select '4' AS `col1`,'abcdef' AS `col2`,'abde' AS `col3`,'abc' AS `col4` from `explain_direct_sort_27683`.`t1` where 1 order by 'abc'
+select * from t1 where col4 = 'abc' order by col4;
+col1	col2	col3	col4
+4	abcdef	abde	abc
+[Note] SequoiaDB: Query message: condition[{ "col4": { "$et": "abc" } }], selector[{}], order_by[{}], hint[{ "": "uniq_idx4" }], limit[-1], offset[0], table[explain_direct_sort_27683.t1]
+explain select col2 from t1;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	index	NULL	idx_col2	13	NULL	8	100.00	Using index
+Warnings:
+Note	1003	/* select#1 */ select `explain_direct_sort_27683`.`t1`.`col2` AS `col2` from `explain_direct_sort_27683`.`t1`
+select col2 from t1;
+col2
+NULL
+abc
+abcdef
+abd
+abde
+def
+defg
+xyz
+[Note] SequoiaDB: Query message: condition[{}], selector[{ "col2": null }], order_by[{}], hint[{ "": "idx_col2" }], limit[-1], offset[0], table[explain_direct_sort_27683.t1]
+explain select col1 from t1 order by col1;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	index	NULL	idx_col1	5	NULL	8	100.00	Using index
+Warnings:
+Note	1003	/* select#1 */ select `explain_direct_sort_27683`.`t1`.`col1` AS `col1` from `explain_direct_sort_27683`.`t1` order by `explain_direct_sort_27683`.`t1`.`col1`
+select col1 from t1 order by col1;
+col1
+NULL
+0
+1
+2
+3
+4
+5
+6
+[Note] SequoiaDB: Query message: condition[{}], selector[{ "col1": null }], order_by[{ "col1": 1 }], hint[{ "": "idx_col1" }], limit[-1], offset[0], table[explain_direct_sort_27683.t1]
+explain select col1 from t1 order by col1 desc;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	index	NULL	idx_col1	5	NULL	8	100.00	Using index
+Warnings:
+Note	1003	/* select#1 */ select `explain_direct_sort_27683`.`t1`.`col1` AS `col1` from `explain_direct_sort_27683`.`t1` order by `explain_direct_sort_27683`.`t1`.`col1` desc
+select col1 from t1 order by col1 desc;
+col1
+6
+5
+4
+3
+2
+1
+0
+NULL
+[Note] SequoiaDB: Query message: condition[{}], selector[{ "col1": null }], order_by[{ "col1": -1 }], hint[{ "": "idx_col1" }], limit[-1], offset[0], table[explain_direct_sort_27683.t1]
+explain select col2 from t1 order by col2;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	index	NULL	idx_col2	13	NULL	8	100.00	Using index
+Warnings:
+Note	1003	/* select#1 */ select `explain_direct_sort_27683`.`t1`.`col2` AS `col2` from `explain_direct_sort_27683`.`t1` order by `explain_direct_sort_27683`.`t1`.`col2`
+select col2 from t1 order by col2;
+col2
+NULL
+abc
+abcdef
+abd
+abde
+def
+defg
+xyz
+[Note] SequoiaDB: Query message: condition[{}], selector[{ "col2": null }], order_by[{ "col2": 1 }], hint[{ "": "idx_col2" }], limit[-1], offset[0], table[explain_direct_sort_27683.t1]
+explain select col2 from t1 order by col2 desc;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	index	NULL	idx_col2	13	NULL	8	100.00	Using index
+Warnings:
+Note	1003	/* select#1 */ select `explain_direct_sort_27683`.`t1`.`col2` AS `col2` from `explain_direct_sort_27683`.`t1` order by `explain_direct_sort_27683`.`t1`.`col2` desc
+select col2 from t1 order by col2 desc;
+col2
+xyz
+defg
+def
+abde
+abd
+abcdef
+abc
+NULL
+[Note] SequoiaDB: Query message: condition[{}], selector[{ "col2": null }], order_by[{ "col2": -1 }], hint[{ "": "idx_col2" }], limit[-1], offset[0], table[explain_direct_sort_27683.t1]
+explain select col1, col2 from t1 order by col2;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	index	NULL	idx_col12	18	NULL	8	100.00	Using pushed sort (`explain_direct_sort_27683`.`t1`.`col2`); Using index
+Warnings:
+Note	1003	/* select#1 */ select `explain_direct_sort_27683`.`t1`.`col1` AS `col1`,`explain_direct_sort_27683`.`t1`.`col2` AS `col2` from `explain_direct_sort_27683`.`t1` order by `explain_direct_sort_27683`.`t1`.`col2`
+select col1, col2 from t1 order by col2;
+col1	col2
+NULL	NULL
+0	abc
+4	abcdef
+1	abd
+3	abde
+6	def
+2	defg
+5	xyz
+[Note] SequoiaDB: Query message: condition[{}], selector[{ "col1": null, "col2": null }], order_by[{ "col2": 1 }], hint[{ "": "idx_col12" }], limit[-1], offset[0], table[explain_direct_sort_27683.t1]
+drop table t1,t3,t4;
+set session sequoiadb_debug_log=off;
+set session optimizer_switch=default;
+drop database explain_direct_sort_27683;

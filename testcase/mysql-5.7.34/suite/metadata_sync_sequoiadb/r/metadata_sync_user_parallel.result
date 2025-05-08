@@ -1,0 +1,178 @@
+set session server_ha_wait_sync_timeout = 10;
+set session server_ha_wait_sync_timeout = 10;
+drop database if exists metadata_sync_23102;
+drop database if exists metadata_sync_user_parallel;
+create database metadata_sync_23102;
+create database metadata_sync_user_parallel;
+use metadata_sync_23102;
+CREATE TABLE t1(a INT NOT NULL, b INT, c INT);
+drop user if exists metadata_sync_user_23102;
+flush privileges;
+create user 'metadata_sync_user_23102'@'%' IDENTIFIED BY 'metadata_sync_user_23102';
+flush privileges;
+GRANT create,alter,drop ON t1 TO metadata_sync_user_23102@'%' IDENTIFIED BY 'metadata_sync_user_23102' WITH GRANT OPTION;
+Warnings:
+Warning	1287	Using GRANT statement to modify existing user's properties other than privileges is deprecated and will be removed in future release. Use ALTER USER statement for this operation.
+FLUSH PRIVILEGES;
+alter table metadata_sync_23102.t1 add column d int;
+use metadata_sync_user_parallel;
+revoke create,alter,drop on metadata_sync_23102.t1 from metadata_sync_user_23102@'%';
+flush privileges;
+alter table metadata_sync_23102.t1 drop column d;
+ERROR 42000: ALTER command denied to user 'metadata_sync_user_23102'@'x' for table 't1'
+alter table metadata_sync_23102.t1 drop column d;
+GRANT insert,update,delete,select ON metadata_sync_23102.t1 TO metadata_sync_user_23102@'%' IDENTIFIED BY 'metadata_sync_user_23102' WITH GRANT OPTION;
+Warnings:
+Warning	1287	Using GRANT statement to modify existing user's properties other than privileges is deprecated and will be removed in future release. Use ALTER USER statement for this operation.
+FLUSH PRIVILEGES;
+insert into metadata_sync_23102.t1 values(1,1,1);
+revoke insert,update,delete,select on metadata_sync_23102.t1 from metadata_sync_user_23102@'%';
+FLUSH PRIVILEGES;
+insert into metadata_sync_23102.t1 values(1,1,1);
+ERROR 42000: INSERT command denied to user 'metadata_sync_user_23102'@'x' for table 't1'
+GRANT index ON metadata_sync_23102.t1 TO metadata_sync_user_23102@'%' IDENTIFIED BY 'metadata_sync_user_23102' WITH GRANT OPTION;
+Warnings:
+Warning	1287	Using GRANT statement to modify existing user's properties other than privileges is deprecated and will be removed in future release. Use ALTER USER statement for this operation.
+FLUSH PRIVILEGES;
+create index a on metadata_sync_23102.t1(a);
+revoke index on metadata_sync_23102.t1 from metadata_sync_user_23102@'%';
+FLUSH PRIVILEGES;
+drop index a on metadata_sync_23102.t1;
+ERROR 42000: INDEX command denied to user 'metadata_sync_user_23102'@'x' for table 't1'
+CREATE TRIGGER metadata_sync_23102.t1_bi BEFORE INSERT ON t1 FOR EACH ROW SET NEW.a = 1;
+GRANT insert,select,trigger ON metadata_sync_23102.t1 TO metadata_sync_user_23102@'%' IDENTIFIED BY 'metadata_sync_user_23102' WITH GRANT OPTION;
+Warnings:
+Warning	1287	Using GRANT statement to modify existing user's properties other than privileges is deprecated and will be removed in future release. Use ALTER USER statement for this operation.
+FLUSH PRIVILEGES;
+insert into metadata_sync_23102.t1(b,c) values(2,2);
+select * from metadata_sync_23102.t1 order by c;
+a	b	c
+1	1	1
+1	2	2
+revoke insert,trigger on metadata_sync_23102.t1 from metadata_sync_user_23102@'%';
+FLUSH PRIVILEGES;
+insert into metadata_sync_23102.t1(b,c) values(2,2);
+ERROR 42000: INSERT command denied to user 'metadata_sync_user_23102'@'x' for table 't1'
+select * from metadata_sync_23102.t1 order by c;
+a	b	c
+1	1	1
+1	2	2
+GRANT ALL ON metadata_sync_23102.* TO metadata_sync_user_23102@'%' IDENTIFIED BY 'metadata_sync_user_23102' WITH GRANT OPTION;
+Warnings:
+Warning	1287	Using GRANT statement to modify existing user's properties other than privileges is deprecated and will be removed in future release. Use ALTER USER statement for this operation.
+FLUSH PRIVILEGES;
+create view metadata_sync_23102.v1 as select 'a';
+revoke ALL on metadata_sync_23102.* from metadata_sync_user_23102@'%';
+FLUSH PRIVILEGES;
+show create view metadata_sync_23102.v1;
+ERROR 42000: SELECT command denied to user 'metadata_sync_user_23102'@'x' for table 'v1'
+drop database metadata_sync_23102;
+drop user metadata_sync_user_23102;
+flush privileges;
+drop database if exists metadata_sync_23103;
+create database metadata_sync_23103;
+use metadata_sync_23103;
+CREATE TABLE t1(a INT NOT NULL, b INT, c INT);
+drop user if exists metadata_sync_user_23103;
+flush privileges;
+create user 'metadata_sync_user_23103'@'%' IDENTIFIED BY 'metadata_sync_user_23103';
+GRANT create,alter,drop ON metadata_sync_23103.* TO metadata_sync_user_23103@'%' IDENTIFIED BY 'metadata_sync_user_23103' WITH GRANT OPTION;
+Warnings:
+Warning	1287	Using GRANT statement to modify existing user's properties other than privileges is deprecated and will be removed in future release. Use ALTER USER statement for this operation.
+FLUSH PRIVILEGES;
+alter table metadata_sync_23103.t1 add column d int;
+revoke create,alter,drop on metadata_sync_23103.* from metadata_sync_user_23103@'%';
+flush privileges;
+alter table metadata_sync_23103.t1 drop column d;
+ERROR 42000: ALTER command denied to user 'metadata_sync_user_23103'@'x' for table 't1'
+alter table metadata_sync_23103.t1 drop column d;
+GRANT insert,update,delete,select ON metadata_sync_23103.* TO metadata_sync_user_23103@'%' IDENTIFIED BY 'metadata_sync_user_23103' WITH GRANT OPTION;
+Warnings:
+Warning	1287	Using GRANT statement to modify existing user's properties other than privileges is deprecated and will be removed in future release. Use ALTER USER statement for this operation.
+FLUSH PRIVILEGES;
+insert into metadata_sync_23103.t1 values(1,1,1);
+revoke insert,update,delete,select on metadata_sync_23103.* from metadata_sync_user_23103@'%';
+FLUSH PRIVILEGES;
+insert into metadata_sync_23103.t1 values(1,1,1);
+ERROR 42000: INSERT command denied to user 'metadata_sync_user_23103'@'x' for table 't1'
+GRANT index ON metadata_sync_23103.* TO metadata_sync_user_23103@'%' IDENTIFIED BY 'metadata_sync_user_23103' WITH GRANT OPTION;
+Warnings:
+Warning	1287	Using GRANT statement to modify existing user's properties other than privileges is deprecated and will be removed in future release. Use ALTER USER statement for this operation.
+FLUSH PRIVILEGES;
+create index a on metadata_sync_23103.t1(a);
+revoke index on metadata_sync_23103.* from metadata_sync_user_23103@'%';
+FLUSH PRIVILEGES;
+drop index a on metadata_sync_23103.t1;
+ERROR 42000: INDEX command denied to user 'metadata_sync_user_23103'@'x' for table 't1'
+CREATE TRIGGER t1_bi BEFORE INSERT ON t1 FOR EACH ROW SET NEW.a = 1;
+GRANT insert,select,trigger ON metadata_sync_23103.* TO metadata_sync_user_23103@'%' IDENTIFIED BY 'metadata_sync_user_23103' WITH GRANT OPTION;
+Warnings:
+Warning	1287	Using GRANT statement to modify existing user's properties other than privileges is deprecated and will be removed in future release. Use ALTER USER statement for this operation.
+FLUSH PRIVILEGES;
+insert into metadata_sync_23103.t1(b,c) values(2,2);
+select * from metadata_sync_23103.t1 order by c;
+a	b	c
+1	1	1
+1	2	2
+revoke insert,trigger on metadata_sync_23103.* from metadata_sync_user_23103@'%';
+FLUSH PRIVILEGES;
+insert into metadata_sync_23103.t1(b,c) values(2,2);
+ERROR 42000: INSERT command denied to user 'metadata_sync_user_23103'@'x' for table 't1'
+select * from metadata_sync_23103.t1 order by c;
+a	b	c
+1	1	1
+1	2	2
+revoke select on metadata_sync_23103.* from metadata_sync_user_23103@'%';
+GRANT ALL ON metadata_sync_23103.* TO metadata_sync_user_23103@'%' IDENTIFIED BY 'metadata_sync_user_23103' WITH GRANT OPTION;
+Warnings:
+Warning	1287	Using GRANT statement to modify existing user's properties other than privileges is deprecated and will be removed in future release. Use ALTER USER statement for this operation.
+FLUSH PRIVILEGES;
+create view metadata_sync_23103.v1 as select 'a';
+revoke ALL on metadata_sync_23103.* from metadata_sync_user_23103@'%';
+FLUSH PRIVILEGES;
+show create view metadata_sync_23103.v1;
+ERROR 42000: SELECT command denied to user 'metadata_sync_user_23103'@'x' for table 'v1'
+GRANT create routine,alter routine ON metadata_sync_23103.* TO metadata_sync_user_23103@'%' IDENTIFIED BY 'metadata_sync_user_23103' WITH GRANT OPTION;
+Warnings:
+Warning	1287	Using GRANT statement to modify existing user's properties other than privileges is deprecated and will be removed in future release. Use ALTER USER statement for this operation.
+FLUSH PRIVILEGES;
+create function metadata_sync_23103.hello23103 (s char(20)) returns char(50) deterministic return concat('Hello,' , s , '!');
+revoke EXECUTE,alter routine on function metadata_sync_23103.hello23103 from metadata_sync_user_23103@'%';
+revoke create routine,alter routine on metadata_sync_23103.* from metadata_sync_user_23103@'%';
+FLUSH PRIVILEGES;
+alter function metadata_sync_23103.hello23103 comment 'test';
+ERROR 42000: alter routine command denied to user 'metadata_sync_user_23103'@'%' for routine 'metadata_sync_23103.hello23103'
+drop database metadata_sync_23103;
+drop user metadata_sync_user_23103;
+flush privileges;
+drop database if exists metadata_sync_23104;
+create database metadata_sync_23104;
+use metadata_sync_23104;
+drop user if exists metadata_sync_user_23104;
+create user 'metadata_sync_user_23104';
+flush privileges;
+create function hello23104 (s char(20)) returns char(50) deterministic return concat('Hello,' , s , '!');
+GRANT alter routine ON function metadata_sync_23104.hello23104 TO metadata_sync_user_23104@'%' IDENTIFIED BY 'metadata_sync_user_23104' WITH GRANT OPTION;
+Warnings:
+Warning	1287	Using GRANT statement to modify existing user's properties other than privileges is deprecated and will be removed in future release. Use ALTER USER statement for this operation.
+FLUSH PRIVILEGES;
+alter function metadata_sync_23104.hello23104 comment 'test';
+revoke alter routine on function metadata_sync_23104.hello23104 from metadata_sync_user_23104@'%';
+FLUSH PRIVILEGES;
+alter function metadata_sync_23104.hello23104 comment 'test11';
+ERROR 42000: alter routine command denied to user 'metadata_sync_user_23104'@'%' for routine 'metadata_sync_23104.hello23104'
+GRANT execute ON function metadata_sync_23104.hello23104 TO metadata_sync_user_23104@'%' IDENTIFIED BY 'metadata_sync_user_23104' WITH GRANT OPTION;
+Warnings:
+Warning	1287	Using GRANT statement to modify existing user's properties other than privileges is deprecated and will be removed in future release. Use ALTER USER statement for this operation.
+FLUSH PRIVILEGES;
+select metadata_sync_23104.hello23104('world');
+metadata_sync_23104.hello23104('world')
+Hello,world!
+revoke execute on function metadata_sync_23104.hello23104 from metadata_sync_user_23104@'%';
+FLUSH PRIVILEGES;
+select metadata_sync_23104.hello23104('world');
+ERROR 42000: execute command denied to user 'metadata_sync_user_23104'@'%' for routine 'metadata_sync_23104.hello23104'
+drop database metadata_sync_23104;
+drop database metadata_sync_user_parallel;
+set session server_ha_wait_sync_timeout = default;
+set session server_ha_wait_sync_timeout = default;

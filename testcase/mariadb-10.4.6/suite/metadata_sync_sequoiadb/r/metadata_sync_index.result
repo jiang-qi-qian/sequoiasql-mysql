@@ -1,0 +1,58 @@
+connection conn1;
+DROP DATABASE IF EXISTS metasync_index;
+connection conn2;
+SHOW CREATE DATABASE metasync_index;
+ERROR 42000: Unknown database 'metasync_index'
+connection conn1;
+CREATE DATABASE metasync_index;
+USE metasync_index;
+CREATE TABLE t1 ( a INT, b INT, c INT );
+CREATE TABLE t2 ( a INT, b INT, INDEX(b) );
+CREATE TABLE t3 ( a INT, b INT, c INT, INDEX(a), INDEX(b) );
+CREATE INDEX a USING HASH ON t1(a);
+CREATE UNIQUE INDEX b USING HASH ON t1(b) KEY_BLOCK_SIZE = 1024 COMMENT "create index";
+CREATE OR REPLACE INDEX c ON t1(c) WAIT 1;
+CREATE INDEX IF NOT EXISTS a ON t2(a) NOWAIT ALGORITHM = NOCOPY;
+DROP INDEX a ON t3;
+DROP INDEX b ON t3;
+connection conn2;
+USE metasync_index;
+SHOW CREATE TABLE t1;
+Table	Create Table
+t1	CREATE TABLE `t1` (
+  `a` int(11) DEFAULT NULL,
+  `b` int(11) DEFAULT NULL,
+  `c` int(11) DEFAULT NULL,
+  UNIQUE KEY `b` (`b`) KEY_BLOCK_SIZE=1024 COMMENT 'create index',
+  KEY `a` (`a`) USING HASH,
+  KEY `c` (`c`)
+) ENGINE=SequoiaDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin
+SHOW CREATE TABLE t2;
+Table	Create Table
+t2	CREATE TABLE `t2` (
+  `a` int(11) DEFAULT NULL,
+  `b` int(11) DEFAULT NULL,
+  KEY `b` (`b`),
+  KEY `a` (`a`)
+) ENGINE=SequoiaDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin
+SHOW CREATE TABLE t3;
+Table	Create Table
+t3	CREATE TABLE `t3` (
+  `a` int(11) DEFAULT NULL,
+  `b` int(11) DEFAULT NULL,
+  `c` int(11) DEFAULT NULL
+) ENGINE=SequoiaDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin
+connection conn1;
+DROP TABLE t1,t2,t3;
+connection conn2;
+SHOW CREATE TABLE t1;
+ERROR 42S02: Table 'metasync_index.t1' doesn't exist
+SHOW CREATE TABLE t2;
+ERROR 42S02: Table 'metasync_index.t2' doesn't exist
+SHOW CREATE TABLE t3;
+ERROR 42S02: Table 'metasync_index.t3' doesn't exist
+connection conn1;
+DROP DATABASE metasync_index;
+connection conn2;
+SHOW CREATE DATABASE metasync_index;
+ERROR 42000: Unknown database 'metasync_index'

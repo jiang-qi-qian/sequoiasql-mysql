@@ -1,0 +1,10 @@
+--source include/have_utf8mb4.inc
+#--source include/have_innodb.inc
+#--source include/have_innodb_16k.inc
+--source include/have_sequoiadb.inc
+
+let $engine= SequoiaDB;
+set global innodb_large_prefix=off;
+--source include/ctype_utf8mb4.inc
+set global innodb_large_prefix=default;
+--source include/uninstall_sequoiadb.inc

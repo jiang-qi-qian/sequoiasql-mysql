@@ -1,0 +1,138 @@
+drop database if exists join_bka_basic;
+create database join_bka_basic;
+use join_bka_basic;
+set session optimizer_switch='mrr=on,mrr_cost_based=on,block_nested_loop=on,batched_key_access=on';
+create table bka_t1(id int,name varchar(10),dept int);
+create table bka_t2(id int,name varchar(10),dept int);
+alter table bka_t1 add index idx_id1(id);
+alter table bka_t2 add index idx_id1(id);
+insert into bka_t1 values(1001,'bka1',10),(1002,'bka2',10),(1001,'bka3',10);
+insert into bka_t2 values(1001,'bka1',10),(1002,'bka2',10),(1001,'bka3',10);
+explain select bka_t1.id,bka_t2.name from bka_t1 inner join bka_t2 on bka_t1.id = bka_t2.id;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	bka_t2	NULL	ALL	idx_id1	NULL	NULL	NULL	3	100.00	Using where with pushed condition (`join_bka_basic`.`bka_t2`.`id` is not null)
+1	SIMPLE	bka_t1	NULL	ref	idx_id1	idx_id1	5	join_bka_basic.bka_t2.id	2	100.00	Using index; Using join buffer (Batched Key Access)
+Warnings:
+Note	1003	/* select#1 */ select `join_bka_basic`.`bka_t1`.`id` AS `id`,`join_bka_basic`.`bka_t2`.`name` AS `name` from `join_bka_basic`.`bka_t1` join `join_bka_basic`.`bka_t2` where (`join_bka_basic`.`bka_t1`.`id` = `join_bka_basic`.`bka_t2`.`id`)
+select bka_t1.id,bka_t2.name from bka_t1 inner join bka_t2 on bka_t1.id = bka_t2.id;
+id	name
+1001	bka1
+1001	bka1
+1001	bka3
+1001	bka3
+1002	bka2
+drop table bka_t1,bka_t2;
+create table type_t1(id int primary key,name varchar(10),dept char(6),score decimal(5,2),stock1 float(5,3),stock2 double(3,2),key name(name),key dept(dept),key score(score),key stock1(stock1),key stock2(stock2));
+create table type_t2(id int primary key,name varchar(10),dept char(6),score decimal(5,2),stock1 float(5,3),stock2 double(3,2),key name(name),key dept(dept),key score(score),key stock1(stock1),key stock2(stock2));
+insert into type_t1 values(1001,'user1','1940',98.54,12.345,2.17),(1002,'user2','1941',97.36,12.343,2.17),(1003,'user3','1943',99.72,56.3769,8.726);
+insert into type_t2 values(1001,'user1','1940',98.54,12.345,2.17),(1002,'user2','1941',97.36,12.343,2.17),(1003,'user3','1943',99.72,56.3769,8.726);
+explain select type_t1.id,type_t1.name,type_t1.dept,type_t1.score from type_t1 inner join type_t2
+on type_t1.id = type_t2.id where type_t2.dept = '1940'
+union all
+select type_t1.id,type_t1.name,type_t1.dept,type_t1.score from type_t1 inner join type_t2
+on type_t1.name = type_t2.name where type_t2.dept = '1941'
+union all
+select type_t1.id,type_t1.name,type_t1.dept,type_t1.score from type_t1 inner join type_t2
+on type_t1.dept = type_t2.dept where type_t2.dept = '1943'
+union all
+select type_t1.id,type_t1.name,type_t1.dept,type_t1.score from type_t1 inner join type_t2
+on type_t1.score = type_t2.score where type_t2.dept = '1940'
+union all
+select type_t1.id,type_t1.name,type_t1.dept,type_t1.score from type_t1 inner join type_t2
+on type_t1.stock1 = type_t2.stock1 where type_t2.dept = '1941'
+union all
+select type_t1.id,type_t1.name,type_t1.dept,type_t1.score from type_t1 inner join type_t2
+on type_t1.stock2 = type_t2.stock2 where type_t2.dept = '1943';
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	PRIMARY	type_t2	NULL	ref	PRIMARY,dept	dept	7	const	2	100.00	NULL
+1	PRIMARY	type_t1	NULL	eq_ref	PRIMARY	PRIMARY	4	join_bka_basic.type_t2.id	1	100.00	Using join buffer (Batched Key Access)
+2	UNION	type_t2	NULL	ref	name,dept	dept	7	const	2	100.00	Using where with pushed condition (`join_bka_basic`.`type_t2`.`name` is not null)
+2	UNION	type_t1	NULL	ref	name	name	13	join_bka_basic.type_t2.name	2	100.00	Using join buffer (Batched Key Access)
+3	UNION	type_t1	NULL	ref	dept	dept	7	const	2	100.00	NULL
+3	UNION	type_t2	NULL	ref	dept	dept	7	const	2	100.00	Using index; Using join buffer (Batched Key Access)
+4	UNION	type_t2	NULL	ref	dept,score	dept	7	const	2	100.00	Using where with pushed condition (`join_bka_basic`.`type_t2`.`score` is not null)
+4	UNION	type_t1	NULL	ref	score	score	4	join_bka_basic.type_t2.score	2	100.00	Using join buffer (Batched Key Access)
+5	UNION	type_t2	NULL	ref	dept,stock1	dept	7	const	2	100.00	Using where with pushed condition (`join_bka_basic`.`type_t2`.`stock1` is not null)
+5	UNION	type_t1	NULL	ref	stock1	stock1	5	join_bka_basic.type_t2.stock1	2	100.00	Using join buffer (Batched Key Access)
+6	UNION	type_t2	NULL	ref	dept,stock2	dept	7	const	2	100.00	Using where with pushed condition (`join_bka_basic`.`type_t2`.`stock2` is not null)
+6	UNION	type_t1	NULL	ref	stock2	stock2	9	join_bka_basic.type_t2.stock2	2	100.00	Using join buffer (Batched Key Access)
+Warnings:
+Note	1003	/* select#1 */ select `join_bka_basic`.`type_t1`.`id` AS `id`,`join_bka_basic`.`type_t1`.`name` AS `name`,`join_bka_basic`.`type_t1`.`dept` AS `dept`,`join_bka_basic`.`type_t1`.`score` AS `score` from `join_bka_basic`.`type_t1` join `join_bka_basic`.`type_t2` where ((`join_bka_basic`.`type_t1`.`id` = `join_bka_basic`.`type_t2`.`id`) and (`join_bka_basic`.`type_t2`.`dept` = '1940')) union all /* select#2 */ select `join_bka_basic`.`type_t1`.`id` AS `id`,`join_bka_basic`.`type_t1`.`name` AS `name`,`join_bka_basic`.`type_t1`.`dept` AS `dept`,`join_bka_basic`.`type_t1`.`score` AS `score` from `join_bka_basic`.`type_t1` join `join_bka_basic`.`type_t2` where ((`join_bka_basic`.`type_t1`.`name` = `join_bka_basic`.`type_t2`.`name`) and (`join_bka_basic`.`type_t2`.`dept` = '1941')) union all /* select#3 */ select `join_bka_basic`.`type_t1`.`id` AS `id`,`join_bka_basic`.`type_t1`.`name` AS `name`,`join_bka_basic`.`type_t1`.`dept` AS `dept`,`join_bka_basic`.`type_t1`.`score` AS `score` from `join_bka_basic`.`type_t1` join `join_bka_basic`.`type_t2` where ((`join_bka_basic`.`type_t1`.`dept` = '1943') and (`join_bka_basic`.`type_t2`.`dept` = '1943')) union all /* select#4 */ select `join_bka_basic`.`type_t1`.`id` AS `id`,`join_bka_basic`.`type_t1`.`name` AS `name`,`join_bka_basic`.`type_t1`.`dept` AS `dept`,`join_bka_basic`.`type_t1`.`score` AS `score` from `join_bka_basic`.`type_t1` join `join_bka_basic`.`type_t2` where ((`join_bka_basic`.`type_t1`.`score` = `join_bka_basic`.`type_t2`.`score`) and (`join_bka_basic`.`type_t2`.`dept` = '1940')) union all /* select#5 */ select `join_bka_basic`.`type_t1`.`id` AS `id`,`join_bka_basic`.`type_t1`.`name` AS `name`,`join_bka_basic`.`type_t1`.`dept` AS `dept`,`join_bka_basic`.`type_t1`.`score` AS `score` from `join_bka_basic`.`type_t1` join `join_bka_basic`.`type_t2` where ((`join_bka_basic`.`type_t1`.`stock1` = `join_bka_basic`.`type_t2`.`stock1`) and (`join_bka_basic`.`type_t2`.`dept` = '1941')) union all /* select#6 */ select `join_bka_basic`.`type_t1`.`id` AS `id`,`join_bka_basic`.`type_t1`.`name` AS `name`,`join_bka_basic`.`type_t1`.`dept` AS `dept`,`join_bka_basic`.`type_t1`.`score` AS `score` from `join_bka_basic`.`type_t1` join `join_bka_basic`.`type_t2` where ((`join_bka_basic`.`type_t1`.`stock2` = `join_bka_basic`.`type_t2`.`stock2`) and (`join_bka_basic`.`type_t2`.`dept` = '1943'))
+select type_t1.id,type_t1.name,type_t1.dept,type_t1.score from type_t1 inner join type_t2
+on type_t1.id = type_t2.id where type_t2.dept = '1940'
+union all 
+select type_t1.id,type_t1.name,type_t1.dept,type_t1.score from type_t1 inner join type_t2
+on type_t1.name = type_t2.name where type_t2.dept = '1941'
+union all
+select type_t1.id,type_t1.name,type_t1.dept,type_t1.score from type_t1 inner join type_t2
+on type_t1.dept = type_t2.dept where type_t2.dept = '1943'
+union all
+select type_t1.id,type_t1.name,type_t1.dept,type_t1.score from type_t1 inner join type_t2
+on type_t1.score = type_t2.score where type_t2.dept = '1940'
+union all
+select type_t1.id,type_t1.name,type_t1.dept,type_t1.score from type_t1 inner join type_t2
+on type_t1.stock1 = type_t2.stock1 where type_t2.dept = '1941'
+union all
+select type_t1.id,type_t1.name,type_t1.dept,type_t1.score from type_t1 inner join type_t2
+on type_t1.stock2 = type_t2.stock2 where type_t2.dept = '1943';
+id	name	dept	score
+1001	user1	1940	98.54
+1002	user2	1941	97.36
+1003	user3	1943	99.72
+1001	user1	1940	98.54
+1002	user2	1941	97.36
+1003	user3	1943	99.72
+drop table type_t1,type_t2;
+create table test_t1(id int,name varchar(10));
+create table test_t2(id int,name varchar(10));
+alter table test_t2 add index(id);
+insert into test_t1 values(1001,'user1'),(1002,'user2'),(1002,'user3');
+insert into test_t2 values(1001,'user1'),(1002,'user2'),(1002,'user3'),(1001,'user4');
+explain select test_t1.id,test_t1.name from test_t1 inner join test_t2 on test_t1.id = test_t2.id;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	test_t1	NULL	ALL	NULL	NULL	NULL	NULL	3	100.00	Using where with pushed condition (`join_bka_basic`.`test_t1`.`id` is not null)
+1	SIMPLE	test_t2	NULL	ref	id	id	5	join_bka_basic.test_t1.id	2	100.00	Using index; Using join buffer (Batched Key Access)
+Warnings:
+Note	1003	/* select#1 */ select `join_bka_basic`.`test_t1`.`id` AS `id`,`join_bka_basic`.`test_t1`.`name` AS `name` from `join_bka_basic`.`test_t1` join `join_bka_basic`.`test_t2` where (`join_bka_basic`.`test_t2`.`id` = `join_bka_basic`.`test_t1`.`id`)
+select test_t1.id,test_t1.name,test_t2.name from test_t1 inner join test_t2 on test_t1.id = test_t2.id;
+id	name	name
+1001	user1	user1
+1002	user2	user2
+1002	user3	user2
+1002	user2	user3
+1002	user3	user3
+1001	user1	user4
+drop table test_t1,test_t2;
+create table test_null_t1(id int,name varchar(10));
+create table test_null_t2(id int,name varchar(10),key id(id));
+insert into test_null_t1 values(1001,'user1'),(null,'user2'),(1002,'user3');
+insert into test_null_t2 values(null,'user1'),(null,'user2'),(1002,'user3');
+explain select test_null_t1.id,test_null_t2.id,test_null_t1.name from test_null_t1 inner join test_null_t2
+on test_null_t1.id = test_null_t2.id;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	test_null_t1	NULL	ALL	NULL	NULL	NULL	NULL	3	100.00	Using where with pushed condition (`join_bka_basic`.`test_null_t1`.`id` is not null)
+1	SIMPLE	test_null_t2	NULL	ref	id	id	5	join_bka_basic.test_null_t1.id	2	100.00	Using index; Using join buffer (Batched Key Access)
+Warnings:
+Note	1003	/* select#1 */ select `join_bka_basic`.`test_null_t1`.`id` AS `id`,`join_bka_basic`.`test_null_t2`.`id` AS `id`,`join_bka_basic`.`test_null_t1`.`name` AS `name` from `join_bka_basic`.`test_null_t1` join `join_bka_basic`.`test_null_t2` where (`join_bka_basic`.`test_null_t2`.`id` = `join_bka_basic`.`test_null_t1`.`id`)
+select test_null_t1.id,test_null_t2.id,test_null_t1.name from test_null_t1 inner join test_null_t2
+on test_null_t1.id = test_null_t2.id;
+id	id	name
+1002	1002	user3
+drop table test_null_t1,test_null_t2;
+create table test_index_t1(id int,name varchar(10),createtime datetime);
+create table test_index_t2(id int,name varchar(10),createtime datetime);
+insert into test_index_t1 values(1001,'test01',now()),(1002,'test02',now());
+insert into test_index_t2 values(1001,'test01',now()),(1002,'test02',now());
+alter table test_index_t2 add index(id);
+explain select test_index_t1.id,test_index_t1.name from test_index_t1 left join test_index_t2
+on test_index_t1.id = test_index_t2.id;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	test_index_t1	NULL	ALL	NULL	NULL	NULL	NULL	2	100.00	NULL
+1	SIMPLE	test_index_t2	NULL	ref	id	id	5	join_bka_basic.test_index_t1.id	2	100.00	Using index; Using join buffer (Batched Key Access)
+alter table test_index_t2 drop index id;
+alter table test_index_t2 add unique(id);
+insert into test_index_t2 values(1001,'test03',now());
+ERROR 23000: Duplicate entry '{ "id": 1001 }' for key 'id'
+drop table test_index_t1,test_index_t2;
+set session optimizer_switch='mrr=on,mrr_cost_based=on,block_nested_loop=on,batched_key_access=off';
+drop database join_bka_basic;

@@ -1,0 +1,134 @@
+set sequoiadb_debug_log=on;
+drop database if exists count_sequoiadb_26560_26561;
+create database count_sequoiadb_26560_26561;
+use count_sequoiadb_26560_26561;
+CREATE TABLE `t1` ( 
+`id` int(11) DEFAULT NULL, 
+`br_no` varchar(10) COLLATE utf8mb4_bin DEFAULT NULL, 
+KEY `idx_id` (`id`), 
+KEY `idx_br_no` (`br_no`) 
+) ENGINE=SequoiaDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin ;
+drop procedure if exists test_insert1;
+create procedure test_insert1(IN cnt int) 
+begin 
+declare i int default 0; 
+while i < cnt 
+do
+insert into t1 (id,br_no)values( i, i%10);
+set i=i+1; 
+end while; 
+end $
+call test_insert1(1000);
+set session sequoiadb_optimizer_options = "direct_count,direct_delete,direct_update,direct_sort,direct_limit";
+select count(1) from t1 where br_no is not null;
+count(1)
+1000
+[Note] SequoiaDB: Count message: condition[{ "br_no": { "$isnull": 0 } }],hint[{ "": "idx_br_no" }] table[count_sequoiadb_26560_26561.t1]
+select count(1) from t1 where br_no is not null and id >10;
+count(1)
+989
+[Note] SequoiaDB: Count message: condition[{ "$and": [ { "br_no": { "$isnull": 0 } }, { "id": { "$gt": 10 } } ] }],hint[{}] table[count_sequoiadb_26560_26561.t1]
+select count(1) from t1 where br_no is not null or id >10;
+count(1)
+1000
+[Note] SequoiaDB: Count message: condition[{ "$or": [ { "br_no": { "$isnull": 0 } }, { "id": { "$gt": 10 } } ] }],hint[{}] table[count_sequoiadb_26560_26561.t1]
+select count(1) from t1 where id is null or id >10;
+count(1)
+989
+[Note] SequoiaDB: Query message: condition[{ "$or": [ { "id": { "$isnull": 1 } }, { "id": { "$gt": 10 } } ] }], selector[{}], order_by[{ "id": 1 }], hint[{ "$Range": { "IsAllEqual": false, "IndexValueIncluded": [ [ true, true ], [ false, false ] ], "PrefixNum": [ 1, 1 ], "IndexValue": [ [ { "1": {"$minKey":1} }, { "1": null } ], [ { "1": 10 }, { "1": {"$maxKey":1} } ] ] }, "": "idx_id" }], limit[-1], offset[0], table[count_sequoiadb_26560_26561.t1]
+select count(1) from t1 where id is not null and id >10;
+count(1)
+989
+[Note] SequoiaDB: Count message: condition[{ "$and": [ { "id": { "$isnull": 0 } }, { "id": { "$gt": 10 } } ] }],hint[{ "": "idx_id" }] table[count_sequoiadb_26560_26561.t1]
+set session sequoiadb_optimizer_options = "direct_delete,direct_update,direct_sort,direct_limit";
+select count(1) from t1 where br_no is not null;
+count(1)
+1000
+[Note] SequoiaDB: Query message: condition[{ "br_no": { "$isnull": 0 } }], selector[{}], order_by[{ "br_no": 1 }], hint[{ "": "idx_br_no" }], limit[-1], offset[0], table[count_sequoiadb_26560_26561.t1]
+select count(1) from t1 where br_no is not null and id >10;
+count(1)
+989
+[Note] SequoiaDB: Query message: condition[{ "$and": [ { "br_no": { "$isnull": 0 } }, { "id": { "$gt": 10 } } ] }], selector[{}], order_by[{}], hint[{}], limit[-1], offset[0], table[count_sequoiadb_26560_26561.t1]
+select count(1) from t1 where br_no is not null or id >10;
+count(1)
+1000
+[Note] SequoiaDB: Query message: condition[{ "$or": [ { "br_no": { "$isnull": 0 } }, { "id": { "$gt": 10 } } ] }], selector[{}], order_by[{}], hint[{}], limit[-1], offset[0], table[count_sequoiadb_26560_26561.t1]
+select count(1) from t1 where id is null or id >10;
+count(1)
+989
+[Note] SequoiaDB: Query message: condition[{ "$or": [ { "id": { "$isnull": 1 } }, { "id": { "$gt": 10 } } ] }], selector[{}], order_by[{ "id": 1 }], hint[{ "$Range": { "IsAllEqual": false, "IndexValueIncluded": [ [ true, true ], [ false, false ] ], "PrefixNum": [ 1, 1 ], "IndexValue": [ [ { "1": {"$minKey":1} }, { "1": null } ], [ { "1": 10 }, { "1": {"$maxKey":1} } ] ] }, "": "idx_id" }], limit[-1], offset[0], table[count_sequoiadb_26560_26561.t1]
+select count(1) from t1 where id is not null and id >10;
+count(1)
+989
+[Note] SequoiaDB: Query message: condition[{ "$and": [ { "id": { "$isnull": 0 } }, { "id": { "$gt": 10 } } ] }], selector[{}], order_by[{ "id": 1 }], hint[{ "": "idx_id" }], limit[-1], offset[0], table[count_sequoiadb_26560_26561.t1]
+CREATE TABLE `t2` ( 
+`id` int(11) DEFAULT NULL, 
+`br_no` varchar(10) COLLATE utf8mb4_bin DEFAULT NULL, 
+KEY `idx_br_no` (`br_no`) 
+) ENGINE=SequoiaDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin;
+drop procedure if exists test_insert2;
+create procedure test_insert2(IN cnt int) 
+begin 
+declare i int default 0; 
+while i < cnt 
+do
+insert into t2 (id,br_no)values( i, i%10);
+set i=i+1; 
+end while; 
+end $
+call test_insert2(1000);
+set session sequoiadb_optimizer_options = "direct_count,direct_delete,direct_update,direct_sort,direct_limit";
+select count(1) from t2 where br_no is not null;
+count(1)
+1000
+[Note] SequoiaDB: Count message: condition[{ "br_no": { "$isnull": 0 } }],hint[{ "": "idx_br_no" }] table[count_sequoiadb_26560_26561.t2]
+select count(1) from t2 where br_no is not null and id >10;
+count(1)
+989
+[Note] SequoiaDB: Count message: condition[{ "$and": [ { "br_no": { "$isnull": 0 } }, { "id": { "$gt": 10 } } ] }],hint[{}] table[count_sequoiadb_26560_26561.t2]
+select count(1) from t2 where br_no is not null or id >10;
+count(1)
+1000
+[Note] SequoiaDB: Count message: condition[{ "$or": [ { "br_no": { "$isnull": 0 } }, { "id": { "$gt": 10 } } ] }],hint[{}] table[count_sequoiadb_26560_26561.t2]
+select count(1) from t2 where br_no is null or id =10;
+count(1)
+1
+[Note] SequoiaDB: Count message: condition[{ "$or": [ { "br_no": { "$isnull": 1 } }, { "id": { "$et": 10 } } ] }],hint[{}] table[count_sequoiadb_26560_26561.t2]
+select count(1) from t2 where br_no is null or id >10;
+count(1)
+989
+[Note] SequoiaDB: Count message: condition[{ "$or": [ { "br_no": { "$isnull": 1 } }, { "id": { "$gt": 10 } } ] }],hint[{}] table[count_sequoiadb_26560_26561.t2]
+select count(1) from t2 where br_no is not null and id >10;
+count(1)
+989
+[Note] SequoiaDB: Count message: condition[{ "$and": [ { "br_no": { "$isnull": 0 } }, { "id": { "$gt": 10 } } ] }],hint[{}] table[count_sequoiadb_26560_26561.t2]
+set session sequoiadb_optimizer_options = "direct_delete,direct_update,direct_sort,direct_limit";
+select count(1) from t2 where br_no is not null;
+count(1)
+1000
+[Note] SequoiaDB: Query message: condition[{ "br_no": { "$isnull": 0 } }], selector[{}], order_by[{ "br_no": 1 }], hint[{ "": "idx_br_no" }], limit[-1], offset[0], table[count_sequoiadb_26560_26561.t2]
+select count(1) from t2 where br_no is not null and id >10;
+count(1)
+989
+[Note] SequoiaDB: Query message: condition[{ "$and": [ { "br_no": { "$isnull": 0 } }, { "id": { "$gt": 10 } } ] }], selector[{}], order_by[{}], hint[{}], limit[-1], offset[0], table[count_sequoiadb_26560_26561.t2]
+select count(1) from t2 where br_no is not null or id >10;
+count(1)
+1000
+[Note] SequoiaDB: Query message: condition[{ "$or": [ { "br_no": { "$isnull": 0 } }, { "id": { "$gt": 10 } } ] }], selector[{}], order_by[{}], hint[{}], limit[-1], offset[0], table[count_sequoiadb_26560_26561.t2]
+select count(1) from t2 where br_no is null or id =10;
+count(1)
+1
+[Note] SequoiaDB: Query message: condition[{ "$or": [ { "br_no": { "$isnull": 1 } }, { "id": { "$et": 10 } } ] }], selector[{}], order_by[{}], hint[{}], limit[-1], offset[0], table[count_sequoiadb_26560_26561.t2]
+select count(1) from t2 where br_no is null or id >10;
+count(1)
+989
+[Note] SequoiaDB: Query message: condition[{ "$or": [ { "br_no": { "$isnull": 1 } }, { "id": { "$gt": 10 } } ] }], selector[{}], order_by[{}], hint[{}], limit[-1], offset[0], table[count_sequoiadb_26560_26561.t2]
+select count(1) from t2 where br_no is not null and id >10;
+count(1)
+989
+[Note] SequoiaDB: Query message: condition[{ "$and": [ { "br_no": { "$isnull": 0 } }, { "id": { "$gt": 10 } } ] }], selector[{}], order_by[{}], hint[{}], limit[-1], offset[0], table[count_sequoiadb_26560_26561.t2]
+set sequoiadb_debug_log=default;
+set session sequoiadb_optimizer_options = default;
+drop procedure test_insert1;
+drop procedure test_insert2;
+drop database count_sequoiadb_26560_26561;

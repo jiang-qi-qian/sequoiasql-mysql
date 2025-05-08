@@ -1,0 +1,40 @@
+#Case 30089
+--source include/have_sequoiadb.inc
+
+--disable_warnings
+drop table if exists select_result_limit_procedure_30089;
+--enable_warnings
+
+create table select_result_limit_procedure_30089(a int,b int,key(a));
+insert into select_result_limit_procedure_30089 values(1,1),(2,2),(3,3),(4,4),(5,5),(-1,-1),(-2,-2);
+
+set session sql_select_result_limit=3;
+
+delimiter |;
+create procedure p1(a int)
+begin
+  select * from select_result_limit_procedure_30089 limit a;
+end|
+delimiter ;|
+
+call p1(1);
+call p1(3);
+call p1(5);
+
+set session sql_select_result_limit_exceed_handling=1;
+call p1(1);
+call p1(3);
+call p1(5);
+
+set session sql_select_result_limit_exceed_handling=2;
+
+call p1(1);
+--error 1226
+call p1(3);
+--error 1226
+call p1(5);
+
+drop procedure p1;
+drop table select_result_limit_procedure_30089;
+
+--source include/uninstall_sequoiadb.inc

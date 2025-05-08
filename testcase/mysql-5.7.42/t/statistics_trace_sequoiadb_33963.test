@@ -1,0 +1,46 @@
+--source include/restart_mysqld.inc
+--source include/have_sequoiadb.inc
+
+--disable_warnings
+drop database if exists statistics_trace_sequoiadb_33963;
+--enable_warnings
+create database statistics_trace_sequoiadb_33963;
+drop database statistics_trace_sequoiadb_33963;
+create database statistics_trace_sequoiadb_33963;
+use statistics_trace_sequoiadb_33963;
+
+set session sequoiadb_debug_log = on;
+set session sequoiadb_secure_log = off;
+set session sequoiadb_share_log_output = on;
+
+CREATE TABLE t1 (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    name VARCHAR(50),
+    email VARCHAR(100) UNIQUE,
+    department_id INT,
+    age INT,
+    title VARCHAR(100),
+    FOREIGN KEY (department_id) REFERENCES t2(department_id),
+    INDEX name_index (name),
+    INDEX age_index (age),
+    INDEX name_email_index (name, email),
+    INDEX title_prefix_index (title(5))
+);
+INSERT INTO t1 (name, email, department_id, age, title)
+VALUES('John Doe', 'john@example.com', 1, 25, 'Software Engineer'),
+    ('Jane Smith', 'jane@example.com', 2, 30, 'Database Administrator');
+
+CREATE TABLE t2 (
+    department_id INT PRIMARY KEY AUTO_INCREMENT,
+    department_name VARCHAR(50) NOT NULL
+);
+INSERT INTO t2 (department_name) VALUES('IT Department'),('HR Department');
+
+show status like "sdb_share_updated";
+
+let $query = refresh tables t1 stats;
+--source include/query_without_sorted_and_get_mysqld_note_log_sequoiadb.inc
+
+show status like "sdb_share_updated";
+
+drop database statistics_trace_sequoiadb_33963;

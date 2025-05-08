@@ -1,0 +1,111 @@
+# seqDB-15569
+#Bug #SEQUOIASQLMAINSTREAM-107
+--echo #
+--echo # BUG #11766576 - 59715: UPDATE IGNORE, 1 ROW AFFECTED
+--echo #
+
+--disable_warnings
+DROP TABLE IF EXISTS t1, t2;
+--enable_warnings
+
+CREATE TABLE t1 (id INT PRIMARY KEY);
+INSERT INTO t1 VALUES (1), (2);
+
+--enable_info
+UPDATE IGNORE t1, (SELECT 1 AS duplicate_id) AS t2 SET t1.id=t2.duplicate_id;
+--disable_info
+
+--echo # Check that no rows changed.
+SELECT * FROM t1;
+DROP TABLE t1;
+
+# seqDB-15657
+#Bug #SEQUOIASQLMAINSTREAM-148
+create table t1 (a int, key (a));
+insert into t1 values (NULL), (0), (1), (2), (3), (4), (5), (6), (7), (8), (9),
+(10), (11), (12), (13), (14), (15), (16), (17), (18), (19);
+
+select * from t1 where not(not(a));
+select * from t1 where not(not(not(a > 10)));
+select * from t1 where not(not(not(a < 5) and not(a > 10)));
+select * from t1 where a;
+
+drop table t1;
+
+# seqDB-16240
+#Bug #SEQUOIASQLMAINSTREAM-142
+--echo #
+--echo # Bug#12577230
+--echo # RERUN OF STORED FUNCTION CAUSES SEGFAULT IN MAKE_JOIN_SELECT
+--echo #
+
+CREATE TABLE t1 (a INT) ENGINE=Sequoiadb;
+INSERT INTO t1 VALUES (1);
+CREATE VIEW v1 AS SELECT a FROM t1;
+
+CREATE PROCEDURE p1()
+SELECT 1 FROM v1 JOIN t1 ON v1.a
+WHERE (SELECT 1 FROM t1 WHERE v1.a)
+;
+
+CALL p1();
+CALL p1();
+DROP PROCEDURE p1;
+
+# Make sure we keep track of where-to-restore an item:
+prepare s from 'select 1 from `v1` join `t1` on `v1`.`a`
+where (select 1 from `t1` where `v1`.`a`)';
+execute s;
+execute s;
+
+prepare s from 'select 1 from `v1` join `t1` on `v1`.`a`';
+execute s;
+execute s;
+prepare s from 'select 1 from `v1` join `t1` on `v1`.`a` join t1 as t2
+on v1.a';
+execute s;
+execute s;
+create view v2 as select 0 as a from t1;
+prepare s from 'select 1 from `v2` join `t1` on `v2`.`a` join v1 on `v1`.`a`';
+execute s;
+execute s;
+prepare s from 'select 1 from `v2` join `t1` on `v2`.`a`, v1 where `v1`.`a`';
+execute s;
+execute s;
+
+DROP TABLE t1;
+DROP VIEW v1,v2;
+
+# seqDB-16711
+#Bug #SEQUOIASQLMAINSTREAM-174
+SET sql_mode = 'NO_ENGINE_SUBSTITUTION';
+CREATE TABLE t1 (a DATETIME(6) NOT NULL);
+INSERT INTO t1 VALUES ('0000-00-00 00:00:00.000000');
+INSERT INTO t1 VALUES ('0000-00-00 23:59:59.999999');
+INSERT INTO t1 VALUES ('2000-01-01 01:02:03');
+INSERT INTO t1 VALUES ('2000-01-01 01:02:03.4');
+INSERT INTO t1 VALUES ('2000-01-01 01:02:03.45');
+INSERT INTO t1 VALUES ('2000-01-01 01:02:03.456');
+INSERT INTO t1 VALUES ('2000-01-01 01:02:03.4567');
+INSERT INTO t1 VALUES ('2000-01-01 01:02:03.45678');
+INSERT INTO t1 VALUES ('2000-01-01 01:02:03.4567891');
+INSERT INTO t1 VALUES ('9999-12-31 23:59:59.000000');
+SELECT * FROM t1; 
+DROP TABLE t1;
+SET sql_mode = default;
+
+
+# SeqDB-16813
+#Bug #SEQUOIASQLMAINSTREAM-176
+CREATE TABLE t1 (a TIMESTAMP(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6), b TIME(6));
+INSERT INTO t1 VALUES ('2001-01-01 10:00:00.123456', '10:00:00.123456');
+INSERT INTO t1 VALUES ('2001-01-01 10:00:00', '10:00:00');
+#Bug #SEQUOIASQLMAINSTREAM-606
+SELECT * FROM t1 WHERE a=TIMESTAMP('2001-01-01', b);
+SELECT * FROM t1 WHERE a=ADDTIME('2001-01-01 00:00:00', '10:00:00');
+SELECT * FROM t1 WHERE a=ADDTIME('2001-01-01 00:00:00', '10:00:00.123456');
+DELETE FROM t1;
+INSERT INTO t1 VALUES (CURRENT_TIMESTAMP, CURRENT_TIME);
+SELECT COUNT(*) FROM t1 WHERE a <= CURRENT_TIMESTAMP;
+SELECT COUNT(*) FROM t1 WHERE a >= SUBTIME(CURRENT_TIMESTAMP, '10:00:00');
+DROP TABLE t1;

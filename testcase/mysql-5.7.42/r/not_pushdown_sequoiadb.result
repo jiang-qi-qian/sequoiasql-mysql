@@ -1,0 +1,588 @@
+DROP DATABASE IF EXISTS db_28737;
+CREATE DATABASE db_28737;
+USE db_28737;
+set session sequoiadb_debug_log= on;
+create table test(a int not null,b double,c varchar(20),d date);
+insert into test values(1,null,null,null),(2,20,"123","2022-12-02"),
+(1,null,null,null),(3,44,"sdb","2018-12-02"),(5,45,"sql","2018-11-02"),
+(6,46,"dp","2018-10-02"),(7,47,"scm","2018-12-04"),(8,48,"fs","2010-12-04");
+select * from test where not a<=>1 ;
+a	b	c	d
+2	20	123	2022-12-02
+3	44	sdb	2018-12-02
+5	45	sql	2018-11-02
+6	46	dp	2018-10-02
+7	47	scm	2018-12-04
+8	48	fs	2010-12-04
+[Note] Testcase: Operation log begin
+[Note] SequoiaDB: optimizer pushdown autocommit: 1
+[Note] SequoiaDB: Query message: condition[{ "$not": [ { "a": { "$et": 1 } } ] }], selector[{}], order_by[{}], hint[{}], limit[-1], offset[0], table[db_28737.test]
+explain select * from test where not a<=>1 ;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	test	NULL	ALL	NULL	NULL	NULL	NULL	8	87.50	Using where with pushed condition (not((`db_28737`.`test`.`a` <=> 1)))
+select * from test where not a<=>null ;
+a	b	c	d
+1	NULL	NULL	NULL
+1	NULL	NULL	NULL
+2	20	123	2022-12-02
+3	44	sdb	2018-12-02
+5	45	sql	2018-11-02
+6	46	dp	2018-10-02
+7	47	scm	2018-12-04
+8	48	fs	2010-12-04
+[Note] Testcase: Operation log begin
+[Note] SequoiaDB: Condition can't be pushed down. db=[db_28737], table[test], sql=[select * from test where not a<=>null]
+[Note] SequoiaDB: Condition can't be pushed down. db=[db_28737], table[test], sql=[select * from test where not a<=>null]
+[Note] SequoiaDB: optimizer pushdown autocommit: 1
+[Note] SequoiaDB: Query message: condition[{}], selector[{}], order_by[{}], hint[{}], limit[-1], offset[0], table[db_28737.test]
+explain select * from test where not a<=>null ;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	test	NULL	ALL	NULL	NULL	NULL	NULL	8	87.50	Using where
+select * from test where c not like "sdb" ;
+a	b	c	d
+2	20	123	2022-12-02
+5	45	sql	2018-11-02
+6	46	dp	2018-10-02
+7	47	scm	2018-12-04
+8	48	fs	2010-12-04
+[Note] Testcase: Operation log begin
+[Note] SequoiaDB: optimizer pushdown autocommit: 1
+[Note] SequoiaDB: Query message: condition[{ "$not": [ { "c": { "$regex": "^sdb$", "$options": "s" } } ] }], selector[{}], order_by[{}], hint[{}], limit[-1], offset[0], table[db_28737.test]
+explain select * from test where c not like "sdb" ;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	test	NULL	ALL	NULL	NULL	NULL	NULL	8	87.50	Using where with pushed condition (not((`db_28737`.`test`.`c` like 'sdb')))
+select * from test where c not regexp '^s' ;
+a	b	c	d
+2	20	123	2022-12-02
+6	46	dp	2018-10-02
+8	48	fs	2010-12-04
+[Note] Testcase: Operation log begin
+[Note] SequoiaDB: Condition can't be pushed down. db=[db_28737], table[test], sql=[select * from test where c not regexp '^s']
+[Note] SequoiaDB: Condition can't be pushed down. db=[db_28737], table[test], sql=[select * from test where c not regexp '^s']
+[Note] SequoiaDB: optimizer pushdown autocommit: 1
+[Note] SequoiaDB: Query message: condition[{}], selector[{}], order_by[{}], hint[{}], limit[-1], offset[0], table[db_28737.test]
+explain select * from test where c not regexp '^s' ;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	test	NULL	ALL	NULL	NULL	NULL	NULL	8	100.00	Using where
+select * from test where not a is true;
+a	b	c	d
+[Note] Testcase: Operation log begin
+[Note] SequoiaDB: Condition can't be pushed down. db=[db_28737], table[test], sql=[select * from test where not a is true]
+[Note] SequoiaDB: Condition can't be pushed down. db=[db_28737], table[test], sql=[select * from test where not a is true]
+[Note] SequoiaDB: optimizer pushdown autocommit: 1
+[Note] SequoiaDB: Query message: condition[{}], selector[{}], order_by[{}], hint[{}], limit[-1], offset[0], table[db_28737.test]
+explain select * from test where not a is true;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	test	NULL	ALL	NULL	NULL	NULL	NULL	8	100.00	Using where
+select * from test where not (a is not true);
+a	b	c	d
+1	NULL	NULL	NULL
+1	NULL	NULL	NULL
+2	20	123	2022-12-02
+3	44	sdb	2018-12-02
+5	45	sql	2018-11-02
+6	46	dp	2018-10-02
+7	47	scm	2018-12-04
+8	48	fs	2010-12-04
+[Note] Testcase: Operation log begin
+[Note] SequoiaDB: Condition can't be pushed down. db=[db_28737], table[test], sql=[select * from test where not (a is not true)]
+[Note] SequoiaDB: Condition can't be pushed down. db=[db_28737], table[test], sql=[select * from test where not (a is not true)]
+[Note] SequoiaDB: optimizer pushdown autocommit: 1
+[Note] SequoiaDB: Query message: condition[{}], selector[{}], order_by[{}], hint[{}], limit[-1], offset[0], table[db_28737.test]
+explain select * from test where not (a is not true);
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	test	NULL	ALL	NULL	NULL	NULL	NULL	8	100.00	Using where
+select * from test where not coalesce("null");
+a	b	c	d
+1	NULL	NULL	NULL
+1	NULL	NULL	NULL
+2	20	123	2022-12-02
+3	44	sdb	2018-12-02
+5	45	sql	2018-11-02
+6	46	dp	2018-10-02
+7	47	scm	2018-12-04
+8	48	fs	2010-12-04
+[Note] Testcase: Operation log begin
+[Note] SequoiaDB: optimizer pushdown autocommit: 1
+[Note] SequoiaDB: Query message: condition[{}], selector[{}], order_by[{}], hint[{}], limit[-1], offset[0], table[db_28737.test]
+explain select * from test where not coalesce("null");
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	test	NULL	ALL	NULL	NULL	NULL	NULL	8	100.00	NULL
+select * from test where not greatest(1,2,3);
+a	b	c	d
+[Note] Testcase: Operation log begin
+explain select * from test where not greatest(1,2,3);
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	NULL	NULL	NULL	NULL	NULL	NULL	NULL	NULL	NULL	Impossible WHERE
+select a,b,interval(a,4,7) from test;
+a	b	interval(a,4,7)
+1	NULL	0
+1	NULL	0
+2	20	0
+3	44	0
+5	45	1
+6	46	1
+7	47	2
+8	48	2
+[Note] Testcase: Operation log begin
+[Note] SequoiaDB: optimizer pushdown autocommit: 1
+[Note] SequoiaDB: Query message: condition[{}], selector[{}], order_by[{}], hint[{}], limit[-1], offset[0], table[db_28737.test]
+explain select a,b,interval(a,4,7) from test;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	test	NULL	ALL	NULL	NULL	NULL	NULL	8	100.00	NULL
+select * from test where not isnull(null);
+a	b	c	d
+[Note] Testcase: Operation log begin
+explain select * from test where not isnull(null);
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	NULL	NULL	NULL	NULL	NULL	NULL	NULL	NULL	NULL	Impossible WHERE
+select * from test where not least(1,2,3);
+a	b	c	d
+[Note] Testcase: Operation log begin
+explain select * from test where not least(1,2,3);
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	NULL	NULL	NULL	NULL	NULL	NULL	NULL	NULL	NULL	Impossible WHERE
+select * from test where not strcmp("sdb","sdb");
+a	b	c	d
+1	NULL	NULL	NULL
+1	NULL	NULL	NULL
+2	20	123	2022-12-02
+3	44	sdb	2018-12-02
+5	45	sql	2018-11-02
+6	46	dp	2018-10-02
+7	47	scm	2018-12-04
+8	48	fs	2010-12-04
+[Note] Testcase: Operation log begin
+[Note] SequoiaDB: optimizer pushdown autocommit: 1
+[Note] SequoiaDB: Query message: condition[{}], selector[{}], order_by[{}], hint[{}], limit[-1], offset[0], table[db_28737.test]
+explain select * from test where not strcmp("sdb","sdb");
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	test	NULL	ALL	NULL	NULL	NULL	NULL	8	100.00	NULL
+select * from test where (not a<=>1) and b=2;
+a	b	c	d
+[Note] Testcase: Operation log begin
+[Note] SequoiaDB: optimizer pushdown autocommit: 1
+[Note] SequoiaDB: Query message: condition[{ "$and": [ { "$not": [ { "a": { "$et": 1 } } ] }, { "b": { "$et": 2 } } ] }], selector[{}], order_by[{}], hint[{}], limit[-1], offset[0], table[db_28737.test]
+explain select * from test where (not a<=>1) and b=2;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	test	NULL	ALL	NULL	NULL	NULL	NULL	8	12.50	Using where with pushed condition ((not((`db_28737`.`test`.`a` <=> 1))) and (`db_28737`.`test`.`b` = 2))
+select * from test where (not c like "sdb") and b>2;
+a	b	c	d
+2	20	123	2022-12-02
+5	45	sql	2018-11-02
+6	46	dp	2018-10-02
+7	47	scm	2018-12-04
+8	48	fs	2010-12-04
+[Note] Testcase: Operation log begin
+[Note] SequoiaDB: optimizer pushdown autocommit: 1
+[Note] SequoiaDB: Query message: condition[{ "$and": [ { "$not": [ { "c": { "$regex": "^sdb$", "$options": "s" } } ] }, { "b": { "$gt": 2 } } ] }], selector[{}], order_by[{}], hint[{}], limit[-1], offset[0], table[db_28737.test]
+explain select * from test where (not c like "sdb") and b>2;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	test	NULL	ALL	NULL	NULL	NULL	NULL	8	29.16	Using where with pushed condition ((not((`db_28737`.`test`.`c` like 'sdb'))) and (`db_28737`.`test`.`b` > 2))
+select * from test where (not c regexp '^s') and b>=2;
+a	b	c	d
+2	20	123	2022-12-02
+6	46	dp	2018-10-02
+8	48	fs	2010-12-04
+[Note] Testcase: Operation log begin
+[Note] SequoiaDB: optimizer pushdown autocommit: 1
+[Note] SequoiaDB: Query message: condition[{ "b": { "$gte": 2 } }], selector[{}], order_by[{}], hint[{}], limit[-1], offset[0], table[db_28737.test]
+explain select * from test where (not c regexp '^s') and b>=2;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	test	NULL	ALL	NULL	NULL	NULL	NULL	8	33.33	Using where with pushed condition ((not((`db_28737`.`test`.`c` regexp '^s'))) and (`db_28737`.`test`.`b` >= 2))
+select * from test where (not a<=>1) or b!=2;
+a	b	c	d
+2	20	123	2022-12-02
+3	44	sdb	2018-12-02
+5	45	sql	2018-11-02
+6	46	dp	2018-10-02
+7	47	scm	2018-12-04
+8	48	fs	2010-12-04
+[Note] Testcase: Operation log begin
+[Note] SequoiaDB: optimizer pushdown autocommit: 1
+[Note] SequoiaDB: Query message: condition[{ "$or": [ { "$not": [ { "a": { "$et": 1 } } ] }, { "b": { "$ne": 2 } } ] }], selector[{}], order_by[{}], hint[{}], limit[-1], offset[0], table[db_28737.test]
+explain select * from test where (not a<=>1) or b!=2;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	test	NULL	ALL	NULL	NULL	NULL	NULL	8	98.44	Using where with pushed condition ((not((`db_28737`.`test`.`a` <=> 1))) or (`db_28737`.`test`.`b` <> 2))
+select * from test where (not c like "sdb") or b>2;
+a	b	c	d
+2	20	123	2022-12-02
+3	44	sdb	2018-12-02
+5	45	sql	2018-11-02
+6	46	dp	2018-10-02
+7	47	scm	2018-12-04
+8	48	fs	2010-12-04
+[Note] Testcase: Operation log begin
+[Note] SequoiaDB: optimizer pushdown autocommit: 1
+[Note] SequoiaDB: Query message: condition[{ "$or": [ { "$not": [ { "c": { "$regex": "^sdb$", "$options": "s" } } ] }, { "b": { "$gt": 2 } } ] }], selector[{}], order_by[{}], hint[{}], limit[-1], offset[0], table[db_28737.test]
+explain select * from test where (not c like "sdb") or b>2;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	test	NULL	ALL	NULL	NULL	NULL	NULL	8	91.67	Using where with pushed condition ((not((`db_28737`.`test`.`c` like 'sdb'))) or (`db_28737`.`test`.`b` > 2))
+select * from test where (not c regexp '^s') or b>=2;
+a	b	c	d
+2	20	123	2022-12-02
+3	44	sdb	2018-12-02
+5	45	sql	2018-11-02
+6	46	dp	2018-10-02
+7	47	scm	2018-12-04
+8	48	fs	2010-12-04
+[Note] Testcase: Operation log begin
+[Note] SequoiaDB: Condition can't be pushed down. db=[db_28737], table[test], sql=[select * from test where (not c regexp '^s') or b>=2]
+[Note] SequoiaDB: Condition can't be pushed down. db=[db_28737], table[test], sql=[select * from test where (not c regexp '^s') or b>=2]
+[Note] SequoiaDB: optimizer pushdown autocommit: 1
+[Note] SequoiaDB: Query message: condition[{}], selector[{}], order_by[{}], hint[{}], limit[-1], offset[0], table[db_28737.test]
+explain select * from test where (not c regexp '^s') or b>=2;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	test	NULL	ALL	NULL	NULL	NULL	NULL	8	100.00	Using where
+select * from test where (not a<=>1) and (not b<=2);
+a	b	c	d
+2	20	123	2022-12-02
+3	44	sdb	2018-12-02
+5	45	sql	2018-11-02
+6	46	dp	2018-10-02
+7	47	scm	2018-12-04
+8	48	fs	2010-12-04
+[Note] Testcase: Operation log begin
+[Note] SequoiaDB: optimizer pushdown autocommit: 1
+[Note] SequoiaDB: Query message: condition[{ "$and": [ { "$not": [ { "a": { "$et": 1 } } ] }, { "b": { "$gt": 2 } } ] }], selector[{}], order_by[{}], hint[{}], limit[-1], offset[0], table[db_28737.test]
+explain select * from test where (not a<=>1) and (not b<=2);
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	test	NULL	ALL	NULL	NULL	NULL	NULL	8	29.16	Using where with pushed condition ((not((`db_28737`.`test`.`a` <=> 1))) and (`db_28737`.`test`.`b` > 2))
+select * from test where (not c like "sdb") and (not b<>2);
+a	b	c	d
+[Note] Testcase: Operation log begin
+[Note] SequoiaDB: optimizer pushdown autocommit: 1
+[Note] SequoiaDB: Query message: condition[{ "$and": [ { "$not": [ { "c": { "$regex": "^sdb$", "$options": "s" } } ] }, { "b": { "$et": 2 } } ] }], selector[{}], order_by[{}], hint[{}], limit[-1], offset[0], table[db_28737.test]
+explain select * from test where (not c like "sdb") and (not b<>2);
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	test	NULL	ALL	NULL	NULL	NULL	NULL	8	12.50	Using where with pushed condition ((not((`db_28737`.`test`.`c` like 'sdb'))) and (`db_28737`.`test`.`b` = 2))
+select * from test where (not c regexp '^s') and (not b between 44 and 46);
+a	b	c	d
+2	20	123	2022-12-02
+8	48	fs	2010-12-04
+[Note] Testcase: Operation log begin
+[Note] SequoiaDB: optimizer pushdown autocommit: 1
+[Note] SequoiaDB: Query message: condition[{ "$or": [ { "b": { "$lt": 44 } }, { "b": { "$gt": 46 } } ] }], selector[{}], order_by[{}], hint[{}], limit[-1], offset[0], table[db_28737.test]
+explain select * from test where (not c regexp '^s') and (not b between 44 and 46);
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	test	NULL	ALL	NULL	NULL	NULL	NULL	8	87.50	Using where with pushed condition ((not((`db_28737`.`test`.`c` regexp '^s'))) and (`db_28737`.`test`.`b` not between 44 and 46))
+select * from test where (not a<=>1) or (not b<=2);
+a	b	c	d
+2	20	123	2022-12-02
+3	44	sdb	2018-12-02
+5	45	sql	2018-11-02
+6	46	dp	2018-10-02
+7	47	scm	2018-12-04
+8	48	fs	2010-12-04
+[Note] Testcase: Operation log begin
+[Note] SequoiaDB: optimizer pushdown autocommit: 1
+[Note] SequoiaDB: Query message: condition[{ "$or": [ { "$not": [ { "a": { "$et": 1 } } ] }, { "b": { "$gt": 2 } } ] }], selector[{}], order_by[{}], hint[{}], limit[-1], offset[0], table[db_28737.test]
+explain select * from test where (not a<=>1) or (not b<=2);
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	test	NULL	ALL	NULL	NULL	NULL	NULL	8	91.67	Using where with pushed condition ((not((`db_28737`.`test`.`a` <=> 1))) or (`db_28737`.`test`.`b` > 2))
+select * from test where (not c like "sdb") or (not b<>2);
+a	b	c	d
+2	20	123	2022-12-02
+5	45	sql	2018-11-02
+6	46	dp	2018-10-02
+7	47	scm	2018-12-04
+8	48	fs	2010-12-04
+[Note] Testcase: Operation log begin
+[Note] SequoiaDB: optimizer pushdown autocommit: 1
+[Note] SequoiaDB: Query message: condition[{ "$or": [ { "$not": [ { "c": { "$regex": "^sdb$", "$options": "s" } } ] }, { "b": { "$et": 2 } } ] }], selector[{}], order_by[{}], hint[{}], limit[-1], offset[0], table[db_28737.test]
+explain select * from test where (not c like "sdb") or (not b<>2);
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	test	NULL	ALL	NULL	NULL	NULL	NULL	8	89.06	Using where with pushed condition ((not((`db_28737`.`test`.`c` like 'sdb'))) or (`db_28737`.`test`.`b` = 2))
+select * from test where (not c regexp '^s') or (not b between 44 and 46 );
+a	b	c	d
+2	20	123	2022-12-02
+6	46	dp	2018-10-02
+7	47	scm	2018-12-04
+8	48	fs	2010-12-04
+[Note] Testcase: Operation log begin
+[Note] SequoiaDB: Condition can't be pushed down. db=[db_28737], table[test], sql=[select * from test where (not c regexp '^s') or (not b between 44 and 46 )]
+[Note] SequoiaDB: Condition can't be pushed down. db=[db_28737], table[test], sql=[select * from test where (not c regexp '^s') or (not b between 44 and 46 )]
+[Note] SequoiaDB: optimizer pushdown autocommit: 1
+[Note] SequoiaDB: Query message: condition[{}], selector[{}], order_by[{}], hint[{}], limit[-1], offset[0], table[db_28737.test]
+explain select * from test where (not c regexp '^s') or (not b between 44 and 46 );
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	test	NULL	ALL	NULL	NULL	NULL	NULL	8	100.00	Using where
+select * from test where not (a<=>1 and b is null );
+a	b	c	d
+2	20	123	2022-12-02
+3	44	sdb	2018-12-02
+5	45	sql	2018-11-02
+6	46	dp	2018-10-02
+7	47	scm	2018-12-04
+8	48	fs	2010-12-04
+[Note] Testcase: Operation log begin
+[Note] SequoiaDB: optimizer pushdown autocommit: 1
+[Note] SequoiaDB: Query message: condition[{ "$or": [ { "$not": [ { "a": { "$et": 1 } } ] }, { "b": { "$isnull": 0 } } ] }], selector[{}], order_by[{}], hint[{}], limit[-1], offset[0], table[db_28737.test]
+explain select * from test where not (a<=>1 and b is null );
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	test	NULL	ALL	NULL	NULL	NULL	NULL	8	98.44	Using where with pushed condition ((not((`db_28737`.`test`.`a` <=> 1))) or (`db_28737`.`test`.`b` is not null))
+select * from test where not (c like "sdb" and b is true);
+a	b	c	d
+1	NULL	NULL	NULL
+1	NULL	NULL	NULL
+2	20	123	2022-12-02
+5	45	sql	2018-11-02
+6	46	dp	2018-10-02
+7	47	scm	2018-12-04
+8	48	fs	2010-12-04
+[Note] Testcase: Operation log begin
+[Note] SequoiaDB: Condition can't be pushed down. db=[db_28737], table[test], sql=[select * from test where not (c like "sdb" and b is true)]
+[Note] SequoiaDB: Condition can't be pushed down. db=[db_28737], table[test], sql=[select * from test where not (c like "sdb" and b is true)]
+[Note] SequoiaDB: optimizer pushdown autocommit: 1
+[Note] SequoiaDB: Query message: condition[{}], selector[{}], order_by[{}], hint[{}], limit[-1], offset[0], table[db_28737.test]
+explain select * from test where not (c like "sdb" and b is true);
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	test	NULL	ALL	NULL	NULL	NULL	NULL	8	100.00	Using where
+select * from test where not (c regexp '^s' and b between 44 and 46);
+a	b	c	d
+2	20	123	2022-12-02
+6	46	dp	2018-10-02
+7	47	scm	2018-12-04
+8	48	fs	2010-12-04
+[Note] Testcase: Operation log begin
+[Note] SequoiaDB: Condition can't be pushed down. db=[db_28737], table[test], sql=[select * from test where not (c regexp '^s' and b between 44 and 46)]
+[Note] SequoiaDB: Condition can't be pushed down. db=[db_28737], table[test], sql=[select * from test where not (c regexp '^s' and b between 44 and 46)]
+[Note] SequoiaDB: optimizer pushdown autocommit: 1
+[Note] SequoiaDB: Query message: condition[{}], selector[{}], order_by[{}], hint[{}], limit[-1], offset[0], table[db_28737.test]
+explain select * from test where not (c regexp '^s' and b between 44 and 46);
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	test	NULL	ALL	NULL	NULL	NULL	NULL	8	100.00	Using where
+select * from test where not (c like "sdb" and b is null and a>4);
+a	b	c	d
+1	NULL	NULL	NULL
+1	NULL	NULL	NULL
+2	20	123	2022-12-02
+3	44	sdb	2018-12-02
+5	45	sql	2018-11-02
+6	46	dp	2018-10-02
+7	47	scm	2018-12-04
+8	48	fs	2010-12-04
+[Note] Testcase: Operation log begin
+[Note] SequoiaDB: optimizer pushdown autocommit: 1
+[Note] SequoiaDB: Query message: condition[{ "$or": [ { "$not": [ { "c": { "$regex": "^sdb$", "$options": "s" } } ] }, { "b": { "$isnull": 0 } }, { "a": { "$lte": 4 } } ] }], selector[{}], order_by[{}], hint[{}], limit[-1], offset[0], table[db_28737.test]
+explain select * from test where not (c like "sdb" and b is null and a>4);
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	test	NULL	ALL	NULL	NULL	NULL	NULL	8	98.96	Using where with pushed condition ((not((`db_28737`.`test`.`c` like 'sdb'))) or (`db_28737`.`test`.`b` is not null) or (`db_28737`.`test`.`a` <= 4))
+select * from test where not (a<=>1 or b is not null );
+a	b	c	d
+[Note] Testcase: Operation log begin
+[Note] SequoiaDB: optimizer pushdown autocommit: 1
+[Note] SequoiaDB: Query message: condition[{ "$and": [ { "$not": [ { "a": { "$et": 1 } } ] }, { "b": { "$isnull": 1 } } ] }], selector[{}], order_by[{}], hint[{}], limit[-1], offset[0], table[db_28737.test]
+explain select * from test where not (a<=>1 or b is not null );
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	test	NULL	ALL	NULL	NULL	NULL	NULL	8	12.50	Using where with pushed condition ((not((`db_28737`.`test`.`a` <=> 1))) and isnull(`db_28737`.`test`.`b`))
+select * from test where not (c like "s%" or a in (1,2,3));
+a	b	c	d
+6	46	dp	2018-10-02
+8	48	fs	2010-12-04
+[Note] Testcase: Operation log begin
+[Note] SequoiaDB: optimizer pushdown autocommit: 1
+[Note] SequoiaDB: Query message: condition[{ "$and": [ { "$not": [ { "$and": [ { "c": { "$gte": "s" } }, { "c": { "$lt": "sÿ" } } ] } ] }, { "a": { "$nin": [ 1, 2, 3 ] } } ] }], selector[{}], order_by[{}], hint[{}], limit[-1], offset[0], table[db_28737.test]
+explain select * from test where not (c like "s%" or a in (1,2,3));
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	test	NULL	ALL	NULL	NULL	NULL	NULL	8	54.69	Using where with pushed condition ((not((`db_28737`.`test`.`c` like 's%'))) and (`db_28737`.`test`.`a` not in (1,2,3)))
+select * from test where not (c regexp '^s' or b between 44 and 46) ;
+a	b	c	d
+2	20	123	2022-12-02
+8	48	fs	2010-12-04
+[Note] Testcase: Operation log begin
+[Note] SequoiaDB: optimizer pushdown autocommit: 1
+[Note] SequoiaDB: Query message: condition[{ "$or": [ { "b": { "$lt": 44 } }, { "b": { "$gt": 46 } } ] }], selector[{}], order_by[{}], hint[{}], limit[-1], offset[0], table[db_28737.test]
+explain select * from test where not (c regexp '^s' or b between 44 and 46) ;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	test	NULL	ALL	NULL	NULL	NULL	NULL	8	87.50	Using where with pushed condition ((not((`db_28737`.`test`.`c` regexp '^s'))) and (`db_28737`.`test`.`b` not between 44 and 46))
+select * from test where not (c like "s%" or b is null or a>4);
+a	b	c	d
+2	20	123	2022-12-02
+[Note] Testcase: Operation log begin
+[Note] SequoiaDB: optimizer pushdown autocommit: 1
+[Note] SequoiaDB: Query message: condition[{ "$and": [ { "$not": [ { "$and": [ { "c": { "$gte": "s" } }, { "c": { "$lt": "sÿ" } } ] } ] }, { "b": { "$isnull": 0 } }, { "a": { "$lte": 4 } } ] }], selector[{}], order_by[{}], hint[{}], limit[-1], offset[0], table[db_28737.test]
+explain select * from test where not (c like "s%" or b is null or a>4);
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	test	NULL	ALL	NULL	NULL	NULL	NULL	8	25.52	Using where with pushed condition ((not((`db_28737`.`test`.`c` like 's%'))) and (`db_28737`.`test`.`b` is not null) and (`db_28737`.`test`.`a` <= 4))
+select * from test where not (not a<=>1 and b >10 );
+a	b	c	d
+1	NULL	NULL	NULL
+1	NULL	NULL	NULL
+[Note] Testcase: Operation log begin
+[Note] SequoiaDB: optimizer pushdown autocommit: 1
+[Note] SequoiaDB: Query message: condition[{ "$or": [ { "a": { "$et": 1 } }, { "b": { "$lte": 10 } } ] }], selector[{}], order_by[{}], hint[{}], limit[-1], offset[0], table[db_28737.test]
+explain select * from test where not (not a<=>1 and b >10 );
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	test	NULL	ALL	NULL	NULL	NULL	NULL	8	41.66	Using where with pushed condition ((`db_28737`.`test`.`a` <=> 1) or (`db_28737`.`test`.`b` <= 10))
+select * from test where not (not c like "s%" and a not in (1,2,3));
+a	b	c	d
+1	NULL	NULL	NULL
+1	NULL	NULL	NULL
+2	20	123	2022-12-02
+3	44	sdb	2018-12-02
+5	45	sql	2018-11-02
+7	47	scm	2018-12-04
+[Note] Testcase: Operation log begin
+[Note] SequoiaDB: optimizer pushdown autocommit: 1
+[Note] SequoiaDB: Query message: condition[{ "$or": [ { "$and": [ { "c": { "$gte": "s" } }, { "c": { "$lt": "sÿ" } } ] }, { "a": { "$in": [ 1, 2, 3 ] } } ] }], selector[{}], order_by[{}], hint[{}], limit[-1], offset[0], table[db_28737.test]
+explain select * from test where not (not c like "s%" and a not in (1,2,3));
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	test	NULL	ALL	NULL	NULL	NULL	NULL	8	45.31	Using where with pushed condition ((`db_28737`.`test`.`c` like 's%') or (`db_28737`.`test`.`a` in (1,2,3)))
+select * from test where not (not c regexp '^s' and b between 44 and 46 );
+a	b	c	d
+2	20	123	2022-12-02
+3	44	sdb	2018-12-02
+5	45	sql	2018-11-02
+7	47	scm	2018-12-04
+8	48	fs	2010-12-04
+[Note] Testcase: Operation log begin
+[Note] SequoiaDB: Condition can't be pushed down. db=[db_28737], table[test], sql=[select * from test where not (not c regexp '^s' and b between 44 and 46 )]
+[Note] SequoiaDB: Condition can't be pushed down. db=[db_28737], table[test], sql=[select * from test where not (not c regexp '^s' and b between 44 and 46 )]
+[Note] SequoiaDB: optimizer pushdown autocommit: 1
+[Note] SequoiaDB: Query message: condition[{}], selector[{}], order_by[{}], hint[{}], limit[-1], offset[0], table[db_28737.test]
+explain select * from test where not (not c regexp '^s' and b between 44 and 46 );
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	test	NULL	ALL	NULL	NULL	NULL	NULL	8	100.00	Using where
+select * from test where not (not a<=>1 and not b >10 );
+a	b	c	d
+1	NULL	NULL	NULL
+1	NULL	NULL	NULL
+2	20	123	2022-12-02
+3	44	sdb	2018-12-02
+5	45	sql	2018-11-02
+6	46	dp	2018-10-02
+7	47	scm	2018-12-04
+8	48	fs	2010-12-04
+[Note] Testcase: Operation log begin
+[Note] SequoiaDB: optimizer pushdown autocommit: 1
+[Note] SequoiaDB: Query message: condition[{ "$or": [ { "a": { "$et": 1 } }, { "b": { "$gt": 10 } } ] }], selector[{}], order_by[{}], hint[{}], limit[-1], offset[0], table[db_28737.test]
+explain select * from test where not (not a<=>1 and not b >10 );
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	test	NULL	ALL	NULL	NULL	NULL	NULL	8	41.66	Using where with pushed condition ((`db_28737`.`test`.`a` <=> 1) or (`db_28737`.`test`.`b` > 10))
+select * from test where not (not c like "s%" and not b !=20);
+a	b	c	d
+3	44	sdb	2018-12-02
+5	45	sql	2018-11-02
+6	46	dp	2018-10-02
+7	47	scm	2018-12-04
+8	48	fs	2010-12-04
+[Note] Testcase: Operation log begin
+[Note] SequoiaDB: optimizer pushdown autocommit: 1
+[Note] SequoiaDB: Query message: condition[{ "$or": [ { "$and": [ { "c": { "$gte": "s" } }, { "c": { "$lt": "sÿ" } } ] }, { "b": { "$ne": 20 } } ] }], selector[{}], order_by[{}], hint[{}], limit[-1], offset[0], table[db_28737.test]
+explain select * from test where not (not c like "s%" and not b !=20);
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	test	NULL	ALL	NULL	NULL	NULL	NULL	8	89.06	Using where with pushed condition ((`db_28737`.`test`.`c` like 's%') or (`db_28737`.`test`.`b` <> 20))
+select * from test where not (not c regexp '^s' and not b between 44 and 46 );
+a	b	c	d
+3	44	sdb	2018-12-02
+5	45	sql	2018-11-02
+6	46	dp	2018-10-02
+7	47	scm	2018-12-04
+[Note] Testcase: Operation log begin
+[Note] SequoiaDB: Condition can't be pushed down. db=[db_28737], table[test], sql=[select * from test where not (not c regexp '^s' and not b between 44 and 46 )]
+[Note] SequoiaDB: Condition can't be pushed down. db=[db_28737], table[test], sql=[select * from test where not (not c regexp '^s' and not b between 44 and 46 )]
+[Note] SequoiaDB: optimizer pushdown autocommit: 1
+[Note] SequoiaDB: Query message: condition[{}], selector[{}], order_by[{}], hint[{}], limit[-1], offset[0], table[db_28737.test]
+explain select * from test where not (not c regexp '^s' and not b between 44 and 46 );
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	test	NULL	ALL	NULL	NULL	NULL	NULL	8	100.00	Using where
+select * from test where not (not a<=>1 or b >10 );
+a	b	c	d
+[Note] Testcase: Operation log begin
+[Note] SequoiaDB: optimizer pushdown autocommit: 1
+[Note] SequoiaDB: Query message: condition[{ "$and": [ { "a": { "$et": 1 } }, { "b": { "$lte": 10 } } ] }], selector[{}], order_by[{}], hint[{}], limit[-1], offset[0], table[db_28737.test]
+explain select * from test where not (not a<=>1 or b >10 );
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	test	NULL	ALL	NULL	NULL	NULL	NULL	8	12.50	Using where with pushed condition ((`db_28737`.`test`.`a` <=> 1) and (`db_28737`.`test`.`b` <= 10))
+select * from test where not (not c like "s%" or a in (1,2,3));
+a	b	c	d
+5	45	sql	2018-11-02
+7	47	scm	2018-12-04
+[Note] Testcase: Operation log begin
+[Note] SequoiaDB: optimizer pushdown autocommit: 1
+[Note] SequoiaDB: Query message: condition[{ "$and": [ { "$and": [ { "c": { "$gte": "s" } }, { "c": { "$lt": "sÿ" } } ] }, { "a": { "$nin": [ 1, 2, 3 ] } } ] }], selector[{}], order_by[{}], hint[{}], limit[-1], offset[0], table[db_28737.test]
+explain select * from test where not (not c like "s%" or a in (1,2,3));
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	test	NULL	ALL	NULL	NULL	NULL	NULL	8	12.50	Using where with pushed condition ((`db_28737`.`test`.`c` like 's%') and (`db_28737`.`test`.`a` not in (1,2,3)))
+select * from test where not (not c regexp '^s' or b between 44 and 46 );
+a	b	c	d
+7	47	scm	2018-12-04
+[Note] Testcase: Operation log begin
+[Note] SequoiaDB: optimizer pushdown autocommit: 1
+[Note] SequoiaDB: Query message: condition[{ "$or": [ { "b": { "$lt": 44 } }, { "b": { "$gt": 46 } } ] }], selector[{}], order_by[{}], hint[{}], limit[-1], offset[0], table[db_28737.test]
+explain select * from test where not (not c regexp '^s' or b between 44 and 46 );
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	test	NULL	ALL	NULL	NULL	NULL	NULL	8	87.50	Using where with pushed condition ((`db_28737`.`test`.`c` regexp '^s') and (`db_28737`.`test`.`b` not between 44 and 46))
+select * from test where not (not a<=>1 or not b >10 );
+a	b	c	d
+[Note] Testcase: Operation log begin
+[Note] SequoiaDB: optimizer pushdown autocommit: 1
+[Note] SequoiaDB: Query message: condition[{ "$and": [ { "a": { "$et": 1 } }, { "b": { "$gt": 10 } } ] }], selector[{}], order_by[{}], hint[{}], limit[-1], offset[0], table[db_28737.test]
+explain select * from test where not (not a<=>1 or not b >10 );
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	test	NULL	ALL	NULL	NULL	NULL	NULL	8	12.50	Using where with pushed condition ((`db_28737`.`test`.`a` <=> 1) and (`db_28737`.`test`.`b` > 10))
+select * from test where not (not c like "s%" or not b !=20);
+a	b	c	d
+3	44	sdb	2018-12-02
+5	45	sql	2018-11-02
+7	47	scm	2018-12-04
+[Note] Testcase: Operation log begin
+[Note] SequoiaDB: optimizer pushdown autocommit: 1
+[Note] SequoiaDB: Query message: condition[{ "$and": [ { "$and": [ { "c": { "$gte": "s" } }, { "c": { "$lt": "sÿ" } } ] }, { "b": { "$ne": 20 } } ] }], selector[{}], order_by[{}], hint[{}], limit[-1], offset[0], table[db_28737.test]
+explain select * from test where not (not c like "s%" or not b !=20);
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	test	NULL	ALL	NULL	NULL	NULL	NULL	8	12.50	Using where with pushed condition ((`db_28737`.`test`.`c` like 's%') and (`db_28737`.`test`.`b` <> 20))
+select * from test where not (not c regexp '^s' or not b between 44 and 46 );
+a	b	c	d
+3	44	sdb	2018-12-02
+5	45	sql	2018-11-02
+[Note] Testcase: Operation log begin
+[Note] SequoiaDB: optimizer pushdown autocommit: 1
+[Note] SequoiaDB: Query message: condition[{ "$and": [ { "b": { "$gte": 44 } }, { "b": { "$lte": 46 } } ] }], selector[{}], order_by[{}], hint[{}], limit[-1], offset[0], table[db_28737.test]
+explain select * from test where not (not c regexp '^s' or not b between 44 and 46 );
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	test	NULL	ALL	NULL	NULL	NULL	NULL	8	12.50	Using where with pushed condition ((`db_28737`.`test`.`c` regexp '^s') and (`db_28737`.`test`.`b` between 44 and 46))
+select a from test where a=(select a from test where b>20 limit 1);
+a
+3
+[Note] Testcase: Operation log begin
+[Note] SequoiaDB: Query message: condition[{ "b": { "$gt": 20 } }], selector[{}], order_by[{}], hint[{}], limit[1], offset[0], table[db_28737.test]
+[Note] SequoiaDB: Query message: condition[{ "a": { "$et": 3 } }], selector[{ "_id": null, "a": null }], order_by[{}], hint[{}], limit[-1], offset[0], table[db_28737.test]
+explain select a from test where a=(select a from test where b>20 limit 1);
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	PRIMARY	test	NULL	ALL	NULL	NULL	NULL	NULL	8	12.50	Using where with pushed condition (`db_28737`.`test`.`a` = (/* select#2 */ select `db_28737`.`test`.`a` from `db_28737`.`test` where (`db_28737`.`test`.`b` > 20) limit 1))
+2	SUBQUERY	test	NULL	ALL	NULL	NULL	NULL	NULL	8	33.33	Using where with pushed condition (`db_28737`.`test`.`b` > 20)
+select * from test where exists(select b from test where b>20);
+a	b	c	d
+1	NULL	NULL	NULL
+1	NULL	NULL	NULL
+2	20	123	2022-12-02
+3	44	sdb	2018-12-02
+5	45	sql	2018-11-02
+6	46	dp	2018-10-02
+7	47	scm	2018-12-04
+8	48	fs	2010-12-04
+[Note] Testcase: Operation log begin
+[Note] SequoiaDB: Query message: condition[{ "b": { "$gt": 20 } }], selector[{ "_id": null, "b": null }], order_by[{}], hint[{}], limit[-1], offset[0], table[db_28737.test]
+[Note] SequoiaDB: Query message: condition[{}], selector[{}], order_by[{}], hint[{}], limit[-1], offset[0], table[db_28737.test]
+explain select * from test where exists(select b from test where b>20);
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	PRIMARY	test	NULL	ALL	NULL	NULL	NULL	NULL	8	100.00	NULL
+2	SUBQUERY	test	NULL	ALL	NULL	NULL	NULL	NULL	8	33.33	Using where with pushed condition (`db_28737`.`test`.`b` > 20)
+select * from test where b in(select b from test where b>20);
+a	b	c	d
+3	44	sdb	2018-12-02
+5	45	sql	2018-11-02
+6	46	dp	2018-10-02
+7	47	scm	2018-12-04
+8	48	fs	2010-12-04
+[Note] Testcase: Operation log begin
+[Note] SequoiaDB: Query message: condition[{ "b": { "$gt": 20 } }], selector[{}], order_by[{}], hint[{}], limit[-1], offset[0], table[db_28737.test]
+[Note] SequoiaDB: Query message: condition[{}], selector[{ "_id": null, "b": null }], order_by[{}], hint[{}], limit[-1], offset[0], table[db_28737.test]
+explain select * from test where b in(select b from test where b>20);
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	test	NULL	ALL	NULL	NULL	NULL	NULL	8	100.00	Using where with pushed condition (`db_28737`.`test`.`b` > 20)
+1	SIMPLE	test	NULL	ALL	NULL	NULL	NULL	NULL	8	12.50	Using where; FirstMatch(test); Using join buffer (Block Nested Loop)
+set session sequoiadb_debug_log= default;
+DROP DATABASE db_28737;

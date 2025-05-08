@@ -1,0 +1,224 @@
+set sql_mode = 'ANSI_QUOTES';
+set character_set_client = utf8;
+set character_set_connection = utf8;
+drop database if exists partition_26334_26335;
+set sql_mode=default;
+set sql_mode = 'ANSI_QUOTES';
+set character_set_client = utf8;
+set character_set_connection = utf8;
+drop database if exists partition_26334_26335;
+set sql_mode=default;
+create database partition_26334_26335;
+use partition_26334_26335;
+create table clearX(a int);
+drop database partition_26334_26335;
+create database partition_26334_26335;
+use partition_26334_26335;
+create table clearX(a int);
+drop database partition_26334_26335;
+create database partition_26334_26335;
+use partition_26334_26335;
+create table t1 (
+id int not null,
+a int not null
+)
+partition by range (a) (
+partition p0 values less than (10),
+partition p1 values less than (20),
+partition p2 values less than (30),
+partition p3 values less than (40),
+partition p4 values less than (50),
+partition p5 values less than (60),
+partition p6 values less than (70),
+partition p7 values less than (80),
+partition p8 values less than (90),
+partition p9 values less than (100)
+);
+show create table t1;
+Table	Create Table
+t1	CREATE TABLE `t1` (
+  `id` int(11) NOT NULL,
+  `a` int(11) NOT NULL
+) ENGINE=SequoiaDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin
+/*!50100 PARTITION BY RANGE (a)
+(PARTITION p0 VALUES LESS THAN (10) ENGINE = SequoiaDB,
+ PARTITION p1 VALUES LESS THAN (20) ENGINE = SequoiaDB,
+ PARTITION p2 VALUES LESS THAN (30) ENGINE = SequoiaDB,
+ PARTITION p3 VALUES LESS THAN (40) ENGINE = SequoiaDB,
+ PARTITION p4 VALUES LESS THAN (50) ENGINE = SequoiaDB,
+ PARTITION p5 VALUES LESS THAN (60) ENGINE = SequoiaDB,
+ PARTITION p6 VALUES LESS THAN (70) ENGINE = SequoiaDB,
+ PARTITION p7 VALUES LESS THAN (80) ENGINE = SequoiaDB,
+ PARTITION p8 VALUES LESS THAN (90) ENGINE = SequoiaDB,
+ PARTITION p9 VALUES LESS THAN (100) ENGINE = SequoiaDB) */
+insert into t1 values (0,0), (0,1),(1,10), (2,20), (3,30), (4,40), (5,60), (6,60), (7,70), (8,80), (9,90);
+select * from t1 where a >= 1 order by a;
+id	a
+0	1
+1	10
+2	20
+3	30
+4	40
+5	60
+6	60
+7	70
+8	80
+9	90
+create database partition_26334_26335;
+use partition_26334_26335;
+create table t1 (
+id int not null,
+a int not null
+)
+partition by range (a) (
+partition p0 values less than (10),
+partition p1 values less than (20),
+partition p2 values less than (30),
+partition p3 values less than (40),
+partition p4 values less than (50),
+partition p5 values less than (60),
+partition p6 values less than (70),
+partition p7 values less than (80),
+partition p8 values less than (90),
+partition p9 values less than (100)
+);
+show create table t1;
+Table	Create Table
+t1	CREATE TABLE `t1` (
+  `id` int(11) NOT NULL,
+  `a` int(11) NOT NULL
+) ENGINE=SequoiaDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin
+/*!50100 PARTITION BY RANGE (a)
+(PARTITION p0 VALUES LESS THAN (10) ENGINE = SequoiaDB,
+ PARTITION p1 VALUES LESS THAN (20) ENGINE = SequoiaDB,
+ PARTITION p2 VALUES LESS THAN (30) ENGINE = SequoiaDB,
+ PARTITION p3 VALUES LESS THAN (40) ENGINE = SequoiaDB,
+ PARTITION p4 VALUES LESS THAN (50) ENGINE = SequoiaDB,
+ PARTITION p5 VALUES LESS THAN (60) ENGINE = SequoiaDB,
+ PARTITION p6 VALUES LESS THAN (70) ENGINE = SequoiaDB,
+ PARTITION p7 VALUES LESS THAN (80) ENGINE = SequoiaDB,
+ PARTITION p8 VALUES LESS THAN (90) ENGINE = SequoiaDB,
+ PARTITION p9 VALUES LESS THAN (100) ENGINE = SequoiaDB) */
+insert into t1 values (0,0), (0,1),(1,10), (2,20), (3,30), (4,40), (5,60), (6,60), (7,70), (8,80), (9,90);
+select * from t1 where a >= 1 order by a;
+id	a
+0	1
+1	10
+2	20
+3	30
+4	40
+5	60
+6	60
+7	70
+8	80
+9	90
+create table t2 like t1;
+show tables;
+Tables_in_partition_26334_26335
+t1
+t2
+show create table t1;
+Table	Create Table
+t1	CREATE TABLE `t1` (
+  `id` int(11) NOT NULL,
+  `a` int(11) NOT NULL
+) ENGINE=SequoiaDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin
+/*!50100 PARTITION BY RANGE (a)
+(PARTITION p0 VALUES LESS THAN (10) ENGINE = SequoiaDB,
+ PARTITION p1 VALUES LESS THAN (20) ENGINE = SequoiaDB,
+ PARTITION p2 VALUES LESS THAN (30) ENGINE = SequoiaDB,
+ PARTITION p3 VALUES LESS THAN (40) ENGINE = SequoiaDB,
+ PARTITION p4 VALUES LESS THAN (50) ENGINE = SequoiaDB,
+ PARTITION p5 VALUES LESS THAN (60) ENGINE = SequoiaDB,
+ PARTITION p6 VALUES LESS THAN (70) ENGINE = SequoiaDB,
+ PARTITION p7 VALUES LESS THAN (80) ENGINE = SequoiaDB,
+ PARTITION p8 VALUES LESS THAN (90) ENGINE = SequoiaDB,
+ PARTITION p9 VALUES LESS THAN (100) ENGINE = SequoiaDB) */
+show create table t2;
+Table	Create Table
+t2	CREATE TABLE `t2` (
+  `id` int(11) NOT NULL,
+  `a` int(11) NOT NULL
+) ENGINE=SequoiaDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin
+/*!50100 PARTITION BY RANGE (a)
+(PARTITION p0 VALUES LESS THAN (10) ENGINE = SequoiaDB,
+ PARTITION p1 VALUES LESS THAN (20) ENGINE = SequoiaDB,
+ PARTITION p2 VALUES LESS THAN (30) ENGINE = SequoiaDB,
+ PARTITION p3 VALUES LESS THAN (40) ENGINE = SequoiaDB,
+ PARTITION p4 VALUES LESS THAN (50) ENGINE = SequoiaDB,
+ PARTITION p5 VALUES LESS THAN (60) ENGINE = SequoiaDB,
+ PARTITION p6 VALUES LESS THAN (70) ENGINE = SequoiaDB,
+ PARTITION p7 VALUES LESS THAN (80) ENGINE = SequoiaDB,
+ PARTITION p8 VALUES LESS THAN (90) ENGINE = SequoiaDB,
+ PARTITION p9 VALUES LESS THAN (100) ENGINE = SequoiaDB) */
+select * from t1 order by a;
+id	a
+0	0
+0	1
+1	10
+2	20
+3	30
+4	40
+5	60
+6	60
+7	70
+8	80
+9	90
+select * from t2 order by a;
+id	a
+create table t2 select * from t1;
+show tables;
+Tables_in_partition_26334_26335
+t1
+t2
+show create table t1;
+Table	Create Table
+t1	CREATE TABLE `t1` (
+  `id` int(11) NOT NULL,
+  `a` int(11) NOT NULL
+) ENGINE=SequoiaDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin
+/*!50100 PARTITION BY RANGE (a)
+(PARTITION p0 VALUES LESS THAN (10) ENGINE = SequoiaDB,
+ PARTITION p1 VALUES LESS THAN (20) ENGINE = SequoiaDB,
+ PARTITION p2 VALUES LESS THAN (30) ENGINE = SequoiaDB,
+ PARTITION p3 VALUES LESS THAN (40) ENGINE = SequoiaDB,
+ PARTITION p4 VALUES LESS THAN (50) ENGINE = SequoiaDB,
+ PARTITION p5 VALUES LESS THAN (60) ENGINE = SequoiaDB,
+ PARTITION p6 VALUES LESS THAN (70) ENGINE = SequoiaDB,
+ PARTITION p7 VALUES LESS THAN (80) ENGINE = SequoiaDB,
+ PARTITION p8 VALUES LESS THAN (90) ENGINE = SequoiaDB,
+ PARTITION p9 VALUES LESS THAN (100) ENGINE = SequoiaDB) */
+show create table t2;
+Table	Create Table
+t2	CREATE TABLE `t2` (
+  `id` int(11) NOT NULL,
+  `a` int(11) NOT NULL
+) ENGINE=SequoiaDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin
+select * from t1 order by a;
+id	a
+0	0
+0	1
+1	10
+2	20
+3	30
+4	40
+5	60
+6	60
+7	70
+8	80
+9	90
+select * from t2 order by a;
+id	a
+0	0
+0	1
+1	10
+2	20
+3	30
+4	40
+5	60
+6	60
+7	70
+8	80
+9	90
+drop database partition_26334_26335;
+drop database partition_26334_26335;

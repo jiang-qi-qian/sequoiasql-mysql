@@ -1,0 +1,5 @@
+drop sequence if exists seqTable;
+create sequence seqTable;
+insert into seqTable values (1,1,1000,1,0,1000,0,0);
+ERROR 0A000: Increment of sequence can't be 0
+drop sequence seqTable;

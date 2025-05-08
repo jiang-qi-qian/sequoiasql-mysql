@@ -1,0 +1,111 @@
+#seqDB-26739
+--source include/have_sequoiadb.inc
+--source include/have_partition.inc
+--disable_warnings
+drop database if exists join_bka_basic_partition_sequoiadb;
+--enable_warnings
+create database join_bka_basic_partition_sequoiadb;
+drop database join_bka_basic_partition_sequoiadb;
+create database join_bka_basic_partition_sequoiadb;
+
+use join_bka_basic_partition_sequoiadb;
+set session optimizer_switch='batched_key_access=on,mrr_cost_based=off';
+#join连接走bkah，核验数据结果准确性
+CREATE TABLE bka_t1(
+    a INT NOT NULL,
+    b INT NOT NULL,
+    c INT NOT NULL,
+    INDEX idx_a(a),
+    INDEX idx_b(b)
+)
+PARTITION BY RANGE COLUMNS (a)
+SUBPARTITION BY KEY (b)
+SUBPARTITIONS 2 (
+    PARTITION p0 VALUES LESS THAN (7),
+    PARTITION p1 VALUES LESS THAN (14),
+    PARTITION p2 VALUES LESS THAN (21)
+);
+CREATE TABLE bka_t2(
+    a INT NOT NULL,
+    b INT NOT NULL,
+    c INT NOT NULL,
+    INDEX idx_a(a),
+    INDEX idx_b(b)
+)
+PARTITION BY RANGE COLUMNS (a)
+SUBPARTITION BY KEY (b)
+SUBPARTITIONS 2 (
+    PARTITION p0 VALUES LESS THAN (7),
+    PARTITION p1 VALUES LESS THAN (14),
+    PARTITION p2 VALUES LESS THAN (21)
+);
+
+insert into bka_t1 values(1,1,1),(2,2,2),(3,3,3),(4,4,4),(5,5,5),(6,6,6),(7,7,7),(8,8,8),(9,9,9),(10,10,10);
+insert into bka_t1 select a+10,b+10,c+10 from bka_t1;
+insert into bka_t2 values(1,1,1),(2,2,2),(3,3,3),(4,4,4),(5,5,5),(6,6,6),(7,7,7),(8,8,8),(9,9,9),(10,10,10);
+insert into bka_t2 select a+10,b+10,c+10 from bka_t2;
+explain select bka_t1.a, bka_t1.b,bka_t1.c from bka_t1 inner join bka_t2 on bka_t1.a = bka_t2.a order by bka_t1.a;
+select bka_t1.a, bka_t1.b,bka_t1.c from bka_t1 inner join bka_t2 on bka_t1.a = bka_t2.a order by bka_t1.a;
+desc select bka_t1.a, bka_t1.b, bka_t1.c from bka_t1 inner join bka_t2 on bka_t1.a = bka_t2.a;
+explain select bka_t1.a, bka_t1.b, bka_t1.c from bka_t1 inner join bka_t2 on bka_t1.a = bka_t2.a;
+drop table bka_t1,bka_t2;
+
+#关联字段存在数据相同的记录时，核验数据结果准确
+CREATE TABLE bka_t1(
+    a INT NOT NULL,
+    b INT NOT NULL,
+    c INT NOT NULL,
+    INDEX idx_a(a),
+    INDEX idx_b(b)
+)
+PARTITION BY RANGE COLUMNS (a)
+SUBPARTITION BY KEY (b)
+SUBPARTITIONS 2 (
+    PARTITION p0 VALUES LESS THAN (7),
+    PARTITION p1 VALUES LESS THAN (14),
+    PARTITION p2 VALUES LESS THAN (21)
+);
+CREATE TABLE bka_t2(
+    a INT NOT NULL,
+    b INT NOT NULL,
+    c INT NOT NULL,
+    INDEX idx_a(a),
+    INDEX idx_b(b)
+)
+PARTITION BY RANGE COLUMNS (a)
+SUBPARTITION BY KEY (b)
+SUBPARTITIONS 2 (
+    PARTITION p0 VALUES LESS THAN (7),
+    PARTITION p1 VALUES LESS THAN (14),
+    PARTITION p2 VALUES LESS THAN (21)
+);
+insert into bka_t1 values(1,1,1),(2,2,2),(3,3,3),(4,4,4),(5,5,5),(6,6,6),(7,7,7),(8,8,8),(9,9,9),(10,10,10);
+insert into bka_t1 select a+6,b+6,c+6 from bka_t1;
+insert into bka_t2 values(1,1,1),(2,2,2),(3,3,3),(4,4,4),(5,5,5),(6,6,6),(7,7,7),(8,8,8),(9,9,9),(10,10,10);
+insert into bka_t2 select a+6,b+6,c+6 from bka_t2;
+explain select bka_t1.a, bka_t1.b,bka_t1.c from bka_t1 inner join bka_t2 on bka_t1.a = bka_t2.a;
+select bka_t1.a, bka_t1.b,bka_t1.c from bka_t1 inner join bka_t2 on bka_t1.a = bka_t2.a;
+drop table bka_t1,bka_t2;
+
+#唯一索引检查
+CREATE TABLE bka_t1(
+    a INT NOT NULL,
+    b INT NOT NULL,
+    c INT NOT NULL,
+	unique key(a,b)
+)
+PARTITION BY RANGE COLUMNS (a)
+SUBPARTITION BY KEY (b)
+SUBPARTITIONS 2 (
+    PARTITION p0 VALUES LESS THAN (7),
+    PARTITION p1 VALUES LESS THAN (14),
+    PARTITION p2 VALUES LESS THAN (21)
+);
+insert into bka_t1 values(1,1,1),(2,2,2),(3,3,3),(4,4,4),(5,5,5);
+#failed: Duplicate entry '{ "id": 1001 }' for key 'id'
+--error 1062
+insert into bka_t1 values(1,1,3);
+drop table bka_t1;
+set session optimizer_switch=default;
+drop database join_bka_basic_partition_sequoiadb;
+--source include/uninstall_sequoiadb.inc

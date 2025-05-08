@@ -1,0 +1,10 @@
+#Case 22100
+
+#BUG #SEQUOIASQLMAINSTREAM-641
+create table t1 ( a int, b char(127) );
+LOAD DATA INFILE '../../std_data/loaddata_5w_sequoiadb.dat' INTO TABLE t1(a,b);
+set max_execution_time = 10;
+--error 3024
+select * from t1;
+set max_execution_time = default;
+drop table t1;

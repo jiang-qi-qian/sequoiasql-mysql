@@ -1,0 +1,107 @@
+#Case 29898
+--source include/have_sequoiadb.inc
+
+--disable_warnings
+drop database if exists refresh_sequoiadb_29898;
+--enable_warnings
+
+create database refresh_sequoiadb_29898;
+use refresh_sequoiadb_29898;
+
+--disable_warnings
+drop table if exists refresh_sequoiadb_29898_1;
+drop table if exists refresh_sequoiadb_29898_2;
+--enable_warnings
+
+create table refresh_sequoiadb_29898_1(a int,b int,key(a));
+insert into refresh_sequoiadb_29898_1 values(1,1),(2,2),(3,3);
+
+create table refresh_sequoiadb_29898_2 like refresh_sequoiadb_29898_1;
+
+analyze table refresh_sequoiadb_29898_1;
+analyze table refresh_sequoiadb_29898_2;
+
+insert into refresh_sequoiadb_29898_1 values (4,4),(5,5),(6,6);
+insert into refresh_sequoiadb_29898_2 values (7,7),(8,8),(9,9);
+
+select * from refresh_sequoiadb_29898_1 order by a;
+select * from refresh_sequoiadb_29898_2 order by a;
+
+delimiter //;
+--error 1314
+create procedure p1()
+begin
+  refresh tables refresh_sequoiadb_29898_1, refresh_sequoiadb_29898_2 stats;
+  select * from refresh_sequoiadb_29898_1 order by a;
+  select * from refresh_sequoiadb_29898_2 order by a;
+end //
+
+--error 1314
+create procedure p2()
+begin
+  refresh tables stats;
+  select * from refresh_sequoiadb_29898_1 order by a;
+  select * from refresh_sequoiadb_29898_2 order by a;
+end //
+
+--error 1314
+create function func1() returns int
+begin
+  declare e int default 0;
+  refresh tables refresh_sequoiadb_29898_1,refresh_sequoiadb_29898_2 stats;
+  select * from refresh_sequoiadb_29898_1 order by a;
+  select * from refresh_sequoiadb_29898_2 order by a;
+  return e;
+end //
+
+--error 1314
+create function func2() returns int
+begin
+  declare e int default 0;
+  refresh tables stats;
+  select * from refresh_sequoiadb_29898_1 order by a;
+  select * from refresh_sequoiadb_29898_2 order by a;
+  return e;
+end //
+
+#trigger
+--error 1314
+create trigger my_trigger after insert on refresh_sequoiadb_29898_1 for each row 
+begin 
+refresh tables stats;
+select * from refresh_sequoiadb_29898_1 order by a;
+select * from refresh_sequoiadb_29898_2 order by a;
+end //
+
+--error 1314
+create trigger my_trigger after insert on refresh_sequoiadb_29898_1 for each row 
+begin 
+refresh tables refresh_sequoiadb_29898_1,refresh_sequoiadb_29898_2 stats;
+select * from refresh_sequoiadb_29898_1 order by a;
+select * from refresh_sequoiadb_29898_2 order by a;
+end //
+
+#event
+--error 1314
+create event my_event on schedule every 1 minute do 
+begin
+refresh tables stats;
+select * from refresh_sequoiadb_29898_1 order by a;
+select * from refresh_sequoiadb_29898_2 order by a;
+end //
+
+--error 1314
+create event my_event on schedule every 1 minute do 
+begin
+refresh tables refresh_sequoiadb_29898_1,refresh_sequoiadb_29898_2 stats;
+select * from refresh_sequoiadb_29898_1 order by a;
+select * from refresh_sequoiadb_29898_2 order by a;
+end //
+delimiter ;//
+
+drop table refresh_sequoiadb_29898_1;
+drop table refresh_sequoiadb_29898_2;
+
+drop database refresh_sequoiadb_29898;
+
+--source include/uninstall_sequoiadb.inc

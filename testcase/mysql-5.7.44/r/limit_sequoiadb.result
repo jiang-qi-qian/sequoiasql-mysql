@@ -1,0 +1,39 @@
+drop table if exists limit_sequoiadb;
+drop view if exists limit_sequoiadb_view;
+create table limit_sequoiadb(id int primary key auto_increment, c1 int);
+insert into limit_sequoiadb(c1) values(1),(2),(3),(2),(3);
+create view limit_sequoiadb_view as select * from limit_sequoiadb;
+(select * from limit_sequoiadb where c1>=1 limit 2,1) union ALL (select * from limit_sequoiadb where c1>1 order by c1 desc);
+id	c1
+2	2
+3	3
+3	3
+4	2
+5	3
+(select * from limit_sequoiadb where c1>=1 limit 2,1) union ALL (select * from limit_sequoiadb where c1>1 order by c1 desc) limit 3;
+id	c1
+2	2
+3	3
+3	3
+(select * from limit_sequoiadb where c1>=1 limit 2,1) union ALL (select * from limit_sequoiadb where c1>1 order by c1 desc) order by id desc limit 3;
+id	c1
+5	3
+4	2
+3	3
+(select * from limit_sequoiadb where c1>=1 limit 2,1) union ALL (select * from limit_sequoiadb where c1>1 order by c1 desc) order by id asc limit 3;
+id	c1
+2	2
+3	3
+3	3
+select * from limit_sequoiadb where id > (select id from limit_sequoiadb where c1 = 1) limit 3;
+id	c1
+2	2
+3	3
+4	2
+(select * from limit_sequoiadb_view where c1>=1 limit 2,1) union ALL (select * from limit_sequoiadb_view where c1>1 order by c1 desc) limit 3;
+id	c1
+2	2
+3	3
+3	3
+DROP TABLE limit_sequoiadb;
+DROP view limit_sequoiadb_view;

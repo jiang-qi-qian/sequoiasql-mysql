@@ -1,0 +1,204 @@
+drop database if exists multi_field_query_optimize_25618;
+create database multi_field_query_optimize_25618;
+drop database multi_field_query_optimize_25618;
+create database multi_field_query_optimize_25618;
+use multi_field_query_optimize_25618;
+set session optimizer_switch='mrr=on,mrr_cost_based=off';
+set session sequoiadb_debug_log=on;
+create table t1(a int,b int,key union_ab2(a,b));
+insert into t1 values(1,2),(1,20),(1,30),(2,3),(3,11),(5,21),(10,10),(20,9),(20,10),(20,30),(21,20),(30,19),(30,25);
+explain select * from t1 where a between 1 and 20 and b between 20 and 30;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	range	union_ab2	union_ab2	10	NULL	2	11.11	Using where with pushed condition ((`multi_field_query_optimize_25618`.`t1`.`a` between 1 and 20) and (`multi_field_query_optimize_25618`.`t1`.`b` between 20 and 30)); Using index
+Warnings:
+Note	1003	/* select#1 */ select `multi_field_query_optimize_25618`.`t1`.`a` AS `a`,`multi_field_query_optimize_25618`.`t1`.`b` AS `b` from `multi_field_query_optimize_25618`.`t1` where ((`multi_field_query_optimize_25618`.`t1`.`a` between 1 and 20) and (`multi_field_query_optimize_25618`.`t1`.`b` between 20 and 30))
+select * from t1 where a between 1 and 20 and b between 20 and 30;
+a	b
+1	20
+1	30
+20	30
+5	21
+[Note] Testcase: Operation log begin
+[Note] SequoiaDB: optimizer pushdown autocommit: 1
+[Note] SequoiaDB: Query message: condition[{ "$and": [ { "$and": [ { "$and": [ { "a": { "$gte": 1 } }, { "a": { "$lte": 20 } } ] }, { "$and": [ { "b": { "$gte": 20 } }, { "b": { "$lte": 30 } } ] } ] }, { "$and": [ { "a": { "$gte": 1 } }, { "b": { "$gte": 20 } }, { "a": { "$lte": 20 } }, { "b": { "$lte": 30 } } ] } ] }], selector[{ "a": null, "b": null }], order_by[{}], hint[{ "": "union_ab2" }], limit[-1], offset[0], table[multi_field_query_optimize_25618.t1]
+explain select * from t1 where a>=1 and a<=20 and b>=10 and b<=30;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	range	union_ab2	union_ab2	10	NULL	2	11.11	Using where with pushed condition ((`multi_field_query_optimize_25618`.`t1`.`a` >= 1) and (`multi_field_query_optimize_25618`.`t1`.`a` <= 20) and (`multi_field_query_optimize_25618`.`t1`.`b` >= 10) and (`multi_field_query_optimize_25618`.`t1`.`b` <= 30)); Using index
+Warnings:
+Note	1003	/* select#1 */ select `multi_field_query_optimize_25618`.`t1`.`a` AS `a`,`multi_field_query_optimize_25618`.`t1`.`b` AS `b` from `multi_field_query_optimize_25618`.`t1` where ((`multi_field_query_optimize_25618`.`t1`.`a` >= 1) and (`multi_field_query_optimize_25618`.`t1`.`a` <= 20) and (`multi_field_query_optimize_25618`.`t1`.`b` >= 10) and (`multi_field_query_optimize_25618`.`t1`.`b` <= 30))
+select * from t1 where a>=1 and a<=20 and b>=10 and b<=30;
+a	b
+1	20
+1	30
+10	10
+20	10
+20	30
+3	11
+5	21
+[Note] Testcase: Operation log begin
+[Note] SequoiaDB: optimizer pushdown autocommit: 1
+[Note] SequoiaDB: Query message: condition[{ "$and": [ { "a": { "$gte": 1 } }, { "b": { "$gte": 10 } }, { "a": { "$lte": 20 } }, { "b": { "$lte": 30 } } ] }], selector[{ "a": null, "b": null }], order_by[{}], hint[{ "": "union_ab2" }], limit[-1], offset[0], table[multi_field_query_optimize_25618.t1]
+explain select * from t1 where a>1 and a<20 and b>10 and b<30;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	range	union_ab2	union_ab2	5	NULL	2	11.11	Using where with pushed condition ((`multi_field_query_optimize_25618`.`t1`.`a` > 1) and (`multi_field_query_optimize_25618`.`t1`.`a` < 20) and (`multi_field_query_optimize_25618`.`t1`.`b` > 10) and (`multi_field_query_optimize_25618`.`t1`.`b` < 30)); Using index
+Warnings:
+Note	1003	/* select#1 */ select `multi_field_query_optimize_25618`.`t1`.`a` AS `a`,`multi_field_query_optimize_25618`.`t1`.`b` AS `b` from `multi_field_query_optimize_25618`.`t1` where ((`multi_field_query_optimize_25618`.`t1`.`a` > 1) and (`multi_field_query_optimize_25618`.`t1`.`a` < 20) and (`multi_field_query_optimize_25618`.`t1`.`b` > 10) and (`multi_field_query_optimize_25618`.`t1`.`b` < 30))
+select * from t1 where a>1 and a<20 and b>10 and b<30;
+a	b
+3	11
+5	21
+[Note] Testcase: Operation log begin
+[Note] SequoiaDB: optimizer pushdown autocommit: 1
+[Note] SequoiaDB: Query message: condition[{ "$and": [ { "a": { "$gt": 1 } }, { "a": { "$lt": 20 } }, { "b": { "$gt": 10 } }, { "b": { "$lt": 30 } } ] }], selector[{ "a": null, "b": null }], order_by[{}], hint[{ "": "union_ab2" }], limit[-1], offset[0], table[multi_field_query_optimize_25618.t1]
+explain select * from t1 where a>=1 and a<20 and b>10 and b<30;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	range	union_ab2	union_ab2	10	NULL	2	11.11	Using where with pushed condition ((`multi_field_query_optimize_25618`.`t1`.`a` >= 1) and (`multi_field_query_optimize_25618`.`t1`.`a` < 20) and (`multi_field_query_optimize_25618`.`t1`.`b` > 10) and (`multi_field_query_optimize_25618`.`t1`.`b` < 30)); Using index
+Warnings:
+Note	1003	/* select#1 */ select `multi_field_query_optimize_25618`.`t1`.`a` AS `a`,`multi_field_query_optimize_25618`.`t1`.`b` AS `b` from `multi_field_query_optimize_25618`.`t1` where ((`multi_field_query_optimize_25618`.`t1`.`a` >= 1) and (`multi_field_query_optimize_25618`.`t1`.`a` < 20) and (`multi_field_query_optimize_25618`.`t1`.`b` > 10) and (`multi_field_query_optimize_25618`.`t1`.`b` < 30))
+select * from t1 where a>=1 and a<20 and b>10 and b<30;
+a	b
+1	20
+3	11
+5	21
+[Note] Testcase: Operation log begin
+[Note] SequoiaDB: optimizer pushdown autocommit: 1
+[Note] SequoiaDB: Query message: condition[{ "$and": [ { "a": { "$gte": 1 } }, { "a": { "$lt": 20 } }, { "b": { "$gt": 10 } }, { "b": { "$lt": 30 } } ] }], selector[{ "a": null, "b": null }], order_by[{}], hint[{ "": "union_ab2" }], limit[-1], offset[0], table[multi_field_query_optimize_25618.t1]
+explain select * from t1 where a>1 and a<=20 and b>10 and b<30;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	range	union_ab2	union_ab2	10	NULL	2	11.11	Using where with pushed condition ((`multi_field_query_optimize_25618`.`t1`.`a` > 1) and (`multi_field_query_optimize_25618`.`t1`.`a` <= 20) and (`multi_field_query_optimize_25618`.`t1`.`b` > 10) and (`multi_field_query_optimize_25618`.`t1`.`b` < 30)); Using index
+Warnings:
+Note	1003	/* select#1 */ select `multi_field_query_optimize_25618`.`t1`.`a` AS `a`,`multi_field_query_optimize_25618`.`t1`.`b` AS `b` from `multi_field_query_optimize_25618`.`t1` where ((`multi_field_query_optimize_25618`.`t1`.`a` > 1) and (`multi_field_query_optimize_25618`.`t1`.`a` <= 20) and (`multi_field_query_optimize_25618`.`t1`.`b` > 10) and (`multi_field_query_optimize_25618`.`t1`.`b` < 30))
+select * from t1 where a>1 and a<=20 and b>10 and b<30;
+a	b
+3	11
+5	21
+[Note] Testcase: Operation log begin
+[Note] SequoiaDB: optimizer pushdown autocommit: 1
+[Note] SequoiaDB: Query message: condition[{ "$and": [ { "a": { "$gt": 1 } }, { "a": { "$lte": 20 } }, { "b": { "$gt": 10 } }, { "b": { "$lt": 30 } } ] }], selector[{ "a": null, "b": null }], order_by[{}], hint[{ "": "union_ab2" }], limit[-1], offset[0], table[multi_field_query_optimize_25618.t1]
+explain select * from t1 where a>=1 and a<=20 and b>10 and b<30;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	range	union_ab2	union_ab2	10	NULL	2	11.11	Using where with pushed condition ((`multi_field_query_optimize_25618`.`t1`.`a` >= 1) and (`multi_field_query_optimize_25618`.`t1`.`a` <= 20) and (`multi_field_query_optimize_25618`.`t1`.`b` > 10) and (`multi_field_query_optimize_25618`.`t1`.`b` < 30)); Using index
+Warnings:
+Note	1003	/* select#1 */ select `multi_field_query_optimize_25618`.`t1`.`a` AS `a`,`multi_field_query_optimize_25618`.`t1`.`b` AS `b` from `multi_field_query_optimize_25618`.`t1` where ((`multi_field_query_optimize_25618`.`t1`.`a` >= 1) and (`multi_field_query_optimize_25618`.`t1`.`a` <= 20) and (`multi_field_query_optimize_25618`.`t1`.`b` > 10) and (`multi_field_query_optimize_25618`.`t1`.`b` < 30))
+select * from t1 where a>=1 and a<=20 and b>10 and b<30;
+a	b
+1	20
+3	11
+5	21
+[Note] Testcase: Operation log begin
+[Note] SequoiaDB: optimizer pushdown autocommit: 1
+[Note] SequoiaDB: Query message: condition[{ "$and": [ { "a": { "$gte": 1 } }, { "b": { "$gt": 10 } }, { "a": { "$lte": 20 } }, { "b": { "$lt": 30 } } ] }], selector[{ "a": null, "b": null }], order_by[{}], hint[{ "": "union_ab2" }], limit[-1], offset[0], table[multi_field_query_optimize_25618.t1]
+explain select * from t1 where a>1 and a<20 and b>=10 and b<30;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	range	union_ab2	union_ab2	5	NULL	2	11.11	Using where with pushed condition ((`multi_field_query_optimize_25618`.`t1`.`a` > 1) and (`multi_field_query_optimize_25618`.`t1`.`a` < 20) and (`multi_field_query_optimize_25618`.`t1`.`b` >= 10) and (`multi_field_query_optimize_25618`.`t1`.`b` < 30)); Using index
+Warnings:
+Note	1003	/* select#1 */ select `multi_field_query_optimize_25618`.`t1`.`a` AS `a`,`multi_field_query_optimize_25618`.`t1`.`b` AS `b` from `multi_field_query_optimize_25618`.`t1` where ((`multi_field_query_optimize_25618`.`t1`.`a` > 1) and (`multi_field_query_optimize_25618`.`t1`.`a` < 20) and (`multi_field_query_optimize_25618`.`t1`.`b` >= 10) and (`multi_field_query_optimize_25618`.`t1`.`b` < 30))
+select * from t1 where a>1 and a<20 and b>=10 and b<30;
+a	b
+10	10
+3	11
+5	21
+[Note] Testcase: Operation log begin
+[Note] SequoiaDB: optimizer pushdown autocommit: 1
+[Note] SequoiaDB: Query message: condition[{ "$and": [ { "a": { "$gt": 1 } }, { "a": { "$lt": 20 } }, { "b": { "$gte": 10 } }, { "b": { "$lt": 30 } } ] }], selector[{ "a": null, "b": null }], order_by[{}], hint[{ "": "union_ab2" }], limit[-1], offset[0], table[multi_field_query_optimize_25618.t1]
+explain select * from t1 where a>=1 and a<20 and b>=10 and b<30;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	range	union_ab2	union_ab2	10	NULL	2	11.11	Using where with pushed condition ((`multi_field_query_optimize_25618`.`t1`.`a` >= 1) and (`multi_field_query_optimize_25618`.`t1`.`a` < 20) and (`multi_field_query_optimize_25618`.`t1`.`b` >= 10) and (`multi_field_query_optimize_25618`.`t1`.`b` < 30)); Using index
+Warnings:
+Note	1003	/* select#1 */ select `multi_field_query_optimize_25618`.`t1`.`a` AS `a`,`multi_field_query_optimize_25618`.`t1`.`b` AS `b` from `multi_field_query_optimize_25618`.`t1` where ((`multi_field_query_optimize_25618`.`t1`.`a` >= 1) and (`multi_field_query_optimize_25618`.`t1`.`a` < 20) and (`multi_field_query_optimize_25618`.`t1`.`b` >= 10) and (`multi_field_query_optimize_25618`.`t1`.`b` < 30))
+select * from t1 where a>=1 and a<20 and b>=10 and b<30;
+a	b
+1	20
+10	10
+3	11
+5	21
+[Note] Testcase: Operation log begin
+[Note] SequoiaDB: optimizer pushdown autocommit: 1
+[Note] SequoiaDB: Query message: condition[{ "$and": [ { "a": { "$gte": 1 } }, { "a": { "$lt": 20 } }, { "b": { "$gte": 10 } }, { "b": { "$lt": 30 } } ] }], selector[{ "a": null, "b": null }], order_by[{}], hint[{ "": "union_ab2" }], limit[-1], offset[0], table[multi_field_query_optimize_25618.t1]
+explain select * from t1 where a>1 and a<=20 and b>=10 and b<30;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	range	union_ab2	union_ab2	10	NULL	2	11.11	Using where with pushed condition ((`multi_field_query_optimize_25618`.`t1`.`a` > 1) and (`multi_field_query_optimize_25618`.`t1`.`a` <= 20) and (`multi_field_query_optimize_25618`.`t1`.`b` >= 10) and (`multi_field_query_optimize_25618`.`t1`.`b` < 30)); Using index
+Warnings:
+Note	1003	/* select#1 */ select `multi_field_query_optimize_25618`.`t1`.`a` AS `a`,`multi_field_query_optimize_25618`.`t1`.`b` AS `b` from `multi_field_query_optimize_25618`.`t1` where ((`multi_field_query_optimize_25618`.`t1`.`a` > 1) and (`multi_field_query_optimize_25618`.`t1`.`a` <= 20) and (`multi_field_query_optimize_25618`.`t1`.`b` >= 10) and (`multi_field_query_optimize_25618`.`t1`.`b` < 30))
+select * from t1 where a>1 and a<=20 and b>=10 and b<30;
+a	b
+10	10
+20	10
+3	11
+5	21
+[Note] Testcase: Operation log begin
+[Note] SequoiaDB: optimizer pushdown autocommit: 1
+[Note] SequoiaDB: Query message: condition[{ "$and": [ { "a": { "$gt": 1 } }, { "a": { "$lte": 20 } }, { "b": { "$gte": 10 } }, { "b": { "$lt": 30 } } ] }], selector[{ "a": null, "b": null }], order_by[{}], hint[{ "": "union_ab2" }], limit[-1], offset[0], table[multi_field_query_optimize_25618.t1]
+explain select * from t1 where a>=1 and a<=20 and b>= 10 and b<30;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	range	union_ab2	union_ab2	10	NULL	2	11.11	Using where with pushed condition ((`multi_field_query_optimize_25618`.`t1`.`a` >= 1) and (`multi_field_query_optimize_25618`.`t1`.`a` <= 20) and (`multi_field_query_optimize_25618`.`t1`.`b` >= 10) and (`multi_field_query_optimize_25618`.`t1`.`b` < 30)); Using index
+Warnings:
+Note	1003	/* select#1 */ select `multi_field_query_optimize_25618`.`t1`.`a` AS `a`,`multi_field_query_optimize_25618`.`t1`.`b` AS `b` from `multi_field_query_optimize_25618`.`t1` where ((`multi_field_query_optimize_25618`.`t1`.`a` >= 1) and (`multi_field_query_optimize_25618`.`t1`.`a` <= 20) and (`multi_field_query_optimize_25618`.`t1`.`b` >= 10) and (`multi_field_query_optimize_25618`.`t1`.`b` < 30))
+select * from t1 where a>=1 and a<=20 and b>= 10 and b<30;
+a	b
+1	20
+10	10
+20	10
+3	11
+5	21
+[Note] Testcase: Operation log begin
+[Note] SequoiaDB: optimizer pushdown autocommit: 1
+[Note] SequoiaDB: Query message: condition[{ "$and": [ { "a": { "$gte": 1 } }, { "b": { "$gte": 10 } }, { "a": { "$lte": 20 } }, { "b": { "$lt": 30 } } ] }], selector[{ "a": null, "b": null }], order_by[{}], hint[{ "": "union_ab2" }], limit[-1], offset[0], table[multi_field_query_optimize_25618.t1]
+explain select * from t1 where a>1 and a<20 and b>10 and b<=30;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	range	union_ab2	union_ab2	5	NULL	2	11.11	Using where with pushed condition ((`multi_field_query_optimize_25618`.`t1`.`a` > 1) and (`multi_field_query_optimize_25618`.`t1`.`a` < 20) and (`multi_field_query_optimize_25618`.`t1`.`b` > 10) and (`multi_field_query_optimize_25618`.`t1`.`b` <= 30)); Using index
+Warnings:
+Note	1003	/* select#1 */ select `multi_field_query_optimize_25618`.`t1`.`a` AS `a`,`multi_field_query_optimize_25618`.`t1`.`b` AS `b` from `multi_field_query_optimize_25618`.`t1` where ((`multi_field_query_optimize_25618`.`t1`.`a` > 1) and (`multi_field_query_optimize_25618`.`t1`.`a` < 20) and (`multi_field_query_optimize_25618`.`t1`.`b` > 10) and (`multi_field_query_optimize_25618`.`t1`.`b` <= 30))
+select * from t1 where a>1 and a<20 and b>10 and b<=30;
+a	b
+3	11
+5	21
+[Note] Testcase: Operation log begin
+[Note] SequoiaDB: optimizer pushdown autocommit: 1
+[Note] SequoiaDB: Query message: condition[{ "$and": [ { "a": { "$gt": 1 } }, { "a": { "$lt": 20 } }, { "b": { "$gt": 10 } }, { "b": { "$lte": 30 } } ] }], selector[{ "a": null, "b": null }], order_by[{}], hint[{ "": "union_ab2" }], limit[-1], offset[0], table[multi_field_query_optimize_25618.t1]
+explain select * from t1 where a>=1 and a<20 and b>10 and b<=30;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	range	union_ab2	union_ab2	10	NULL	2	11.11	Using where with pushed condition ((`multi_field_query_optimize_25618`.`t1`.`a` >= 1) and (`multi_field_query_optimize_25618`.`t1`.`a` < 20) and (`multi_field_query_optimize_25618`.`t1`.`b` > 10) and (`multi_field_query_optimize_25618`.`t1`.`b` <= 30)); Using index
+Warnings:
+Note	1003	/* select#1 */ select `multi_field_query_optimize_25618`.`t1`.`a` AS `a`,`multi_field_query_optimize_25618`.`t1`.`b` AS `b` from `multi_field_query_optimize_25618`.`t1` where ((`multi_field_query_optimize_25618`.`t1`.`a` >= 1) and (`multi_field_query_optimize_25618`.`t1`.`a` < 20) and (`multi_field_query_optimize_25618`.`t1`.`b` > 10) and (`multi_field_query_optimize_25618`.`t1`.`b` <= 30))
+select * from t1 where a>=1 and a<20 and b>10 and b<=30;
+a	b
+1	20
+1	30
+3	11
+5	21
+[Note] Testcase: Operation log begin
+[Note] SequoiaDB: optimizer pushdown autocommit: 1
+[Note] SequoiaDB: Query message: condition[{ "$and": [ { "a": { "$gte": 1 } }, { "a": { "$lt": 20 } }, { "b": { "$gt": 10 } }, { "b": { "$lte": 30 } } ] }], selector[{ "a": null, "b": null }], order_by[{}], hint[{ "": "union_ab2" }], limit[-1], offset[0], table[multi_field_query_optimize_25618.t1]
+explain select * from t1 where a>1 and a<=20 and b>10 and b<=30;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	range	union_ab2	union_ab2	10	NULL	2	11.11	Using where with pushed condition ((`multi_field_query_optimize_25618`.`t1`.`a` > 1) and (`multi_field_query_optimize_25618`.`t1`.`a` <= 20) and (`multi_field_query_optimize_25618`.`t1`.`b` > 10) and (`multi_field_query_optimize_25618`.`t1`.`b` <= 30)); Using index
+Warnings:
+Note	1003	/* select#1 */ select `multi_field_query_optimize_25618`.`t1`.`a` AS `a`,`multi_field_query_optimize_25618`.`t1`.`b` AS `b` from `multi_field_query_optimize_25618`.`t1` where ((`multi_field_query_optimize_25618`.`t1`.`a` > 1) and (`multi_field_query_optimize_25618`.`t1`.`a` <= 20) and (`multi_field_query_optimize_25618`.`t1`.`b` > 10) and (`multi_field_query_optimize_25618`.`t1`.`b` <= 30))
+select * from t1 where a>1 and a<=20 and b>10 and b<=30;
+a	b
+20	30
+3	11
+5	21
+[Note] Testcase: Operation log begin
+[Note] SequoiaDB: optimizer pushdown autocommit: 1
+[Note] SequoiaDB: Query message: condition[{ "$and": [ { "a": { "$gt": 1 } }, { "a": { "$lte": 20 } }, { "b": { "$gt": 10 } }, { "b": { "$lte": 30 } } ] }], selector[{ "a": null, "b": null }], order_by[{}], hint[{ "": "union_ab2" }], limit[-1], offset[0], table[multi_field_query_optimize_25618.t1]
+explain select * from t1 where a>=1 and a<=20 and b>10 and b<=30;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	range	union_ab2	union_ab2	10	NULL	2	11.11	Using where with pushed condition ((`multi_field_query_optimize_25618`.`t1`.`a` >= 1) and (`multi_field_query_optimize_25618`.`t1`.`a` <= 20) and (`multi_field_query_optimize_25618`.`t1`.`b` > 10) and (`multi_field_query_optimize_25618`.`t1`.`b` <= 30)); Using index
+Warnings:
+Note	1003	/* select#1 */ select `multi_field_query_optimize_25618`.`t1`.`a` AS `a`,`multi_field_query_optimize_25618`.`t1`.`b` AS `b` from `multi_field_query_optimize_25618`.`t1` where ((`multi_field_query_optimize_25618`.`t1`.`a` >= 1) and (`multi_field_query_optimize_25618`.`t1`.`a` <= 20) and (`multi_field_query_optimize_25618`.`t1`.`b` > 10) and (`multi_field_query_optimize_25618`.`t1`.`b` <= 30))
+select * from t1 where a>=1 and a<=20 and b>10 and b<=30;
+a	b
+1	20
+1	30
+20	30
+3	11
+5	21
+[Note] Testcase: Operation log begin
+[Note] SequoiaDB: optimizer pushdown autocommit: 1
+[Note] SequoiaDB: Query message: condition[{ "$and": [ { "a": { "$gte": 1 } }, { "b": { "$gt": 10 } }, { "a": { "$lte": 20 } }, { "b": { "$lte": 30 } } ] }], selector[{ "a": null, "b": null }], order_by[{}], hint[{ "": "union_ab2" }], limit[-1], offset[0], table[multi_field_query_optimize_25618.t1]
+drop table t1;
+set session optimizer_switch=default;
+set session sequoiadb_debug_log=off;
+drop database multi_field_query_optimize_25618;

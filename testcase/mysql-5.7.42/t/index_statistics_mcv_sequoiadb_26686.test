@@ -1,0 +1,113 @@
+# Testcase: seqDB-26686:单个复合分区表ref方式查询，表数据不均匀，未命中MCV
+
+#
+# clear residual data
+#
+CREATE DATABASE  IF NOT EXISTS index_statistics_mcv_sequoiadb_26686;
+DROP DATABASE IF EXISTS index_statistics_mcv_sequoiadb_26686;
+
+#
+# set env
+#
+--source include/have_sequoiadb.inc
+
+CREATE DATABASE  IF NOT EXISTS index_statistics_mcv_sequoiadb_26686;
+use index_statistics_mcv_sequoiadb_26686;
+
+#
+# testcase process
+#
+CREATE TABLE t1(
+    a INT NOT NULL,
+    b INT NOT NULL,
+    c INT NOT NULL,
+    d INT NOT NULL,
+    INDEX idx_a(a),
+    INDEX idx_b(b),
+    INDEX idx_cd(c,d),
+    INDEX idx_dc(d,c)
+)
+PARTITION BY RANGE COLUMNS (a)
+SUBPARTITION BY KEY (b)
+SUBPARTITIONS 2 (
+    PARTITION p0 VALUES LESS THAN (4),
+    PARTITION p1 VALUES LESS THAN (7),
+    PARTITION p2 VALUES LESS THAN (10)
+);
+
+# insert 200 rows
+DELIMITER $;
+CREATE PROCEDURE p1()
+BEGIN
+    DECLARE i INT;
+    DECLARE a_value INT;
+    DECLARE b_value INT;
+    DECLARE c_value INT;
+    DECLARE d_value INT;
+    SET i=1;
+    WHILE i<=200 DO
+        IF (i<101) THEN
+            SET a_value=8;
+            SET b_value=5;
+            SET c_value=5;
+            SET d_value=5;
+        ELSEIF (i<100 and i<141) THEN
+            SET a_value=6;
+            SET b_value=1;
+            SET c_value=1;
+            SET d_value=1;
+        ELSEIF (i<140 and i<161) THEN
+            SET a_value=3;
+            SET b_value=2;
+            SET c_value=7;
+            SET d_value=9;
+        ELSEIF (i<160 and i<171) THEN
+            SET a_value=7;
+            SET b_value=8;
+            SET c_value=9;
+            SET d_value=4;
+        ELSEIF (i<170 and i<175) THEN
+            SET a_value=1;
+            SET b_value=3;
+            SET c_value=6;
+            SET d_value=3;
+        ELSE
+            SET a_value=2;
+            SET b_value=2;
+            SET c_value=2;
+            SET d_value=2;
+        END IF;
+        INSERT INTO t1(a,b,c,d) values (a_value, b_value, c_value, d_value);
+    SET i=i+1;
+    END WHILE;
+END $
+DELIMITER ;$
+
+CALL p1();
+
+# 1 单键索引(不存在的值)
+--sorted_result
+SELECT * FROM t1 WHERE a=101 and b=51;
+# 2 复合索引(不存在的值)
+--sorted_result
+SELECT * FROM t1 WHERE c=21;
+--sorted_result
+SELECT * FROM t1 WHERE c=21 and d=11;
+ANALYZE TABLE t1;
+
+# set debug='d:i:t:o,/tmp/mysqld26686.trace:f,Sdb_match_cnt_estimator::eval_mcv';
+
+EXPLAIN SELECT * FROM t1 WHERE a=101 and b=51;
+EXPLAIN SELECT * FROM t1 WHERE c=21;
+EXPLAIN SELECT * FROM t1 WHERE c=21 and d=11;
+
+# set debug='';
+
+DROP PROCEDURE p1;
+DROP TABLE t1;
+
+#
+# clear env
+#
+DROP DATABASE index_statistics_mcv_sequoiadb_26686;
+--source include/uninstall_sequoiadb.inc

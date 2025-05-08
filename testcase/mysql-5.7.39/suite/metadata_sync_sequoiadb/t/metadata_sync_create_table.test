@@ -1,0 +1,500 @@
+#case 18858#case 20314#case 19225
+
+--source include/have_sequoiadb.inc
+--source suite/metadata_sync_sequoiadb/inc/insts_connect_sequoiadb.inc
+
+# connect to conn1, clear databases in the beginning
+connection conn1;
+set session sequoiadb_support_mode="";
+--disable_warnings
+SET sql_mode = 'ANSI_QUOTES';
+SET character_set_client = utf8;
+SET character_set_connection = utf8;
+DROP DATABASE IF EXISTS metasync_create_tables;
+DROP DATABASE IF EXISTS "metasync_中文";
+SET sql_mode=default;
+--enable_warnings
+
+# connect to conn2, check databases are cleaned in the beginning
+connection conn2;
+set session sequoiadb_support_mode="";
+--sleep $sleep
+SET sql_mode = 'ANSI_QUOTES';
+SET character_set_client = utf8;
+SET character_set_connection = utf8;
+--error ER_BAD_DB_ERROR 
+SHOW CREATE DATABASE metasync_create_tables;
+--error ER_BAD_DB_ERROR
+SHOW CREATE DATABASE "metasync_中文";
+SET sql_mode=default;
+
+# seqDB-18858
+# begin testing
+#
+# CREATE TABLES 
+#
+# test create table with all datatypes
+connection conn1;
+CREATE DATABASE metasync_create_tables;
+USE metasync_create_tables;
+--disable_query_log
+CREATE TABLE IF NOT EXISTS metasync_reserved ( id INT PRIMARY KEY );
+--enable_query_log
+CREATE TABLE IF NOT EXISTS t1 ( a INT, b SMALLINT, c TINYINT, d MEDIUMINT, e BIGINT );
+CREATE TABLE IF NOT EXISTS t2 ( a DECIMAL(10, 2), b NUMERIC(8,2) );
+CREATE TABLE IF NOT EXISTS t3 ( a FLOAT(10, 2), b DOUBLE );
+CREATE TABLE IF NOT EXISTS t4 ( a BIT );
+CREATE TABLE IF NOT EXISTS t5 ( a DATE, b DATETIME, c TIMESTAMP );
+CREATE TABLE IF NOT EXISTS t6 ( a YEAR, b TIME );
+CREATE TABLE IF NOT EXISTS t7 ( a CHAR, b VARCHAR(255) );
+CREATE TABLE IF NOT EXISTS t8 ( a BINARY, b VARBINARY(255) );
+CREATE TABLE IF NOT EXISTS t9 ( a BLOB, b TEXT );
+CREATE TABLE IF NOT EXISTS t10 ( a SET("a", "b", "c"), b ENUM("a", "b", "c") );
+CREATE TABLE IF NOT EXISTS t11 ( a SET('a', 'b', 'c'), b ENUM("a", "b", "c") );
+CREATE TABLE IF NOT EXISTS t12 ( a GEOMETRY, b POINT, c LINESTRING, d POLYGON );
+CREATE TABLE IF NOT EXISTS t13 ( a JSON );
+# check metadatas after create
+connection conn2;
+--sleep $sleep
+USE metasync_create_tables;
+SHOW CREATE TABLE t1;
+SHOW CREATE TABLE t2;
+SHOW CREATE TABLE t3;
+SHOW CREATE TABLE t4;
+SHOW CREATE TABLE t5;
+SHOW CREATE TABLE t6;
+SHOW CREATE TABLE t7;
+SHOW CREATE TABLE t8;
+SHOW CREATE TABLE t9;
+SHOW CREATE TABLE t10;
+SHOW CREATE TABLE t11;
+SHOW CREATE TABLE t12;
+SHOW CREATE TABLE t13;
+# clear tables
+connection conn1;
+DROP TABLE t1,t2,t3,t4,t5,t6,t7,t8,t9,t10,t11,t12,t13;
+# check tables cleared
+connection conn2;
+--sleep $sleep
+--error ER_NO_SUCH_TABLE
+SHOW CREATE TABLE t1;
+--error ER_NO_SUCH_TABLE
+SHOW CREATE TABLE t2;
+--error ER_NO_SUCH_TABLE
+SHOW CREATE TABLE t3;
+--error ER_NO_SUCH_TABLE
+SHOW CREATE TABLE t4;
+--error ER_NO_SUCH_TABLE
+SHOW CREATE TABLE t5;
+--error ER_NO_SUCH_TABLE
+SHOW CREATE TABLE t6;
+--error ER_NO_SUCH_TABLE
+SHOW CREATE TABLE t7;
+--error ER_NO_SUCH_TABLE
+SHOW CREATE TABLE t8;
+--error ER_NO_SUCH_TABLE
+SHOW CREATE TABLE t9;
+--error ER_NO_SUCH_TABLE
+SHOW CREATE TABLE t10;
+--error ER_NO_SUCH_TABLE
+SHOW CREATE TABLE t11;
+--error ER_NO_SUCH_TABLE
+SHOW CREATE TABLE t12;
+--error ER_NO_SUCH_TABLE
+SHOW CREATE TABLE t13;
+
+# test create table with index
+connection conn1;
+CREATE TABLE t1 ( a VARCHAR(255), INDEX idx( a(10) ASC ) );
+CREATE TABLE t2 ( a VARCHAR(255) KEY );
+CREATE TABLE t3 ( a VARCHAR(255), KEY idx( a(10) DESC ) );
+CREATE TABLE t4 ( a VARCHAR(255), KEY idx( a(10) DESC ) USING HASH );
+CREATE TABLE t5 ( a VARCHAR(255), INDEX( a(10) ) KEY_BLOCK_SIZE = 10 ) ;
+CREATE TABLE t6 ( a VARCHAR(255), INDEX( a(10) ) COMMENT "create index");
+CREATE TABLE t7 ( a VARCHAR(255), INDEX( a(10) ) COMMENT 'create "index"');
+# check metadatas after create
+connection conn2;
+--sleep $sleep
+SHOW CREATE TABLE t1;
+SHOW CREATE TABLE t2;
+SHOW CREATE TABLE t3;
+SHOW CREATE TABLE t4;
+SHOW CREATE TABLE t5;
+SHOW CREATE TABLE t6;
+SHOW CREATE TABLE t7;
+# clear tables
+connection conn1;
+DROP TABLE t1,t2,t3,t4,t5,t6,t7;
+# check tables cleared
+connection conn2;
+--sleep $sleep
+--error ER_NO_SUCH_TABLE
+SHOW CREATE TABLE t1;
+--error ER_NO_SUCH_TABLE
+SHOW CREATE TABLE t2;
+--error ER_NO_SUCH_TABLE
+SHOW CREATE TABLE t3;
+--error ER_NO_SUCH_TABLE
+SHOW CREATE TABLE t4;
+--error ER_NO_SUCH_TABLE
+SHOW CREATE TABLE t5;
+--error ER_NO_SUCH_TABLE
+SHOW CREATE TABLE t6;
+--error ER_NO_SUCH_TABLE
+SHOW CREATE TABLE t7;
+
+# test create table with foreign key
+connection conn1;
+CREATE TABLE t1 ( a INT UNIQUE KEY );
+CREATE TABLE t2 ( a INT PRIMARY KEY );
+CREATE TABLE t3 ( b INT, FOREIGN KEY(b) REFERENCES t1(a) );
+CREATE TABLE t4 ( b INT REFERENCES t1(a) MATCH FULL ON DELETE RESTRICT );
+CREATE TABLE t5 ( b INT REFERENCES t1(a) MATCH PARTIAL ON UPDATE CASCADE );
+# check metadatas after create
+connection conn2;
+--sleep $sleep
+SHOW CREATE TABLE t1;
+SHOW CREATE TABLE t2;
+SHOW CREATE TABLE t3;
+SHOW CREATE TABLE t4;
+SHOW CREATE TABLE t5;
+# clear tables
+connection conn1;
+DROP TABLE t1,t2,t3,t4,t5;
+# check tables cleared
+connection conn2;
+--sleep $sleep
+--error ER_NO_SUCH_TABLE
+SHOW CREATE TABLE t1;
+--error ER_NO_SUCH_TABLE
+SHOW CREATE TABLE t2;
+--error ER_NO_SUCH_TABLE
+SHOW CREATE TABLE t3;
+--error ER_NO_SUCH_TABLE
+SHOW CREATE TABLE t4;
+--error ER_NO_SUCH_TABLE
+SHOW CREATE TABLE t5;
+
+# test create table with:
+# check
+# default,not null
+# charset
+# format,storage
+# comment
+connection conn1;
+CREATE TABLE t1 ( a INT CHECK ( a > 10 ) );
+CREATE TABLE t2 ( a INT KEY, CHECK ( a > 10 ) );
+CREATE TABLE t3 ( a INT NOT NULL DEFAULT 1000 );
+CREATE TABLE t4 ( a VARCHAR(255) COLLATE utf8_bin); 
+CREATE TABLE t5 ( a VARCHAR(255) COLUMN_FORMAT DYNAMIC STORAGE MEMORY);
+CREATE TABLE t6 ( a INT COMMENT 'column comment' );
+CREATE TABLE t7 ( a INT ) COMMENT "string";
+CREATE TABLE t8 ( a INT ) COMMENT = 'sequoiadb:{"table_options":{"ShardingKey":{"a":1},"Compressed":true,"CompressionType":"lzw","ReplSize":1,"AutoIndexId":false,"EnsureShardingIndex":false,"StrictDataMode":true,"Partition":512}}';
+# check metadatas after create
+connection conn2;
+--sleep $sleep
+SHOW CREATE TABLE t1;
+SHOW CREATE TABLE t2;
+SHOW CREATE TABLE t3;
+SHOW CREATE TABLE t4;
+SHOW CREATE TABLE t5;
+SHOW CREATE TABLE t6;
+SHOW CREATE TABLE t7;
+SHOW CREATE TABLE t8;
+# clear tables
+connection conn1;
+DROP TABLE t1,t2,t3,t4,t5,t6,t7,t8;
+# check tables cleared
+connection conn2;
+--sleep $sleep
+--error ER_NO_SUCH_TABLE
+SHOW CREATE TABLE t1;
+--error ER_NO_SUCH_TABLE
+SHOW CREATE TABLE t2;
+--error ER_NO_SUCH_TABLE
+SHOW CREATE TABLE t3;
+--error ER_NO_SUCH_TABLE
+SHOW CREATE TABLE t4;
+--error ER_NO_SUCH_TABLE
+SHOW CREATE TABLE t5;
+--error ER_NO_SUCH_TABLE
+SHOW CREATE TABLE t6;
+--error ER_NO_SUCH_TABLE
+SHOW CREATE TABLE t7;
+--error ER_NO_SUCH_TABLE
+SHOW CREATE TABLE t8;
+
+# test create table with:
+# auto_increment
+# generated field
+# partition
+# avg_row_length
+# checksum
+# connection and password
+connection conn1;
+CREATE TABLE t1 ( a INT AUTO_INCREMENT UNIQUE KEY );
+CREATE TABLE t2 ( a INT AUTO_INCREMENT PRIMARY KEY );
+CREATE TABLE t3 ( a INT AUTO_INCREMENT KEY ) AUTO_INCREMENT = 100;
+CREATE TABLE t4 ( a INT, b INT, c INT GENERATED ALWAYS AS (a + b) VIRTUAL );
+CREATE TABLE t5 ( a TIMESTAMP(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6) ) PARTITION BY KEY(a) PARTITIONS 4;
+CREATE TABLE t6 ( a VARCHAR(255) ) AVG_ROW_LENGTH = 12;
+CREATE TABLE t7 ( a INT ) CHECKSUM 1;
+CREATE TABLE t8 ( a VARCHAR(255) ) CONNECTION = "connect_string";
+CREATE TABLE t9 ( a VARCHAR(255) ) CONNECTION = "connect_string" PASSWORD "string";
+# check metadatas after create
+connection conn2;
+--sleep $sleep
+SHOW CREATE TABLE t1;
+SHOW CREATE TABLE t2;
+SHOW CREATE TABLE t3;
+SHOW CREATE TABLE t4;
+SHOW CREATE TABLE t5;
+SHOW CREATE TABLE t6;
+SHOW CREATE TABLE t7;
+SHOW CREATE TABLE t8;
+SHOW CREATE TABLE t9;
+# clear tables
+connection conn1;
+DROP TABLE t1,t2,t3,t4,t5,t6,t7,t8,t9;
+# check tables cleared
+connection conn2;
+--sleep $sleep
+--error ER_NO_SUCH_TABLE
+SHOW CREATE TABLE t1;
+--error ER_NO_SUCH_TABLE
+SHOW CREATE TABLE t2;
+--error ER_NO_SUCH_TABLE
+SHOW CREATE TABLE t3;
+--error ER_NO_SUCH_TABLE
+SHOW CREATE TABLE t4;
+--error ER_NO_SUCH_TABLE
+SHOW CREATE TABLE t5;
+--error ER_NO_SUCH_TABLE
+SHOW CREATE TABLE t6;
+--error ER_NO_SUCH_TABLE
+SHOW CREATE TABLE t7;
+--error ER_NO_SUCH_TABLE
+SHOW CREATE TABLE t8;
+--error ER_NO_SUCH_TABLE
+SHOW CREATE TABLE t9;
+
+# test create table with:
+# directory
+# encryption
+# insert method
+# key_block_size
+# max rows,min rows
+# pack keys
+# format
+# stat
+# tablespace
+# union
+connection conn1;
+CREATE TABLE t1 ( a VARCHAR(255) ) DATA DIRECTORY = "/opt/sequoiasql/mysql/";
+CREATE TABLE t2 ( a VARCHAR(255) ) DELAY_KEY_WRITE 1 ENCRYPTION "N";
+CREATE TABLE t3 ( a VARCHAR(255) ) INSERT_METHOD first;
+CREATE TABLE t4 ( a VARCHAR(255) ) KEY_BLOCK_SIZE = 1024;
+CREATE TABLE t5 ( a VARCHAR(255) ) MAX_ROWS 1024 MIN_ROWS = 1;
+CREATE TABLE t6 ( a VARCHAR(255) ) PACK_KEYS 0;
+CREATE TABLE t7 ( a VARCHAR(255) ) ROW_FORMAT =COMPRESSED;
+CREATE TABLE t8 ( a VARCHAR(255) ) STATS_AUTO_RECALC 1 STATS_PERSISTENT 1 STATS_SAMPLE_PAGES = 10;
+CREATE TABLE t9 ( a VARCHAR(255) ) TABLESPACE tablespace_tmp;
+CREATE TABLE t10 ( a TEXT );
+CREATE TABLE t11 ( a TEXT );
+CREATE TABLE t12 ( a VARCHAR(255) ) UNION ( t10,t11 );
+# check metadatas after create
+connection conn2;
+--sleep $sleep
+SHOW CREATE TABLE t1;
+SHOW CREATE TABLE t2;
+SHOW CREATE TABLE t3;
+SHOW CREATE TABLE t4;
+SHOW CREATE TABLE t5;
+SHOW CREATE TABLE t6;
+SHOW CREATE TABLE t7;
+SHOW CREATE TABLE t8;
+SHOW CREATE TABLE t9;
+SHOW CREATE TABLE t10;
+SHOW CREATE TABLE t11;
+SHOW CREATE TABLE t12;
+# clear tables
+connection conn1;
+DROP TABLE t1,t2,t3,t4,t5,t6,t7,t8,t9,t10,t11,t12;
+# check tables cleared
+connection conn2;
+--sleep $sleep
+--error ER_NO_SUCH_TABLE
+SHOW CREATE TABLE t1;
+--error ER_NO_SUCH_TABLE
+SHOW CREATE TABLE t2;
+--error ER_NO_SUCH_TABLE
+SHOW CREATE TABLE t3;
+--error ER_NO_SUCH_TABLE
+SHOW CREATE TABLE t4;
+--error ER_NO_SUCH_TABLE
+SHOW CREATE TABLE t5;
+--error ER_NO_SUCH_TABLE
+SHOW CREATE TABLE t6;
+--error ER_NO_SUCH_TABLE
+SHOW CREATE TABLE t7;
+--error ER_NO_SUCH_TABLE
+SHOW CREATE TABLE t8;
+--error ER_NO_SUCH_TABLE
+SHOW CREATE TABLE t9;
+--error ER_NO_SUCH_TABLE
+SHOW CREATE TABLE t10;
+--error ER_NO_SUCH_TABLE
+SHOW CREATE TABLE t11;
+--error ER_NO_SUCH_TABLE
+SHOW CREATE TABLE t12;
+
+# seqDB-20314
+# test:
+# create table select
+# create table like
+# truncate table
+connection conn1;
+CREATE TABLE t1 ( a INT, b INT, c INT );
+INSERT INTO t1 VALUES ( 1, 1, 1 );
+INSERT INTO t1 VALUES ( 2, 2, 2 );
+INSERT INTO t1 VALUES ( 3, 3, 3 );
+CREATE TABLE t2 ( a INT ) IGNORE SELECT a FROM t1;
+CREATE TABLE t3 ( a INT ) REPLACE SELECT a FROM t1;
+CREATE TABLE t4 ( a INT );
+CREATE TABLE t5 LIKE t4;
+CREATE TABLE t6 ( LIKE t4 );
+INSERT INTO t6 VALUES (1), (2), (3);
+SELECT * FROM t6 ORDER BY a;
+TRUNCATE TABLE t6;
+# check metadatas after create
+connection conn2;
+--sleep $sleep
+SHOW CREATE TABLE t1;
+SHOW CREATE TABLE t2;
+SHOW CREATE TABLE t3;
+SHOW CREATE TABLE t4;
+SHOW CREATE TABLE t5;
+SHOW CREATE TABLE t6;
+SELECT * FROM t2 ORDER BY a;
+SELECT * FROM t3 ORDER BY a;
+SELECT * FROM t6 ORDER BY a;
+# clear tables
+connection conn1;
+DROP TABLE t1,t2,t3,t4,t5,t6;
+# check tables cleared
+connection conn2;
+--sleep $sleep
+--error ER_NO_SUCH_TABLE
+SHOW CREATE TABLE t1;
+--error ER_NO_SUCH_TABLE
+SHOW CREATE TABLE t2;
+--error ER_NO_SUCH_TABLE
+SHOW CREATE TABLE t3;
+--error ER_NO_SUCH_TABLE
+SHOW CREATE TABLE t4;
+--error ER_NO_SUCH_TABLE
+SHOW CREATE TABLE t5;
+--error ER_NO_SUCH_TABLE
+SHOW CREATE TABLE t6;
+
+# test set sql_mode='ANSI_QUOTES', table name with ""
+connection conn1;
+SET sql_mode = 'ANSI_QUOTES';
+CREATE DATABASE "metasync_中文";
+USE "metasync_中文";
+CREATE TABLE "t1" ( a INT );
+CREATE TABLE t2 ( a CHAR(1) );
+# seqDB-19225
+# SEQUOIASQLMAINSTREAM-364
+CREATE TABLE "    t3" ( a CHAR(1) COMMENT 'This is \a Test, \\\'s\b\nn\tt comment分多行nnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnn' );
+CREATE TABLE "\tt1\nn1\rr1" ( a CHAR(1) );
+CREATE TABLE "中文表名" ( a CHAR(1) );
+# check metadatas after create
+connection conn2;
+--sleep $sleep
+SET sql_mode = 'ANSI_QUOTES';
+USE "metasync_中文";
+SHOW CREATE TABLE "t1";
+SHOW CREATE TABLE "t2";
+SHOW CREATE TABLE "    t3";
+SHOW CREATE TABLE "\tt1\nn1\rr1";
+SHOW CREATE TABLE "中文表名";
+# clear tables
+DROP TABLE "t1","t2","    t3","\tt1\nn1\rr1","中文表名";
+# check tables cleared
+connection conn1;
+--sleep $sleep
+--error ER_NO_SUCH_TABLE
+SHOW CREATE TABLE "t1";
+--error ER_NO_SUCH_TABLE
+SHOW CREATE TABLE "t2";
+--error ER_NO_SUCH_TABLE
+SHOW CREATE TABLE "    t3";
+--error ER_NO_SUCH_TABLE
+SHOW CREATE TABLE "\tt1\nn1\rr1";
+--error ER_NO_SUCH_TABLE
+SHOW CREATE TABLE "中文表名";
+
+# clear databases in the ending
+connection conn2;
+DROP DATABASE metasync_create_tables;
+DROP DATABASE "metasync_中文";
+SET sql_mode = default;
+SET character_set_client = default;
+SET character_set_connection = default;
+# check databases are cleaned in the ending
+connection conn1;
+--sleep $sleep
+--error ER_BAD_DB_ERROR 
+SHOW CREATE DATABASE metasync_create_tables;
+--error ER_BAD_DB_ERROR
+SHOW CREATE DATABASE "metasync_中文";
+SET sql_mode = default;
+SET character_set_client = default;
+SET character_set_connection = default;
+
+#seqDB-23357
+#table
+connection conn1;
+create database metasync_create_tables;
+use metasync_create_tables;
+create table t(a int);
+--error 1051
+drop table t1,t;
+
+connection conn2;
+use metasync_create_tables;
+--error 1146
+show create table t;
+
+#view
+connection conn1;
+create table tt1(id int); 
+create view vv1 as select 1; 
+--error 1051
+drop table tt111, tt1; 
+--error 1051
+drop view vv111,vv1; 
+ 
+connection conn2;
+--error 1146
+show create table tt1;
+--error 1146
+show create table vv1;
+
+#view
+connection conn1;
+create table ts1(id int);
+create view vs1 as select 1; 
+drop table if exists ts111,ts1; 
+drop view if exists vs111, vs1; 
+
+connection conn2;
+--error 1146
+show create table ts1;
+--error 1146
+show create table vs1;
+drop database metasync_create_tables;
+
+--source include/uninstall_sequoiadb.inc
+--source suite/metadata_sync_sequoiadb/inc/insts_disconnect_sequoiadb.inc

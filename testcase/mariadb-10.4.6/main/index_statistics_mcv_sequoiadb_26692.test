@@ -1,0 +1,58 @@
+# Testcase: seqDB-26692:单个复合分区表ref_or_null方式查询，表数据均匀，未命中MCV
+
+#
+# clear residual data
+#
+CREATE DATABASE  IF NOT EXISTS index_statistics_mcv_sequoiadb_26692;
+DROP DATABASE IF EXISTS index_statistics_mcv_sequoiadb_26692;
+
+#
+# set env
+#
+--source include/have_sequoiadb.inc
+--source include/have_partition.inc
+
+CREATE DATABASE  IF NOT EXISTS index_statistics_mcv_sequoiadb_26692;
+use index_statistics_mcv_sequoiadb_26692;
+
+#
+# testcase process
+#
+CREATE TABLE t1(
+    a INT NOT NULL,
+    b INT,
+    c INT NOT NULL,
+    INDEX idx_a(a),
+    INDEX idx_b(b)
+)
+PARTITION BY RANGE COLUMNS (a)
+SUBPARTITION BY KEY (b)
+SUBPARTITIONS 2 (
+    PARTITION p0 VALUES LESS THAN (4),
+    PARTITION p1 VALUES LESS THAN (7),
+    PARTITION p2 VALUES LESS THAN (10)
+);
+
+# insert 25 rows
+INSERT INTO t1 VALUES
+(1,NULL,9),(3,1,9),(1,NULL,9),(3,1,9),(1,NULL,9),(3,1,9),(1,NULL,9),(3,1,9),(1,NULL,9),(3,1,9),
+(2,3,9),(5,4,9),(2,3,9),(5,3,9),(2,3,9),(5,4,9),(2,3,9),(5,4,9),(2,3,9),(5,4,9),
+(4,2,9),(4,2,9),(4,2,9),(4,2,9),(4,2,9);
+
+--sorted_result
+SELECT * FROM t1 WHERE b=5 or b IS NULL;
+ANALYZE TABLE t1;
+
+# set debug='d:i:t:o,/tmp/mysqld26692.trace:f,Sdb_match_cnt_estimator::eval_mcv';
+
+EXPLAIN SELECT * FROM t1 WHERE b=5 or b IS NULL;
+
+# set debug='';
+
+DROP TABLE t1;
+
+#
+# clear env
+#
+DROP DATABASE index_statistics_mcv_sequoiadb_26692;
+--source include/uninstall_sequoiadb.inc

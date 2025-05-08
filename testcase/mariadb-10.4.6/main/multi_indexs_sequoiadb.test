@@ -1,0 +1,29 @@
+# Case 31052
+
+--disable_warnings
+DROP TABLE IF EXISTS multi_indexs_sequoiadb; 
+--enable_warnings
+
+CREATE TABLE multi_indexs_sequoiadb(a int) CHARSET=utf8mb4 COLLATE=utf8mb4_bin;
+
+let $i = 30;
+let $j = 30;
+while ($i) 
+{
+eval ALTER TABLE multi_indexs_sequoiadb ADD COLUMN a$i int DEFAULT 100;
+eval ALTER TABLE multi_indexs_sequoiadb ADD INDEX a$i (a$i);
+eval INSERT INTO multi_indexs_sequoiadb(a) VALUES ($i);
+dec $i;
+}
+
+while ($j)
+{
+eval UPDATE multi_indexs_sequoiadb SET a$j = 50 WHERE a$j = 100;
+dec $j;
+}
+
+SELECT count(*) FROM multi_indexs_sequoiadb;
+
+DROP TABLE multi_indexs_sequoiadb;
+
+--source include/uninstall_sequoiadb.inc

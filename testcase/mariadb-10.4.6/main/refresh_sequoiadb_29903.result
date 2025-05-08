@@ -1,0 +1,50 @@
+drop database if exists refresh_sequoiadb_29903;
+create database refresh_sequoiadb_29903;
+use refresh_sequoiadb_29903;
+drop table if exists refresh_sequoiadb_29903_1;
+drop table if exists refresh_sequoiadb_29903_2;
+create table refresh_sequoiadb_29903_1(a int,b int,key(a));
+insert into refresh_sequoiadb_29903_1 values(1,1),(2,2),(3,3);
+create table refresh_sequoiadb_29903_2 like refresh_sequoiadb_29903_1;
+analyze table refresh_sequoiadb_29903_1;
+Table	Op	Msg_type	Msg_text
+refresh_sequoiadb_29903.refresh_sequoiadb_29903_1	analyze	status	Engine-independent statistics collected
+refresh_sequoiadb_29903.refresh_sequoiadb_29903_1	analyze	status	OK
+analyze table refresh_sequoiadb_29903_2;
+Table	Op	Msg_type	Msg_text
+refresh_sequoiadb_29903.refresh_sequoiadb_29903_2	analyze	status	Engine-independent statistics collected
+refresh_sequoiadb_29903.refresh_sequoiadb_29903_2	analyze	status	OK
+insert into refresh_sequoiadb_29903_1 values (4,4),(5,5),(6,6);
+insert into refresh_sequoiadb_29903_2 values (7,7),(8,8),(9,9);
+refresh table REFRESH_SEQUOIADB_29903_1,REFRESH_SEQUOIADB_29903_2 stats;
+select * from REFRESH_SEQUOIADB_29903_1;
+a	b
+1	1
+2	2
+3	3
+4	4
+5	5
+6	6
+select * from REFRESH_SEQUOIADB_29903_2;
+a	b
+7	7
+8	8
+9	9
+refresh table REFRESH_SEQUOIADB_29903_1 stats;
+refresh table REFRESH_SEQUOIADB_29903_2 stats;
+select * from REFRESH_SEQUOIADB_29903_1;
+a	b
+1	1
+2	2
+3	3
+4	4
+5	5
+6	6
+select * from REFRESH_SEQUOIADB_29903_2;
+a	b
+7	7
+8	8
+9	9
+drop table REFRESH_SEQUOIADB_29903_1;
+drop table REFRESH_SEQUOIADB_29903_2;
+drop database refresh_sequoiadb_29903;

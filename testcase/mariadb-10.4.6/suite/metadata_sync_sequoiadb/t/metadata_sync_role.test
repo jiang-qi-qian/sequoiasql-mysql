@@ -1,0 +1,48 @@
+#case 22933
+
+--source include/have_sequoiadb.inc
+--source suite/metadata_sync_sequoiadb/inc/insts_connect_sequoiadb.inc
+
+# connect to conn1, clear roles in the beginning
+connection conn1;
+--disable_warnings
+DROP ROLE IF EXISTS metaSync_role1;
+DROP ROLE IF EXISTS metaSync_role2;
+FLUSH PRIVILEGES;
+--enable_warnings
+
+# connect to conn2, check roles are cleaned in the beginning
+connection conn2;
+--sleep 5
+SELECT * FROM mysql.roles_mapping WHERE role = 'metaSync_role1';
+SELECT * FROM mysql.roles_mapping WHERE role = 'metaSync_role2';
+
+# seqDB-22933
+# begin testing
+#
+# create/alter/drop role
+connection conn1;
+--disable_warnings
+CREATE ROLE metaSync_role1 WITH ADMIN metaSync_ruser1;
+CREATE OR REPLACE ROLE metaSync_role1 WITH ADMIN metaSync_ruser2;
+CREATE ROLE IF NOT EXISTS metaSync_role2;
+--enable_warnings
+FLUSH PRIVILEGES;
+# check metadatas after create
+connection conn2;
+--sleep 5
+SELECT * FROM mysql.roles_mapping WHERE Role='metaSync_role1' AND user LIKE 'metaSync_ruser%';
+--replace_column 2 x
+SELECT * FROM mysql.roles_mapping WHERE Role='metaSync_role2';
+# drop role
+DROP ROLE IF EXISTS metaSync_role1;
+DROP ROLE metaSync_role2;
+FLUSH PRIVILEGES;
+# check metadatas after drop
+connection conn1;
+--sleep 5
+SELECT * FROM mysql.roles_mapping WHERE Role = 'metaSync_role1';
+SELECT * FROM mysql.roles_mapping WHERE Role = 'metaSync_role2';
+
+--source include/uninstall_sequoiadb.inc
+--source suite/metadata_sync_sequoiadb/inc/insts_disconnect_sequoiadb.inc

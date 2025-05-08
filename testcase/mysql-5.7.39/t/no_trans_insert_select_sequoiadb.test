@@ -1,0 +1,51 @@
+#seqDB-31380
+--source include/have_sequoiadb.inc
+
+--disable_warnings
+drop database if exists no_trans_insert_select;
+--enable_warnings
+
+create database no_trans_insert_select;
+drop database no_trans_insert_select;
+create database no_trans_insert_select;
+use no_trans_insert_select;
+
+set session sequoiadb_use_transaction = off;
+
+create table t1 (a int,b varchar(18),key (b));
+insert into t1 values(1,'a'),(2,'b'),(3,'c');
+create table t2(
+	col1 int,
+	col2 varchar(128),
+	col3 datetime,
+	col4 int,
+	key idx_col1(col1),
+	key idx_col2(col2),
+	key idx_col1_2(col1,col2)
+	)
+	partition by range columns (col1)
+	subpartition by key (col4)
+	subpartitions 2 (
+    	partition p0 values less than (4),
+    	partition p1 values less than (7),
+    	partition p2 values less than (11));
+insert into t2 values (3,'str3','2023-02-03 15:15:15',33),(6,null,null,88),(8,null,null,66),(7,'str7','2023-02-07 15:35:35',77),(1,'str1','2023-02-01 15:05:05',11),(9,'str3','2023-02-09 15:45:45',99),(4,'str4','2023-02-04 15:20:20',44),(2,'str2','2023-02-02 15:10:10',22),(5,'str5','2023-02-05 15:25:25',55),(6,'str6','2023-02-06 15:30:15',66),(8,'str8','2023-02-08 15:40:40',88);
+
+flush table t1,t2;
+insert into t1 select * from t1;
+insert into t2 select * from t2;
+flush table t1,t2;
+replace into t1 select * from t1;
+replace into t2 select * from t2;
+
+analyze table t1;
+analyze table t2;
+insert into t1 select * from t1;
+insert into t2 select * from t2;
+analyze table t1;
+analyze table t2;
+replace into t1 select * from t1;
+replace into t2 select * from t2;
+
+drop database no_trans_insert_select;
+--source include/uninstall_sequoiadb.inc

@@ -1,0 +1,82 @@
+create table t1 (a int, primary key(a))engine=sequoiadb COMMENT='sequoiadb:{ table_options: { ShardingKey: { a: 1 }, AutoSplit:true } }';
+insert into t1 values (1);
+insert into t1 values (1);
+ERROR 23000: Duplicate entry '{ "a": 1 }' for key 'PRIMARY'
+update ignore t1 set a = 2;
+ERROR HY000: Sharding key cannot be updated
+set global sequoiadb_error_level=warning;
+insert into t1 values (1);
+ERROR 23000: Duplicate entry '{ "a": 1 }' for key 'PRIMARY'
+update ignore t1 set a = 2;
+Warnings:
+Warning	40178	Sharding key cannot be updated
+set global sequoiadb_error_level=error;
+drop table t1;
+create table t1 ( a char(10) ) COMMENT="sequoiadb:{ table_options: { a : 1 } }";
+ERROR HY000: Invalid Argument
+create table t1 ( id int primary key, a char(8)) COMMENT="sequoiadb:{ table_options : {ShardingKey:{id:1}, ShardingType : 'hash' }}";
+create unique index a on t1(a);
+ERROR HY000: The unique index must include all fields in sharding key
+drop table t1;
+create table t1 (a char(10));
+insert into t1 values ('abc'),('bcd'),('abc');
+create unique index a on t1 (a);
+ERROR 23000: Duplicate entry '{ "a": "abc" }' for key 'a'
+alter table t1 add unique a(a);
+ERROR 23000: Duplicate entry '{ "a": "abc" }' for key 'a'
+drop table t1;
+create table t1 ( id int, t longtext, index (`id`) ) ;
+create index id1 on t1(id);
+ERROR HY000: The scene of index 'id1' is covered by the existing index 'id'
+insert into t1 values(1, repeat('a',16773075));
+ERROR HY000: User record is too large
+create index t_idx on t1(t(255));
+insert into t1 values(2, repeat('a', 4084));
+ERROR HY000: Index key is too large
+create table t2 (id int) comment "sequoiadb: {table_options: {ShardingKey:{id:1},IsMainCL:true}}";
+insert into t2 values(1);
+ERROR HY000: Unable to find the matched catalog information
+alter table t1 comment 'sequoiadb: {table_options: {AutoSplit: true}}';
+ERROR HY000: There is no valid sharding-key defined
+alter table t1 comment 'sequoiadb: {table_options: {AutoIndexId: false}}';
+update t1 set t = 'update';
+ERROR HY000: no $id index found
+insert into t1 values (NULL, 'text');
+ERROR HY000: no $id index found
+drop table t1;
+create table t1 ( id int ) ;
+insert into t1 values (NULL);
+alter table t1 add primary key(id);
+ERROR 22004: Invalid use of NULL value
+select * from t1;
+id
+NULL
+set sql_mode = "";
+alter table t1 add primary key(id);
+select * from t1;
+id
+0
+set sql_mode = default;
+drop table t1,t2;
+create table t1 ( a int, b int );
+create index idx_a on t1( a );
+create index idx_a on t1( a );
+ERROR 42000: Duplicate key name 'idx_a'
+create index idx_a on t1( b );
+ERROR 42000: Duplicate key name 'idx_a'
+create unique index idx_b on t1( b );
+insert into t1 values( 1, 1 );
+insert into t1 values( 2, 1 );
+ERROR 23000: Duplicate entry '{ "b": 1 }' for key 'idx_b'
+drop table t1;
+create table t1 ( id int, c char(2) ) comment 'sequoiadb: {table_options: { ShardingKey: {id: 1}}}';
+alter table t1 add unique index c(c), algorithm=inplace;
+ERROR HY000: The unique index must include all fields in sharding key
+alter table t1 add unique index c(c), algorithm=copy;
+ERROR HY000: The unique index must include all fields in sharding key
+insert into t1 values (NULL, 'a');
+alter table t1 add primary key(id), algorithm=inplace;
+ERROR 22004: Invalid use of NULL value
+alter table t1 add primary key(id), algorithm=copy;
+ERROR 01000: Data truncated for column 'id' at row 1
+drop table t1;

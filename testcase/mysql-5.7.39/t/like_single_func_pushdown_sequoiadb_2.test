@@ -1,0 +1,884 @@
+#seqDB-26641
+--source include/have_sequoiadb.inc
+
+--disable_warnings
+drop database if exists like_single_func_pushdown_sequoiadb_2;
+--enable_warnings
+create database like_single_func_pushdown_sequoiadb_2;
+drop database like_single_func_pushdown_sequoiadb_2;
+create database like_single_func_pushdown_sequoiadb_2;
+use like_single_func_pushdown_sequoiadb_2;
+set session sequoiadb_debug_log=on;
+set session sequoiadb_support_mode='';
+
+--disable_warnings
+drop table if exists t1, t2, t3, t4, t5;
+--enable_warnings
+
+create table t1(
+    a varchar(514) charset utf8mb4 collate utf8mb4_bin
+);
+create table t2(
+    a varchar(20) charset utf8mb4 collate utf8mb4_bin
+);
+create table t3(
+    a set('a1','b2','c3') charset utf8mb4 collate utf8mb4_bin
+);
+create table t4(
+    a int
+);
+create table t5(
+    a varchar(20) charset utf8mb4 collate utf8mb4_unicode_ci
+);
+
+#-----------------------------datetime functions---------------------------------#
+
+#adddate
+select adddate('2000-01-01','31'),adddate('2000-01-01', 30);
+insert into t1 values(adddate('2000-01-01','31')),(adddate('2000-01-01', 30));
+select * from t1 where a like adddate('2000-01-01','31') order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t1 where a like adddate('2000-01-01', 30) order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t2 where a like adddate((a),'31');
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t2 where a like adddate(null,'31');
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t3 where a like adddate('2000-01-01','31');
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t4 where a like adddate('2000-01-01','31');
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t5 where a like adddate('2000-01-01','31');
+--source include/query_pushdown_condition_sequoiadb.inc
+
+#addtime
+select addtime('2000-01-01 12:00:00','1');
+insert into t1 values(addtime('2000-01-01 12:00:00','1'));
+select * from t1 where a like addtime('2000-01-01 12:00:00','1') order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+
+#convert_tz
+select convert_tz('2000-01-01 12:00:00','+00:00','+01:00');
+insert into t1 values(convert_tz('2000-01-01 12:00:00','+00:00','+01:00'));
+select * from t1 where a like convert_tz('2000-01-01 12:00:00','+00:00','+01:00') order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+
+#curdate 
+select * from t2 where a like curdate() order by a;
+--replace_regex /^([^s]*)\[Note\]/[Note]/
+--exec grep -w "Query message" $MYSQLTEST_VARDIR/log/mysqld.1.err | tail -1 | sed 's/: ".*",/: "",/'
+
+#current_date
+select * from t2 where a like current_date() order by a;
+--replace_regex /^([^s]*)\[Note\]/[Note]/
+--exec grep -w "Query message" $MYSQLTEST_VARDIR/log/mysqld.1.err | tail -1 | sed 's/: ".*",/: "",/'
+
+#current_time
+select * from t2 where a like current_time() order by a;
+--replace_regex /^([^s]*)\[Note\]/[Note]/
+--exec grep -w "Query message" $MYSQLTEST_VARDIR/log/mysqld.1.err | tail -1 | sed 's/: ".*",/: "",/'
+
+#current_timestamp
+select * from t2 where a like current_timestamp() order by a;
+--replace_regex /^([^s]*)\[Note\]/[Note]/
+--exec grep -w "Query message" $MYSQLTEST_VARDIR/log/mysqld.1.err | tail -1 | sed 's/: ".*",/: "",/'
+
+#date
+select date('2000-01-01 12:00:00');
+insert into t1 values(date('2000-01-01 12:00:00'));
+select * from t1 where a like date('2000-01-01 12:00:00') order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+
+#date_add
+select date_add('2000-01-01',interval 1 day);
+insert into t1 values(date_add('2000-01-01',interval 1 day));
+select * from t1 where a like date_add('2000-01-01',interval 1 day) order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+
+#date_format
+select date_format('12:00:00','%H:%i:%s');
+insert into t1 values(date_format('12:00:00','%H:%i:%s'));
+select * from t1 where a like date_format('12:00:00','%H:%i:%s') order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+
+#date_sub
+select date_sub('2000-01-01',interval 1 day);
+insert into t1 values(date_sub('2000-01-01',interval 1 day));
+select * from t1 where a like date_sub('2000-01-01',interval 1 day) order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+
+#datediff
+select datediff('2000-01-01','2000-01-02');
+insert into t1 values(datediff('2000-01-01','2000-01-02'));
+select * from t1 where a like datediff('2000-01-01','2000-01-02') order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+
+#day
+select day('2000-01-01');
+insert into t1 values(day('2000-01-01'));
+select * from t1 where a like day('2000-01-01') order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+
+#dayname
+select dayname('2000-01-01');
+insert into t1 values(dayname('2000-01-01'));
+select * from t1 where a like dayname('2000-01-01') order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+
+#dayofmonth
+select dayofmonth('2000-01-01');
+insert into t1 values(dayofmonth('2000-01-01'));
+select * from t1 where a like dayofmonth('2000-01-01') order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+
+#dayofweek
+select dayofweek('2000-02-01');
+insert into t1 values(dayofweek('2000-02-01'));
+select * from t1 where a like dayofweek('2000-02-01') order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t2 where a like dayofweek((a));
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t3 where a like dayofweek('2000-02-01');
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t4 where a like dayofweek('2000-02-01');
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t5 where a like dayofweek('2000-02-01');
+--source include/query_pushdown_condition_sequoiadb.inc
+
+#dayofyear
+select dayofyear('2000-01-01');
+insert into t1 values(dayofyear('2000-01-01'));
+select * from t1 where a like dayofyear('2000-01-01') order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+
+#extract
+select extract(microsecond from '2000-01-01 12:00:00.000123');
+insert into t1 values(extract(microsecond from '2000-01-01 12:00:00.000123'));
+select * from t1 where a like extract(microsecond from '2000-01-01 12:00:00.000123') order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+
+#from_days
+select from_days(730485);
+insert into t1 values(from_days(730485));
+select * from t1 where a like from_days(730485) order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+
+#from_unixtime
+select from_unixtime(946699200);
+insert into t1 values(from_unixtime(946699200));
+select * from t1 where a like from_unixtime(946699200) order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+
+#get_format
+select get_format(date,'iso');
+insert into t1 values(get_format(date,'iso'));
+select * from t1 where a like get_format(date,'iso') order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+
+#hour
+select hour('2000-01-01 12:00:00');
+insert into t1 values(hour('2000-01-01 12:00:00'));
+select * from t1 where a like hour('2000-01-01 12:00:00') order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+
+#last_day
+select last_day('2000-01-01 12:00:00');
+insert into t1 values(last_day('2000-01-01 12:00:00'));
+select * from t1 where a like last_day('2000-01-01 12:00:00') order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+
+#localtime
+select * from t2 where a like localtime() order by a;
+--replace_regex /^([^s]*)\[Note\]/[Note]/
+--exec grep -w "Query message" $MYSQLTEST_VARDIR/log/mysqld.1.err | tail -1 | sed 's/: ".*",/: "",/'
+
+#makedate
+select makedate(2000,1);
+insert into t1 values(makedate(2000,1));
+select * from t1 where a like makedate(2000,1) order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+
+#maketime
+select maketime(12,00,00);
+insert into t1 values(maketime(12,00,00));
+select * from t1 where a like maketime(12,00,00) order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+
+#microsecond
+select microsecond('2000-01-01 12:00:00.000123');
+insert into t1 values(microsecond('2000-01-01 12:00:00.000123'));
+select * from t1 where a like microsecond('2000-01-01 12:00:00.000123') order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+
+#minute
+select minute('2000-01-01 12:00:00.000123');
+insert into t1 values(minute('2000-01-01 12:00:00.000123'));
+select * from t1 where a like minute('2000-01-01 12:00:00.000123') order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+
+#month
+select month('2000-01-01');
+insert into t1 values(month('2000-01-01'));
+select * from t1 where a like month('2000-01-01') order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+
+#monthname
+select monthname('2000-01-01');
+insert into t1 values(monthname('2000-01-01'));
+select * from t1 where a like monthname('2000-01-01') order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+
+#now
+select * from t2 where a like now() order by a;
+--replace_regex /^([^s]*)\[Note\]/[Note]/
+--exec grep -w "Query message" $MYSQLTEST_VARDIR/log/mysqld.1.err | tail -1 | sed 's/: ".*",/: "",/'
+
+#period_add
+select period_add('20000101',1);
+insert into t1 values(period_add('20000101',1));
+select * from t1 where a like period_add('20000101',1) order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+
+#period_diff
+select period_diff('20000101','20000102');
+insert into t1 values(period_diff('20000101','20000102'));
+select * from t1 where a like period_diff('20000101','20000102') order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+
+#quarter
+select quarter('2000-01-01');
+insert into t1 values(quarter('2000-01-01'));
+select * from t1 where a like quarter('2000-01-01') order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+
+#second
+select second('12:00:00');
+insert into t1 values(second('12:00:00'));
+select * from t1 where a like second('12:00:00') order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+
+#sec_to_time
+select sec_to_time(43200);
+insert into t1 values(sec_to_time(43200));
+select * from t1 where a like sec_to_time(43200) order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+
+#str_to_date
+select str_to_date('01,01,2000','%d,%m,%Y');
+insert into t1 values(str_to_date('01,01,2000','%d,%m,%Y'));
+select * from t1 where a like str_to_date('01,01,2000','%d,%m,%Y') order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t2 where a like str_to_date((a),'%d,%m,%Y');
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t3 where a like str_to_date('01,01,2000','%d,%m,%Y');
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t4 where a like str_to_date('01,01,2000','%d,%m,%Y');
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t5 where a like str_to_date('01,01,2000','%d,%m,%Y');
+--source include/query_pushdown_condition_sequoiadb.inc
+
+#subdate
+select subdate('2000-01-01 12:00:00',1);
+insert into t1 values(subdate('2000-01-01 12:00:00',1));
+select * from t1 where a like subdate('2000-01-01 12:00:00',1) order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+
+#subtime
+select subtime('2000-01-01 12:00:00',1);
+insert into t1 values(subtime('2000-01-01 12:00:00',1));
+select * from t1 where a like subtime('2000-01-01 12:00:00',1) order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+
+#sysdate #cannot push down
+select * from t2 where a like sysdate() order by a;
+--replace_regex /^([^s]*)\[Note\]/[Note]/
+--exec grep -w "Query message" $MYSQLTEST_VARDIR/log/mysqld.1.err | tail -1 | sed 's/: ".*",/: "",/'
+
+#time
+select time('2000-01-01 12:00:00.000123');
+insert into t1 values(time('2000-01-01 12:00:00.000123'));
+select * from t1 where a like time('2000-01-01 12:00:00.000123') order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+
+#time_format
+select time_format('8:12:12', '%H %i %s');
+insert into t1 values(time_format('8:12:12', '%H %i %s'));
+select * from t1 where a like time_format('8:12:12', '%H %i %s') order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+
+#time_to_sec
+select time_to_sec('8:12:12');
+insert into t1 values(time_to_sec('8:12:12'));
+select * from t1 where a like time_to_sec('8:12:12') order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+
+#timediff
+select timediff('2000-01-01 12:00:00.000123','2000-01-01 12:00:00.000124');
+insert into t1 values(timediff('2000-01-01 12:00:00.000123','2000-01-01 12:00:00.000124'));
+select * from t1 where a like timediff('2000-01-01 12:00:00.000123','2000-01-01 12:00:00.000124') order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+
+#timestamp
+select timestamp('2000-01-01');
+insert into t1 values(timestamp('2000-01-01'));
+select * from t1 where a like timestamp('2000-01-01') order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+
+#timestampadd
+select timestampadd(minute,1,'2000-01-01 12:00:00');
+insert into t1 values(timestampadd(minute,1,'2000-01-01 12:00:00'));
+select * from t1 where a like timestampadd(minute,1,'2000-01-01 12:00:00') order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+
+#timestampdiff
+select timestampdiff(year,'1999-01-01','2000-01-01');
+insert into t1 values(timestampdiff(year,'1999-01-01','2000-01-01'));
+select * from t1 where a like timestampdiff(year,'1999-01-01','2000-01-01') order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+
+#to_days
+select to_days('2000-01-01');
+insert into t1 values(to_days('2000-01-01'));
+select * from t1 where a like to_days('2000-01-01') order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+
+#to_seconds
+select to_seconds('2000-01-01 12:00:00');
+insert into t1 values(to_seconds('2000-01-01 12:00:00'));
+select * from t1 where a like to_seconds('2000-01-01 12:00:00') order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+
+#unix_timestamp
+select unix_timestamp('2000-01-01 12:00:00.000123');
+insert into t1 values(unix_timestamp('2000-01-01 12:00:00.000123'));
+select * from t1 where a like unix_timestamp('2000-01-01 12:00:00.000123') order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+
+#utc_date
+select * from t2 where a like utc_date() order by a;
+--replace_regex /^([^s]*)\[Note\]/[Note]/
+--exec grep -w "Query message" $MYSQLTEST_VARDIR/log/mysqld.1.err | tail -1 | sed 's/: ".*",/: "",/'
+
+#utc_time
+select * from t2 where a like utc_time() order by a;
+--replace_regex /^([^s]*)\[Note\]/[Note]/
+--exec grep -w "Query message" $MYSQLTEST_VARDIR/log/mysqld.1.err | tail -1 | sed 's/: ".*",/: "",/'
+
+#utc_timestamp
+select * from t2 where a like utc_timestamp() order by a;
+--replace_regex /^([^s]*)\[Note\]/[Note]/
+--exec grep -w "Query message" $MYSQLTEST_VARDIR/log/mysqld.1.err | tail -1 | sed 's/: ".*",/: "",/'
+
+#week
+select week('2000-01-01');
+insert into t1 values(week('2000-01-01'));
+select * from t1 where a like week('2000-01-01') order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+
+#weekday
+select weekday('2000-01-01');
+insert into t1 values(weekday('2000-01-01'));
+select * from t1 where a like weekday('2000-01-01') order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+
+#weekofyear
+select weekofyear('2000-01-01');
+insert into t1 values(weekofyear('2000-01-01'));
+select * from t1 where a like weekofyear('2000-01-01') order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+
+#year
+select year('2000-01-01');
+insert into t1 values(year('2000-01-01'));
+select * from t1 where a like year('2000-01-01') order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+
+#yearweek
+select yearweek('2000-01-01');
+insert into t1 values(yearweek('2000-01-01'));
+select * from t1 where a like yearweek('2000-01-01') order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+
+#-----------------------------datetime functions-----------------------------------#
+
+#------------------------------numeric functions-----------------------------------#
+
+#mod
+select mod(1.5,1),mod('1.5','1');
+insert into t1 values(mod(1.5,1)),(mod('1.5','1'));
+select * from t1 where a like mod(1.5,1) order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t1 where a like mod('1.5','1') order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t2 where a like mod((a),1);
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t2 where a like mod(1.5,null);
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t3 where a like mod(1.5,1);
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t4 where a like mod(1.5,1);
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t5 where a like mod(1.5,1);
+--source include/query_pushdown_condition_sequoiadb.inc
+
+#%
+select (1.5 % 2);
+insert into t1 values((1.5 % 2));
+select * from t1 where a like (1.5 % 2) order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+
+#+
+select (1 + 2);
+insert into t1 values((1 + 2));
+select * from t1 where a like (1 + 2) order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+
+#-
+select (1 - 3);
+insert into t1 values((1 - 3));
+select * from t1 where a like (1 - 3) order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+
+#-
+select (-4);
+insert into t1 values(-4);
+select * from t1 where a like (-4) order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+
+#*
+select (1 * 4);
+insert into t1 values((1 * 4));
+select * from t1 where a like (1 * 4) order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+
+#/
+select (1 / 5);
+insert into t1 values((1 / 5));
+select * from t1 where a like (1 / 5) order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+
+#div
+select (11 div -2);
+insert into t1 values((11 div -2));
+select * from t1 where a like (11 div -2) order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+
+#abs
+select abs(-5);
+insert into t1 values(abs(-5));
+select * from t1 where a like abs(-5) order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+
+#acos
+select acos(0);
+insert into t1 values(acos(0));
+select * from t1 where a like acos(0) order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+
+#asin
+select asin(0.2);
+insert into t1 values(asin(0.2));
+select * from t1 where a like asin(0.2) order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+
+#atan
+select atan(2);
+insert into t1 values(atan(2));
+select * from t1 where a like atan(2) order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+
+#atan2
+select atan(-2,2);
+insert into t1 values(atan(-2,2));
+select * from t1 where a like atan(-2,2) order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+
+#ceil
+select ceil(-6.123);
+insert into t1 values(ceil(-6.123));
+select * from t1 where a like ceil(-6.123) order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+
+#ceiling
+select ceiling(-6.123);
+insert into t1 values(ceiling(-6.123));
+select * from t1 where a like ceiling(-6.123) order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+
+#conv
+select conv('a',16,2);
+insert into t1 values(conv('a',16,2));
+select * from t1 where a like conv('a',16,2) order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+
+#cos
+select cos(2);
+insert into t1 values(cos(2));
+select * from t1 where a like cos(2) order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+
+#cot
+select cot(12);
+insert into t1 values(cot(12));
+select * from t1 where a like cot(12) order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+
+#crc32
+select crc32('ssql');
+insert into t1 values(crc32('ssql'));
+select * from t1 where a like crc32('ssql') order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+
+#degrees
+select degrees(2);
+insert into t1 values(degrees(2));
+select * from t1 where a like degrees(2) order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+
+#exp
+select exp(2);
+insert into t1 values(exp(2));
+select * from t1 where a like exp(2) order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+
+#floor
+select floor(15.123);
+insert into t1 values(floor(15.123));
+select * from t1 where a like floor(15.123) order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+
+#ln
+select ln(2);
+insert into t1 values(ln(2));
+select * from t1 where a like ln(2) order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+
+#log
+select log(2);
+insert into t1 values(log(2));
+select * from t1 where a like log(2) order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+
+#log2
+select log2(3);
+insert into t1 values(log2(3));
+select * from t1 where a like log2(3) order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+
+#log10
+select log10(2);
+insert into t1 values(log10(2));
+select * from t1 where a like log10(2) order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+
+#pi
+select pi();
+select * from t1 where a like pi() order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+
+#pow
+select pow(2,2),pow('2','3');
+insert into t1 values(pow(2,2)),(pow('2','3'));
+select * from t1 where a like pow(2,2) order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t1 where a like pow('2','3') order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t2 where a like pow((a),2);
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t3 where a like pow(2,2);
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t4 where a like pow(2,2);
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t5 where a like pow(2,2);
+--source include/query_pushdown_condition_sequoiadb.inc
+
+#radians
+select radians(90);
+insert into t1 values(radians(90));
+select * from t1 where a like radians(90) order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+
+#rand
+select * from t2 where a like rand() order by a;
+--replace_regex /^([^s]*)\[Note\]/[Note]/
+--exec grep -w "Query message" $MYSQLTEST_VARDIR/log/mysqld.1.err | tail -1 | sed 's/: ".*",/: "",/'
+
+#round
+select round(1.298,1),round('1.211','1');
+insert into t1 values(round(1.298,1)),(round('1.211','1'));
+select * from t1 where a like round(1.298,1) order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t1 where a like round('1.211','1') order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t2 where a like round((a),1);
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t3 where a like round(1.298,1);
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t4 where a like round(1.298,1);
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t5 where a like round(1.298,1);
+--source include/query_pushdown_condition_sequoiadb.inc
+
+#sign
+select sign(0);
+insert into t1 values(sign(0));
+select * from t1 where a like sign(0) order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+
+#sin
+select sin(2);
+insert into t1 values(sin(2));
+select * from t1 where a like sin(2) order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+
+#sqrt
+select sqrt(2);
+insert into t1 values(sqrt(2));
+select * from t1 where a like sqrt(2) order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+
+#tan
+select tan(2);
+insert into t1 values(tan(2));
+select * from t1 where a like tan(2) order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+
+#truncate
+select truncate(-1.234,1);
+insert into t1 values(truncate(-1.234,1));
+select * from t1 where a like truncate(-1.234,1) order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+
+#------------------------------numeric functions-----------------------------------#
+
+#-------------------------------flow functions--------------------------------------#
+
+#case
+select (case 1 when 1 then 'one' when 2 then 'two' else 'more' end),(case 1 when 1 then 10 when 2 then 20 else 30 end);
+insert into t1 values((case 1 when 1 then 'one' when 2 then 'two' else 'more' end)),((case 1 when 1 then 10 when 2 then 20 else 30 end));
+select * from t1 where a like (case 1 when 1 then 'one' when 2 then 'two' else 'more' end) order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t1 where a like (case 1 when 1 then 10 when 2 then 20 else 30 end) order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t2 where a like (case (a) when 1 then 10 when 2 then 20 else 30 end);
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t2 where a like (case 3 when 1 then 10 when 2 then 20 else null end);
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t3 where a like (case 1 when 1 then 10 when 2 then 20 else 30 end);
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t4 where a like (case 1 when 1 then 10 when 2 then 20 else 30 end);
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t5 where a like (case 1 when 1 then 10 when 2 then 20 else 30 end);
+--source include/query_pushdown_condition_sequoiadb.inc
+
+#if
+select if(1,'yes','no'),if(1,10,20);
+insert into t1 values(if(1,'yes','no')),(if(1,10,20));
+select * from t1 where a like if(1,'yes','no') order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t1 where a like if(1,10,20) order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t2 where a like if((a),10,20);
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t3 where a like if(1,10,20);
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t4 where a like if(1,10,20);
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t5 where a like if(1,10,20);
+--source include/query_pushdown_condition_sequoiadb.inc
+
+#ifnull
+select ifnull('a','b'),ifnull(1,0);
+insert into t1 values(ifnull('a','b')),(ifnull(1,0));
+select * from t1 where a like ifnull('a','b') order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t1 where a like ifnull(1,0) order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t2 where a like ifnull((a),0);
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t3 where a like ifnull('a','b');
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t4 where a like ifnull('a','b');
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t5 where a like ifnull('a','b');
+--source include/query_pushdown_condition_sequoiadb.inc
+
+#nullif
+select nullif('cba','a');
+insert into t1 values(nullif('cba','a'));
+select * from t1 where a like nullif('cba','a') order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+
+#-------------------------------flow functions--------------------------------------#
+
+#-------------------------------cast functions--------------------------------------#
+
+#binary
+select binary 'a',binary 1;
+insert into t1 values(binary 'a'),(binary 1);
+select * from t1 where a like binary 'a' order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t1 where a like binary 1 order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t2 where a like binary (a);
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t2 where a like binary null;
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t3 where a like binary 'a';
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t4 where a like binary 'a';
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t5 where a like binary 'a';
+--source include/query_pushdown_condition_sequoiadb.inc
+
+#cast
+select cast('a' as binary),cast(0x12345 as binary);
+insert into t1 values(cast('a' as binary)),(cast(0x12345 as binary));
+select * from t1 where a like cast('a' as binary) order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t1 where a like cast(0x12345 as binary) order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t2 where a like cast((a) as binary);
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t3 where a like cast('a' as binary);
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t4 where a like cast('a' as binary);
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t5 where a like cast('a' as binary);
+--source include/query_pushdown_condition_sequoiadb.inc
+
+#convert
+select convert('abcd' using latin1);
+insert into t1 values(convert('abcd' using latin1));
+select * from t1 where a like convert('abcd' using latin1) order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t2 where a like convert((a) using latin1);
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t3 where a like convert('abcd' using latin1);
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t4 where a like convert('abcd' using latin1);
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t5 where a like convert('abcd' using latin1);
+--source include/query_pushdown_condition_sequoiadb.inc
+
+#-------------------------------cast functions--------------------------------------#
+
+#--------------------------------xml functions--------------------------------------#
+
+#extractvalue
+select extractvalue('<cases><case>(1)</case></cases>','/cases/case'),extractvalue('<cases><case>abc</case></cases>','/cases/case');
+insert into t1 values(extractvalue('<cases><case>(1)</case></cases>','/cases/case')),(extractvalue('<cases><case>abc</case></cases>','/cases/case'));
+select * from t1 where a like extractvalue('<cases><case>(1)</case></cases>','/cases/case') order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t1 where a like extractvalue('<cases><case>abc</case></cases>','/cases/case') order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t2 where a like extractvalue('<cases><case>abc</case></cases>',null);
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t2 where a like extractvalue((a),'/cases/case');
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t3 where a like extractvalue('<cases><case>abc</case></cases>','/cases/case');
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t4 where a like extractvalue('<cases><case>abc</case></cases>','/cases/case');
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t5 where a like extractvalue('<cases><case>abc</case></cases>','/cases/case');
+--source include/query_pushdown_condition_sequoiadb.inc
+
+#updatexml
+select updatexml('<a>123456</a>','/a','<b>abcdef</b>');
+insert into t1 values(updatexml('<a>123456</a>','/a','<b>abcdef</b>'));
+select * from t1 where a like updatexml('<a>123456</a>','/a','<b>abcdef</b>') order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t2 where a like updatexml((a),'/a','<b>abcdef</b>');
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t3 where a like updatexml('<a>123456</a>','/a','<b>abcdef</b>');
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t4 where a like updatexml('<a>123456</a>','/a','<b>abcdef</b>');
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t5 where a like updatexml('<a>123456</a>','/a','<b>abcdef</b>');
+--source include/query_pushdown_condition_sequoiadb.inc
+
+#-------------------------------xml functions--------------------------------------#
+
+#--------------------------------bit functions--------------------------------------#
+
+#|
+select (29|15);
+insert into t1 values((29|15));
+select * from t1 where a like (29|15) order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+
+#&
+select (29&15),('1'&'3');
+insert into t1 values((29&15)),(('1'&'3'));
+select * from t1 where a like (29&15) order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t1 where a like ('1'&'3') order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t2 where a like (null&15);
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t2 where a like ((a)&15);
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t3 where a like (29&15);
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t4 where a like (29&15);
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t5 where a like (29&15);
+--source include/query_pushdown_condition_sequoiadb.inc
+
+#^
+select (11^3);
+insert into t1 values((11^3));
+select * from t1 where a like (11^3) order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+
+#<<
+select (1<<4),('1'<<'5');
+insert into t1 values((1<<4)),(('1'<<'5'));
+select * from t1 where a like (1<<4) order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t1 where a like ('1'<<'5') order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t2 where a like ((a)<<4);
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t3 where a like (1<<4);
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t4 where a like (1<<4);
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t5 where a like (1<<4);
+--source include/query_pushdown_condition_sequoiadb.inc
+
+#>>
+select (512>>4);
+insert into t1 values((512>>4));
+select * from t1 where a like (512>>4) order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+
+#~
+select (~1);
+insert into t1 values((~1));
+select * from t1 where a like (~1) order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+
+#bit_count
+select bit_count(5),bit_count('7');
+insert into t1 values(bit_count(5)),(bit_count('7'));
+select * from t1 where a like bit_count(5) order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t1 where a like bit_count('7') order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t2 where a like bit_count((a));
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t3 where a like bit_count(5);
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t4 where a like bit_count(5);
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t5 where a like bit_count(5);
+--source include/query_pushdown_condition_sequoiadb.inc
+
+#--------------------------------bit functions--------------------------------------#
+
+set session sequoiadb_debug_log=default;
+set session sequoiadb_support_mode=default;
+drop table t1, t2, t3, t4, t5;
+drop database like_single_func_pushdown_sequoiadb_2;
+--source include/uninstall_sequoiadb.inc

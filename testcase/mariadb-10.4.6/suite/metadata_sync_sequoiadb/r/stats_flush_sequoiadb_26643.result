@@ -1,0 +1,126 @@
+connection conn1;
+set session sequoiadb_support_mode = "";
+set session sequoiadb_stats_flush_time_threshold = 0;
+drop database if exists db_26643;
+create database db_26643;
+use db_26643;
+create table t1 ( 
+id int not null auto_increment, 
+prdt_no varchar(1024) character set utf8 default null, 
+cust_no varchar(10) default null, 
+primary key(id), 
+key prdt_no_index(prdt_no(333)), 
+key cust_no_index(cust_no) 
+);
+insert t1 values (null,"123","123");
+analyze table t1;
+Table	Op	Msg_type	Msg_text
+db_26643.t1	analyze	status	OK
+select * from t1 as alias1 left join t1 alias2 on alias1.prdt_no = alias2.cust_no;
+id	prdt_no	cust_no	id	prdt_no	cust_no
+1	123	123	1	123	123
+explain select * from t1 as alias1 left join t1 alias2  on alias1.prdt_no = alias2.cust_no;
+id	select_type	table	type	possible_keys	key	key_len	ref	rows	Extra
+1	SIMPLE	alias1	ALL	NULL	NULL	NULL	NULL	1	
+1	SIMPLE	alias2	ref	cust_no_index	cust_no_index	43	func	1	Using where; Using join buffer (flat, BKAH join); Using MRR
+connection conn2;
+use db_26643;
+select * from t1 as alias1 left join t1 alias2  on alias1.prdt_no = alias2.cust_no;
+id	prdt_no	cust_no	id	prdt_no	cust_no
+1	123	123	1	123	123
+explain select * from t1 as alias1 left join t1 alias2  on alias1.prdt_no = alias2.cust_no;
+id	select_type	table	type	possible_keys	key	key_len	ref	rows	Extra
+1	SIMPLE	alias1	ALL	NULL	NULL	NULL	NULL	1	
+1	SIMPLE	alias2	ref	cust_no_index	cust_no_index	43	func	1	Using where; Using join buffer (flat, BKAH join); Using MRR
+connection conn1;
+use db_26643;
+insert into t1 values (null,"123","123"),(null,"123","123"),(null,"123","123"),(null,"123","123"),(null,"123","123");
+select * from t1 as alias1 left join t1 alias2  on alias1.prdt_no = alias2.cust_no;
+id	prdt_no	cust_no	id	prdt_no	cust_no
+1	123	123	1	123	123
+1	123	123	2	123	123
+1	123	123	3	123	123
+1	123	123	4	123	123
+1	123	123	5	123	123
+1	123	123	6	123	123
+2	123	123	1	123	123
+2	123	123	2	123	123
+2	123	123	3	123	123
+2	123	123	4	123	123
+2	123	123	5	123	123
+2	123	123	6	123	123
+3	123	123	1	123	123
+3	123	123	2	123	123
+3	123	123	3	123	123
+3	123	123	4	123	123
+3	123	123	5	123	123
+3	123	123	6	123	123
+4	123	123	1	123	123
+4	123	123	2	123	123
+4	123	123	3	123	123
+4	123	123	4	123	123
+4	123	123	5	123	123
+4	123	123	6	123	123
+5	123	123	1	123	123
+5	123	123	2	123	123
+5	123	123	3	123	123
+5	123	123	4	123	123
+5	123	123	5	123	123
+5	123	123	6	123	123
+6	123	123	1	123	123
+6	123	123	2	123	123
+6	123	123	3	123	123
+6	123	123	4	123	123
+6	123	123	5	123	123
+6	123	123	6	123	123
+explain select * from t1 as alias1 left join t1 alias2  on alias1.prdt_no = alias2.cust_no;
+id	select_type	table	type	possible_keys	key	key_len	ref	rows	Extra
+1	SIMPLE	alias1	ALL	NULL	NULL	NULL	NULL	6	
+1	SIMPLE	alias2	ref	cust_no_index	cust_no_index	43	func	1	Using where; Using join buffer (flat, BKAH join); Using MRR
+connection conn2;
+use db_26643;
+select * from t1 as alias1 left join t1 alias2  on alias1.prdt_no = alias2.cust_no;
+id	prdt_no	cust_no	id	prdt_no	cust_no
+1	123	123	1	123	123
+1	123	123	2	123	123
+1	123	123	3	123	123
+1	123	123	4	123	123
+1	123	123	5	123	123
+1	123	123	6	123	123
+2	123	123	1	123	123
+2	123	123	2	123	123
+2	123	123	3	123	123
+2	123	123	4	123	123
+2	123	123	5	123	123
+2	123	123	6	123	123
+3	123	123	1	123	123
+3	123	123	2	123	123
+3	123	123	3	123	123
+3	123	123	4	123	123
+3	123	123	5	123	123
+3	123	123	6	123	123
+4	123	123	1	123	123
+4	123	123	2	123	123
+4	123	123	3	123	123
+4	123	123	4	123	123
+4	123	123	5	123	123
+4	123	123	6	123	123
+5	123	123	1	123	123
+5	123	123	2	123	123
+5	123	123	3	123	123
+5	123	123	4	123	123
+5	123	123	5	123	123
+5	123	123	6	123	123
+6	123	123	1	123	123
+6	123	123	2	123	123
+6	123	123	3	123	123
+6	123	123	4	123	123
+6	123	123	5	123	123
+6	123	123	6	123	123
+explain select * from t1 as alias1 left join t1 alias2  on alias1.prdt_no = alias2.cust_no;
+id	select_type	table	type	possible_keys	key	key_len	ref	rows	Extra
+1	SIMPLE	alias1	ALL	NULL	NULL	NULL	NULL	1	
+1	SIMPLE	alias2	ref	cust_no_index	cust_no_index	43	func	1	Using where; Using join buffer (flat, BKAH join); Using MRR
+drop database db_26643;
+set session sequoiadb_support_mode = default;
+set session sequoiadb_stats_flush_time_threshold = default;

@@ -1,0 +1,1447 @@
+create database test_support_alldatatype;
+use test_support_alldatatype;
+drop table if exists t1;
+create table t1(y1 time);
+insert into t1 values('-838:59:59.000000');
+insert into t1 values('838:59:59.000000');
+insert into t1 values('838:59:59.000000');
+insert into t1 values('12:59:59.000000');
+insert into t1 values('13:59:59');
+insert into t1 values('-13:59');
+insert into t1 values('0 13:59');
+insert into t1 values('34 13:59');
+insert into t1 values('24 10');
+insert into t1 values('59');
+insert into t1 values('101112');
+insert into t1 values('1112');
+insert into t1 values('12');
+insert into t1 values('59');
+insert into t1 values(101112);
+insert into t1 values(1112);
+insert into t1 values(12);
+insert into t1 values(59);
+insert into t1 values('38:59:59.000000');
+insert into t1 values('0:0:0.000000');
+select * from t1;
+y1
+-838:59:59
+838:59:59
+838:59:59
+12:59:59
+13:59:59
+-13:59:00
+13:59:00
+829:59:00
+586:00:00
+00:00:59
+10:11:12
+00:11:12
+00:00:12
+00:00:59
+10:11:12
+00:11:12
+00:00:12
+00:00:59
+38:59:59
+00:00:00
+update t1 set y1='38:59:00.000000' where y1='38:59:59.000000';
+select * from t1;
+y1
+-838:59:59
+838:59:59
+838:59:59
+12:59:59
+13:59:59
+-13:59:00
+13:59:00
+829:59:00
+586:00:00
+00:00:59
+10:11:12
+00:11:12
+00:00:12
+00:00:59
+10:11:12
+00:11:12
+00:00:12
+00:00:59
+38:59:00
+00:00:00
+delete from t1;
+select * from t1;
+y1
+insert into t1 values ('-839:00:00.000000');
+ERROR 22007: Incorrect time value: '-839:00:00.000000' for column `test_support_alldatatype`.`t1`.`y1` at row 1
+insert into t1 values ('839:00:00.000000');
+ERROR 22007: Incorrect time value: '839:00:00.000000' for column `test_support_alldatatype`.`t1`.`y1` at row 1
+insert into t1 values ('a');
+ERROR 22007: Incorrect time value: 'a' for column `test_support_alldatatype`.`t1`.`y1` at row 1
+drop table t1;
+create table t1(y1 year, y2 year(4));
+insert into t1 values(1901,2155);
+insert into t1 values('1901','2155');
+insert into t1 values('2018','2018');
+select * from t1;
+y1	y2
+1901	2155
+1901	2155
+2018	2018
+update t1 set y2=2008 where y2=2155;
+select * from t1;
+y1	y2
+1901	2008
+1901	2008
+2018	2018
+delete from t1;
+select * from t1;
+y1	y2
+insert into t1(y1) values (1900);
+ERROR 22003: Out of range value for column 'y1' at row 1
+insert into t1(y2) values (2156);
+ERROR 22003: Out of range value for column 'y2' at row 1
+insert into t1(y2) values ('a');
+ERROR 22007: Incorrect integer value: 'a' for column `test_support_alldatatype`.`t1`.`y2` at row 1
+drop table t1;
+set sql_mode = "NO_ZERO_DATE,STRICT_TRANS_TABLES";
+create table t1(d date);
+insert into t1 values('1000-01-01'),('9999-12-31');
+select * from t1;
+d
+1000-01-01
+9999-12-31
+update t1 set d='1000-01-01' where d='2018-11-22';
+select * from t1;
+d
+1000-01-01
+9999-12-31
+delete from t1;
+select * from t1;
+d
+insert into t1 values ('10000-01-01');
+ERROR 22007: Incorrect date value: '10000-01-01' for column `test_support_alldatatype`.`t1`.`d` at row 1
+insert into t1 values ('a');
+ERROR 22007: Incorrect date value: 'a' for column `test_support_alldatatype`.`t1`.`d` at row 1
+select * from t1;
+d
+set sql_mode = "";
+insert into t1 values ('1000-00-00'),('1000-00-00');
+ERROR 22007: Incorrect date value: '1000-00-00' for column 'd' at row 1
+insert into t1 values ('0000-00-00');
+select * from t1;
+d
+0000-00-00
+set sql_mode = "STRICT_TRANS_TABLES";
+insert into t1 values ('1000-00-00'),('1000-00-00');
+ERROR 22007: Incorrect date value: '1000-00-00' for column 'd' at row 1
+insert into t1 values ('0000-00-00');
+select * from t1;
+d
+0000-00-00
+0000-00-00
+set sql_mode = "NO_ZERO_DATE";
+insert into t1 values ('1000-00-00'),('1000-00-00');
+ERROR 22007: Incorrect date value: '1000-00-00' for column 'd' at row 1
+insert into t1 values ('0000-00-00');
+Warnings:
+Warning	1264	Out of range value for column 'd' at row 1
+select * from t1;
+d
+0000-00-00
+0000-00-00
+0000-00-00
+set sql_mode = "NO_ZERO_DATE,STRICT_TRANS_TABLES";
+insert into t1 values ('1000-00-00'),('1000-00-00');
+ERROR 22007: Incorrect date value: '1000-00-00' for column 'd' at row 1
+insert into t1 values ('0000-00-00');
+ERROR 22007: Incorrect date value: '0000-00-00' for column `test_support_alldatatype`.`t1`.`d` at row 1
+select * from t1;
+d
+0000-00-00
+0000-00-00
+0000-00-00
+truncate t1;
+set sql_mode = '';
+insert ignore into t1 values ('1000-00-00'),('1000-00-00');
+ERROR 22007: Incorrect date value: '1000-00-00' for column 'd' at row 1
+insert ignore into t1 values ('0000-00-00');
+set sql_mode = "STRICT_TRANS_TABLES";
+insert ignore into t1 values ('1000-00-00'),('1000-00-00');
+ERROR 22007: Incorrect date value: '1000-00-00' for column 'd' at row 1
+insert ignore into t1 values ('0000-00-00');
+select * from t1;
+d
+0000-00-00
+0000-00-00
+set sql_mode = "NO_ZERO_IN_DATE";
+insert into t1 values ('1000-00-00'),('1000-00-00');
+Warnings:
+Warning	1265	Data truncated for column 'd' at row 1
+Warning	1265	Data truncated for column 'd' at row 2
+insert into t1 values ('0000-00-00');
+select * from t1;
+d
+0000-00-00
+0000-00-00
+0000-00-00
+0000-00-00
+0000-00-00
+insert ignore into t1 values ('1000-00-00'),('1000-00-00');
+Warnings:
+Warning	1265	Data truncated for column 'd' at row 1
+Warning	1265	Data truncated for column 'd' at row 2
+insert ignore into t1 values ('0000-00-00');
+select * from t1;
+d
+0000-00-00
+0000-00-00
+0000-00-00
+0000-00-00
+0000-00-00
+0000-00-00
+0000-00-00
+0000-00-00
+set sql_mode = "NO_ZERO_IN_DATE,STRICT_TRANS_TABLES";
+insert into t1 values ('1000-00-00'),('1000-00-00');
+ERROR 22007: Incorrect date value: '1000-00-00' for column `test_support_alldatatype`.`t1`.`d` at row 1
+insert into t1 values ('0000-00-00');
+select * from t1;
+d
+0000-00-00
+0000-00-00
+0000-00-00
+0000-00-00
+0000-00-00
+0000-00-00
+0000-00-00
+0000-00-00
+0000-00-00
+insert ignore into t1 values ('1000-00-00'),('1000-00-00');
+Warnings:
+Warning	1265	Data truncated for column 'd' at row 1
+Warning	1265	Data truncated for column 'd' at row 2
+insert ignore into t1 values ('0000-00-00');
+select * from t1;
+d
+0000-00-00
+0000-00-00
+0000-00-00
+0000-00-00
+0000-00-00
+0000-00-00
+0000-00-00
+0000-00-00
+0000-00-00
+0000-00-00
+0000-00-00
+0000-00-00
+set sql_mode = default;
+drop table t1;
+create table t1(t timestamp);
+SET time_zone='+00:00';
+insert into t1 values('1970-01-01 00:00:01');
+insert into t1 values('2038-01-19 03:14:07');
+insert into t1 values('2012-01-19 03:14:07.999999');
+select * from t1;
+t
+1970-01-01 00:00:01
+2038-01-19 03:14:07
+2012-01-19 03:14:07
+update t1 set t='2012-01-19 03:14:07.999999' where t='2013-01-19 03:14:07.999999';
+select * from t1;
+t
+1970-01-01 00:00:01
+2038-01-19 03:14:07
+2012-01-19 03:14:07
+delete from t1;
+select * from t1;
+t
+insert into t1 values ('1969-12-31 00:00:00');
+ERROR 22007: Incorrect datetime value: '1969-12-31 00:00:00' for column `test_support_alldatatype`.`t1`.`t` at row 1
+insert into t1 values ('2038-01-19 03:14:08.999999');
+ERROR 22007: Incorrect datetime value: '2038-01-19 03:14:08.999999' for column `test_support_alldatatype`.`t1`.`t` at row 1
+insert into t1 values ('a');
+ERROR 22007: Incorrect datetime value: 'a' for column `test_support_alldatatype`.`t1`.`t` at row 1
+drop table t1;
+SET time_zone=default;
+set sql_mode = "NO_ZERO_DATE,NO_ZERO_IN_DATE,STRICT_TRANS_TABLES";
+create table t1(t datetime);
+insert into t1 values('1000-01-01 00:00:00.000000');
+insert into t1 values('9999-12-31 23:59:59');
+insert into t1 values('2012-01-19 03:14:07.999999');
+select * from t1;
+t
+1000-01-01 00:00:00
+9999-12-31 23:59:59
+2012-01-19 03:14:07
+update t1 set t='2012-01-19 03:14:07.999999' where t='2013-01-19 03:14:07.999999';
+select * from t1;
+t
+1000-01-01 00:00:00
+9999-12-31 23:59:59
+2012-01-19 03:14:07
+delete from t1;
+select * from t1;
+t
+insert into t1 values ('1000-01-00 00:00:00.999999');
+ERROR 22007: Incorrect datetime value: '1000-01-00 00:00:00.999999' for column `test_support_alldatatype`.`t1`.`t` at row 1
+insert into t1 values ('10000-01-01 00:00:00.000000');
+ERROR 22007: Incorrect datetime value: '10000-01-01 00:00:00.000000' for column `test_support_alldatatype`.`t1`.`t` at row 1
+insert into t1 values ('a');
+ERROR 22007: Incorrect datetime value: 'a' for column `test_support_alldatatype`.`t1`.`t` at row 1
+drop table t1;
+set sql_mode = default;
+set time_zone='+00:00';
+create table t1(a date);
+insert into t1 values ("2001-01-10");
+insert into t1 values ("2001-01-11");
+insert into t1 values ("2001-01-12");
+select * from t1 where a = ADDDATE("2001-01-01", 10);
+a
+2001-01-11
+drop table t1;
+create table t1(a datetime(6));
+insert into t1 values ("2001-01-01 10:00:00.123456");
+insert into t1 values ("2001-01-01 10:00:00");
+select * from t1 where a = ADDTIME("2001-01-01 00:00:00", "10:00:00");
+a
+2001-01-01 10:00:00.000000
+drop table t1;
+create table t1(a time(6));
+insert into t1 values ("11:00:00.123456");
+insert into t1 values ("11:00:00");
+select * from t1 where a = ADDTIME("01:00:00", "10:00:00");
+a
+11:00:00.000000
+drop table t1;
+set time_zone=default;
+CREATE TABLE t1(g GEOMETRY);
+SHOW CREATE TABLE t1;
+Table	Create Table
+t1	CREATE TABLE `t1` (
+  `g` geometry DEFAULT NULL
+) ENGINE=SequoiaDB DEFAULT CHARSET=latin1
+DROP TABLE t1;
+create table t1(a int, b int);
+insert into t1 values(null, 1);
+update t1 set b=null;
+select * from t1;
+a	b
+NULL	NULL
+delete from t1;
+select * from t1;
+a	b
+drop table t1;
+create table t1 (a0 bit, a1 bit(1),a2 bit(31), a3 bit(32),a4 bit(33), a5 bit(64));
+insert into t1 values(0,1,2147483647,4294967295,8589934591,18446744073709551615);
+insert into t1 values(1,0,1,0,1,0);
+select * from t1;
+a0	a1	a2	a3	a4	a5
+ 		ÿÿÿ	ÿÿÿÿ	ÿÿÿÿ	ÿÿÿÿÿÿÿÿ
+	 	   	    	    	        
+update t1 set a5=18446744073709551615 where a5=18446744073709551615;
+select * from t1;
+a0	a1	a2	a3	a4	a5
+ 		ÿÿÿ	ÿÿÿÿ	ÿÿÿÿ	ÿÿÿÿÿÿÿÿ
+	 	   	    	    	        
+delete from t1;
+select * from t1;
+a0	a1	a2	a3	a4	a5
+insert into t1(a0) values (2);
+ERROR 22001: Data too long for column 'a0' at row 1
+insert into t1(a1) values (2);
+ERROR 22001: Data too long for column 'a1' at row 1
+insert into t1(a2) values (2147483648);
+ERROR 22001: Data too long for column 'a2' at row 1
+insert into t1(a3) values (4294967296);
+ERROR 22001: Data too long for column 'a3' at row 1
+insert into t1(a4) values (8589934592);
+ERROR 22001: Data too long for column 'a4' at row 1
+insert into t1(a5) values (18446744073709551616);
+ERROR 22003: Out of range value for column 'a5' at row 1
+insert into t1(a5) values (-1);
+drop table t1;
+create table t1 (c1 bool,c2 boolean);
+insert into t1 values (0,0);
+insert into t1 values (1,1);
+insert into t1 values (2,2);
+insert into t1 values (true,true);
+insert into t1 values (false,false);
+insert into t1 values ('a','a');
+ERROR 22007: Incorrect integer value: 'a' for column `test_support_alldatatype`.`t1`.`c1` at row 1
+select * from t1;
+c1	c2
+0	0
+1	1
+2	2
+1	1
+0	0
+update t1 set c1=false where c1=true;
+select * from t1;
+c1	c2
+0	0
+0	1
+2	2
+0	1
+0	0
+delete from t1;
+select * from t1;
+c1	c2
+drop table t1;
+create table t1 (a char);
+insert into t1 values('a');
+select * from t1;
+a
+a
+update t1 set a='c' where a='a';
+select * from t1;
+a
+c
+delete from t1;
+select * from t1;
+a
+insert into t1(a) values('ab');
+ERROR 22001: Data too long for column 'a' at row 1
+drop table t1;
+create table t1 (a char(255));
+insert into t1 values('ÎÒ');
+insert into t1 values(repeat('a',255));
+select * from t1;
+a
+ÎÒ
+aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+insert into t1 values(repeat('a',256));
+ERROR 22001: Data too long for column 'a' at row 1
+drop table t1;
+create table t1 (a varchar(65533) character set latin1);
+ERROR 42000: Column length too big for column 'a' (max = 65532); use BLOB or TEXT instead
+create table t1 (a varchar(65532) character set latin1);
+insert into t1 values('a'),('ÎÒ');
+select * from t1;
+a
+a
+ÎÒ
+update t1 set a='c' where a='a';
+select * from t1;
+a
+c
+ÎÒ
+delete from t1;
+insert into t1 values(repeat('a',65532));
+select length(a) from t1;
+length(a)
+65532
+insert into t1 values(repeat('a',65533));
+ERROR 22001: Data too long for column 'a' at row 1
+drop table t1;
+create table t1 (a tinytext);
+insert into t1 values('a'),('ÎÒ'),(repeat('a',255));
+select * from t1;
+a
+a
+ÎÒ
+aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+update t1 set a='c' where a='a';
+select * from t1;
+a
+c
+ÎÒ
+aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+delete from t1;
+select * from t1;
+a
+insert into t1 values(repeat('a',256));
+ERROR 22001: Data too long for column 'a' at row 1
+drop table t1;
+create table t1 (a text);
+insert into t1 values('a'),('ÎÒ');
+select * from t1;
+a
+a
+ÎÒ
+update t1 set a='c' where a='a';
+select * from t1;
+a
+c
+ÎÒ
+delete from t1;
+insert into t1 values(repeat('a',65535));
+select length(a) from t1;
+length(a)
+65535
+insert into t1 values(repeat('a',65536));
+ERROR 22001: Data too long for column 'a' at row 1
+drop table t1;
+create table t1 (a mediumtext);
+insert into t1 values('a'),('ÎÒ');
+select * from t1;
+a
+a
+ÎÒ
+update t1 set a='c' where a='a';
+select * from t1;
+a
+c
+ÎÒ
+delete from t1;
+select * from t1;
+a
+insert into t1 values(repeat('a',16773062));
+select length(a) from t1;
+length(a)
+16773062
+insert into t1 values(repeat('a',16773075));
+ERROR HY000: User record is too large
+drop table t1;
+create table t1 (a longtext);
+insert into t1 values('a'),('ÎÒ');
+select * from t1;
+a
+a
+ÎÒ
+update t1 set a='c' where a='a';
+select * from t1;
+a
+c
+ÎÒ
+delete from t1;
+select * from t1;
+a
+insert into t1 values(repeat('a',16773062));
+select length(a) from t1;
+length(a)
+16773062
+insert into t1 values(repeat('a',16773075));
+ERROR HY000: User record is too large
+drop table t1;
+create table t1 (a tinyblob);
+insert into t1 values('a'),('ÎÒ'),(repeat('a',255));
+select * from t1;
+a
+a
+ÎÒ
+aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+update t1 set a='c' where a='a';
+select * from t1;
+a
+c
+ÎÒ
+aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+delete from t1;
+select * from t1;
+a
+insert into t1 values(repeat('a',256));
+ERROR 22001: Data too long for column 'a' at row 1
+drop table t1;
+create table t1 (a blob);
+insert into t1 values('a'),('ÎÒ');
+select * from t1;
+a
+a
+ÎÒ
+update t1 set a='c' where a='a';
+select * from t1;
+a
+c
+ÎÒ
+delete from t1;
+select * from t1;
+a
+insert into t1 values(repeat('a',65535));
+select length(a) from t1;
+length(a)
+65535
+insert into t1 values(repeat('a',65536));
+ERROR 22001: Data too long for column 'a' at row 1
+drop table t1;
+create table t1 (a mediumblob);
+insert into t1 values('a'),('ÎÒ');
+select * from t1;
+a
+a
+ÎÒ
+update t1 set a='c' where a='a';
+select * from t1;
+a
+c
+ÎÒ
+delete from t1;
+select * from t1;
+a
+insert into t1 values(repeat('a',16773062));
+select length(a) from t1;
+length(a)
+16773062
+insert into t1 values(repeat('a',16773075));
+ERROR HY000: User record is too large
+drop table t1;
+create table t1 (a longblob);
+insert into t1 values('a'),('ÎÒ');
+select * from t1;
+a
+a
+ÎÒ
+update t1 set a='c' where a='a';
+select * from t1;
+a
+c
+ÎÒ
+delete from t1;
+select * from t1;
+a
+insert into t1 values(repeat('a',16773062));
+select length(a) from t1;
+length(a)
+16773062
+insert into t1 values(repeat('a',16773075));
+ERROR HY000: User record is too large
+drop table t1;
+create table t1 (a binary);
+insert into t1 values('a');
+select * from t1;
+a
+a
+update t1 set a='c' where a='a';
+select * from t1;
+a
+c
+delete from t1;
+select * from t1;
+a
+insert into t1 values('ab');
+ERROR 22001: Data too long for column 'a' at row 1
+drop table t1;
+create table t1 (a binary(255));
+insert into t1 values('ÎÒ'),(repeat('a',255));
+select * from t1;
+a
+ÎÒ                                                                                                                                                                                                                                                             
+aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+insert into t1 values(repeat('a',256));
+ERROR 22001: Data too long for column 'a' at row 1
+drop table t1;
+create table t1 (a varbinary(65533));
+ERROR 42000: Column length too big for column 'a' (max = 65532); use BLOB or TEXT instead
+create table t1 (a varbinary(65532));
+insert into t1 values('a'),('ÎÒ');
+select * from t1;
+a
+a
+ÎÒ
+update t1 set a='c' where a='a';
+select * from t1;
+a
+c
+ÎÒ
+delete from t1;
+select * from t1;
+a
+insert into t1 values(repeat('a',65532));
+select length(a) from t1;
+length(a)
+65532
+insert into t1 values(repeat('a',65533));
+ERROR 22001: Data too long for column 'a' at row 1
+drop table t1;
+create table t1 (a tinyint, b tinyint(2));
+insert into t1 values('-128', '-128'),(127,127),(1,1),(0,0);
+select * from t1;
+a	b
+-128	-128
+127	127
+1	1
+0	0
+update t1 set a=10 where a=1;
+select * from t1;
+a	b
+-128	-128
+127	127
+10	1
+0	0
+delete from t1;
+select * from t1;
+a	b
+insert into t1 values(-129,-129);
+ERROR 22003: Out of range value for column 'a' at row 1
+insert into t1 values(128,128);
+ERROR 22003: Out of range value for column 'a' at row 1
+insert into t1 values('a','a');
+ERROR 22007: Incorrect integer value: 'a' for column `test_support_alldatatype`.`t1`.`a` at row 1
+drop table t1;
+create table t1 (a tinyint unsigned, b tinyint(2) unsigned zerofill);
+insert into t1 values('0', '0'),(255,255),(1,1);
+select * from t1;
+a	b
+0	00
+255	255
+1	01
+update t1 set a=10 where a=1;
+select * from t1;
+a	b
+0	00
+255	255
+10	01
+delete from t1;
+select * from t1;
+a	b
+insert into t1 values(-1,-1);
+ERROR 22003: Out of range value for column 'a' at row 1
+insert into t1 values(256,256);
+ERROR 22003: Out of range value for column 'a' at row 1
+insert into t1 values('a','a');
+ERROR 22007: Incorrect integer value: 'a' for column `test_support_alldatatype`.`t1`.`a` at row 1
+drop table t1;
+create table t1 (a smallint, b smallint(3));
+insert into t1 values('-32768', '-32768'),(32767,32767),(1,1),(0,0);
+select * from t1;
+a	b
+-32768	-32768
+32767	32767
+1	1
+0	0
+update t1 set a=10 where a=1;
+select * from t1;
+a	b
+-32768	-32768
+32767	32767
+10	1
+0	0
+delete from t1;
+select * from t1;
+a	b
+insert into t1 values(-32769,-32769);
+ERROR 22003: Out of range value for column 'a' at row 1
+insert into t1 values(32768,32768);
+ERROR 22003: Out of range value for column 'a' at row 1
+insert into t1 values('a','a');
+ERROR 22007: Incorrect integer value: 'a' for column `test_support_alldatatype`.`t1`.`a` at row 1
+drop table t1;
+create table t1 (a smallint unsigned, b smallint(3) unsigned zerofill);
+insert into t1 values('0', '0'),(65535,65535),(1,1);
+select * from t1;
+a	b
+0	000
+65535	65535
+1	001
+update t1 set a=10 where a=1;
+select * from t1;
+a	b
+0	000
+65535	65535
+10	001
+delete from t1;
+select * from t1;
+a	b
+insert into t1 values(-1,-1);
+ERROR 22003: Out of range value for column 'a' at row 1
+insert into t1 values(65536,65536);
+ERROR 22003: Out of range value for column 'a' at row 1
+insert into t1 values('a','a');
+ERROR 22007: Incorrect integer value: 'a' for column `test_support_alldatatype`.`t1`.`a` at row 1
+drop table t1;
+create table t1 (a mediumint, b mediumint(4));
+insert into t1 values('-8388608', '-8388608'),(8388607,8388607),(1,1),(0,0);
+select * from t1;
+a	b
+-8388608	-8388608
+8388607	8388607
+1	1
+0	0
+update t1 set a=10 where a=1;
+select * from t1;
+a	b
+-8388608	-8388608
+8388607	8388607
+10	1
+0	0
+delete from t1;
+select * from t1;
+a	b
+insert into t1 values(-8388609,-8388609);
+ERROR 22003: Out of range value for column 'a' at row 1
+insert into t1 values(8388608,8388608);
+ERROR 22003: Out of range value for column 'a' at row 1
+insert into t1 values('a','a');
+ERROR 22007: Incorrect integer value: 'a' for column `test_support_alldatatype`.`t1`.`a` at row 1
+drop table t1;
+create table t1 (a mediumint unsigned, b mediumint(4) unsigned zerofill);
+insert into t1 values('0', '0'),(16777215,16777215),(1,1);
+select * from t1;
+a	b
+0	0000
+16777215	16777215
+1	0001
+update t1 set a=10 where a=1;
+select * from t1;
+a	b
+0	0000
+16777215	16777215
+10	0001
+delete from t1;
+select * from t1;
+a	b
+insert into t1 values(-1,-1);
+ERROR 22003: Out of range value for column 'a' at row 1
+insert into t1 values(16777216,16777216);
+ERROR 22003: Out of range value for column 'a' at row 1
+insert into t1 values('a','a');
+ERROR 22007: Incorrect integer value: 'a' for column `test_support_alldatatype`.`t1`.`a` at row 1
+drop table t1;
+create table t1 (a int, b integer(4));
+insert into t1 values('-2147483648', '-2147483648'),(2147483647,2147483647),(1,1),(0,0);
+select * from t1;
+a	b
+-2147483648	-2147483648
+2147483647	2147483647
+1	1
+0	0
+update t1 set a=10 where a=1;
+select * from t1;
+a	b
+-2147483648	-2147483648
+2147483647	2147483647
+10	1
+0	0
+delete from t1;
+select * from t1;
+a	b
+insert into t1 values(-2147483649,-2147483649);
+ERROR 22003: Out of range value for column 'a' at row 1
+insert into t1 values(2147483648,2147483648);
+ERROR 22003: Out of range value for column 'a' at row 1
+insert into t1 values('a','a');
+ERROR 22007: Incorrect integer value: 'a' for column `test_support_alldatatype`.`t1`.`a` at row 1
+drop table t1;
+create table t1 (a int unsigned, b int(4) unsigned zerofill);
+insert into t1 values('0', '0'),(4294967295,4294967295),(1,1);
+select * from t1;
+a	b
+0	0000
+4294967295	4294967295
+1	0001
+update t1 set a=10 where a=1;
+select * from t1;
+a	b
+0	0000
+4294967295	4294967295
+10	0001
+delete from t1;
+select * from t1;
+a	b
+insert into t1 values(-1,-1);
+ERROR 22003: Out of range value for column 'a' at row 1
+insert into t1 values(4294967296,4294967296);
+ERROR 22003: Out of range value for column 'a' at row 1
+insert into t1 values('a','a');
+ERROR 22007: Incorrect integer value: 'a' for column `test_support_alldatatype`.`t1`.`a` at row 1
+drop table t1;
+create table t1 (a bigint, b bigint(10));
+insert into t1 values (9223372036854775807, 9223372036854775807),(-9223372036854775808, -9223372036854775808),(-9223372036854775807, 9223372036854775806),('9223372036854775807', '9223372036854775807'),('-9223372036854775808', '-9223372036854775808'),('-9223372036854775807', '9223372036854775806');
+select * from t1;
+a	b
+9223372036854775807	9223372036854775807
+-9223372036854775808	-9223372036854775808
+-9223372036854775807	9223372036854775806
+9223372036854775807	9223372036854775807
+-9223372036854775808	-9223372036854775808
+-9223372036854775807	9223372036854775806
+update t1 set a=1,b=1 where a=9223372036854775807;
+select * from t1;
+a	b
+1	1
+-9223372036854775808	-9223372036854775808
+-9223372036854775807	9223372036854775806
+1	1
+-9223372036854775808	-9223372036854775808
+-9223372036854775807	9223372036854775806
+delete from t1;
+select * from t1;
+a	b
+insert into t1 values (9223372036854775808, 9223372036854775808);
+ERROR 22003: Out of range value for column 'a' at row 1
+insert into t1 values (-9223372036854775809, -9223372036854775809);
+ERROR 22003: Out of range value for column 'a' at row 1
+insert into t1 values ('a', 'a');
+ERROR 22007: Incorrect integer value: 'a' for column `test_support_alldatatype`.`t1`.`a` at row 1
+drop table t1;
+create table t1 (a bigint);
+insert into t1 values(9),(99),('999'),(9999),('99999'),(999999),('9999999'),(99999999),('999999999'),(9999999999),('99999999999'),(999999999999),('9999999999999'),(99999999999999),('999999999999999'),(9999999999999999),('99999999999999999'),(999999999999999999),('8888888888888888888');
+select * from t1;
+a
+9
+99
+999
+9999
+99999
+999999
+9999999
+99999999
+999999999
+9999999999
+99999999999
+999999999999
+9999999999999
+99999999999999
+999999999999999
+9999999999999999
+99999999999999999
+999999999999999999
+8888888888888888888
+delete from t1;
+insert into t1 values(-9),(-99),('-999'),(-9999),('-99999'),(-999999),('-9999999'),(-99999999),('-999999999'),(-9999999999),('-99999999999'),(-999999999999),('-9999999999999'),(-99999999999999),('-999999999999999'),(-9999999999999999),('-99999999999999999'),(-999999999999999999),('-8888888888888888888');
+select * from t1;
+a
+-9
+-99
+-999
+-9999
+-99999
+-999999
+-9999999
+-99999999
+-999999999
+-9999999999
+-99999999999
+-999999999999
+-9999999999999
+-99999999999999
+-999999999999999
+-9999999999999999
+-99999999999999999
+-999999999999999999
+-8888888888888888888
+drop table t1;
+create table t1 (a bigint unsigned);
+insert into t1 values('9'),(99),('999'),(9999),('99999'),(999999),('9999999'),(99999999),('999999999'),(9999999999),('99999999999'),(999999999999),('9999999999999'),(99999999999999),('999999999999999'),(9999999999999999),('99999999999999999'),(999999999999999999),('9999999999999999999'),(11111111111111111111);
+select * from t1;
+a
+9
+99
+999
+9999
+99999
+999999
+9999999
+99999999
+999999999
+9999999999
+99999999999
+999999999999
+9999999999999
+99999999999999
+999999999999999
+9999999999999999
+99999999999999999
+999999999999999999
+9999999999999999999
+11111111111111111111
+drop table t1;
+create table t1 (a bigint unsigned, b bigint(10) unsigned zerofill);
+insert into t1 values (18446744073709551615, 18446744073709551615),(0, 0),(1, 18446744073709551614),('18446744073709551615', '18446744073709551615'),('0', '0'),('1', '18446744073709551614');
+select * from t1;
+a	b
+18446744073709551615	18446744073709551615
+0	0000000000
+1	18446744073709551614
+18446744073709551615	18446744073709551615
+0	0000000000
+1	18446744073709551614
+update t1 set a=1,b=1 where a=18446744073709551615;
+select * from t1;
+a	b
+1	0000000001
+0	0000000000
+1	18446744073709551614
+1	0000000001
+0	0000000000
+1	18446744073709551614
+delete from t1;
+select * from t1;
+a	b
+insert into t1 values (18446744073709551616, 18446744073709551616);
+ERROR 22003: Out of range value for column 'a' at row 1
+insert into t1 values (-1, -1);
+ERROR 22003: Out of range value for column 'a' at row 1
+insert into t1 values ('a', 'a');
+ERROR 22007: Incorrect integer value: 'a' for column `test_support_alldatatype`.`t1`.`a` at row 1
+drop table t1;
+create table t1 (a decimal, b NUMERIC(60,30), c dec(1));
+insert into t1 values('9999999999', '999999999999999999999999999999.999999999999999999999999999999',9),(-9999999999, -999999999999999999999999999999.999999999999999999999999999999,-9),(1,1,1),(0,0,0);
+insert into t1(b) values(99999999999999999999999999999.9999999999999999999999999999999);
+Warnings:
+Note	1265	Data truncated for column 'b' at row 1
+select * from t1;
+a	b	c
+9999999999	999999999999999999999999999999.999999999999999999999999999999	9
+-9999999999	-999999999999999999999999999999.999999999999999999999999999999	-9
+1	1.000000000000000000000000000000	1
+0	0.000000000000000000000000000000	0
+NULL	100000000000000000000000000000.000000000000000000000000000000	NULL
+update t1 set a=10 where a=1;
+select * from t1;
+a	b	c
+9999999999	999999999999999999999999999999.999999999999999999999999999999	9
+-9999999999	-999999999999999999999999999999.999999999999999999999999999999	-9
+10	1.000000000000000000000000000000	1
+0	0.000000000000000000000000000000	0
+NULL	100000000000000000000000000000.000000000000000000000000000000	NULL
+delete from t1;
+select * from t1;
+a	b	c
+insert into t1(b) values(1000000000000000000000000000000);
+ERROR 22003: Out of range value for column 'b' at row 1
+insert into t1(b) values('a');
+ERROR 22007: Incorrect decimal value: 'a' for column `test_support_alldatatype`.`t1`.`b` at row 1
+drop table t1;
+create table t1 (a decimal(66,0));
+ERROR 42000: Too big precision 66 specified for 'a'. Maximum is 65
+create table t1 (a decimal(65,39));
+ERROR 42000: Too big scale 39 specified for 'a'. Maximum is 38
+create table t1 (a decimal unsigned, b NUMERIC(60,30) unsigned zerofill);
+insert into t1 values('0', '0'),(9999999999,999999999999999999999999999999.999999999999999999999999999999),(1,1);
+select * from t1;
+a	b
+0	000000000000000000000000000000.000000000000000000000000000000
+9999999999	999999999999999999999999999999.999999999999999999999999999999
+1	000000000000000000000000000001.000000000000000000000000000000
+update t1 set a=10 where a=1;
+select * from t1;
+a	b
+0	000000000000000000000000000000.000000000000000000000000000000
+9999999999	999999999999999999999999999999.999999999999999999999999999999
+10	000000000000000000000000000001.000000000000000000000000000000
+delete from t1;
+select * from t1;
+a	b
+insert into t1(a) values(-1);
+ERROR 22003: Out of range value for column 'a' at row 1
+insert into t1(a) values(1000000000000000000000000000000);
+ERROR 22003: Out of range value for column 'a' at row 1
+insert into t1(a) values(99999999999999999999999999999.9999999999999999999999999999999);
+ERROR 22003: Out of range value for column 'a' at row 1
+insert into t1(a) values('a');
+ERROR 22007: Incorrect decimal value: 'a' for column `test_support_alldatatype`.`t1`.`a` at row 1
+drop table t1;
+create table t1 (a decimal(66,0) unsigned);
+ERROR 42000: Too big precision 66 specified for 'a'. Maximum is 65
+create table t1 (a decimal(65,39) unsigned);
+ERROR 42000: Too big scale 39 specified for 'a'. Maximum is 38
+create table t1 (a float);
+insert into t1 values('-3.402823466E+38');
+insert into t1 values(-1.175494351E-38);
+insert into t1 values(1);
+insert into t1 values(0);
+insert into t1 values(1.175494351E-38);
+insert into t1 values(3.402823466E+38);
+select * from t1;
+a
+-3.40282e38
+-1.17549e-38
+1
+0
+1.17549e-38
+3.40282e38
+update t1 set a=10 where a=1;
+select * from t1;
+a
+-3.40282e38
+-1.17549e-38
+10
+0
+1.17549e-38
+3.40282e38
+delete from t1;
+select * from t1;
+a
+insert into t1(a) values(-3.402823466E+39);
+ERROR 22003: Out of range value for column 'a' at row 1
+insert into t1(a) values(3.402823466E+39);
+ERROR 22003: Out of range value for column 'a' at row 1
+insert into t1 values('a');
+ERROR 22007: Incorrect double value: 'a' for column `test_support_alldatatype`.`t1`.`a` at row 1
+drop table t1;
+create table t1 (a float unsigned, b float(60,1) unsigned zerofill);
+insert into t1 values(1.175494351E-38,1.175494351E-38),(1,1),(0,0),(3.402823466E+38,3.402823466E+38);
+insert into t1(a) values(1.175494351E-39);
+select * from t1;
+a	b
+1.17549e-38	0000000000000000000000000000000000000000000000000000000000.0
+1	0000000000000000000000000000000000000000000000000000000001.0
+0	0000000000000000000000000000000000000000000000000000000000.0
+3.40282e38	0000000000000000000340282346638528860000000000000000000000.0
+1.17549e-39	NULL
+update t1 set a=10 where a=1;
+select * from t1;
+a	b
+1.17549e-38	0000000000000000000000000000000000000000000000000000000000.0
+10	0000000000000000000000000000000000000000000000000000000001.0
+0	0000000000000000000000000000000000000000000000000000000000.0
+3.40282e38	0000000000000000000340282346638528860000000000000000000000.0
+1.17549e-39	NULL
+delete from t1;
+select * from t1;
+a	b
+insert into t1(a) values(-1);
+ERROR 22003: Out of range value for column 'a' at row 1
+insert into t1(a) values(3.402823466E+39);
+ERROR 22003: Out of range value for column 'a' at row 1
+insert into t1 values('a','a');
+ERROR 22007: Incorrect double value: 'a' for column `test_support_alldatatype`.`t1`.`a` at row 1
+drop table t1;
+create table t1 (a double);
+insert into t1 values('-1.7976931348623157E+308'),(-2.2250738585072014E-308),(1),(0),(2.2250738585072014E-308),(1.7976931348623157E+308);
+select * from t1;
+a
+-1.7976931348623157e308
+-2.2250738585072014e-308
+1
+0
+2.2250738585072014e-308
+1.7976931348623157e308
+update t1 set a=10 where a=1;
+select * from t1;
+a
+-1.7976931348623157e308
+-2.2250738585072014e-308
+10
+0
+2.2250738585072014e-308
+1.7976931348623157e308
+delete from t1;
+select * from t1;
+a
+insert into t1 values('-1.7976931348623157E+309');
+ERROR 22003: Out of range value for column 'a' at row 1
+insert into t1 values('1.7976931348623157E+309');
+ERROR 22003: Out of range value for column 'a' at row 1
+insert into t1 values('a');
+ERROR 22007: Incorrect double value: 'a' for column `test_support_alldatatype`.`t1`.`a` at row 1
+drop table t1;
+create table t1 (a double unsigned, b double(60,1) unsigned zerofill);
+insert into t1 values(2.2250738585072014E-308,2.2250738585072014E-308),(1,1),(0,0);
+insert into t1(a) values(1.7976931348623157E+308);
+insert into t1(a) values('2.2250738585072014E-309');
+select * from t1;
+a	b
+2.2250738585072014e-308	0000000000000000000000000000000000000000000000000000000000.0
+1	0000000000000000000000000000000000000000000000000000000001.0
+0	0000000000000000000000000000000000000000000000000000000000.0
+1.7976931348623157e308	NULL
+2.225073858507203e-309	NULL
+update t1 set a=10 where a=1;
+select * from t1;
+a	b
+2.2250738585072014e-308	0000000000000000000000000000000000000000000000000000000000.0
+10	0000000000000000000000000000000000000000000000000000000001.0
+0	0000000000000000000000000000000000000000000000000000000000.0
+1.7976931348623157e308	NULL
+2.225073858507203e-309	NULL
+delete from t1;
+select * from t1;
+a	b
+insert into t1(a) values(-1);
+ERROR 22003: Out of range value for column 'a' at row 1
+insert into t1(a) values('1.7976931348623157E+309');
+ERROR 22003: Out of range value for column 'a' at row 1
+insert into t1(a) values('a');
+ERROR 22007: Incorrect double value: 'a' for column `test_support_alldatatype`.`t1`.`a` at row 1
+drop table t1;
+create table t1(a set('1','2','3','a','b','c','d'));
+insert into t1 values ('1'),('3'),('a');
+select * from t1;
+a
+1
+3
+a
+update t1 set a = '2' where a = '3';
+select * from t1 where a = 1;
+a
+1
+delete from t1 where a = '2';
+select * from t1;
+a
+1
+a
+drop table t1;
+create table t1(a enum('1','2','3','a','b','c','d'));
+insert into t1 values ('1'),('3'),('b');
+select * from t1;
+a
+1
+3
+b
+update t1 set a = '2' where a = '3';
+select * from t1 where a = '2';
+a
+2
+delete from t1 where a = '2';
+select * from t1;
+a
+1
+b
+drop table t1;
+create table gis_point (fid integer not null primary key, g point);
+create table gis_line  (fid integer not null primary key, g linestring);
+create table gis_polygon   (fid integer not null primary key, g polygon);
+create table gis_multi_point (fid integer not null primary key, g multipoint);
+create table gis_multi_line (fid integer not null primary key, g multilinestring);
+create table gis_multi_polygon  (fid integer not null primary key, g multipolygon);
+create table gis_geometrycollection  (fid integer not null primary key, g geometrycollection);
+create table gis_geometry (fid integer not null primary key, g geometry);
+show create table gis_point;
+Table	Create Table
+gis_point	CREATE TABLE `gis_point` (
+  `fid` int(11) NOT NULL,
+  `g` point DEFAULT NULL,
+  PRIMARY KEY (`fid`)
+) ENGINE=SequoiaDB DEFAULT CHARSET=latin1
+show create table gis_line;
+Table	Create Table
+gis_line	CREATE TABLE `gis_line` (
+  `fid` int(11) NOT NULL,
+  `g` linestring DEFAULT NULL,
+  PRIMARY KEY (`fid`)
+) ENGINE=SequoiaDB DEFAULT CHARSET=latin1
+show create table gis_polygon;
+Table	Create Table
+gis_polygon	CREATE TABLE `gis_polygon` (
+  `fid` int(11) NOT NULL,
+  `g` polygon DEFAULT NULL,
+  PRIMARY KEY (`fid`)
+) ENGINE=SequoiaDB DEFAULT CHARSET=latin1
+show create table gis_multi_point;
+Table	Create Table
+gis_multi_point	CREATE TABLE `gis_multi_point` (
+  `fid` int(11) NOT NULL,
+  `g` multipoint DEFAULT NULL,
+  PRIMARY KEY (`fid`)
+) ENGINE=SequoiaDB DEFAULT CHARSET=latin1
+show create table gis_multi_line;
+Table	Create Table
+gis_multi_line	CREATE TABLE `gis_multi_line` (
+  `fid` int(11) NOT NULL,
+  `g` multilinestring DEFAULT NULL,
+  PRIMARY KEY (`fid`)
+) ENGINE=SequoiaDB DEFAULT CHARSET=latin1
+show create table gis_multi_polygon;
+Table	Create Table
+gis_multi_polygon	CREATE TABLE `gis_multi_polygon` (
+  `fid` int(11) NOT NULL,
+  `g` multipolygon DEFAULT NULL,
+  PRIMARY KEY (`fid`)
+) ENGINE=SequoiaDB DEFAULT CHARSET=latin1
+show create table gis_geometrycollection;
+Table	Create Table
+gis_geometrycollection	CREATE TABLE `gis_geometrycollection` (
+  `fid` int(11) NOT NULL,
+  `g` geometrycollection DEFAULT NULL,
+  PRIMARY KEY (`fid`)
+) ENGINE=SequoiaDB DEFAULT CHARSET=latin1
+show create table gis_geometry;
+Table	Create Table
+gis_geometry	CREATE TABLE `gis_geometry` (
+  `fid` int(11) NOT NULL,
+  `g` geometry DEFAULT NULL,
+  PRIMARY KEY (`fid`)
+) ENGINE=SequoiaDB DEFAULT CHARSET=latin1
+insert into gis_point values
+(101, ST_PointFromText('POINT(10 10)')),
+(102, ST_PointFromText('POINT(20 10)')),
+(103, ST_PointFromText('POINT(20 20)')),
+(104, ST_PointFromWKB(ST_AsWKB(ST_PointFromText('POINT(10 20)'))));
+insert into gis_line values
+(105, ST_LineFromText('LINESTRING(0 0,0 10,10 0)')),
+(106, ST_LineStringFromText('LINESTRING(10 10,20 10,20 20,10 20,10 10)')),
+(107, ST_LineStringFromWKB(ST_AsWKB(LineString(Point(10, 10), Point(40, 10)))));
+insert into gis_polygon values
+(108, ST_PolygonFromText('POLYGON((10 10,20 10,20 20,10 20,10 10))')),
+(109, ST_PolyFromText('POLYGON((0 0,50 0,50 50,0 50,0 0), (10 10,20 10,20 20,10 20,10 10))')),
+(110, ST_PolyFromWKB(ST_AsWKB(Polygon(LineString(Point(0, 0), Point(30, 0), Point(30, 30), Point(0, 0))))));
+insert into gis_multi_point values
+(111, ST_MultiPointFromText('MULTIPOINT(0 0,10 10,10 20,20 20)')),
+(112, ST_MPointFromText('MULTIPOINT(1 1,11 11,11 21,21 21)')),
+(113, ST_MPointFromWKB(ST_AsWKB(MultiPoint(Point(3, 6), Point(4, 10)))));
+insert into gis_multi_line values
+(114, ST_MultiLineStringFromText('MULTILINESTRING((10 48,10 21,10 0),(16 0,16 23,16 48))')),
+(115, ST_MLineFromText('MULTILINESTRING((10 48,10 21,10 0))')),
+(116, ST_MLineFromWKB(ST_AsWKB(MultiLineString(LineString(Point(1, 2), Point(3, 5)), LineString(Point(2, 5), Point(5, 8), Point(21, 7))))));
+insert into gis_multi_polygon values
+(117, ST_MultiPolygonFromText('MULTIPOLYGON(((28 26,28 0,84 0,84 42,28 26),(52 18,66 23,73 9,48 6,52 18)),((59 18,67 18,67 13,59 13,59 18)))')),
+(118, ST_MPolyFromText('MULTIPOLYGON(((28 26,28 0,84 0,84 42,28 26),(52 18,66 23,73 9,48 6,52 18)),((59 18,67 18,67 13,59 13,59 18)))')),
+(119, ST_MPolyFromWKB(ST_AsWKB(MultiPolygon(Polygon(LineString(Point(0, 3), Point(3, 3), Point(3, 0), Point(0, 3)))))));
+insert into gis_geometrycollection values
+(120, ST_GeomCollFromText('GEOMETRYCOLLECTION(POINT(0 0), LINESTRING(0 0,10 10))')),
+(121, ST_GeometryFromWKB(ST_AsWKB(GeometryCollection(Point(44, 6), LineString(Point(3, 6), Point(7, 9))))));
+set @a1 = ST_PointFromText('POINT(1 1)');
+set @a2 = ST_LineFromText('LINESTRING(0 0,10 10,20 25,50 60)');
+set @a3 = ST_PolygonFromText('POLYGON((0 0,10 0,10 10,0 10,0 0),(5 5,7 5,7 7,5 7,5 5))');
+set @a4 = ST_MultiPointFromText('MULTIPOINT(10 10,20 20)');
+set @a5 = ST_MLineFromText('MULTILINESTRING((10 10,20 20),(15 15,30 15))');
+set @a6 = ST_MPolyFromText('MULTIPOLYGON(((0 0,10 0,10 10,0 10,0 0)),((5 5,7 5,7 7,5 7,5 5)))');
+set @a7 = ST_GeomFromText('GEOMETRYCOLLECTION(POINT(10 10),LINESTRING(1 1,2 2,3 3,4 4))');
+set @a8 = ST_GeomFromText('GEOMETRYCOLLECTION(POINT(10 10),POINT(30 30),LINESTRING(15 15,20 20))');
+insert into gis_geometry  values(122,@a1 ),(123,@a2 ),(124,@a3 ),(125,@a4 ),(126,@a5 ),(127,@a6 ),(128,@a7 ),(129,@a8 );
+select fid, ST_AsText(g) from gis_point;
+fid	ST_AsText(g)
+101	POINT(10 10)
+102	POINT(20 10)
+103	POINT(20 20)
+104	POINT(10 20)
+select fid, ST_AsText(g) from gis_line;
+fid	ST_AsText(g)
+105	LINESTRING(0 0,0 10,10 0)
+106	LINESTRING(10 10,20 10,20 20,10 20,10 10)
+107	LINESTRING(10 10,40 10)
+select fid, ST_AsText(g) from gis_polygon;
+fid	ST_AsText(g)
+108	POLYGON((10 10,20 10,20 20,10 20,10 10))
+109	POLYGON((0 0,50 0,50 50,0 50,0 0),(10 10,20 10,20 20,10 20,10 10))
+110	POLYGON((0 0,30 0,30 30,0 0))
+select fid, ST_AsText(g) from gis_multi_point;
+fid	ST_AsText(g)
+111	MULTIPOINT(0 0,10 10,10 20,20 20)
+112	MULTIPOINT(1 1,11 11,11 21,21 21)
+113	MULTIPOINT(3 6,4 10)
+select fid, ST_AsText(g) from gis_multi_line;
+fid	ST_AsText(g)
+114	MULTILINESTRING((10 48,10 21,10 0),(16 0,16 23,16 48))
+115	MULTILINESTRING((10 48,10 21,10 0))
+116	MULTILINESTRING((1 2,3 5),(2 5,5 8,21 7))
+select fid, ST_AsText(g) from gis_multi_polygon;
+fid	ST_AsText(g)
+117	MULTIPOLYGON(((28 26,28 0,84 0,84 42,28 26),(52 18,66 23,73 9,48 6,52 18)),((59 18,67 18,67 13,59 13,59 18)))
+118	MULTIPOLYGON(((28 26,28 0,84 0,84 42,28 26),(52 18,66 23,73 9,48 6,52 18)),((59 18,67 18,67 13,59 13,59 18)))
+119	MULTIPOLYGON(((0 3,3 3,3 0,0 3)))
+select fid, ST_AsText(g) from gis_geometrycollection;
+fid	ST_AsText(g)
+120	GEOMETRYCOLLECTION(POINT(0 0),LINESTRING(0 0,10 10))
+121	GEOMETRYCOLLECTION(POINT(44 6),LINESTRING(3 6,7 9))
+select fid, ST_AsText(g) from gis_geometry;
+fid	ST_AsText(g)
+122	POINT(1 1)
+123	LINESTRING(0 0,10 10,20 25,50 60)
+124	POLYGON((0 0,10 0,10 10,0 10,0 0),(5 5,7 5,7 7,5 7,5 5))
+125	MULTIPOINT(10 10,20 20)
+126	MULTILINESTRING((10 10,20 20),(15 15,30 15))
+127	MULTIPOLYGON(((0 0,10 0,10 10,0 10,0 0)),((5 5,7 5,7 7,5 7,5 5)))
+128	GEOMETRYCOLLECTION(POINT(10 10),LINESTRING(1 1,2 2,3 3,4 4))
+129	GEOMETRYCOLLECTION(POINT(10 10),POINT(30 30),LINESTRING(15 15,20 20))
+select fid, ST_AsBinary(g) from gis_point;
+fid	ST_AsBinary(g)
+101	         $@      $@
+102	         4@      $@
+103	         4@      4@
+104	         $@      4@
+select fid, ST_AsBinary(g) from gis_line;
+fid	ST_AsBinary(g)
+105	                                    $@      $@        
+106	            $@      $@      4@      $@      4@      4@      $@      4@      $@      $@
+107	            $@      $@      D@      $@
+select fid, ST_AsBinary(g) from gis_polygon;
+fid	ST_AsBinary(g)
+108	               $@      $@      4@      $@      4@      4@      $@      4@      $@      $@
+109	                               I@              I@      I@              I@                         $@      $@      4@      $@      4@      4@      $@      4@      $@      $@
+110	                               >@              >@      >@                
+select fid, ST_AsBinary(g) from gis_multi_point;
+fid	ST_AsBinary(g)
+111	                                  $@      $@         $@      4@         4@      4@
+112	               ð?      ð?         &@      &@         &@      5@         5@      5@
+113	               @      @         @      $@
+select fid, ST_AsBinary(g) from gis_multi_line;
+fid	ST_AsBinary(g)
+114	                  $@      H@      $@      5@      $@                    0@              0@      7@      0@      H@
+115	                  $@      H@      $@      5@      $@        
+116	                  ð?       @      @      @             @      @      @       @      5@      @
+select fid, ST_AsBinary(g) from gis_multi_polygon;
+fid	ST_AsBinary(g)
+117	                     <@      :@      <@              U@              U@      E@      <@      :@         J@      2@     €P@      7@     @R@      "@      H@      @      J@      2@              €M@      2@     ÀP@      2@     ÀP@      *@     €M@      *@     €M@      2@
+118	                     <@      :@      <@              U@              U@      E@      <@      :@         J@      2@     €P@      7@     @R@      "@      H@      @      J@      2@              €M@      2@     ÀP@      2@     ÀP@      *@     €M@      *@     €M@      2@
+119	                             @      @      @      @                      @
+select fid, ST_AsBinary(g) from gis_geometrycollection;
+fid	ST_AsBinary(g)
+120	                                                     $@      $@
+121	               F@      @            @      @      @      "@
+select fid, ST_AsBinary(g) from gis_geometry;
+fid	ST_AsBinary(g)
+122	         ð?      ð?
+123	                            $@      $@      4@      9@      I@      N@
+124	                               $@              $@      $@              $@                         @      @      @      @      @      @      @      @      @      @
+125	               $@      $@         4@      4@
+126	                  $@      $@      4@      4@            .@      .@      >@      .@
+127	                                     $@              $@      $@              $@                               @      @      @      @      @      @      @      @      @      @
+128	               $@      $@            ð?      ð?       @       @      @      @      @      @
+129	               $@      $@         >@      >@            .@      .@      4@      4@
+update gis_point set g =@a1 where g = ST_PointFromText('POINT(10 10)');
+update gis_line set g =@a2 where g = ST_LineFromText('LINESTRING(0 0,0 10,10 0)');
+update gis_polygon set g =@a3 where g = ST_PolygonFromText('POLYGON((10 10,20 10,20 20,10 20,10 10))');
+update gis_multi_point set g =@a4 where g = ST_MultiPointFromText('MULTIPOINT(0 0,10 10,10 20,20 20)');
+update gis_multi_line set g =@a5 where g = ST_MultiLineStringFromText('MULTILINESTRING((10 48,10 21,10 0),(16 0,16 23,16 48))');
+update gis_multi_polygon set g =@a6 where g = ST_MultiPolygonFromText('MULTIPOLYGON(((28 26,28 0,84 0,84 42,28 26),(52 18,66 23,73 9,48 6,52 18)),((59 18,67 18,67 13,59 13,59 18)))');
+update gis_geometrycollection set g =@a7 where g = ST_GeomCollFromText('GEOMETRYCOLLECTION(POINT(0 0), LINESTRING(0 0,10 10))');
+update gis_geometry set g =@a8 where g = ST_PointFromText('POINT(1 1)');
+update gis_point set g =@a1 where g = ST_PointFromWKB(ST_AsWKB(ST_PointFromText('POINT(10 20)')));
+update gis_line set g =@a2 where g = ST_LineStringFromWKB(ST_AsWKB(LineString(Point(10, 10), Point(40, 10))));
+update gis_polygon set g =@a3 where g = ST_PolyFromWKB(ST_AsWKB(Polygon(LineString(Point(0, 0), Point(30, 0), Point(30, 30), Point(0, 0)))));
+update gis_multi_point set g =@a4 where g = ST_MPointFromWKB(ST_AsWKB(MultiPoint(Point(3, 6), Point(4, 10))));
+update gis_multi_line set g =@a5 where g = ST_MLineFromWKB(ST_AsWKB(MultiLineString(LineString(Point(1, 2), Point(3, 5)), LineString(Point(2, 5), Point(5, 8), Point(21, 7)))));
+update gis_multi_polygon set g =@a6 where g = ST_MPolyFromWKB(ST_AsWKB(MultiPolygon(Polygon(LineString(Point(0, 3), Point(3, 3), Point(3, 0), Point(0, 3))))));
+update gis_geometrycollection set g =@a7 where g = ST_GeometryFromWKB(ST_AsWKB(GeometryCollection(Point(44, 6), LineString(Point(3, 6), Point(7, 9)))));
+update gis_geometry set g =@a8 where g = ST_PointFromWKB(ST_AsWKB(ST_PointFromText('POINT(1 1)')));
+select fid, ST_AsText(g) from gis_point where g = @a1;
+fid	ST_AsText(g)
+101	POINT(1 1)
+104	POINT(1 1)
+select fid, ST_AsText(g) from gis_line where g = @a2;
+fid	ST_AsText(g)
+105	LINESTRING(0 0,10 10,20 25,50 60)
+107	LINESTRING(0 0,10 10,20 25,50 60)
+select fid, ST_AsText(g) from gis_polygon where g = @a3;
+fid	ST_AsText(g)
+108	POLYGON((0 0,10 0,10 10,0 10,0 0),(5 5,7 5,7 7,5 7,5 5))
+110	POLYGON((0 0,10 0,10 10,0 10,0 0),(5 5,7 5,7 7,5 7,5 5))
+select fid, ST_AsText(g) from gis_multi_point where g = @a4;
+fid	ST_AsText(g)
+111	MULTIPOINT(10 10,20 20)
+113	MULTIPOINT(10 10,20 20)
+select fid, ST_AsText(g) from gis_multi_line where g = @a5;
+fid	ST_AsText(g)
+114	MULTILINESTRING((10 10,20 20),(15 15,30 15))
+116	MULTILINESTRING((10 10,20 20),(15 15,30 15))
+select fid, ST_AsText(g) from gis_multi_polygon where g = @a6;
+fid	ST_AsText(g)
+117	MULTIPOLYGON(((0 0,10 0,10 10,0 10,0 0)),((5 5,7 5,7 7,5 7,5 5)))
+118	MULTIPOLYGON(((0 0,10 0,10 10,0 10,0 0)),((5 5,7 5,7 7,5 7,5 5)))
+119	MULTIPOLYGON(((0 0,10 0,10 10,0 10,0 0)),((5 5,7 5,7 7,5 7,5 5)))
+select fid, ST_AsText(g) from gis_geometrycollection where g = @a7;
+fid	ST_AsText(g)
+120	GEOMETRYCOLLECTION(POINT(10 10),LINESTRING(1 1,2 2,3 3,4 4))
+121	GEOMETRYCOLLECTION(POINT(10 10),LINESTRING(1 1,2 2,3 3,4 4))
+select fid, ST_AsText(g) from gis_geometry where g = @a8;
+fid	ST_AsText(g)
+122	GEOMETRYCOLLECTION(POINT(10 10),POINT(30 30),LINESTRING(15 15,20 20))
+129	GEOMETRYCOLLECTION(POINT(10 10),POINT(30 30),LINESTRING(15 15,20 20))
+delete from gis_point where g = @a1;
+delete from gis_line where g = @a2;
+delete from gis_polygon where g = @a3;
+delete from gis_multi_point where g = @a4;
+delete from gis_multi_line where g = @a5;
+delete from gis_multi_polygon where g = @a6;
+delete from gis_geometrycollection where g = @a7;
+delete from gis_geometry where g = @a8;
+select fid, ST_AsText(g) from gis_point where g = @a1;
+fid	ST_AsText(g)
+select fid, ST_AsText(g) from gis_line where g = @a2;
+fid	ST_AsText(g)
+select fid, ST_AsText(g) from gis_polygon where g = @a3;
+fid	ST_AsText(g)
+select fid, ST_AsText(g) from gis_multi_point where g = @a4;
+fid	ST_AsText(g)
+select fid, ST_AsText(g) from gis_multi_line where g = @a5;
+fid	ST_AsText(g)
+select fid, ST_AsText(g) from gis_multi_polygon where g = @a6;
+fid	ST_AsText(g)
+select fid, ST_AsText(g) from gis_geometrycollection where g = @a7;
+fid	ST_AsText(g)
+select fid, ST_AsText(g) from gis_geometry where g = @a8;
+fid	ST_AsText(g)
+drop table  gis_point, gis_line, gis_polygon, gis_multi_point, gis_multi_line, gis_multi_polygon, gis_geometrycollection, gis_geometry;
+drop database test_support_alldatatype;

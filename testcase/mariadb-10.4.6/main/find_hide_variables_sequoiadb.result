@@ -1,0 +1,17 @@
+  --optimizer-index-sort-prune 
+SEQUOIASQLMAINSTREAM-1054
+--
+  --refresh-all-cached-tables-supported 
+SEQUOIASQLMAINSTREAM-1726
+--
+  --reject-nested-func-for-group-min-max 
+SEQUOIASQLMAINSTREAM-1816
+--
+  --server-ha-dml-max-retry-count[=#] 
+SEQUOIASQLMAINSTREAM-1501
+--
+  --server-ha-retry-prepared-stmt 
+SEQUOIASQLMAINSTREAM-1748
+--
+  --skip-ref-null-if-null-reject 
+SEQUOIASQLMAINSTREAM-1752

@@ -1,0 +1,200 @@
+CREATE DATABASE index_sequoiadb_22805;
+use index_sequoiadb_22805;
+CREATE TABLE t1 (
+a CHAR,
+b CHAR
+);
+INSERT INTO t1 VALUES ('a', 'b'), ('b', 'c'), ('c', 'e'), ('d', 'd'),('e','a'), ('f', 'a'), ('g', 'k'),('h','a'),('j','b'),('i','c'),('r','j'),('q','c'),('x','x'),('v','v');
+alter table t1 add PRIMARY KEY(a);
+alter table t1 add index b(b);
+alter table t1 add index ab(a,b);
+alter table t1 add index ba(b,a);
+SHOW CREATE TABLE t1;
+Table	Create Table
+t1	CREATE TABLE `t1` (
+  `a` char(1) NOT NULL,
+  `b` char(1) DEFAULT NULL,
+  PRIMARY KEY (`a`),
+  KEY `b` (`b`),
+  KEY `ab` (`a`,`b`),
+  KEY `ba` (`b`,`a`)
+) ENGINE=SequoiaDB DEFAULT CHARSET=latin1
+EXPLAIN SELECT * FROM t1 WHERE a<'b';
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	range	PRIMARY,ab	ab	1	NULL	5	100.00	Using where with pushed condition (`index_sequoiadb_22805`.`t1`.`a` < 'b'); Using index
+Warnings:
+Note	1003	/* select#1 */ select `index_sequoiadb_22805`.`t1`.`a` AS `a`,`index_sequoiadb_22805`.`t1`.`b` AS `b` from `index_sequoiadb_22805`.`t1` where (`index_sequoiadb_22805`.`t1`.`a` < 'b')
+SELECT * FROM t1 WHERE a<'b';
+a	b
+a	b
+[Note] SequoiaDB: Query message: condition[{ "a": { "$lt": "b" } }], selector[{ "a": null, "b": null }], order_by[{ "a": 1, "b": 1 }], hint[{ "": "ab" }], limit[-1], offset[0]
+EXPLAIN SELECT * FROM t1 WHERE b>'b';
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	range	b,ba	ba	2	NULL	5	100.00	Using where with pushed condition (`index_sequoiadb_22805`.`t1`.`b` > 'b'); Using index
+Warnings:
+Note	1003	/* select#1 */ select `index_sequoiadb_22805`.`t1`.`a` AS `a`,`index_sequoiadb_22805`.`t1`.`b` AS `b` from `index_sequoiadb_22805`.`t1` where (`index_sequoiadb_22805`.`t1`.`b` > 'b')
+SELECT * FROM t1 WHERE b>'b';
+a	b
+b	c
+c	e
+d	d
+g	k
+i	c
+q	c
+r	j
+v	v
+x	x
+[Note] SequoiaDB: Query message: condition[{ "b": { "$gt": "b" } }], selector[{ "a": null, "b": null }], order_by[{ "b": 1, "a": 1 }], hint[{ "": "ba" }], limit[-1], offset[0]
+EXPLAIN SELECT * FROM t1 WHERE a>'h' AND b<'b';
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	range	PRIMARY,b,ab,ba	ab	1	NULL	5	35.71	Using where with pushed condition ((`index_sequoiadb_22805`.`t1`.`a` > 'h') and (`index_sequoiadb_22805`.`t1`.`b` < 'b')); Using index
+Warnings:
+Note	1003	/* select#1 */ select `index_sequoiadb_22805`.`t1`.`a` AS `a`,`index_sequoiadb_22805`.`t1`.`b` AS `b` from `index_sequoiadb_22805`.`t1` where ((`index_sequoiadb_22805`.`t1`.`a` > 'h') and (`index_sequoiadb_22805`.`t1`.`b` < 'b'))
+SELECT * FROM t1 WHERE a>'h' AND b<'b';
+a	b
+[Note] SequoiaDB: Query message: condition[{ "$and": [ { "a": { "$gt": "h" } }, { "b": { "$lt": "b" } } ] }], selector[{ "a": null, "b": null }], order_by[{ "a": 1, "b": 1 }], hint[{ "": "ab" }], limit[-1], offset[0]
+ANALYZE TABLE t1;
+Table	Op	Msg_type	Msg_text
+index_sequoiadb_22805.t1	analyze	status	OK
+EXPLAIN SELECT * FROM t1 WHERE a<'b';
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	range	PRIMARY,ab	ab	1	NULL	5	100.00	Using where with pushed condition (`index_sequoiadb_22805`.`t1`.`a` < 'b'); Using index
+Warnings:
+Note	1003	/* select#1 */ select `index_sequoiadb_22805`.`t1`.`a` AS `a`,`index_sequoiadb_22805`.`t1`.`b` AS `b` from `index_sequoiadb_22805`.`t1` where (`index_sequoiadb_22805`.`t1`.`a` < 'b')
+SELECT * FROM t1 WHERE a<'b';
+a	b
+a	b
+[Note] SequoiaDB: Query message: condition[{ "a": { "$lt": "b" } }], selector[{ "a": null, "b": null }], order_by[{ "a": 1, "b": 1 }], hint[{ "": "ab" }], limit[-1], offset[0]
+EXPLAIN SELECT * FROM t1 WHERE b>'b';
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	range	b,ba	ba	2	NULL	5	100.00	Using where with pushed condition (`index_sequoiadb_22805`.`t1`.`b` > 'b'); Using index
+Warnings:
+Note	1003	/* select#1 */ select `index_sequoiadb_22805`.`t1`.`a` AS `a`,`index_sequoiadb_22805`.`t1`.`b` AS `b` from `index_sequoiadb_22805`.`t1` where (`index_sequoiadb_22805`.`t1`.`b` > 'b')
+SELECT * FROM t1 WHERE b>'b';
+a	b
+b	c
+c	e
+d	d
+g	k
+i	c
+q	c
+r	j
+v	v
+x	x
+[Note] SequoiaDB: Query message: condition[{ "b": { "$gt": "b" } }], selector[{ "a": null, "b": null }], order_by[{ "b": 1, "a": 1 }], hint[{ "": "ba" }], limit[-1], offset[0]
+EXPLAIN SELECT * FROM t1 WHERE a>'h' AND b<'b';
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	range	PRIMARY,b,ab,ba	ab	1	NULL	5	35.71	Using where with pushed condition ((`index_sequoiadb_22805`.`t1`.`a` > 'h') and (`index_sequoiadb_22805`.`t1`.`b` < 'b')); Using index
+Warnings:
+Note	1003	/* select#1 */ select `index_sequoiadb_22805`.`t1`.`a` AS `a`,`index_sequoiadb_22805`.`t1`.`b` AS `b` from `index_sequoiadb_22805`.`t1` where ((`index_sequoiadb_22805`.`t1`.`a` > 'h') and (`index_sequoiadb_22805`.`t1`.`b` < 'b'))
+SELECT * FROM t1 WHERE a>'h' AND b<'b';
+a	b
+[Note] SequoiaDB: Query message: condition[{ "$and": [ { "a": { "$gt": "h" } }, { "b": { "$lt": "b" } } ] }], selector[{ "a": null, "b": null }], order_by[{ "a": 1, "b": 1 }], hint[{ "": "ab" }], limit[-1], offset[0]
+DROP TABLE t1;
+CREATE TABLE t1 (
+a VARCHAR(255),
+b VARCHAR(255)
+);
+INSERT INTO t1 VALUES ('a', 'b'), ('b', 'c'), ('c', 'c'), ('d', 'd'),('e','e'), ('f', 'a'), ('g', 'k'),('h','a'),('j','b'),('i','c'),('r','j'),('q','c'),('x','x'),('v','v');
+alter table t1 add PRIMARY KEY(a);
+alter table t1 add index b(b);
+alter table t1 add index ab(a,b);
+alter table t1 add index ba(b,a);
+SHOW CREATE TABLE t1;
+Table	Create Table
+t1	CREATE TABLE `t1` (
+  `a` varchar(255) NOT NULL,
+  `b` varchar(255) DEFAULT NULL,
+  PRIMARY KEY (`a`),
+  KEY `b` (`b`),
+  KEY `ab` (`a`,`b`),
+  KEY `ba` (`b`,`a`)
+) ENGINE=SequoiaDB DEFAULT CHARSET=latin1
+EXPLAIN SELECT * FROM t1 WHERE a<>b;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	index	NULL	ab	515	NULL	14	90.00	Using where with pushed condition (`index_sequoiadb_22805`.`t1`.`a` <> `index_sequoiadb_22805`.`t1`.`b`); Using index
+Warnings:
+Note	1003	/* select#1 */ select `index_sequoiadb_22805`.`t1`.`a` AS `a`,`index_sequoiadb_22805`.`t1`.`b` AS `b` from `index_sequoiadb_22805`.`t1` where (`index_sequoiadb_22805`.`t1`.`a` <> `index_sequoiadb_22805`.`t1`.`b`)
+SELECT * FROM t1 WHERE a<>b;
+a	b
+a	b
+b	c
+f	a
+g	k
+h	a
+i	c
+j	b
+q	c
+r	j
+[Note] SequoiaDB: Query message: condition[{ "a": { "$ne": { "$field": "b" } } }], selector[{ "a": null, "b": null }], order_by[{ "a": 1, "b": 1 }], hint[{ "": "ab" }], limit[-1], offset[0]
+EXPLAIN SELECT * FROM t1 WHERE a IN ('a','b');
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	range	PRIMARY,ab	ab	257	NULL	4	100.00	Using where with pushed condition (`index_sequoiadb_22805`.`t1`.`a` in ('a','b')); Using index
+Warnings:
+Note	1003	/* select#1 */ select `index_sequoiadb_22805`.`t1`.`a` AS `a`,`index_sequoiadb_22805`.`t1`.`b` AS `b` from `index_sequoiadb_22805`.`t1` where (`index_sequoiadb_22805`.`t1`.`a` in ('a','b'))
+SELECT * FROM t1 WHERE a IN ('a','b');
+a	b
+a	b
+b	c
+[Note] SequoiaDB: Query message: condition[{ "$and": [ { "a": { "$in": [ "a", "b" ] } }, { "a": { "$et": "b" } } ] }], selector[{ "a": null, "b": null }], order_by[{ "a": 1, "b": 1 }], hint[{ "": "ab" }], limit[-1], offset[0]
+EXPLAIN SELECT * FROM t1 WHERE b BETWEEN 'a' AND 'c';
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	range	b,ba	ba	258	NULL	2	100.00	Using where with pushed condition (`index_sequoiadb_22805`.`t1`.`b` between 'a' and 'c'); Using index
+Warnings:
+Note	1003	/* select#1 */ select `index_sequoiadb_22805`.`t1`.`a` AS `a`,`index_sequoiadb_22805`.`t1`.`b` AS `b` from `index_sequoiadb_22805`.`t1` where (`index_sequoiadb_22805`.`t1`.`b` between 'a' and 'c')
+SELECT * FROM t1 WHERE b BETWEEN 'a' AND 'c';
+a	b
+a	b
+b	c
+c	c
+f	a
+h	a
+i	c
+j	b
+q	c
+[Note] SequoiaDB: Query message: condition[{ "$and": [ { "b": { "$gte": "a" } }, { "b": { "$lte": "c" } } ] }], selector[{ "a": null, "b": null }], order_by[{ "b": 1, "a": 1 }], hint[{ "": "ba" }], limit[-1], offset[0]
+EXPLAIN SELECT * FROM t1 WHERE a<>b;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	index	NULL	ab	515	NULL	14	90.00	Using where with pushed condition (`index_sequoiadb_22805`.`t1`.`a` <> `index_sequoiadb_22805`.`t1`.`b`); Using index
+Warnings:
+Note	1003	/* select#1 */ select `index_sequoiadb_22805`.`t1`.`a` AS `a`,`index_sequoiadb_22805`.`t1`.`b` AS `b` from `index_sequoiadb_22805`.`t1` where (`index_sequoiadb_22805`.`t1`.`a` <> `index_sequoiadb_22805`.`t1`.`b`)
+SELECT * FROM t1 WHERE a<>b;
+a	b
+a	b
+b	c
+f	a
+g	k
+h	a
+i	c
+j	b
+q	c
+r	j
+[Note] SequoiaDB: Query message: condition[{ "a": { "$ne": { "$field": "b" } } }], selector[{ "a": null, "b": null }], order_by[{ "a": 1, "b": 1 }], hint[{ "": "ab" }], limit[-1], offset[0]
+EXPLAIN SELECT * FROM t1 WHERE a IN ('a','b');
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	range	PRIMARY,ab	ab	257	NULL	4	100.00	Using where with pushed condition (`index_sequoiadb_22805`.`t1`.`a` in ('a','b')); Using index
+Warnings:
+Note	1003	/* select#1 */ select `index_sequoiadb_22805`.`t1`.`a` AS `a`,`index_sequoiadb_22805`.`t1`.`b` AS `b` from `index_sequoiadb_22805`.`t1` where (`index_sequoiadb_22805`.`t1`.`a` in ('a','b'))
+SELECT * FROM t1 WHERE a IN ('a','b');
+a	b
+a	b
+b	c
+[Note] SequoiaDB: Query message: condition[{ "$and": [ { "a": { "$in": [ "a", "b" ] } }, { "a": { "$et": "b" } } ] }], selector[{ "a": null, "b": null }], order_by[{ "a": 1, "b": 1 }], hint[{ "": "ab" }], limit[-1], offset[0]
+EXPLAIN SELECT * FROM t1 WHERE b BETWEEN 'a' AND 'c';
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	range	b,ba	ba	258	NULL	2	100.00	Using where with pushed condition (`index_sequoiadb_22805`.`t1`.`b` between 'a' and 'c'); Using index
+Warnings:
+Note	1003	/* select#1 */ select `index_sequoiadb_22805`.`t1`.`a` AS `a`,`index_sequoiadb_22805`.`t1`.`b` AS `b` from `index_sequoiadb_22805`.`t1` where (`index_sequoiadb_22805`.`t1`.`b` between 'a' and 'c')
+SELECT * FROM t1 WHERE b BETWEEN 'a' AND 'c';
+a	b
+a	b
+b	c
+c	c
+f	a
+h	a
+i	c
+j	b
+q	c
+[Note] SequoiaDB: Query message: condition[{ "$and": [ { "b": { "$gte": "a" } }, { "b": { "$lte": "c" } } ] }], selector[{ "a": null, "b": null }], order_by[{ "b": 1, "a": 1 }], hint[{ "": "ba" }], limit[-1], offset[0]
+DROP TABLE t1;
+DROP DATABASE index_sequoiadb_22805;

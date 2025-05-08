@@ -1,0 +1,38 @@
+drop database if exists ddl_check_interval_sequoiadb;
+create database ddl_check_interval_sequoiadb;
+drop database ddl_check_interval_sequoiadb;
+create database ddl_check_interval_sequoiadb;
+use ddl_check_interval_sequoiadb;
+create table t1(
+a1 int auto_increment,
+b1 varchar(12) default null,
+c1 varchar(12) default null,
+key idx_a(a1)
+);
+show create table t1;
+Table	Create Table
+t1	CREATE TABLE `t1` (
+  `a1` int(11) NOT NULL AUTO_INCREMENT,
+  `b100` varchar(12) COLLATE utf8mb4_bin DEFAULT NULL,
+  `c100` varchar(12) COLLATE utf8mb4_bin DEFAULT NULL,
+  `d1` varchar(12) COLLATE utf8mb4_bin DEFAULT NULL,
+  KEY `idx_a` (`a1`)
+) ENGINE=SequoiaDB AUTO_INCREMENT=199001 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin
+select count(*) from t1;
+count(*)
+100
+use ddl_check_interval_sequoiadb;
+select count(*) = 4 from information_schema.columns where table_schema = 'ddl_check_interval_sequoiadb' and table_name = 't1'
+show create table t1;
+Table	Create Table
+t1	CREATE TABLE `t1` (
+  `a1` int(11) NOT NULL AUTO_INCREMENT,
+  `b100` varchar(12) COLLATE utf8mb4_bin DEFAULT NULL,
+  `c100` varchar(12) COLLATE utf8mb4_bin DEFAULT NULL,
+  `d1` varchar(12) COLLATE utf8mb4_bin DEFAULT NULL,
+  KEY `idx_a` (`a1`)
+) ENGINE=SequoiaDB AUTO_INCREMENT=199001 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin
+select count(*) from t1;
+count(*)
+100
+drop database ddl_check_interval_sequoiadb;

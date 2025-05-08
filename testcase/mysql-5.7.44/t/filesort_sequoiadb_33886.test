@@ -1,0 +1,20 @@
+--disable_warnings
+drop table if exists t1_33886;
+--enable_warnings
+create table t1_33886(a int);
+drop table t1_33886;
+
+create table `t1_33886` (
+  `v1` int(11) default null,
+  `v2` int(11) default null,
+  unique key `v1` (`v1`),
+  unique key `v2` (`v2`)
+) engine=SequoiaDB default charset=utf8mb4 collate=utf8mb4_bin;
+insert into t1_33886 values(1,2);
+
+explain update t1_33886 set v1 =41219694.000000 order by v1,(select 25027969.0 union select 0);
+# failed: 1242: Subquery returns more than 1 row
+--error 1242
+update t1_33886 set v1 =41219694.000000 order by v1,(select 25027969.0 union select 0);
+
+drop table t1_33886;

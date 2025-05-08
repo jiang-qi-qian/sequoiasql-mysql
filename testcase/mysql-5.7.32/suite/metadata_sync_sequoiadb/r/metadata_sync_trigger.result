@@ -1,0 +1,51 @@
+DROP DATABASE IF EXISTS metasync_trigger;
+SHOW CREATE DATABASE metasync_trigger;
+ERROR 42000: Unknown database 'metasync_trigger'
+CREATE DATABASE metasync_trigger;
+USE metasync_trigger;
+CREATE TABLE account ( acct_num INT, amount DECIMAL(10,2) );
+CREATE TRIGGER ins_num BEFORE INSERT ON account FOR EACH ROW SET @sum = @sum + NEW.amount;
+SET @sum = 0;
+INSERT INTO account VALUES (137,14.98),(141,1937.50),(97,-100.00);
+SELECT @sum AS "total amount inserted";
+total amount inserted
+1852.48
+CREATE TRIGGER metaSync_delimiter_trigger BEFORE UPDATE ON account FOR EACH ROW
+BEGIN
+DECLARE loc_err VARCHAR(255);
+IF ABS( NEW.amount - OLD.amount ) > 1000 THEN
+SET NEW.amount := OLD.amount;
+SET loc_err := CONCAT( "Too big change for aid = ", NEW.acct_num );
+SET @update_failed:= IF( @update_failed, CONCAT( @a, ":", loc_err ), loc_err );
+END IF; 
+END|
+USE metasync_trigger;
+SHOW CREATE TABLE account;
+Table	Create Table
+account	CREATE TABLE `account` (
+  `acct_num` int(11) DEFAULT NULL,
+  `amount` decimal(10,2) DEFAULT NULL
+) ENGINE=SequoiaDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin
+SHOW CREATE TRIGGER ins_num;
+Trigger	sql_mode	SQL Original Statement	character_set_client	collation_connection	Database Collation	Created
+ins_num	STRICT_TRANS_TABLES,ERROR_FOR_DIVISION_BY_ZERO,NO_AUTO_CREATE_USER,NO_ENGINE_SUBSTITUTION	CREATE DEFINER=`x`@`%` TRIGGER ins_num BEFORE INSERT ON account FOR EACH ROW SET @sum = @sum + NEW.amount	latin1	latin1_swedish_ci	utf8mb4_bin	x
+SHOW CREATE TRIGGER metaSync_delimiter_trigger;
+Trigger	sql_mode	SQL Original Statement	character_set_client	collation_connection	Database Collation	Created
+metaSync_delimiter_trigger	STRICT_TRANS_TABLES,ERROR_FOR_DIVISION_BY_ZERO,NO_AUTO_CREATE_USER,NO_ENGINE_SUBSTITUTION	CREATE DEFINER=`x`@`%` TRIGGER metaSync_delimiter_trigger BEFORE UPDATE ON account FOR EACH ROW
+BEGIN
+DECLARE loc_err VARCHAR(255);
+IF ABS( NEW.amount - OLD.amount ) > 1000 THEN
+SET NEW.amount := OLD.amount;
+SET loc_err := CONCAT( "Too big change for aid = ", NEW.acct_num );
+SET @update_failed:= IF( @update_failed, CONCAT( @a, ":", loc_err ), loc_err );
+END IF; 
+END	latin1	latin1_swedish_ci	utf8mb4_bin	x
+DROP TRIGGER IF EXISTS ins_num;
+DROP TRIGGER metaSync_delimiter_trigger;
+SHOW CREATE TRIGGER ins_num;
+ERROR HY000: Trigger does not exist
+SHOW CREATE TRIGGER metaSync_delimiter_trigger;
+ERROR HY000: Trigger does not exist
+DROP DATABASE metasync_trigger;
+SHOW CREATE DATABASE metasync_trigger;
+ERROR 42000: Unknown database 'metasync_trigger'

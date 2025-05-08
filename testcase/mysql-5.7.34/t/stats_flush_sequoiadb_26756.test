@@ -1,0 +1,29 @@
+#Case 26756
+--source include/have_sequoiadb.inc
+--source suite/metadata_sync_sequoiadb/inc/insts_connect_sequoiadb.inc
+
+set session sequoiadb_stats_flush_time_threshold = 4;
+--disable_warnings 
+set session debug="d,stats_flush_time_threshold_test"; 
+drop database if exists db_26756;
+--enable_warnings
+
+create database db_26756 ;
+use db_26756 ;
+
+create table t1(id int);
+insert into t1 values(1),(1),(1),(1),(1),(1),(1),(1),(1),(1),(1),(1),
+(1),(1),(1),(1),(1),(1),(1),(1),(1),(1),(1),(1),(1),(1),(1),(1),(1),(1),
+(1),(1),(1),(1),(1),(1),(1),(1),(1),(1),(1),(1),(1),(1),(1),(1),(1),(1),
+(1),(1),(1),(1),(1),(1),(1),(1),(1),(1),(1),(1),(1),(1),(1),(1),(1),(1);
+
+select * from information_schema.PARTITIONS where TABLE_SCHEMA = 'db_26756' and TABLE_NAME = 't1'; 
+
+drop database db_26756 ;
+
+set session sequoiadb_stats_flush_time_threshold = default;
+--disable_warnings
+set session debug = default;
+--enable_warnings
+--source include/uninstall_sequoiadb.inc
+--source suite/metadata_sync_sequoiadb/inc/insts_disconnect_sequoiadb.inc

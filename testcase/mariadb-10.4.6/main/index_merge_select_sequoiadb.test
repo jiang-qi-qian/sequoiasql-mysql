@@ -1,0 +1,23 @@
+# seqDB-24438
+--source include/have_sequoiadb.inc
+
+CREATE DATABASE index_merge_select_sequoiadb;
+use index_merge_select_sequoiadb;
+
+CREATE TABLE t1 (
+  a smallint,
+  b smallint,
+  c smallint primary key,
+  KEY a (a),
+  KEY b (b)
+) ENGINE=sequoiadb;
+
+set @@sequoiadb_debug_log=on;
+INSERT INTO t1 VALUES (1,2,13), (2,2,17), (2,2,20), (2,2,25);
+SELECT a,b,c FROM t1 force index(a,b) WHERE (b = 2 or a = 2) order by c;
+--source include/query_pushdown_condition_sequoiadb.inc
+EXPLAIN SELECT a,b,c FROM t1 force index(a,b) WHERE (b = 2 or a = 2) order by c;
+
+DROP TABLE t1;
+DROP DATABASE index_merge_select_sequoiadb;
+--source include/uninstall_sequoiadb.inc

@@ -1,0 +1,55 @@
+drop database if exists query_without_sorted_and_get_mysqld_note_log_sequoiadb_24292;
+create database query_without_sorted_and_get_mysqld_note_log_sequoiadb_24292;
+drop database query_without_sorted_and_get_mysqld_note_log_sequoiadb_24292;
+create database query_without_sorted_and_get_mysqld_note_log_sequoiadb_24292;
+use query_without_sorted_and_get_mysqld_note_log_sequoiadb_24292;
+CREATE TABLE t1 (a INT, b INT, c CHAR(10), KEY ab(a, b), KEY c(c(5)) );
+INSERT INTO t1 VALUES (NULL, NULL, NULL), (1, 1, "1"), (2, 2, "2"), (3, 3, "3");
+SELECT * FROM t1 FORCE INDEX(ab) WHERE a IN (0, 1, 3);
+a	b	c
+1	1	1
+3	3	3
+[Note] Testcase: Operation log begin
+[Note] SequoiaDB: optimizer pushdown autocommit: 1
+[Note] SequoiaDB: Query message: condition[{ "a": { "$in": [ 0, 1, 3 ] } }], selector[{}], order_by[{}], hint[{ "": "ab" }], limit[-1], offset[0], table[query_without_sorted_and_get_mysqld_note_log_sequoiadb_24292.t1]
+SELECT * FROM t1 FORCE INDEX(ab) WHERE a = 0 OR a = 1 OR a = 3;
+a	b	c
+1	1	1
+3	3	3
+[Note] Testcase: Operation log begin
+[Note] SequoiaDB: optimizer pushdown autocommit: 1
+[Note] SequoiaDB: Query message: condition[{ "$and": [ { "$or": [ { "a": { "$et": 0 } }, { "a": { "$et": 1 } }, { "a": { "$et": 3 } } ] }, { "a": { "$in": [ 0, 1, 3 ] } } ] }], selector[{}], order_by[{}], hint[{ "": "ab" }], limit[-1], offset[0], table[query_without_sorted_and_get_mysqld_note_log_sequoiadb_24292.t1]
+SELECT * FROM t1 FORCE INDEX(ab) WHERE (a, b) IN ((0, 0), (1, 1), (3, 3));
+a	b	c
+1	1	1
+3	3	3
+[Note] Testcase: Operation log begin
+[Note] SequoiaDB: Condition can't be pushed down. db=[query_without_sorted_and_get_mysqld_note_log_sequoiadb_24292], table[t1], sql=[SELECT * FROM t1 FORCE INDEX(ab) WHERE (a, b) IN ((0, 0), (1, 1), (3, 3))]
+[Note] SequoiaDB: Condition can't be pushed down. db=[query_without_sorted_and_get_mysqld_note_log_sequoiadb_24292], table[t1], sql=[SELECT * FROM t1 FORCE INDEX(ab) WHERE (a, b) IN ((0, 0), (1, 1), (3, 3))]
+[Note] SequoiaDB: optimizer pushdown autocommit: 1
+[Note] SequoiaDB: Query message: condition[{}], selector[{}], order_by[{}], hint[{ "$Range": { "IsAllEqual": true, "PrefixNum": 2, "IndexValue": [ { "1": 0, "2": 0 }, { "1": 1, "2": 1 }, { "1": 3, "2": 3 } ] }, "": "ab" }], limit[-1], offset[0], table[query_without_sorted_and_get_mysqld_note_log_sequoiadb_24292.t1]
+SELECT * FROM t1 FORCE INDEX(ab) WHERE (a BETWEEN 0 AND 2) OR a = 3;
+a	b	c
+1	1	1
+2	2	2
+3	3	3
+[Note] Testcase: Operation log begin
+[Note] SequoiaDB: optimizer pushdown autocommit: 1
+[Note] SequoiaDB: Query message: condition[{ "$or": [ { "$and": [ { "a": { "$gte": 0 } }, { "a": { "$lte": 2 } } ] }, { "a": { "$et": 3 } } ] }], selector[{}], order_by[{}], hint[{ "$Range": { "IsAllEqual": false, "IndexValueIncluded": [ [ true, true ], [ true, true ] ], "PrefixNum": [ 1, 1 ], "IndexValue": [ [ { "1": 0 }, { "1": 2 } ], [ { "1": 3 }, { "1": 3 } ] ] }, "": "ab" }], limit[-1], offset[0], table[query_without_sorted_and_get_mysqld_note_log_sequoiadb_24292.t1]
+SELECT * FROM t1 FORCE INDEX(c) WHERE c IN ("1", "2", "3");
+a	b	c
+1	1	1
+2	2	2
+3	3	3
+[Note] Testcase: Operation log begin
+[Note] SequoiaDB: Query message: condition[{ "$and": [ { "c": { "$in": [ "1", "2", "3" ] } }, { "c": { "$gte": "1" } } ] }], selector[{}], order_by[{ "c": 1 }], hint[{ "": "c" }], limit[-1], offset[0], table[query_without_sorted_and_get_mysqld_note_log_sequoiadb_24292.t1]
+[Note] SequoiaDB: Query message: condition[{ "$and": [ { "c": { "$in": [ "1", "2", "3" ] } }, { "c": { "$gte": "2" } } ] }], selector[{}], order_by[{ "c": 1 }], hint[{ "": "c" }], limit[-1], offset[0], table[query_without_sorted_and_get_mysqld_note_log_sequoiadb_24292.t1]
+[Note] SequoiaDB: Query message: condition[{ "$and": [ { "c": { "$in": [ "1", "2", "3" ] } }, { "c": { "$gte": "3" } } ] }], selector[{}], order_by[{ "c": 1 }], hint[{ "": "c" }], limit[-1], offset[0], table[query_without_sorted_and_get_mysqld_note_log_sequoiadb_24292.t1]
+SELECT * FROM t1 FORCE INDEX(ab) WHERE a IS NULL OR a = 0 OR a = 1;
+a	b	c
+NULL	NULL	NULL
+1	1	1
+[Note] Testcase: Operation log begin
+[Note] SequoiaDB: optimizer pushdown autocommit: 1
+[Note] SequoiaDB: Query message: condition[{ "$or": [ { "a": { "$isnull": 1 } }, { "a": { "$et": 0 } }, { "a": { "$et": 1 } } ] }], selector[{}], order_by[{}], hint[{ "$Range": { "IsAllEqual": false, "IndexValueIncluded": [ [ true, true ], [ true, true ], [ true, true ] ], "PrefixNum": [ 1, 1, 1 ], "IndexValue": [ [ { "1": {"$minKey":1} }, { "1": null } ], [ { "1": 0 }, { "1": 0 } ], [ { "1": 1 }, { "1": 1 } ] ] }, "": "ab" }], limit[-1], offset[0], table[query_without_sorted_and_get_mysqld_note_log_sequoiadb_24292.t1]
+DROP DATABASE query_without_sorted_and_get_mysqld_note_log_sequoiadb_24292;

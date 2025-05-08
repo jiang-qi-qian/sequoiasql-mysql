@@ -1,0 +1,14 @@
+--source include/have_sequoiadb.inc
+
+--disable_warnings
+DROP TABLE if EXISTS count_sequoiadb_24974;
+--enable_warnings
+
+CREATE TABLE count_sequoiadb_24974(
+	a INT,
+	b INT
+);
+INSERT INTO count_sequoiadb_24974(a) VALUES(1),(2),(3);
+SHOW CREATE TABLE count_sequoiadb_24974;
+SELECT count(a),count(b) FROM count_sequoiadb_24974;
+DROP TABLE count_sequoiadb_24974;

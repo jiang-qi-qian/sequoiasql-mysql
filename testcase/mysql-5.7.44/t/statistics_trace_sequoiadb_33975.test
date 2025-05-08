@@ -1,0 +1,48 @@
+--source include/restart_mysqld.inc
+--source include/have_sequoiadb.inc
+
+--disable_warnings
+drop database if exists statistics_trace_sequoiadb_33975;
+--enable_warnings
+create database statistics_trace_sequoiadb_33975;
+drop database statistics_trace_sequoiadb_33975;
+create database statistics_trace_sequoiadb_33975;
+use statistics_trace_sequoiadb_33975;
+
+set session sequoiadb_debug_log = on;
+set session sequoiadb_secure_log = off;
+set session sequoiadb_share_log_output = on;
+
+CREATE TABLE t1 (a int,b varchar(4),key (a)) ENGINE=SequoiaDB;
+INSERT INTO t1 values (1,"a"),(2,"b");
+create table t2 like t1;
+
+flush tables;
+show status like "sdb_share_deleted";
+show status like "sdb_share_updated";
+
+# 添加列
+let $query = alter table t1 add column c int;
+--source include/query_without_sorted_and_get_mysqld_note_log_sequoiadb.inc
+show status like "sdb_share_deleted";
+show status like "sdb_share_updated";
+
+# 删除列
+let $query = alter table t1 drop column c;
+--source include/query_without_sorted_and_get_mysqld_note_log_sequoiadb.inc
+show status like "sdb_share_deleted";
+show status like "sdb_share_updated";
+
+# 添加索引
+let $query = alter table t2 add index idx_b (b);
+--source include/query_without_sorted_and_get_mysqld_note_log_sequoiadb.inc
+show status like "sdb_share_deleted";
+show status like "sdb_share_updated";
+
+# 删除索引
+let $query = alter table t2 drop index idx_b;
+--source include/query_without_sorted_and_get_mysqld_note_log_sequoiadb.inc
+show status like "sdb_share_deleted";
+show status like "sdb_share_updated";
+
+drop database statistics_trace_sequoiadb_33975;

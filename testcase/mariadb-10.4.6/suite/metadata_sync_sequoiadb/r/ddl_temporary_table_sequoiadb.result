@@ -1,0 +1,168 @@
+connection conn1;
+drop database if exists ddl_temporary_table_sequoiadb_01;
+drop database if exists ddl_temporary_table_sequoiadb_02;
+create database ddl_temporary_table_sequoiadb_01;
+use ddl_temporary_table_sequoiadb_01;
+create temporary table tmp_t1(a int);
+insert into tmp_t1 values(1);
+create table normal_t1 (a int) engine = innodb;
+insert into normal_t1 values(1);
+create database ddl_temporary_table_sequoiadb_02;
+use ddl_temporary_table_sequoiadb_02;
+drop database ddl_temporary_table_sequoiadb_02;
+set session default_tmp_storage_engine = innodb;
+set session default_storage_engine = innodb;
+create temporary table tmp_t2(a int);
+ERROR 3D000: No database selected
+create database ddl_temporary_table_sequoiadb_02;
+use ddl_temporary_table_sequoiadb_02;
+create temporary table tmp_t2(a int);
+insert into tmp_t2 values(1);
+select * from tmp_t2;
+a
+1
+drop temporary table tmp_t2;
+drop database ddl_temporary_table_sequoiadb_02;
+create temporary table tmp_t2 select * from ddl_temporary_table_sequoiadb_01.tmp_t1;
+ERROR 3D000: No database selected
+create database ddl_temporary_table_sequoiadb_02;
+use ddl_temporary_table_sequoiadb_02;
+create temporary table tmp_t2 select * from ddl_temporary_table_sequoiadb_01.tmp_t1;
+select * from tmp_t2;
+a
+1
+drop temporary table tmp_t2;
+drop database ddl_temporary_table_sequoiadb_02;
+create temporary table tmp_t2 like ddl_temporary_table_sequoiadb_01.tmp_t1;
+ERROR 3D000: No database selected
+create temporary table tmp_t2 like ddl_temporary_table_sequoiadb_01.normal_t1;
+ERROR 3D000: No database selected
+create database ddl_temporary_table_sequoiadb_02;
+use ddl_temporary_table_sequoiadb_02;
+create temporary table tmp_t2 like ddl_temporary_table_sequoiadb_01.tmp_t1;
+select * from tmp_t2;
+a
+drop temporary table tmp_t2;
+create temporary table tmp_t2 like ddl_temporary_table_sequoiadb_01.normal_t1;
+select * from tmp_t2;
+a
+drop temporary table tmp_t2;
+drop database ddl_temporary_table_sequoiadb_02;
+set session default_tmp_storage_engine = sequoiadb;
+set session default_storage_engine = sequoiadb;
+create temporary table tmp_t2(a int);
+ERROR 3D000: No database selected
+create database ddl_temporary_table_sequoiadb_02;
+use ddl_temporary_table_sequoiadb_02;
+create temporary table tmp_t2(a int);
+insert into tmp_t2 values(1);
+select * from tmp_t2;
+a
+1
+drop temporary table tmp_t2;
+drop database ddl_temporary_table_sequoiadb_02;
+create temporary table tmp_t2 select * from ddl_temporary_table_sequoiadb_01.tmp_t1;
+ERROR 3D000: No database selected
+create database ddl_temporary_table_sequoiadb_02;
+use ddl_temporary_table_sequoiadb_02;
+create temporary table tmp_t2 select * from ddl_temporary_table_sequoiadb_01.tmp_t1;
+select * from tmp_t2;
+a
+1
+drop temporary table tmp_t2;
+drop database ddl_temporary_table_sequoiadb_02;
+create temporary table tmp_t2 like ddl_temporary_table_sequoiadb_01.tmp_t1;
+ERROR 3D000: No database selected
+create temporary table tmp_t2 like ddl_temporary_table_sequoiadb_01.normal_t1;
+ERROR 3D000: No database selected
+create database ddl_temporary_table_sequoiadb_02;
+use ddl_temporary_table_sequoiadb_02;
+create temporary table tmp_t2 like ddl_temporary_table_sequoiadb_01.tmp_t1;
+select * from tmp_t2;
+a
+drop temporary table tmp_t2;
+create temporary table tmp_t2 like ddl_temporary_table_sequoiadb_01.normal_t1;
+select * from tmp_t2;
+a
+drop temporary table tmp_t2;
+drop database ddl_temporary_table_sequoiadb_02;
+set session default_tmp_storage_engine = innodb;
+set session default_storage_engine = sequoiadb;
+create temporary table tmp_t2(a int);
+ERROR 3D000: No database selected
+create database ddl_temporary_table_sequoiadb_02;
+use ddl_temporary_table_sequoiadb_02;
+create temporary table tmp_t2(a int);
+insert into tmp_t2 values(1);
+select * from tmp_t2;
+a
+1
+drop temporary table tmp_t2;
+drop database ddl_temporary_table_sequoiadb_02;
+create temporary table tmp_t2 select * from ddl_temporary_table_sequoiadb_01.tmp_t1;
+ERROR 3D000: No database selected
+create database ddl_temporary_table_sequoiadb_02;
+use ddl_temporary_table_sequoiadb_02;
+create temporary table tmp_t2 select * from ddl_temporary_table_sequoiadb_01.tmp_t1;
+select * from tmp_t2;
+a
+1
+drop temporary table tmp_t2;
+drop database ddl_temporary_table_sequoiadb_02;
+create temporary table tmp_t2 like ddl_temporary_table_sequoiadb_01.tmp_t1;
+ERROR 3D000: No database selected
+create temporary table tmp_t2 like ddl_temporary_table_sequoiadb_01.normal_t1;
+ERROR 3D000: No database selected
+create database ddl_temporary_table_sequoiadb_02;
+use ddl_temporary_table_sequoiadb_02;
+create temporary table tmp_t2 like ddl_temporary_table_sequoiadb_01.tmp_t1;
+select * from tmp_t2;
+a
+drop temporary table tmp_t2;
+create temporary table tmp_t2 like ddl_temporary_table_sequoiadb_01.normal_t1;
+select * from tmp_t2;
+a
+drop temporary table tmp_t2;
+drop database ddl_temporary_table_sequoiadb_02;
+set session default_tmp_storage_engine = sequoiadb;
+set session default_storage_engine = innodb;
+create temporary table tmp_t2(a int);
+ERROR 3D000: No database selected
+create database ddl_temporary_table_sequoiadb_02;
+use ddl_temporary_table_sequoiadb_02;
+create temporary table tmp_t2(a int);
+insert into tmp_t2 values(1);
+select * from tmp_t2;
+a
+1
+drop temporary table tmp_t2;
+drop database ddl_temporary_table_sequoiadb_02;
+create temporary table tmp_t2 select * from ddl_temporary_table_sequoiadb_01.tmp_t1;
+ERROR 3D000: No database selected
+create database ddl_temporary_table_sequoiadb_02;
+use ddl_temporary_table_sequoiadb_02;
+create temporary table tmp_t2 select * from ddl_temporary_table_sequoiadb_01.tmp_t1;
+select * from tmp_t2;
+a
+1
+drop temporary table tmp_t2;
+drop database ddl_temporary_table_sequoiadb_02;
+create temporary table tmp_t2 like ddl_temporary_table_sequoiadb_01.tmp_t1;
+ERROR 3D000: No database selected
+create temporary table tmp_t2 like ddl_temporary_table_sequoiadb_01.normal_t1;
+ERROR 3D000: No database selected
+create database ddl_temporary_table_sequoiadb_02;
+use ddl_temporary_table_sequoiadb_02;
+create temporary table tmp_t2 like ddl_temporary_table_sequoiadb_01.tmp_t1;
+select * from tmp_t2;
+a
+drop temporary table tmp_t2;
+create temporary table tmp_t2 like ddl_temporary_table_sequoiadb_01.normal_t1;
+select * from tmp_t2;
+a
+drop temporary table tmp_t2;
+drop database ddl_temporary_table_sequoiadb_02;
+set session default_tmp_storage_engine = default;
+set session default_storage_engine = default;
+drop database if exists ddl_temporary_table_sequoiadb_01;
+drop database if exists ddl_temporary_table_sequoiadb_02;

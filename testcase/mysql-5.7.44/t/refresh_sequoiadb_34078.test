@@ -1,0 +1,36 @@
+--source include/have_sequoiadb.inc
+
+--disable_warnings
+drop database if exists refresh_sequoiadb_34078;
+--enable_warnings
+create database refresh_sequoiadb_34078;
+drop database refresh_sequoiadb_34078;
+create database refresh_sequoiadb_34078;
+use refresh_sequoiadb_34078;
+
+set session sequoiadb_secure_log = off;
+set session sequoiadb_share_log_output = on;
+
+CREATE TABLE `t1` (
+  `a` int(11) DEFAULT NULL,
+  `b` int(11) DEFAULT NULL,
+  `c` int(11) DEFAULT NULL,
+  KEY `a` (`a`),
+  KEY `b` (`b`),
+  KEY `c` (`c`),
+  KEY `a_2` (`a`,`b`),
+  KEY `a_3` (`a`,`c`)
+);
+
+# 清除统计信息
+analyze table t1;
+
+# 执行refresh收集统计信息
+let $query = refresh table t1 stats;
+--source include/query_without_sorted_and_get_mysqld_note_log_sequoiadb.inc
+
+# 执行索引查询语句
+let $query = select * from t1 where a=1 and b=2;
+--source include/query_without_sorted_and_get_mysqld_note_log_sequoiadb.inc
+
+drop database refresh_sequoiadb_34078;

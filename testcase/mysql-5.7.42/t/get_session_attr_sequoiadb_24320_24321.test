@@ -1,0 +1,47 @@
+# seqDB-24320  # seqDB-24321
+--source include/have_sequoiadb.inc
+use information_schema;
+
+# seqDB-24320
+set session transaction_isolation='READ-COMMITTED';
+desc SDB_SESSION_ATTR_CURRENT;
+select PREFERRED_INSTANCE from SDB_SESSION_ATTR_CURRENT;
+select PREFERRED_INSTANCE,PREFERRED_INSTANCE_MODE from SDB_SESSION_ATTR_CURRENT;
+--replace_column 13 MySQL:hostname:pid:tid
+select * from SDB_SESSION_ATTR_CURRENT;
+# 修改会话属性
+# 以下是测试instance取值不为实例id时修改strict为on、strict为on时修改instance值为非实例id都能成功修改
+set session sequoiadb_preferred_instance='M';
+set session sequoiadb_preferred_strict='on';
+set session sequoiadb_preferred_instance='1';
+# 查看会话属性
+--replace_column 13 MySQL:hostname:pid:tid
+select * from SDB_SESSION_ATTR_CURRENT;
+set session sequoiadb_preferred_instance='1,2';
+# 查看会话属性
+--replace_column 13 MySQL:hostname:pid:tid
+select * from SDB_SESSION_ATTR_CURRENT;
+set session sequoiadb_preferred_instance='M';
+set session sequoiadb_preferred_instance_mode='ordered';
+set session sequoiadb_preferred_period=59;
+set session sequoiadb_lock_wait_timeout=59;
+# SDB_SESSION_ATTR_CURRENT中字段TRANS_TIMEOUT和TRANS_ISOLATION要执行事务操作才能刷新取值
+create database test_get_session_attr;
+use test_get_session_attr;
+create table t1( a int primary key );
+insert into t1 values( 1 );
+use information_schema;
+select * from test_get_session_attr.t1;
+# 查看会话属性
+--replace_column 13 MySQL:hostname:pid:tid
+select * from SDB_SESSION_ATTR_CURRENT;
+
+drop database test_get_session_attr;
+
+# seqDB-24321
+--error 1044
+insert into SDB_SESSION_ATTR_CURRENT values ("S","random",1,50,-1,0,60,0,1,1,0,1,"MySQL:hostname:pid:tid");
+--error 1044
+delete from SDB_SESSION_ATTR_CURRENT where PREFERRED_INSTANCE="M";
+--error 1044
+update SDB_SESSION_ATTR_CURRENT set PREFERRED_PERIOD=50 where PREFERRED_INSTANCE="M";

@@ -1,0 +1,57 @@
+#case 24157
+
+--source include/have_sequoiadb.inc
+--source suite/metadata_sync_sequoiadb/inc/insts_connect_sequoiadb.inc
+
+# connect to conn1, clear databases in the beginning
+connection conn1;
+--disable_warnings
+DROP DATABASE IF EXISTS metaSync_Enable_24157;
+--enable_warnings
+connection conn2;
+--error ER_BAD_DB_ERROR
+SHOW CREATE DATABASE metaSync_Enable_24157;
+
+# seqDB-24157
+# begin testing
+#
+# CREATE DATABASE, TABLE, VIEW, mix uppercase and lowercase letters
+#
+connection conn1;
+CREATE DATABASE metaSync_Enable_24157;
+connection conn2;
+USE metaSync_Enable_24157;
+
+connection conn1;
+CREATE TABLE metaSync_Enable_24157.Test1 ( ID int, age int );
+INSERT INTO metaSync_Enable_24157.Test1 VALUES (1,10),(2,20),(3,30);
+connection conn2;
+SHOW CREATE TABLE metasync_enable_24157.test1;
+SELECT * FROM metaSync_Enable_24157.Test1 ORDER BY id;
+
+connection conn1;
+USE metasync_enable_24157;
+CREATE VIEW View1 AS SELECT * FROM Test1 WHERE AGE > 20;
+connection conn2;
+SHOW CREATE VIEW View1;
+SELECT * FROM view1;
+
+connection conn1;
+DROP TABLE Test1;
+DROP VIEW View1;
+connection conn2;
+--ERROR ER_NO_SUCH_TABLE
+SHOW CREATE TABLE Test1;
+--ERROR ER_NO_SUCH_TABLE
+SHOW CREATE VIEW View1;
+
+# clear databases in the ending
+connection conn1;
+DROP DATABASE metaSync_Enable_24157;
+# check databases are cleaned in the ending
+connection conn2;
+--error ER_BAD_DB_ERROR
+SHOW CREATE DATABASE metaSync_Enable_24157;
+
+--source include/uninstall_sequoiadb.inc
+--source suite/metadata_sync_sequoiadb/inc/insts_disconnect_sequoiadb.inc

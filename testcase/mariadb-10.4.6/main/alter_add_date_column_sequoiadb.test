@@ -1,0 +1,570 @@
+# seqDB-29313、seqDB-29314、seqDB-29720、seqDB-29721、seqDB-29722
+# seqDB-29315、seqDB-29316、seqDB-29723、seqDB-29724、seqDB-29725
+
+--source include/have_sequoiadb.inc
+
+#seqDB-29313:sql_mode包含NO_ZERO_DATE时，alter table add/drop date类型 column:
+
+# 由于profiling开启后，同一conncet的所有操作都将写入profile中
+# 因此每个用例单独使用一个connect，使用例结构更清晰
+connect (conn29313,localhost,root,,,$MASTER_MYPORT,$MASTER_MYSOCK);
+connection conn29313;
+
+--disable_warnings
+
+DROP TABLE IF EXISTS tb_29313;
+CREATE TABLE tb_29313(a int);
+insert into tb_29313 values(1),(2);
+
+set session sql_mode= "STRICT_TRANS_TABLES,ERROR_FOR_DIVISION_BY_ZERO,NO_AUTO_CREATE_USER,NO_ENGINE_SUBSTITUTION,NO_ZERO_DATE";
+set profiling=on;
+
+
+alter table tb_29313 add column b date; 
+--replace_column 2 Duration
+show profile for query 1; 
+
+--error 1067
+alter table tb_29313 add column c date default '0000-00-00';
+
+alter table tb_29313 add column d date default NULL;
+--replace_column 2 Duration
+show profile for query 3;
+
+alter table tb_29313 add column e date ;
+--replace_column 2 Duration
+show profile for query 4;
+
+alter table tb_29313 drop column e ;
+--replace_column 2 Duration
+show profile for query 5;
+
+alter table tb_29313 add column e date ;
+--replace_column 2 Duration
+show profile for query 6;
+
+alter table tb_29313 drop column e ;
+--replace_column 2 Duration
+show profile for query 7;
+
+alter table tb_29313 add column e date ;
+--replace_column 2 Duration
+show profile for query 8;
+
+alter table tb_29313 drop column e ;
+--replace_column 2 Duration
+show profile for query 9;
+
+
+# 插入数据，并检查数据正确性
+insert into tb_29313 values(1,"2021-06-25","2022-12-29"),(2,"2021-06-25",null);
+--sorted_result
+select * from tb_29313;
+# 检查表结构正确性
+show create table tb_29313; 
+disconnect conn29313;
+
+# seqDB-29314:sql_mode包含NO_ZERO_DATE时，alter table add/drop datetime类型 column
+connect (conn29314,localhost,root,,,$MASTER_MYPORT,$MASTER_MYSOCK);
+connection conn29314;
+
+DROP TABLE IF EXISTS tb_29314;
+CREATE TABLE tb_29314(a int);
+insert into tb_29314 values(1),(2);
+
+set session sql_mode= "STRICT_TRANS_TABLES,ERROR_FOR_DIVISION_BY_ZERO,NO_AUTO_CREATE_USER,NO_ENGINE_SUBSTITUTION,NO_ZERO_DATE";
+set profiling=on;
+
+alter table tb_29314 add column b datetime; 
+--replace_column 2 Duration
+show profile for query 1; 
+
+--error 1067
+alter table tb_29314 add column c datetime default '0000-00-00';
+
+alter table tb_29314 add column d datetime default NULL;
+--replace_column 2 Duration
+show profile for query 3;
+
+alter table tb_29314 add column e datetime ;
+--replace_column 2 Duration
+show profile for query 4;
+
+alter table tb_29314 drop column e ;
+--replace_column 2 Duration
+show profile for query 5;
+
+alter table tb_29314 add column e datetime ;
+--replace_column 2 Duration
+show profile for query 6;
+
+alter table tb_29314 drop column e ;
+--replace_column 2 Duration
+show profile for query 7;
+
+alter table tb_29314 add column e datetime ;
+--replace_column 2 Duration
+show profile for query 8;
+
+alter table tb_29314 drop column e ;
+--replace_column 2 Duration
+show profile for query 9;
+
+# 插入数据，并检查数据正确性
+insert into tb_29314 values(1,"2021-06-25","2022-12-29"),(2,"2021-06-25",null);
+--sorted_result
+select * from tb_29314;
+# 检查表结构正确性
+show create table tb_29314; 
+disconnect conn29314;
+
+# seqDB-29720:sql_mode包含NO_ZERO_DATE时，alter table add/drop year类型 column
+connect (conn29720,localhost,root,,,$MASTER_MYPORT,$MASTER_MYSOCK);
+connection conn29720;
+
+DROP TABLE IF EXISTS tb_29720;
+CREATE TABLE tb_29720(a int);
+insert into tb_29720 values(1),(2);
+
+set session sql_mode= "STRICT_TRANS_TABLES,ERROR_FOR_DIVISION_BY_ZERO,NO_AUTO_CREATE_USER,NO_ENGINE_SUBSTITUTION,NO_ZERO_DATE";
+set profiling=on;
+
+alter table tb_29720 add column b year; 
+--replace_column 2 Duration
+show profile for query 1; 
+
+alter table tb_29720 add column c year default '0000';
+--replace_column 2 Duration
+show profile for query 2; 
+
+alter table tb_29720 add column d year default NULL;
+--replace_column 2 Duration
+show profile for query 3;
+
+alter table tb_29720 add column e year ;
+--replace_column 2 Duration
+show profile for query 4;
+
+alter table tb_29720 drop column e ;
+--replace_column 2 Duration
+show profile for query 5;
+
+alter table tb_29720 add column e year ;
+--replace_column 2 Duration
+show profile for query 6;
+
+alter table tb_29720 drop column e ;
+--replace_column 2 Duration
+show profile for query 7;
+
+alter table tb_29720 add column e year ;
+--replace_column 2 Duration
+show profile for query 8;
+
+alter table tb_29720 drop column e ;
+--replace_column 2 Duration
+show profile for query 9;
+
+# 插入数据，并检查数据正确性
+insert into tb_29720 values(1,"2021","2022","2023"),(2,"2017",null,"2024");
+--sorted_result
+select * from tb_29720;
+# 检查表结构正确性
+show create table tb_29720; 
+disconnect conn29720;
+
+# seqDB-29721:sql_mode包含NO_ZERO_DATE时，alter table add/drop time类型 column
+connect (conn29721,localhost,root,,,$MASTER_MYPORT,$MASTER_MYSOCK);
+connection conn29721;
+
+DROP TABLE IF EXISTS tb_29721;
+CREATE TABLE tb_29721(a int);
+insert into tb_29721 values(1),(2);
+
+set session sql_mode= "STRICT_TRANS_TABLES,ERROR_FOR_DIVISION_BY_ZERO,NO_AUTO_CREATE_USER,NO_ENGINE_SUBSTITUTION,NO_ZERO_DATE";
+set profiling=on;
+
+alter table tb_29721 add column b time; 
+--replace_column 2 Duration
+show profile for query 1; 
+
+alter table tb_29721 add column c time default '00:00:00';
+--replace_column 2 Duration
+show profile for query 1; 
+
+alter table tb_29721 add column d time default NULL;
+--replace_column 2 Duration
+show profile for query 3;
+
+alter table tb_29721 add column e time ;
+--replace_column 2 Duration
+show profile for query 4;
+
+alter table tb_29721 drop column e ;
+--replace_column 2 Duration
+show profile for query 5;
+
+alter table tb_29721 add column e time ;
+--replace_column 2 Duration
+show profile for query 6;
+
+alter table tb_29721 drop column e ;
+--replace_column 2 Duration
+show profile for query 7;
+
+alter table tb_29721 add column e time ;
+--replace_column 2 Duration
+show profile for query 8;
+
+alter table tb_29721 drop column e ;
+--replace_column 2 Duration
+show profile for query 9;
+
+# 插入数据，并检查数据正确性
+insert into tb_29721 values(1,"22:21:21","12:21:22","14:21:22"),
+(2,"16:21:22",null,"24:21:22");
+--sorted_result
+select * from tb_29721;
+# 检查表结构正确性
+show create table tb_29721; 
+disconnect conn29721;
+
+# seqDB-29722:sql_mode包含NO_ZERO_DATE时，alter table add/drop timestamp类型 column
+connect (conn29722,localhost,root,,,$MASTER_MYPORT,$MASTER_MYSOCK);
+connection conn29722;
+
+DROP TABLE IF EXISTS tb_29722;
+CREATE TABLE tb_29722(a int);
+insert into tb_29722 values(1),(2);
+
+set session sql_mode= "STRICT_TRANS_TABLES,ERROR_FOR_DIVISION_BY_ZERO,NO_AUTO_CREATE_USER,NO_ENGINE_SUBSTITUTION,NO_ZERO_DATE";
+set profiling=on;
+
+alter table tb_29722 add column b timestamp default '04:05:06'; 
+--replace_column 2 Duration
+show profile for query 1; 
+
+--error 1067
+alter table tb_29722 add column c timestamp default '00:00:00';
+
+--error 1067
+alter table tb_29722 add column d timestamp default NULL;
+
+alter table tb_29722 add column e timestamp default '04:05:06';
+--replace_column 2 Duration
+show profile for query 4;
+
+alter table tb_29722 drop column e ;
+--replace_column 2 Duration
+show profile for query 5;
+
+alter table tb_29722 add column e timestamp default '04:05:06';
+--replace_column 2 Duration
+show profile for query 6;
+
+alter table tb_29722 drop column e ;
+--replace_column 2 Duration
+show profile for query 7;
+
+alter table tb_29722 add column e timestamp default '04:05:06';
+--replace_column 2 Duration
+show profile for query 8;
+
+alter table tb_29722 drop column e ;
+--replace_column 2 Duration
+show profile for query 9;
+
+# 插入数据，并检查数据正确性
+insert into tb_29722 values(1,"2022-12-21 12:16:05"),(2,"2014-05-06 00:00:00");
+--sorted_result
+select * from tb_29722;
+# 检查表结构正确性
+show create table tb_29722; 
+disconnect conn29722;
+
+#seqDB-29315:sql_mode不包含NO_ZERO_DATE时，alter table add/drop date类型 column
+connect (conn29315,localhost,root,,,$MASTER_MYPORT,$MASTER_MYSOCK);
+connection conn29315;
+
+DROP TABLE IF EXISTS tb_29315;
+CREATE TABLE tb_29315(a int);
+insert into tb_29315 values(1),(2);
+
+set session sql_mode= "STRICT_TRANS_TABLES,ERROR_FOR_DIVISION_BY_ZERO,NO_AUTO_CREATE_USER,NO_ENGINE_SUBSTITUTION";
+set profiling=on;
+
+alter table tb_29315 add column b date; 
+--replace_column 2 Duration
+show profile for query 1; 
+
+alter table tb_29315 add column c date default '0000-00-00';
+--replace_column 2 Duration
+show profile for query 2;
+
+alter table tb_29315 add column d date default NULL;
+--replace_column 2 Duration
+show profile for query 3;
+
+alter table tb_29315 add column e date ;
+--replace_column 2 Duration
+show profile for query 4;
+
+alter table tb_29315 drop column e ;
+--replace_column 2 Duration
+show profile for query 5;
+
+alter table tb_29315 add column e date ;
+--replace_column 2 Duration
+show profile for query 6;
+
+alter table tb_29315 drop column e ;
+--replace_column 2 Duration
+show profile for query 7;
+
+alter table tb_29315 add column e date ;
+--replace_column 2 Duration
+show profile for query 8;
+
+alter table tb_29315 drop column e ;
+--replace_column 2 Duration
+show profile for query 9;
+
+# 插入数据，并检查数据正确性
+insert into tb_29315 values(1,"2022-12-21 12:16:19","2012-12-21 12:16:19","2024-12-21 12:16:19"),
+(2,"2008-12-21 12:16:19","2018-12-21 12:16:19","2028-12-21 12:16:19");
+--sorted_result
+select * from tb_29315;
+# 检查表结构正确性
+show create table tb_29315; 
+disconnect conn29315;
+
+#seqDB-29316:sql_mode不包含NO_ZERO_DATE时，alter table add/drop datetime类型 column
+connect (conn29316,localhost,root,,,$MASTER_MYPORT,$MASTER_MYSOCK);
+connection conn29316;
+
+DROP TABLE IF EXISTS tb_29316;
+CREATE TABLE tb_29316(a int);
+insert into tb_29316 values(1),(2);
+
+set session sql_mode= "STRICT_TRANS_TABLES,ERROR_FOR_DIVISION_BY_ZERO,NO_AUTO_CREATE_USER,NO_ENGINE_SUBSTITUTION";
+set profiling=on;
+
+alter table tb_29316 add column b datetime; 
+--replace_column 2 Duration
+show profile for query 1; 
+
+alter table tb_29316 add column c datetime default '0000-00-00';
+--replace_column 2 Duration
+show profile for query 2;
+
+alter table tb_29316 add column d datetime default NULL;
+--replace_column 2 Duration
+show profile for query 3;
+
+alter table tb_29316 add column e datetime ;
+--replace_column 2 Duration
+show profile for query 4;
+
+alter table tb_29316 drop column e ;
+--replace_column 2 Duration
+show profile for query 5;
+
+alter table tb_29316 add column e datetime ;
+--replace_column 2 Duration
+show profile for query 6;
+
+alter table tb_29316 drop column e ;
+--replace_column 2 Duration
+show profile for query 7;
+
+alter table tb_29316 add column e datetime ;
+--replace_column 2 Duration
+show profile for query 8;
+
+alter table tb_29316 drop column e ;
+--replace_column 2 Duration
+show profile for query 9;
+
+# 插入数据，并检查数据正确性
+insert into tb_29316 values(1,"2021-06-25","2022-12-29","2022-12-29"),
+(2,"2021-06-25",null,"2022-12-29");
+--sorted_result
+select * from tb_29316;
+# 检查表结构正确性
+show create table tb_29316; 
+disconnect conn29316;
+
+#seqDB-29723:sql_mode不包含NO_ZERO_DATE时，alter table add/drop year类型 column
+connect (conn29723,localhost,root,,,$MASTER_MYPORT,$MASTER_MYSOCK);
+connection conn29723;
+
+DROP TABLE IF EXISTS tb_29723;
+CREATE TABLE tb_29723(a int);
+insert into tb_29723 values(1),(2);
+
+set session sql_mode= "STRICT_TRANS_TABLES,ERROR_FOR_DIVISION_BY_ZERO,NO_AUTO_CREATE_USER,NO_ENGINE_SUBSTITUTION";
+set profiling=on;
+
+alter table tb_29723 add column b year; 
+--replace_column 2 Duration
+show profile for query 1; 
+
+alter table tb_29723 add column c year default '0000';
+--replace_column 2 Duration
+show profile for query 2;
+
+alter table tb_29723 add column d year default NULL;
+--replace_column 2 Duration
+show profile for query 3;
+
+alter table tb_29723 add column e year ;
+--replace_column 2 Duration
+show profile for query 4;
+
+alter table tb_29723 drop column e ;
+--replace_column 2 Duration
+show profile for query 5;
+
+alter table tb_29723 add column e year ;
+--replace_column 2 Duration
+show profile for query 6;
+
+alter table tb_29723 drop column e ;
+--replace_column 2 Duration
+show profile for query 7;
+
+alter table tb_29723 add column e year ;
+--replace_column 2 Duration
+show profile for query 8;
+
+alter table tb_29723 drop column e ;
+--replace_column 2 Duration
+show profile for query 9;
+
+# 插入数据，并检查数据正确性
+insert into tb_29723 values(1,"2021","2022","2017"),
+(2,"2000",null,"2008");
+--sorted_result
+select * from tb_29723;
+# 检查表结构正确性
+show create table tb_29723; 
+disconnect conn29723;
+
+#seqDB-29724:sql_mode不包含NO_ZERO_DATE时，alter table add/drop time类型 column
+connect (conn29724,localhost,root,,,$MASTER_MYPORT,$MASTER_MYSOCK);
+connection conn29724;
+
+DROP TABLE IF EXISTS tb_29724;
+CREATE TABLE tb_29724(a int);
+insert into tb_29724 values(1),(2);
+
+set session sql_mode= "STRICT_TRANS_TABLES,ERROR_FOR_DIVISION_BY_ZERO,NO_AUTO_CREATE_USER,NO_ENGINE_SUBSTITUTION";
+set profiling=on;
+
+alter table tb_29724 add column b time; 
+--replace_column 2 Duration
+show profile for query 1; 
+
+alter table tb_29724 add column c time default '00:00:00';
+--replace_column 2 Duration
+show profile for query 1; 
+
+alter table tb_29724 add column d time default NULL;
+--replace_column 2 Duration
+show profile for query 3;
+
+alter table tb_29724 add column e time ;
+--replace_column 2 Duration
+show profile for query 4;
+
+alter table tb_29724 drop column e ;
+--replace_column 2 Duration
+show profile for query 5;
+
+alter table tb_29724 add column e time ;
+--replace_column 2 Duration
+show profile for query 6;
+
+alter table tb_29724 drop column e ;
+--replace_column 2 Duration
+show profile for query 7;
+
+alter table tb_29724 add column e time ;
+--replace_column 2 Duration
+show profile for query 8;
+
+alter table tb_29724 drop column e ;
+--replace_column 2 Duration
+show profile for query 9;
+
+# 插入数据，并检查数据正确性
+insert into tb_29724 values(1,"20:01:23","22:01:23","24:01:23"),
+(2,"10:01:23",null,"14:01:23");
+--sorted_result
+select * from tb_29724;
+# 检查表结构正确性
+show create table tb_29724; 
+disconnect conn29724;
+
+#seqDB-29725:sql_mode不包含NO_ZERO_DATE时，alter table add/drop timestamp类型 column
+connect (conn29725,localhost,root,,,$MASTER_MYPORT,$MASTER_MYSOCK);
+connection conn29725;
+
+DROP TABLE IF EXISTS tb_29725;
+CREATE TABLE tb_29725(a int);
+insert into tb_29725 values(1),(2);
+
+set session sql_mode= "STRICT_TRANS_TABLES,ERROR_FOR_DIVISION_BY_ZERO,NO_AUTO_CREATE_USER,NO_ENGINE_SUBSTITUTION";
+set profiling=on;
+
+alter table tb_29725 add column b timestamp default '04:05:06'; 
+--replace_column 2 Duration
+show profile for query 1; 
+
+alter table tb_29725 add column c timestamp default '00:00:00';
+--replace_column 2 Duration
+show profile for query 2;
+
+--error 1067
+alter table tb_29725 add column d timestamp default NULL;
+
+alter table tb_29725 add column e timestamp ;
+--replace_column 2 Duration
+show profile for query 4;
+
+alter table tb_29725 drop column e ;
+--replace_column 2 Duration
+show profile for query 5;
+
+alter table tb_29725 add column e timestamp ;
+--replace_column 2 Duration
+show profile for query 6;
+
+alter table tb_29725 drop column e ;
+--replace_column 2 Duration
+show profile for query 7;
+
+alter table tb_29725 add column e timestamp ;
+--replace_column 2 Duration
+show profile for query 8;
+
+alter table tb_29725 drop column e ;
+--replace_column 2 Duration
+show profile for query 9;
+
+# 插入数据，并检查数据正确性
+insert into tb_29725 values(1,"20:01:23","22:01:23"),
+(2,"10:01:23","12:01:23");
+--sorted_result
+select * from tb_29725;
+# 检查表结构正确性
+show create table tb_29725; 
+
+--enable_warnings
+
+set profiling=off;
+set session sql_mode=default;
+
+drop table tb_29313,tb_29314,tb_29315,tb_29316,tb_29720,tb_29721,tb_29722,tb_29723,tb_29724,tb_29725;
+disconnect conn29725;
+--source include/uninstall_sequoiadb.inc

@@ -1,0 +1,50 @@
+DROP DATABASE IF EXISTS order_by_bka_sequoiadb_29799;
+CREATE DATABASE order_by_bka_sequoiadb_29799;
+DROP DATABASE order_by_bka_sequoiadb_29799;
+CREATE DATABASE order_by_bka_sequoiadb_29799;
+USE order_by_bka_sequoiadb_29799;
+set session sequoiadb_debug_log=on;
+DROP TABLE IF EXISTS t1,t2;
+create table t1(a int,b varchar(128));
+create table t2(a int,b varchar(128),key(a));
+insert into t1 values(1,"mysql"),(2,"mariadb"),(3,"sequoiadb");
+insert into t2 select * from t1;
+insert into t2 select * from t1;
+SET SESSION optimizer_switch='batched_key_access=on';
+set sequoiadb_bka_remove_orderby=true;
+select * from t1 join t2 on t1.a=t2.a;
+a	b	a	b
+1	mysql	1	mysql
+1	mysql	1	mysql
+2	mariadb	2	mariadb
+2	mariadb	2	mariadb
+3	sequoiadb	3	sequoiadb
+3	sequoiadb	3	sequoiadb
+[Note] Testcase: Operation log begin
+[Note] SequoiaDB: Query message: condition[{ "a": { "$isnull": 0 } }], selector[{}], order_by[{}], hint[{}], limit[-1], offset[0], table[order_by_bka_sequoiadb_29799.t1]
+[Note] SequoiaDB: Query message: Batched keys num[3], table[order_by_bka_sequoiadb_29799.t2]
+[Note] SequoiaDB: Query message: condition[{ "a": { "$in": [ 1, 2, 3 ] } }], selector[{}], order_by[{}], hint[{ "": "a" }], limit[-1], offset[0], table[order_by_bka_sequoiadb_29799.t2]
+explain select * from t1 join t2 on t1.a=t2.a;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	ALL	NULL	NULL	NULL	NULL	3	100.00	Using where with pushed condition (`order_by_bka_sequoiadb_29799`.`t1`.`a` is not null)
+1	SIMPLE	t2	NULL	ref	a	a	5	order_by_bka_sequoiadb_29799.t1.a	2	100.00	Using join buffer (Batched Key Access)
+set sequoiadb_bka_remove_orderby=false;
+select * from t1 join t2 on t1.a=t2.a;
+a	b	a	b
+1	mysql	1	mysql
+1	mysql	1	mysql
+2	mariadb	2	mariadb
+2	mariadb	2	mariadb
+3	sequoiadb	3	sequoiadb
+3	sequoiadb	3	sequoiadb
+[Note] Testcase: Operation log begin
+[Note] SequoiaDB: Query message: condition[{ "a": { "$isnull": 0 } }], selector[{}], order_by[{}], hint[{}], limit[-1], offset[0], table[order_by_bka_sequoiadb_29799.t1]
+[Note] SequoiaDB: Query message: Batched keys num[3], table[order_by_bka_sequoiadb_29799.t2]
+[Note] SequoiaDB: Query message: condition[{ "a": { "$in": [ 1, 2, 3 ] } }], selector[{}], order_by[{ "a": 1 }], hint[{ "": "a" }], limit[-1], offset[0], table[order_by_bka_sequoiadb_29799.t2]
+explain select * from t1 join t2 on t1.a=t2.a;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	ALL	NULL	NULL	NULL	NULL	3	100.00	Using where with pushed condition (`order_by_bka_sequoiadb_29799`.`t1`.`a` is not null)
+1	SIMPLE	t2	NULL	ref	a	a	5	order_by_bka_sequoiadb_29799.t1.a	2	100.00	Using join buffer (Batched Key Access)
+DROP DATABASE order_by_bka_sequoiadb_29799;
+set session sequoiadb_debug_log=default;
+set sequoiadb_bka_remove_orderby=default;

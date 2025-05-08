@@ -1,0 +1,11 @@
+set names utf8;
+DROP TABLE IF EXISTS charset_sequoiadb_24877;
+CREATE TABLE charset_sequoiadb_24877 (a char(10) character set utf8 not null);
+INSERT into charset_sequoiadb_24877 values ('bbbb'),(_koi8r'ÃÃÃÃ'),(_latin1'ÄÄÄÄ');
+SELECT a from charset_sequoiadb_24877 where a in ('bbbb',_koi8r'ÃÃÃÃ',_latin1'ÄÄÄÄ') order by a;
+a
+bbbb
+Ã„Ã„Ã„Ã„
+ц┐ц┐ц┐ц┐
+set names default;
+DROP TABLE charset_sequoiadb_24877;

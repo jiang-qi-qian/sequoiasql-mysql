@@ -1,0 +1,135 @@
+#seqDB-24551 #seqDB-24564 #seqDB-24566
+
+--source include/have_sequoiadb.inc
+--source suite/metadata_mapping_sequoiadb/inc/insts_connect_sequoiadb.inc
+
+connection group1_conn1;
+--disable_warnings
+DROP DATABASE IF EXISTS normal_table_24551_24564_24566;
+--enable_warnings
+connection group2_conn2;
+--disable_warnings
+DROP DATABASE IF EXISTS normal_table_24551_24564_24566;
+--enable_warnings
+
+let $s_create_database = CREATE DATABASE normal_table_24551_24564_24566;
+let $s_use_database = USE normal_table_24551_24564_24566;
+let $s_create_table = CREATE TABLE t1 (id INT , name VARCHAR(20));
+let $s_create_index = CREATE INDEX index1 ON t1(id);
+let $s_insert = INSERT INTO t1 VALUES (1 , 'a');
+let $s_drop_database = DROP DATABASE normal_table_24551_24564_24566;
+
+#seqDB-24551 不同实例组对普通表做DDL操作和数据操作
+connection group1_conn1;
+eval $s_create_database;
+eval $s_drop_database;
+eval $s_create_database;
+eval $s_use_database;
+eval $s_create_table;
+SHOW TABLES;
+eval $s_insert;
+SELECT * FROM t1;
+eval $s_create_index;
+SHOW INDEX FROM t1;
+eval $s_insert;
+SELECT * FROM t1;
+DROP INDEX index1 ON t1;
+SHOW INDEX FROM t1;
+SELECT * FROM t1;
+DROP TABLE t1;
+SHOW TABLES;
+eval $s_create_table;
+SHOW TABLES;
+eval $s_insert;
+SELECT * FROM t1;
+
+connection group2_conn2;
+eval $s_create_database;
+eval $s_drop_database;
+eval $s_create_database;
+eval $s_use_database;
+eval $s_create_table;
+SHOW TABLES;
+eval $s_insert;
+SELECT * FROM t1;
+eval $s_create_index;
+SHOW INDEX FROM t1;
+eval $s_insert;
+SELECT * FROM t1;
+DROP INDEX index1 ON t1;
+SHOW INDEX FROM t1;
+SELECT * FROM t1;
+DROP TABLE t1;
+SHOW TABLES;
+eval $s_create_table;
+SHOW TABLES;
+eval $s_insert;
+SELECT * FROM t1;
+
+DROP TABLE t1;
+connection group1_conn1;
+DROP TABLE t1;
+
+#seqDB-24564 不同实例组rename table普通表
+connection group1_conn1;
+eval $s_create_table;
+SHOW TABLES;
+--error 1050
+RENAME TABLE t1 TO t1;
+RENAME TABLE t1 TO t2;
+INSERT INTO t2 VALUES (1 , 'a');
+SELECT * FROM t2;
+eval $s_create_table;
+--error 1050
+RENAME TABLE t1 TO t2;
+
+connection group2_conn2;
+eval $s_create_table;
+SHOW TABLES;
+RENAME TABLE t1 TO t2; 
+INSERT INTO t2 VALUES (1 , 'a');
+SELECT * FROM t2; 
+eval $s_create_table;
+--error 1050
+RENAME TABLE t1 TO t2;
+
+DROP TABLE t1;
+DROP TABLE t2;
+connection group1_conn1;
+DROP TABLE t1;
+DROP TABLE t2;
+
+#seqDB-24566 不同实例组alter table rename普通表
+connection group1_conn1;
+eval $s_create_table;
+SHOW TABLES;
+ALTER TABLE t1 RENAME TO t1; 
+eval $s_insert;
+SELECT * FROM t1; 
+ALTER TABLE t1 RENAME TO t2;
+INSERT INTO t2 VALUES (1 , 'a');
+SELECT * FROM t2; 
+eval $s_create_table;
+--error 1050
+ALTER TABLE t1 RENAME TO t2;
+
+connection group2_conn2;
+eval $s_create_table;
+SHOW TABLES;
+ALTER TABLE t1 RENAME TO t2;
+INSERT INTO t2 VALUES (1 , 'a');
+SELECT * FROM t2;
+eval $s_create_table;
+--error 1050
+ALTER TABLE t1 RENAME TO t2;
+
+DROP TABLE t1;
+DROP TABLE t2;
+connection group1_conn1;
+DROP TABLE t1;
+DROP TABLE t2;
+
+eval $s_drop_database;
+
+--source include/uninstall_sequoiadb.inc
+--source suite/metadata_mapping_sequoiadb/inc/insts_disconnect_sequoiadb.inc

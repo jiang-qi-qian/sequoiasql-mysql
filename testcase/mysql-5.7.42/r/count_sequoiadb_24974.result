@@ -1,0 +1,16 @@
+DROP TABLE if EXISTS count_sequoiadb_24974;
+CREATE TABLE count_sequoiadb_24974(
+a INT,
+b INT
+);
+INSERT INTO count_sequoiadb_24974(a) VALUES(1),(2),(3);
+SHOW CREATE TABLE count_sequoiadb_24974;
+Table	Create Table
+count_sequoiadb_24974	CREATE TABLE `count_sequoiadb_24974` (
+  `a` int(11) DEFAULT NULL,
+  `b` int(11) DEFAULT NULL
+) ENGINE=SequoiaDB DEFAULT CHARSET=latin1
+SELECT count(a),count(b) FROM count_sequoiadb_24974;
+count(a)	count(b)
+3	0
+DROP TABLE count_sequoiadb_24974;

@@ -1,0 +1,77 @@
+#seqDB-28034 分区表查询
+--source include/have_sequoiadb.inc
+--source include/have_partition.inc
+--disable_warnings
+drop database if exists explain_remove_order_by_28034;
+--enable_warnings
+create database explain_remove_order_by_28034;
+drop database explain_remove_order_by_28034;
+create database explain_remove_order_by_28034;
+
+use explain_remove_order_by_28034;
+set session sequoiadb_debug_log=on;
+--disable_warnings
+drop table if exists t1_range,t2_hash;
+--enable_warnings
+create table t1_range(
+id int primary key,
+col1 int
+) partition by range(id)(
+partition p0 values less than(10),
+partition p1 values less than(20),
+partition p2 values less than(30),
+partition p3 values less than(40),
+partition p4 values less than(50)
+);
+insert into t1_range values(1,10),(10,20),(11,22),(15,25),(17,27),(20,30),(30,30),(40,10);
+create table t2_hash(
+id int not null,
+col1 int not null,
+key idx_id(id)
+) partition by hash(id)
+partitions 4;
+insert into t2_hash values(1,1),(2,2),(3,3),(4,4),(5,5),(6,6),(7,7),(8,8),(9,9),(10,10),(11,11),(12,12);
+
+#range分区表关联查询
+explain select t1.* from t1_range t1 join t1_range t2 on t1.id = t2.id order by id;
+let $query = select t1.* from t1_range t1 join t1_range t2 on t1.id = t2.id order by id;
+--source include/query_without_sorted_and_get_mysqld_note_log_sequoiadb.inc
+
+#指定条件过滤，主键字段排序
+explain select t1.* from t1_range t1 join t1_range t2 on t1.id = t2.id where t1.id < 20 order by id desc;
+let $query = select t1.* from t1_range t1 join t1_range t2 on t1.id = t2.id where t1.id < 20 order by id desc;
+--source include/query_without_sorted_and_get_mysqld_note_log_sequoiadb.inc
+
+#指定条件过滤，非索引字段排序
+explain select t1.* from t1_range t1 join t1_range t2 on t1.id = t2.id where t1.id < 20 order by t1.col1;
+let $query = select t1.* from t1_range t1 join t1_range t2 on t1.id = t2.id where t1.id < 20 order by t1.col1;
+--source include/query_without_sorted_and_get_mysqld_note_log_sequoiadb.inc
+
+#指定单个分区查询
+explain select t1.* from t1_range partition(p1) as t1 join t1_range partition(p1) as t2 on t1.id = t2.id where t2.id < 15 order by t1.id;
+let $query = select t1.* from t1_range partition(p1) as t1 join t1_range partition(p1) as t2 on t1.id = t2.id where t2.id < 15 order by t1.id;
+--source include/query_without_sorted_and_get_mysqld_note_log_sequoiadb.inc
+
+#hash分区表指定排序
+#order by索引字段，分升序和降序
+explain select t1.* from t2_hash t1 join t2_hash t2 on t1.id = t2.id order by t1.id;
+let $query = select t1.* from t2_hash t1 join t2_hash t2 on t1.id = t2.id order by t1.id;
+--source include/query_without_sorted_and_get_mysqld_note_log_sequoiadb.inc
+explain select t1.* from t2_hash t1 join t2_hash t2 on t1.id = t2.id order by t1.id desc;
+let $query = select t1.* from t2_hash t1 join t2_hash t2 on t1.id = t2.id order by t1.id desc;
+--source include/query_without_sorted_and_get_mysqld_note_log_sequoiadb.inc
+
+#order by索引字段
+explain select t1.* from t2_hash t1 join t2_hash t2 on t1.id = t2.id order by t1.col1;
+let $query = select t1.* from t2_hash t1 join t2_hash t2 on t1.id = t2.id order by t1.col1;
+--source include/query_without_sorted_and_get_mysqld_note_log_sequoiadb.inc
+
+#范围查询
+explain select t1.* from t2_hash t1 join t2_hash t2 on t1.id = t2.id where t1.id > 5 and t1.id <9 order by t1.id;
+let $query = select t1.* from t2_hash t1 join t2_hash t2 on t1.id = t2.id where t1.id > 5 and t1.id <9 order by t1.id;
+--source include/query_without_sorted_and_get_mysqld_note_log_sequoiadb.inc
+drop table t1_range,t2_hash;
+
+set session sequoiadb_debug_log=off;
+drop database explain_remove_order_by_28034;
+--source include/uninstall_sequoiadb.inc

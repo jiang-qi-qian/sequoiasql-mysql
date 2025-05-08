@@ -1,0 +1,39 @@
+--source include/restart_mysqld.inc
+--source include/have_sequoiadb.inc
+
+--disable_warnings
+drop database if exists statistics_trace_sequoiadb_33977;
+--enable_warnings
+create database statistics_trace_sequoiadb_33977;
+drop database statistics_trace_sequoiadb_33977;
+create database statistics_trace_sequoiadb_33977;
+use statistics_trace_sequoiadb_33977;
+
+set session sequoiadb_debug_log = on;
+set session sequoiadb_secure_log = on;
+set session sequoiadb_share_log_output = on;
+
+CREATE TABLE t1 (a int,b varchar(4),key (a)) ENGINE=SequoiaDB;
+INSERT INTO t1 values (1,"a"),(2,"b");
+create table t2 (a int);
+insert into t2 values (1),(2);
+
+let $query = refresh table t1,t2 stats;
+--source include/query_without_sorted_and_get_mysqld_note_log_sequoiadb.inc
+
+let $query = flush table t1,t2;
+--source include/query_without_sorted_and_get_mysqld_note_log_sequoiadb.inc
+
+let $query = select * from t1 join t2 on t1.a = t2.a;
+--source include/query_without_sorted_and_get_mysqld_note_log_sequoiadb.inc
+
+let $query = analyze table t1,t2;
+--source include/query_without_sorted_and_get_mysqld_note_log_sequoiadb.inc
+
+let $query = update t1 set a=1;
+--source include/query_without_sorted_and_get_mysqld_note_log_sequoiadb.inc
+
+let $query = alter table t1 add index idx_ab(a,b);
+--source include/query_without_sorted_and_get_mysqld_note_log_sequoiadb.inc
+
+drop database statistics_trace_sequoiadb_33977;

@@ -1,0 +1,381 @@
+# Testcase: seqDB-26693:单个复合分区表range方式查询且包含边界值，表数据不均匀，命中MCV
+#           seqDB-26694:单个复合分区表range方式查询且不包含边界值，表数据不均匀，命中MCV
+
+#
+# clear residual data
+#
+CREATE DATABASE  IF NOT EXISTS index_statistics_mcv_sequoiadb_26693_26694;
+DROP DATABASE IF EXISTS index_statistics_mcv_sequoiadb_26693_26694;
+
+#
+# set env
+#
+--source include/have_sequoiadb.inc
+
+CREATE DATABASE  IF NOT EXISTS index_statistics_mcv_sequoiadb_26693_26694;
+USE index_statistics_mcv_sequoiadb_26693_26694;
+
+#
+# testcase process
+#
+CREATE TABLE t1(
+    a INT NOT NULL,
+    b INT NOT NULL,
+    c INT NOT NULL,
+    INDEX idx_a(a),
+    INDEX idx_b(b)
+)
+PARTITION BY RANGE COLUMNS (a)
+SUBPARTITION BY KEY (b)
+SUBPARTITIONS 2 (
+    PARTITION p0 VALUES LESS THAN (4),
+    PARTITION p1 VALUES LESS THAN (7),
+    PARTITION p2 VALUES LESS THAN (11)
+);
+
+
+CREATE TABLE t2(
+    a INT NOT NULL,
+    b INT NOT NULL,
+    c INT NOT NULL,
+    INDEX idx_a(a),
+    INDEX idx_b(b)
+)
+PARTITION BY RANGE COLUMNS (a)
+SUBPARTITION BY KEY (b)
+SUBPARTITIONS 2 (
+    PARTITION p0 VALUES LESS THAN (4),
+    PARTITION p1 VALUES LESS THAN (7),
+    PARTITION p2 VALUES LESS THAN (11)
+);
+
+CREATE TABLE t3(
+    a INT NOT NULL,
+    b INT NOT NULL,
+    c INT NOT NULL,
+    INDEX idx_a(a),
+    INDEX idx_b(b)
+)
+PARTITION BY RANGE COLUMNS (a)
+SUBPARTITION BY KEY (b)
+SUBPARTITIONS 2 (
+    PARTITION p0 VALUES LESS THAN (4),
+    PARTITION p1 VALUES LESS THAN (7),
+    PARTITION p2 VALUES LESS THAN (11)
+);
+
+# insert 200 rows in t1
+DELIMITER $;
+CREATE PROCEDURE p1()
+BEGIN
+    DECLARE i INT;
+    DECLARE a_value INT;
+    DECLARE b_value INT;
+    DECLARE c_value INT;
+    SET i=1;
+    WHILE i<=200 DO
+        IF (i<101) THEN
+            SET a_value=8;
+            SET b_value=5;
+            SET c_value=5;
+        ELSEIF (i>100 and i<141) THEN
+            SET a_value=6;
+            SET b_value=1;
+            SET c_value=1;
+        ELSEIF (i>140 and i<161) THEN
+            SET a_value=3;
+            SET b_value=8;
+            SET c_value=7;
+        ELSEIF (i>140 and i<161) THEN
+            SET a_value=6;
+            SET b_value=6;
+            SET c_value=9;
+        ELSEIF (i>160 and i<165) THEN
+            SET a_value=1;
+            SET b_value=7;
+            SET c_value=6;
+        ELSE
+            SET a_value=2;
+            SET b_value=10;
+            SET c_value=2;
+        END IF;
+        INSERT INTO t1(a,b,c) values (a_value, b_value, c_value);
+        SET i=i+1;
+    END WHILE;
+END $
+DELIMITER ;$
+
+# insert 200 rows in t2
+DELIMITER $;
+CREATE PROCEDURE p2()
+BEGIN
+    DECLARE i INT;
+    DECLARE a_value INT;
+    DECLARE b_value INT;
+    DECLARE c_value INT;
+    SET i=1;
+    WHILE i<=200 DO
+        IF (i<21) THEN
+            SET a_value=6;
+            SET b_value=1;
+            SET c_value=1;
+        ELSEIF (i>20 and i<37) THEN
+            SET a_value=8;
+            SET b_value=5;
+            SET c_value=5;
+        ELSEIF (i>36 and i<50) THEN
+            SET a_value=7;
+            SET b_value=9;
+            SET c_value=3;
+        ELSEIF (i>49 and i<62) THEN
+            SET a_value=4;
+            SET b_value=4;
+            SET c_value=9;
+        ELSEIF (i>61 and i<72) THEN
+            SET a_value=3;
+            SET b_value=8;
+            SET c_value=7;
+        ELSEIF (i>71 and i<76) THEN
+            SET a_value=6;
+            SET b_value=6;
+            SET c_value=9;
+        ELSEIF (i>75 and i<78) THEN
+            SET a_value=1;
+            SET b_value=7;
+            SET c_value=6;
+        ELSE
+            SET a_value=2;
+            SET b_value=10;
+            SET c_value=2;
+        END IF;
+        INSERT INTO t2(a,b,c) values (a_value, b_value, c_value);
+        SET i=i+1;
+    END WHILE;
+END $
+DELIMITER ;$
+
+# insert 200 rows in t3
+DELIMITER $;
+CREATE PROCEDURE p3()
+BEGIN
+    DECLARE i INT;
+    DECLARE a_value INT;
+    DECLARE b_value INT;
+    DECLARE c_value INT;
+    SET i=1;
+    WHILE i<=200 DO
+        IF (i<26) THEN
+            SET a_value=7;
+            SET b_value=6;
+            SET c_value=3;
+        ELSEIF (i>25 and i<48) THEN
+            SET a_value=2;
+            SET b_value=10;
+            SET c_value=2;
+        ELSEIF (i>47 and i<68) THEN
+            SET a_value=6;
+            SET b_value=1;
+            SET c_value=1;
+        ELSEIF (i>67 and i<84) THEN
+            SET a_value=8;
+            SET b_value=5;
+            SET c_value=5;
+        ELSEIF (i>83 and i<97) THEN
+            SET a_value=7;
+            SET b_value=9;
+            SET c_value=3;
+        ELSEIF (i>96 and i<109) THEN
+            SET a_value=4;
+            SET b_value=4;
+            SET c_value=9;
+        ELSEIF (i>108 and i<119) THEN
+            SET a_value=3;
+            SET b_value=8;
+            SET c_value=7;
+        ELSEIF (i>118 and i<123) THEN
+            SET a_value=6;
+            SET b_value=6;
+            SET c_value=9;
+        ELSEIF (i>122 and i<125) THEN
+            SET a_value=1;
+            SET b_value=7;
+            SET c_value=6;
+        ELSE
+            SET a_value=2;
+            SET b_value=3;
+            SET c_value=2;
+        END IF;
+        INSERT INTO t3(a,b,c) values (a_value, b_value, c_value);
+        SET i=i+1;
+    END WHILE;
+END $
+DELIMITER ;$
+
+CALL p1();
+CALL p2();
+CALL p3();
+
+# Testcase: seqDB-26693
+# SELECT t1
+--sorted_result
+SELECT * FROM t1 WHERE b<=5;
+--sorted_result
+SELECT * FROM t1 WHERE b>=8;
+--sorted_result
+SELECT * FROM t1 WHERE b>=5 AND b <=8;
+--sorted_result
+SELECT * FROM t1 WHERE b>=5 AND b <=11;
+
+# SELECT t2
+--sorted_result
+SELECT * FROM t2 WHERE b<=5;
+--sorted_result
+SELECT * FROM t2 WHERE b>=7;
+--sorted_result
+SELECT * FROM t2 WHERE b>=8;
+--sorted_result
+SELECT * FROM t2 WHERE b>=5 AND b <=8;
+--sorted_result
+SELECT * FROM t2 WHERE b>=5 AND b <=7;
+
+# 5命中MCV,11未命中MCV
+--sorted_result
+SELECT * FROM t2 WHERE b>=5 AND b <=11;
+--sorted_result
+SELECT * FROM t2 WHERE b>=9 AND b <=11;
+
+# SELECT t3
+--sorted_result
+SELECT * FROM t3 WHERE b<=5;
+--sorted_result
+SELECT * FROM t3 WHERE b>=7;
+--sorted_result
+SELECT * FROM t3 WHERE b>=8;
+--sorted_result
+SELECT * FROM t3 WHERE b>=5 AND b <=8;
+--sorted_result
+SELECT * FROM t3 WHERE b>=5 AND b <=7;
+
+# 5命中MCV,11未命中MCV
+--sorted_result
+SELECT * FROM t3 WHERE b>=5 AND b <=11;
+--sorted_result
+SELECT * FROM t3 WHERE b>=9 AND b <=11;
+
+# COUNT t1
+SELECT COUNT(*) FROM t1 WHERE b<=5;
+SELECT COUNT(*) FROM t1 WHERE b>=8;
+SELECT COUNT(*) FROM t1 WHERE b>=5 AND b <=8;
+# 5命中MCV,11未命中MCV
+SELECT COUNT(*) FROM t1 WHERE b>=5 AND b <=11;
+
+# COUNT t1 test
+SELECT COUNT(*) FROM t1 WHERE b=5;
+SELECT COUNT(*) FROM t1 WHERE b=8;
+SELECT COUNT(*) FROM t1 WHERE b=5 OR b=8;
+# 5命中MCV,11未命中MCV
+SELECT COUNT(*) FROM t1 WHERE b=5 OR b=11;
+
+# COUNT t2
+SELECT COUNT(*) FROM t2 WHERE b<=5;
+SELECT COUNT(*) FROM t2 WHERE b>=7;
+SELECT COUNT(*) FROM t2 WHERE b>=8;
+SELECT COUNT(*) FROM t2 WHERE b>=10;
+SELECT COUNT(*) FROM t2 WHERE b>=5 AND b <=8;
+SELECT COUNT(*) FROM t2 WHERE b>=5 AND b <=7;
+# 5命中MCV,11未命中MCV
+SELECT COUNT(*) FROM t2 WHERE b>=5 AND b <=11;
+SELECT COUNT(*) FROM t2 WHERE b>=9 AND b <=11;
+SELECT COUNT(*) FROM t2 WHERE b>=10 AND b <=11;
+
+# COUNT t3
+SELECT COUNT(*) FROM t3 WHERE b<=5;
+SELECT COUNT(*) FROM t3 WHERE b>=7;
+SELECT COUNT(*) FROM t3 WHERE b>=8;
+SELECT COUNT(*) FROM t3 WHERE b>=10;
+SELECT COUNT(*) FROM t3 WHERE b>=5 AND b <=8;
+SELECT COUNT(*) FROM t3 WHERE b>=5 AND b <=7;
+# 5命中MCV,11未命中MCV
+SELECT COUNT(*) FROM t3 WHERE b>=5 AND b <=11;
+SELECT COUNT(*) FROM t3 WHERE b>=9 AND b <=11;
+SELECT COUNT(*) FROM t3 WHERE b>=10 AND b <=11;
+
+ANALYZE TABLE t1;
+ANALYZE TABLE t2;
+ANALYZE TABLE t3;
+
+# set debug='d:i:t:o,/tmp/mysqld26693.trace:f,Sdb_match_cnt_estimator::eval_mcv';
+
+# EXPLAIN t1
+EXPLAIN SELECT * FROM t1 WHERE b<=5;
+EXPLAIN SELECT * FROM t1 WHERE b>=8;
+EXPLAIN SELECT * FROM t1 WHERE b>=5 AND b <=8;
+# 5命中MCV,11未命中MCV
+EXPLAIN SELECT * FROM t1 WHERE b>=5 AND b <=11;
+
+# EXPLAIN t2
+EXPLAIN SELECT * FROM t2 WHERE b<=5;
+EXPLAIN SELECT * FROM t2 WHERE b>=7;
+EXPLAIN SELECT * FROM t2 WHERE b>=8;
+EXPLAIN SELECT * FROM t2 WHERE b>=10;
+EXPLAIN SELECT * FROM t2 WHERE b>=5 AND b <=8;
+EXPLAIN SELECT * FROM t2 WHERE b>=5 AND b <=7;
+# 5命中MCV,11未命中MCV
+EXPLAIN SELECT * FROM t2 WHERE b>=5 AND b <=11;
+EXPLAIN SELECT * FROM t2 WHERE b>=9 AND b <=11;
+EXPLAIN SELECT * FROM t2 WHERE b>=10 AND b <=11;
+
+# EXPLAIN t3
+EXPLAIN SELECT * FROM t3 WHERE b<=5;
+EXPLAIN SELECT * FROM t3 WHERE b>=7;
+EXPLAIN SELECT * FROM t3 WHERE b>=8;
+EXPLAIN SELECT * FROM t3 WHERE b>=10;
+EXPLAIN SELECT * FROM t3 WHERE b>=5 AND b <=8;
+EXPLAIN SELECT * FROM t3 WHERE b>=5 AND b <=7;
+# 5命中MCV,11未命中MCV
+EXPLAIN SELECT * FROM t3 WHERE b>=5 AND b <=11;
+EXPLAIN SELECT * FROM t3 WHERE b>=9 AND b <=11;
+EXPLAIN SELECT * FROM t3 WHERE b>=10 AND b <=11;
+
+# set debug='';
+
+
+# Testcase: seqDB-26694
+--sorted_result
+SELECT * FROM t1 WHERE b<5;
+--sorted_result
+SELECT * FROM t1 WHERE b>8;
+--sorted_result
+SELECT * FROM t1 WHERE b>5 AND b <8;
+--sorted_result
+SELECT * FROM t1 WHERE b>5 AND b <11;
+
+ANALYZE TABLE t1;
+
+# COUNT t1
+SELECT COUNT(*) FROM t1 WHERE b<5;
+SELECT COUNT(*) FROM t1 WHERE b>8;
+SELECT COUNT(*) FROM t1 WHERE b>5 AND b <8;
+# 5命中MCV,11未命中MCV
+SELECT COUNT(*) FROM t1 WHERE b>5 AND b <11;
+
+# set debug='d:i:t:o,/tmp/mysqld26694.trace:f,Sdb_match_cnt_estimator::eval_mcv';
+
+EXPLAIN SELECT * FROM t1 WHERE b<5;
+EXPLAIN SELECT * FROM t1 WHERE b>8;
+EXPLAIN SELECT * FROM t1 WHERE b>5 AND b <8;
+# 5命中MCV,11未命中MCV
+EXPLAIN SELECT * FROM t1 WHERE b>5 AND b <11;
+
+# set debug='';
+
+DROP PROCEDURE p1;
+DROP PROCEDURE p2;
+DROP PROCEDURE p3;
+DROP TABLE t1,t2,t3;
+
+#
+# clear env
+#
+DROP DATABASE index_statistics_mcv_sequoiadb_26693_26694;
+--source include/uninstall_sequoiadb.inc

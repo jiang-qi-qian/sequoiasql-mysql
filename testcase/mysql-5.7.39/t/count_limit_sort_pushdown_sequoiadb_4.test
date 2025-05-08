@@ -1,0 +1,251 @@
+# Testcase: # seqDB-29683# seqDB-29684# seqDB-29685# seqDB-29787# seqDB-29686# seqDB-29687# seqDB-29688
+# count_limit_sort_sqb_sequoiadb中sqb的全称是: single_query_block , 用于给count、limited、sort下压的开关测试中提供单查询块单表的用例场景
+# count_limit_sort_mqb_sequoiadb中mqb的全称是: multi_query_block, 用于给count、limited、sort下压的开关测试中提供多查询块单表的用例场景
+
+
+--source include/have_sequoiadb.inc
+--source include/have_partition.inc
+
+--disable_warnings
+drop database if exists count_limit_sort_pushdown_sequoiadb_4;
+--enable_warnings
+create database count_limit_sort_pushdown_sequoiadb_4;
+use count_limit_sort_pushdown_sequoiadb_4;
+--disable_warnings
+drop table if exists t1,t2,t3,t4,t5,t1_partition,t2_partition;
+--enable_warnings
+
+create table t1(
+  col1 int,
+  col2 varchar(10),
+  col3 datetime,
+  col4 varchar(10),
+  key idx_col1(col1),
+  key idx_col2(col2),
+  key idx_col12(col1,col2),
+  key idx_col3(col3)
+);
+
+insert into t1 values(0,'abc','20221115114010','abc');
+insert into t1 values(null,'abc','20221115114010','abc');
+insert into t1 values(5,'abcdef','20221115114015','abcdef');
+insert into t1 values(3,null,'20221115114015','abcdef');
+insert into t1 values(7,'def','20221115114020','def');
+insert into t1 values(2,'def',null,'def');
+insert into t1 values(4,'abcde','20221115114020','efg');
+insert into t1 values(0,'abcde','20221115114020',null);
+insert into t1 values(6,'def','20221115114210','def');
+insert into t1 values(1,'defg ','20221115114510','defg');
+insert into t1 values(3,'xyz','20221115114510','xyz ');
+insert into t1 values(2,'xyzz ','20221115114510','xyzz ');
+insert into t1 values(null,null,null,null);
+insert into t1 values(null,null,null,null);
+
+create table t2 like t1;
+insert into t2 select * from t1;
+
+create table t3(
+col1 int primary key,
+col2 varchar(10),
+col3 varchar(10)
+);
+
+insert into t3 values(3,'user01 ','abc');
+insert into t3 values(1,'user02','def ');
+insert into t3 values(2,'user03 ','ghi ');
+insert into t3 values(6,null,'def ');
+insert into t3 values(4,'user02',null);
+
+create table t4 select * from t3;
+create table t5 select * from t1;
+
+create table t1_partition(
+  col1 int,
+  col2 varchar(10),
+  col3 datetime,
+  col4 varchar(10),
+  col5 int,
+  key idx_col1(col1),
+  key idx_col2(col2),
+  key idx_col12(col1,col2),
+  key idx_col3(col3)
+)
+partition by range columns (col5)
+subpartition by key (col1)
+subpartitions 2 (
+    partition p0 values less than (4),
+    partition p1 values less than (7),
+    partition p2 values less than (11)
+);
+
+
+insert into t1_partition values(0,'abc','20221115114010','abc',3);
+insert into t1_partition values(null,'abc','20221115114010','abc',2);
+insert into t1_partition values(5,'abcdef','20221115114015','abcdef',5);
+insert into t1_partition values(3,null,'20221115114015','abcdef',3);
+insert into t1_partition values(7,'def','20221115114020','def',4);
+insert into t1_partition values(2,'def',null,'def',1);
+insert into t1_partition values(4,'abcde','20221115114020','efg',5);
+insert into t1_partition values(1,'abcde','20221115114020',null,3);
+insert into t1_partition values(6,'def','20221115114210','def',1);
+insert into t1_partition values(1,'defg ','20221115114510','defg',5);
+insert into t1_partition values(3,'xyz','20221115114510','xyz ',4);
+insert into t1_partition values(2,'xyz ','20221115114510','xyz ',1);
+insert into t1_partition values(8,'xyz ','20221115114510','xyz ',3);
+insert into t1_partition values(11,'abcde','20221115114020','efg',2);
+insert into t1_partition values(9,'def','20221115114020','def',2);
+insert into t1_partition values(10,'abcdef','20221115114015','abcdef',4);
+insert into t1_partition values(null,null,null,null,null);
+insert into t1_partition values(null,null,null,null,null);
+
+create table t2_partition like t1_partition;
+insert into t2_partition select * from t1_partition;
+
+create view v1 as select * from t1 where col1 > 2 limit 1,10;
+create view v2 as select * from t1 where col1 > 2 order by col2 limit 5;
+create view v3 as select * from t1 where col1 > 2 group by col3 limit 4;
+create view v4 as select *,count(*) from t1 where col1 > 2 group by col4 order by col4 limit 6;
+create view v5 as select * from t1 where col1 > 2 group by col4 order by col4 limit 6;
+create view v6 as select *,count(*) from t1 where col1 > 2 order by col1 limit 6;
+
+create view v7 as  (select count(*) from t1, t2 where t1.col1>=2 and t2.col1 <=6  ) UNION (select count(*) from t1 where col4<"zzz") limit 8;
+create view v8 as  (select t1.* from t1, t2 where t1.col1>=2 and t2.col1 <=6  group by t1.col1 order by t1.col1 limit 10 ) UNION (select * from t1 where col4<"zzz"  group by col2 order by col3 limit 3 ) limit 8;
+
+analyze table t1,t2,t3,t4,t5,t1_partition,t2_partition;
+set session sequoiadb_debug_log=on;
+set session sql_mode='';
+
+# seqDB-29683
+set session sequoiadb_optimizer_options='direct_count,direct_sort,direct_limit';
+set session optimizer_switch='optimizer_sort_pushdown=on';
+set session optimizer_index_sort_prune=off;
+set session sequoiadb_cls_pushdown_expand=on; 
+--source include/count_limit_sort_sqb_sequoiadb.inc
+
+set session sequoiadb_optimizer_options='direct_count,direct_sort,direct_limit';
+set session optimizer_switch='optimizer_sort_pushdown=off';
+set session optimizer_index_sort_prune=on;
+set session sequoiadb_cls_pushdown_expand=on; 
+--source include/count_limit_sort_sqb_sequoiadb.inc
+
+set session sequoiadb_optimizer_options='direct_count,direct_sort,direct_limit';
+set session optimizer_switch='optimizer_sort_pushdown=off';
+set session optimizer_index_sort_prune=off;
+set session sequoiadb_cls_pushdown_expand=on; 
+--source include/count_limit_sort_sqb_sequoiadb.inc
+
+set session sequoiadb_optimizer_options='direct_count,direct_sort,direct_limit';
+set session optimizer_switch='optimizer_sort_pushdown=on';
+set session optimizer_index_sort_prune=off;
+set session sequoiadb_cls_pushdown_expand=off; 
+--source include/count_limit_sort_sqb_sequoiadb.inc
+
+set session sequoiadb_optimizer_options='direct_count,direct_sort,direct_limit';
+set session optimizer_switch='optimizer_sort_pushdown=off';
+set session optimizer_index_sort_prune=on;
+set session sequoiadb_cls_pushdown_expand=off; 
+--source include/count_limit_sort_sqb_sequoiadb.inc
+
+set session sequoiadb_optimizer_options='direct_count,direct_sort,direct_limit';
+set session optimizer_switch='optimizer_sort_pushdown=off';
+set session optimizer_index_sort_prune=off;
+set session sequoiadb_cls_pushdown_expand=off;
+--source include/count_limit_sort_sqb_sequoiadb.inc
+
+# seqDB-29684
+set session sequoiadb_optimizer_options='direct_count,direct_sort,direct_limit';
+set session optimizer_switch='optimizer_sort_pushdown=on';
+set session optimizer_index_sort_prune=on;
+set session sequoiadb_cls_pushdown_expand=on;
+--source include/count_limit_sort_sqb_sequoiadb.inc
+
+set session sequoiadb_optimizer_options='direct_sort';
+set session optimizer_switch='optimizer_sort_pushdown=on';
+set session optimizer_index_sort_prune=on;
+set session sequoiadb_cls_pushdown_expand=off;
+--source include/count_limit_sort_sqb_sequoiadb.inc
+
+# seqDB-29685
+set session sequoiadb_optimizer_options='direct_count,direct_sort,direct_limit';
+set session optimizer_switch='optimizer_sort_pushdown=on';
+set session optimizer_index_sort_prune=off;
+set session sequoiadb_cls_pushdown_expand=on;
+--source include/count_limit_sort_mqb_sequoiadb.inc
+
+
+set session sequoiadb_optimizer_options='direct_count,direct_sort,direct_limit';
+set session optimizer_switch='optimizer_sort_pushdown=off';
+set session optimizer_index_sort_prune=on;
+set session sequoiadb_cls_pushdown_expand=on;
+--source include/count_limit_sort_mqb_sequoiadb.inc
+
+
+set session sequoiadb_optimizer_options='direct_count,direct_sort,direct_limit';
+set session optimizer_switch='optimizer_sort_pushdown=off';
+set session optimizer_index_sort_prune=off;
+set session sequoiadb_cls_pushdown_expand=on;
+--source include/count_limit_sort_mqb_sequoiadb.inc
+
+
+# seqDB-29787
+set session sequoiadb_optimizer_options='direct_count,direct_sort,direct_limit';
+set session optimizer_switch='optimizer_sort_pushdown=on';
+set session optimizer_index_sort_prune=off;
+set session sequoiadb_cls_pushdown_expand=off;
+--source include/count_limit_sort_mqb_sequoiadb.inc
+
+
+set session sequoiadb_optimizer_options='direct_count,direct_sort,direct_limit';
+set session optimizer_switch='optimizer_sort_pushdown=off';
+set session optimizer_index_sort_prune=on;
+set session sequoiadb_cls_pushdown_expand=off;
+--source include/count_limit_sort_mqb_sequoiadb.inc
+
+
+set session sequoiadb_optimizer_options='direct_count,direct_sort,direct_limit';
+set session optimizer_switch='optimizer_sort_pushdown=off';
+set session optimizer_index_sort_prune=off;
+set session sequoiadb_cls_pushdown_expand=off;
+--source include/count_limit_sort_mqb_sequoiadb.inc
+
+
+# seqDB-29686
+set session sequoiadb_optimizer_options='direct_count,direct_sort,direct_limit';
+set session sequoiadb_cls_pushdown_expand=on;
+--source include/count_limit_sort_sqb_sequoiadb.inc
+
+
+set session sequoiadb_optimizer_options='direct_count,direct_sort,direct_limit';
+set session sequoiadb_cls_pushdown_expand=off;
+--source include/count_limit_sort_sqb_sequoiadb.inc
+
+
+set session sequoiadb_optimizer_options='';
+set session sequoiadb_cls_pushdown_expand=off;
+--source include/count_limit_sort_sqb_sequoiadb.inc
+
+
+# seqDB-29687
+set session sequoiadb_optimizer_options='direct_count,direct_sort,direct_limit';
+set session sequoiadb_cls_pushdown_expand=on;
+--source include/count_limit_sort_mqb_sequoiadb.inc
+
+
+# seqDB-29688
+set session sequoiadb_optimizer_options='direct_count,direct_sort,direct_limit';
+set session sequoiadb_cls_pushdown_expand=off;
+--source include/count_limit_sort_mqb_sequoiadb.inc
+
+
+set session sequoiadb_optimizer_options='';
+set session sequoiadb_cls_pushdown_expand=off;
+--source include/count_limit_sort_mqb_sequoiadb.inc
+
+
+
+--disable_warnings
+drop database if exists count_limit_sort_pushdown_sequoiadb_4;
+--enable_warnings
+set session sql_mode=default;
+--source include/uninstall_sequoiadb.inc
+

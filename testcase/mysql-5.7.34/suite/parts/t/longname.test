@@ -1,0 +1,78 @@
+source include/have_sequoiadb.inc;
+source include/have_partition.inc;
+set names utf8;
+drop database if exists longname;
+create database longname;
+USE longname;
+--error 1210
+CREATE TABLE test_jfg_table_name_with_64_chars_123456789012345678901234567890 (
+  id int(10) unsigned NOT NULL,
+  id2 int(10) unsigned NOT NULL,
+  PRIMARY KEY ( id, id2 )
+) ENGINE=SequoiaDB DEFAULT CHARSET=latin1 ROW_FORMAT=DYNAMIC
+PARTITION BY RANGE ( id )
+  SUBPARTITION BY HASH ( id2 )
+  SUBPARTITIONS 2 (
+  PARTITION test_jfg_partition_name_with_60_chars_1234567890123456789012 VALUES LESS THAN (1000) ENGINE = SequoiaDB,
+  PARTITION pmax VALUES LESS THAN MAXVALUE ENGINE = SequoiaDB);
+
+--error 1296
+CREATE TABLE éééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééé(
+  id int(10) unsigned NOT NULL,
+  id2 int(10) unsigned NOT NULL,
+  PRIMARY KEY ( id, id2 )
+) ENGINE=SequoiaDB DEFAULT CHARSET=latin1 ROW_FORMAT=DYNAMIC
+PARTITION BY RANGE ( id )
+  SUBPARTITION BY HASH ( id2 )
+  SUBPARTITIONS 2 (
+  PARTITION çççççççççççççççççççççççççççççççççççççççççççççççççççççççççççç VALUES LESS THAN (1000) ENGINE = SequoiaDB,
+  PARTITION pmax VALUES LESS THAN MAXVALUE ENGINE = SequoiaDB);
+
+#子表名过长
+--error 1210
+CREATE TABLE t( 
+  id int(10), 
+  id2 int(10), 
+  PRIMARY KEY ( id, id2 ) 
+) 
+PARTITION BY RANGE ( id ) 
+  SUBPARTITION BY HASH ( id2 ) 
+  SUBPARTITIONS 2 ( 
+  PARTITION çççççççççççççççççççççççççççççççççççççççççççççççççççççççççççç VALUES LESS THAN (1000) ENGINE = SequoiaDB, 
+  PARTITION pmax VALUES LESS THAN MAXVALUE ENGINE = SequoiaDB); 
+
+CREATE TABLE t(
+  id int(10),   
+  id2 int(10),   
+  PRIMARY KEY ( id, id2 )  
+) 
+PARTITION BY RANGE ( id )     
+  SUBPARTITION BY HASH ( id2 )     
+  SUBPARTITIONS 2 ( 
+  PARTITION ççççççççççççççççççççççççççççççççççççççççççççççççççççççç VALUES LESS THAN (1000) ENGINE = SequoiaDB,     
+  PARTITION pmax VALUES LESS THAN MAXVALUE ENGINE = SequoiaDB);
+
+show create table t;
+insert into t values(1,2);
+select * from t;
+
+#测试分区数过多
+create table hash_t(
+  id int, 
+  id2 int
+)
+PARTITION BY HASH(id)
+PARTITIONS 300;
+
+#SEQUOIASQLMAINSTREAM-1215
+#len = 63
+create table ççççççççççççççççççççççççççççççççççççççççççççççççççççççççççççççç (a int);
+#测试表是否建成
+insert into ççççççççççççççççççççççççççççççççççççççççççççççççççççççççççççççç values(1);
+select count(1) from ççççççççççççççççççççççççççççççççççççççççççççççççççççççççççççççç;
+drop table ççççççççççççççççççççççççççççççççççççççççççççççççççççççççççççççç;
+#len=64
+--error 1296
+create table çççççççççççççççççççççççççççççççççççççççççççççççççççççççççççççççç(a int);
+
+drop database longname;

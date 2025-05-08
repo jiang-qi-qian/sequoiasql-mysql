@@ -1,0 +1,906 @@
+SET SESSION sequoiadb_debug_log=on;
+SET SESSION optimizer_index_sort_prune=on;
+DROP DATABASE IF EXISTS explain_direct_sort_29809;
+CREATE DATABASE explain_direct_sort_29809;
+DROP DATABASE explain_direct_sort_29809;
+CREATE DATABASE explain_direct_sort_29809;
+USE explain_direct_sort_29809;
+SET SESSION optimizer_switch = 'optimizer_sort_pushdown=ON';
+CREATE TABLE t1(
+col_int INT,
+col_varchar_16 VARCHAR(16),
+col_date DATE,
+col_date2 DATE
+) PARTITION BY KEY (col_varchar_16) PARTITIONS 4;
+ALTER TABLE t1 ADD INDEX(col_int);
+ALTER TABLE t1 ADD UNIQUE INDEX(col_varchar_16);
+INSERT INTO t1 VALUES
+(NULL, NULL, NULL, NULL),
+(NULL, NULL, NULL, NULL),
+(1, 'a', '2020-02-02', '2020-01-01'),
+(0, 'b', '2020-02-01', '2020-01-01'),
+(3, 'd', '1999-09-09', '1999-09-09');
+CREATE TABLE t2 LIKE t1;
+INSERT INTO t2 SELECT * FROM t1;
+ANALYZE SELECT * FROM t1 ORDER BY col_int;
+id	select_type	table	type	possible_keys	key	key_len	ref	rows	r_rows	filtered	r_filtered	Extra
+1	SIMPLE	t1	ALL	NULL	NULL	NULL	NULL	5	5.00	100.00	100.00	Using pushed sort (t1.col_int)
+EXPLAIN FORMAT = JSON SELECT * FROM t1 ORDER BY col_int;
+EXPLAIN
+{
+  "query_block": {
+    "select_id": 1,
+    "read_sorted_file": {
+      "filesort": {
+        "sort_key": "t1.col_int",
+        "pushed_sort": true,
+        "table": {
+          "table_name": "t1",
+          "partitions": ["p0", "p1", "p2", "p3"],
+          "access_type": "ALL",
+          "rows": 5,
+          "filtered": 100
+        }
+      }
+    }
+  }
+}
+SELECT * FROM t1 ORDER BY col_int;
+col_int	col_varchar_16	col_date	col_date2
+NULL	NULL	NULL	NULL
+NULL	NULL	NULL	NULL
+0	b	2020-02-01	2020-01-01
+1	a	2020-02-02	2020-01-01
+3	d	1999-09-09	1999-09-09
+[Note] SequoiaDB: Query message: condition[{}], selector[{}], order_by[{ "col_int": 1 }], hint[{}], limit[-1], offset[0], table[explain_direct_sort_29809.t1]
+ANALYZE SELECT col_int FROM t1 WHERE col_int <= 1 OR col_varchar_16 = 'a' GROUP BY col_int;
+id	select_type	table	type	possible_keys	key	key_len	ref	rows	r_rows	filtered	r_filtered	Extra
+1	SIMPLE	t1	NULL	NULL	NULL	NULL	NULL	5	2.00	100.00	100.00	Using where with pushed condition; Using pushed GROUP BY; Storage engine handles access type
+EXPLAIN FORMAT = JSON SELECT col_int FROM t1 WHERE col_int <= 1 OR col_varchar_16 = 'a' GROUP BY col_int;
+EXPLAIN
+{
+  "query_block": {
+    "select_id": 1,
+    "table": {
+      "table_name": "t1",
+      "partitions": ["p0", "p1", "p2", "p3"],
+      "rows": 5,
+      "filtered": 100,
+      "pushed_condition": true,
+      "using_pushed_group_by": true,
+      "storage_engine_handle_access_type": true
+    }
+  }
+}
+SELECT col_int FROM t1 WHERE col_int <= 1 OR col_varchar_16 = 'a' GROUP BY col_int;
+col_int
+0
+1
+[Note] SequoiaDB: Query message: match[{ "$match": { "$or": [ { "col_int": { "$lte": 1 } }, { "col_varchar_16": { "$et": "a" } } ] } }], group[{ "$group": { "col_int": { "$first": "$col_int" }, "_id": { "col_int": "$col_int" }, "col_varchar_16": { "$first": "$col_varchar_16" } } }], sort[{ "$sort": { "col_int": 1 } }], skip[{ "$skip": 0 }], limit[{ "$limit": -1 }]
+ANALYZE SELECT * FROM t1 WHERE col_int BETWEEN 0 AND 1 ORDER BY col_int;
+id	select_type	table	type	possible_keys	key	key_len	ref	rows	r_rows	filtered	r_filtered	Extra
+1	SIMPLE	t1	range	col_int	col_int	5	NULL	2	2.00	100.00	100.00	Using where with pushed condition
+EXPLAIN FORMAT = JSON SELECT * FROM t1 WHERE col_int BETWEEN 0 AND 1 ORDER BY col_int;
+EXPLAIN
+{
+  "query_block": {
+    "select_id": 1,
+    "table": {
+      "table_name": "t1",
+      "partitions": ["p0", "p1", "p2", "p3"],
+      "access_type": "range",
+      "possible_keys": ["col_int"],
+      "key": "col_int",
+      "key_length": "5",
+      "used_key_parts": ["col_int"],
+      "rows": 2,
+      "filtered": 100,
+      "pushed_condition": true
+    }
+  }
+}
+SELECT * FROM t1 WHERE col_int BETWEEN 0 AND 1 ORDER BY col_int;
+col_int	col_varchar_16	col_date	col_date2
+0	b	2020-02-01	2020-01-01
+1	a	2020-02-02	2020-01-01
+[Note] SequoiaDB: Query message: condition[{ "$and": [ { "col_int": { "$gte": 0 } }, { "col_int": { "$lte": 1 } } ] }], selector[{}], order_by[{ "col_int": 1 }], hint[{ "": "col_int" }], limit[-1], offset[0], table[explain_direct_sort_29809.t1]
+ANALYZE SELECT col_int FROM t1 WHERE col_int <= 1 OR col_varchar_16 = 'a' ORDER BY col_int;
+id	select_type	table	type	possible_keys	key	key_len	ref	rows	r_rows	filtered	r_filtered	Extra
+1	SIMPLE	t1	index_merge	col_varchar_16,col_int	col_int,col_varchar_16	5,19	NULL	3	2.00	100.00	100.00	Using sdb_sort_union(col_int,col_varchar_16); Using where with pushed condition; Using filesort
+EXPLAIN FORMAT = JSON SELECT col_int FROM t1 WHERE col_int <= 1 OR col_varchar_16 = 'a' ORDER BY col_int;
+EXPLAIN
+{
+  "query_block": {
+    "select_id": 1,
+    "read_sorted_file": {
+      "filesort": {
+        "sort_key": "t1.col_int",
+        "table": {
+          "table_name": "t1",
+          "partitions": ["p0", "p1", "p2", "p3"],
+          "access_type": "index_merge",
+          "possible_keys": ["col_varchar_16", "col_int"],
+          "key_length": "5,19",
+          "index_merge": {
+            "sdb_sort_union": {
+              "range": {
+                "key": "col_int",
+                "used_key_parts": ["col_int"]
+              },
+              "range": {
+                "key": "col_varchar_16",
+                "used_key_parts": ["col_varchar_16"]
+              }
+            }
+          },
+          "rows": 3,
+          "filtered": 100,
+          "pushed_condition": true
+        }
+      }
+    }
+  }
+}
+SELECT col_int FROM t1 WHERE col_int <= 1 OR col_varchar_16 = 'a' ORDER BY col_int;
+col_int
+0
+1
+[Note] SequoiaDB: Query message: condition[{ "col_varchar_16": { "$et": "a" } }], selector[{}], order_by[{}], hint[{ "": "col_varchar_16" }], limit[-1], offset[0], table[explain_direct_sort_29809.t1]
+ANALYZE SELECT * FROM t1 WHERE col_int = 1 ORDER BY col_int;
+id	select_type	table	type	possible_keys	key	key_len	ref	rows	r_rows	filtered	r_filtered	Extra
+1	SIMPLE	t1	ref	col_int	col_int	5	const	2	1.00	100.00	100.00	
+EXPLAIN FORMAT = JSON SELECT * FROM t1 WHERE col_int = 1 ORDER BY col_int;
+EXPLAIN
+{
+  "query_block": {
+    "select_id": 1,
+    "table": {
+      "table_name": "t1",
+      "partitions": ["p0", "p1", "p2", "p3"],
+      "access_type": "ref",
+      "possible_keys": ["col_int"],
+      "key": "col_int",
+      "key_length": "5",
+      "used_key_parts": ["col_int"],
+      "ref": ["const"],
+      "rows": 2,
+      "filtered": 100
+    }
+  }
+}
+SELECT * FROM t1 WHERE col_int = 1 ORDER BY col_int;
+col_int	col_varchar_16	col_date	col_date2
+1	a	2020-02-02	2020-01-01
+[Note] SequoiaDB: Query message: condition[{ "col_int": { "$et": 1 } }], selector[{}], order_by[{}], hint[{ "": "col_int" }], limit[-1], offset[0], table[explain_direct_sort_29809.t1]
+ANALYZE SELECT col_int FROM t1 WHERE col_int = 1 GROUP BY col_int;
+id	select_type	table	type	possible_keys	key	key_len	ref	rows	r_rows	filtered	r_filtered	Extra
+1	SIMPLE	t1	ref	col_int	col_int	5	const	0	1.00	0.00	100.00	Using index; Using pushed GROUP BY
+EXPLAIN FORMAT = JSON SELECT col_int FROM t1 WHERE col_int = 1 GROUP BY col_int;
+EXPLAIN
+{
+  "query_block": {
+    "select_id": 1,
+    "table": {
+      "table_name": "t1",
+      "partitions": ["p0", "p1", "p2", "p3"],
+      "access_type": "ref",
+      "possible_keys": ["col_int"],
+      "key": "col_int",
+      "key_length": "5",
+      "used_key_parts": ["col_int"],
+      "ref": ["const"],
+      "rows": 0,
+      "filtered": 0,
+      "using_index": true,
+      "using_pushed_group_by": true
+    }
+  }
+}
+SELECT col_int FROM t1 WHERE col_int = 1 GROUP BY col_int;
+col_int
+1
+[Note] SequoiaDB: Query message: match[{ "$match": { "col_int": { "$et": 1 } } }], group[{ "$group": { "col_int": { "$first": "$col_int" }, "_id": { "col_int": "$col_int" } } }], sort[{ "$sort": { "col_int": 1 } }], skip[{ "$skip": 0 }], limit[{ "$limit": -1 }]
+ANALYZE SELECT * FROM t1 WHERE col_int = 1 OR col_int IS NULL ORDER BY col_int;
+id	select_type	table	type	possible_keys	key	key_len	ref	rows	r_rows	filtered	r_filtered	Extra
+1	SIMPLE	t1	ref_or_null	col_int	col_int	5	const	4	3.00	100.00	100.00	Using where with pushed condition; Using filesort
+EXPLAIN FORMAT = JSON SELECT * FROM t1 WHERE col_int = 1 OR col_int IS NULL ORDER BY col_int;
+EXPLAIN
+{
+  "query_block": {
+    "select_id": 1,
+    "read_sorted_file": {
+      "filesort": {
+        "sort_key": "t1.col_int",
+        "table": {
+          "table_name": "t1",
+          "partitions": ["p0", "p1", "p2", "p3"],
+          "access_type": "ref_or_null",
+          "possible_keys": ["col_int"],
+          "key": "col_int",
+          "key_length": "5",
+          "used_key_parts": ["col_int"],
+          "ref": ["const"],
+          "rows": 4,
+          "filtered": 100,
+          "pushed_condition": true
+        }
+      }
+    }
+  }
+}
+SELECT * FROM t1 WHERE col_int = 1 OR col_int IS NULL ORDER BY col_int;
+col_int	col_varchar_16	col_date	col_date2
+NULL	NULL	NULL	NULL
+NULL	NULL	NULL	NULL
+1	a	2020-02-02	2020-01-01
+[Note] SequoiaDB: Query message: condition[{ "col_int": { "$isnull": 1 } }], selector[{}], order_by[{}], hint[{ "": "col_int" }], limit[-1], offset[0], table[explain_direct_sort_29809.t1]
+ANALYZE SELECT col_int FROM t1 WHERE col_int > 1 ORDER BY col_int;
+id	select_type	table	type	possible_keys	key	key_len	ref	rows	r_rows	filtered	r_filtered	Extra
+1	SIMPLE	t1	range	col_int	col_int	5	NULL	4	1.00	100.00	100.00	Using where with pushed condition; Using index
+EXPLAIN FORMAT = JSON SELECT col_int FROM t1 WHERE col_int > 1 ORDER BY col_int;
+EXPLAIN
+{
+  "query_block": {
+    "select_id": 1,
+    "table": {
+      "table_name": "t1",
+      "partitions": ["p0", "p1", "p2", "p3"],
+      "access_type": "range",
+      "possible_keys": ["col_int"],
+      "key": "col_int",
+      "key_length": "5",
+      "used_key_parts": ["col_int"],
+      "rows": 4,
+      "filtered": 100,
+      "pushed_condition": true,
+      "using_index": true
+    }
+  }
+}
+SELECT col_int FROM t1 WHERE col_int > 1 ORDER BY col_int;
+col_int
+3
+[Note] SequoiaDB: Query message: condition[{ "col_int": { "$gt": 1 } }], selector[{ "col_int": null }], order_by[{ "col_int": 1 }], hint[{ "": "col_int" }], limit[-1], offset[0], table[explain_direct_sort_29809.t1]
+ANALYZE SELECT * FROM t1 WHERE col_varchar_16 = 'a' ORDER BY col_varchar_16;
+id	select_type	table	type	possible_keys	key	key_len	ref	rows	r_rows	filtered	r_filtered	Extra
+1	SIMPLE	t1	const	col_varchar_16	col_varchar_16	19	const	1	NULL	100.00	NULL	
+EXPLAIN FORMAT = JSON SELECT * FROM t1 WHERE col_varchar_16 = 'a' ORDER BY col_varchar_16;
+EXPLAIN
+{
+  "query_block": {
+    "select_id": 1,
+    "table": {
+      "table_name": "t1",
+      "partitions": ["p0"],
+      "access_type": "const",
+      "possible_keys": ["col_varchar_16"],
+      "key": "col_varchar_16",
+      "key_length": "19",
+      "used_key_parts": ["col_varchar_16"],
+      "ref": ["const"],
+      "rows": 1,
+      "filtered": 100
+    }
+  }
+}
+SELECT * FROM t1 WHERE col_varchar_16 = 'a' ORDER BY col_varchar_16;
+col_int	col_varchar_16	col_date	col_date2
+1	a	2020-02-02	2020-01-01
+[Note] SequoiaDB: Query message: condition[{ "col_varchar_16": { "$et": "a" } }], selector[{}], order_by[{}], hint[{ "": "col_varchar_16" }], limit[-1], offset[0], table[explain_direct_sort_29809.t1]
+ANALYZE SELECT * FROM (SELECT col_varchar_16 FROM t1 WHERE col_int > 1 GROUP BY col_varchar_16 DESC LIMIT 4) dt WHERE col_varchar_16 >"aef" ORDER BY col_varchar_16 DESC LIMIT 2,2;
+id	select_type	table	type	possible_keys	key	key_len	ref	rows	r_rows	filtered	r_filtered	Extra
+1	PRIMARY	<derived2>	ALL	NULL	NULL	NULL	NULL	4	1.00	100.00	100.00	Using where; Using filesort
+2	DERIVED	t1	NULL	NULL	NULL	NULL	NULL	5	1.00	100.00	100.00	Using where with pushed condition; Using pushed GROUP BY; Storage engine handles access type
+EXPLAIN FORMAT = JSON SELECT * FROM (SELECT col_varchar_16 FROM t1 WHERE col_int > 1 GROUP BY col_varchar_16 DESC LIMIT 4) dt WHERE col_varchar_16 >"aef" ORDER BY col_varchar_16 DESC LIMIT 2,2;
+EXPLAIN
+{
+  "query_block": {
+    "select_id": 1,
+    "read_sorted_file": {
+      "filesort": {
+        "sort_key": "dt.col_varchar_16 desc",
+        "table": {
+          "table_name": "<derived2>",
+          "access_type": "ALL",
+          "rows": 4,
+          "filtered": 100,
+          "attached_condition": "dt.col_varchar_16 > 'aef'",
+          "materialized": {
+            "query_block": {
+              "select_id": 2,
+              "table": {
+                "table_name": "t1",
+                "partitions": ["p0", "p1", "p2", "p3"],
+                "rows": 5,
+                "filtered": 100,
+                "pushed_condition": true,
+                "using_pushed_group_by": true,
+                "storage_engine_handle_access_type": true
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
+SELECT * FROM (SELECT col_varchar_16 FROM t1 WHERE col_int > 1 GROUP BY col_varchar_16 DESC LIMIT 4) dt WHERE col_varchar_16 >"aef" ORDER BY col_varchar_16 DESC LIMIT 2,2;
+col_varchar_16
+[Note] SequoiaDB: Query message: match[{ "$match": { "col_int": { "$gt": 1 } } }], group[{ "$group": { "col_varchar_16": { "$first": "$col_varchar_16" }, "_id": { "col_varchar_16": "$col_varchar_16" }, "col_int": { "$first": "$col_int" } } }], sort[{ "$sort": { "col_varchar_16": -1 } }], skip[{ "$skip": 0 }], limit[{ "$limit": 4 }]
+ANALYZE SELECT col_int, (SELECT col_varchar_16 FROM t1 WHERE col_int < 3 ORDER BY col_int LIMIT 0, 1) AS c FROM t2;
+id	select_type	table	type	possible_keys	key	key_len	ref	rows	r_rows	filtered	r_filtered	Extra
+1	PRIMARY	t2	index	NULL	col_int	5	NULL	5	5.00	100.00	100.00	Using index
+2	SUBQUERY	t1	NULL	NULL	NULL	NULL	NULL	5	1.00	100.00	100.00	Using where with pushed condition; Using pushed ORDER BY; Storage engine handles access type
+EXPLAIN FORMAT = JSON SELECT col_int, (SELECT col_varchar_16 FROM t1 WHERE col_int < 3 ORDER BY col_int LIMIT 0, 1) AS c FROM t2;
+EXPLAIN
+{
+  "query_block": {
+    "select_id": 1,
+    "table": {
+      "table_name": "t2",
+      "partitions": ["p0", "p1", "p2", "p3"],
+      "access_type": "index",
+      "key": "col_int",
+      "key_length": "5",
+      "used_key_parts": ["col_int"],
+      "rows": 5,
+      "filtered": 100,
+      "using_index": true
+    },
+    "subqueries": [
+      {
+        "query_block": {
+          "select_id": 2,
+          "table": {
+            "table_name": "t1",
+            "partitions": ["p0", "p1", "p2", "p3"],
+            "rows": 5,
+            "filtered": 100,
+            "pushed_condition": true,
+            "using_pushed_order_by": true,
+            "storage_engine_handle_access_type": true
+          }
+        }
+      }
+    ]
+  }
+}
+SELECT col_int, (SELECT col_varchar_16 FROM t1 WHERE col_int < 3 ORDER BY col_int LIMIT 0, 1) AS c FROM t2;
+col_int	c
+NULL	b
+NULL	b
+0	b
+1	b
+3	b
+[Note] SequoiaDB: Query message: condition[{ "col_int": { "$lt": 3 } }], selector[{}], order_by[{ "col_int": 1 }], hint[{ "": "" }], limit[1], offset[0], table[explain_direct_sort_29809.t1]
+ANALYZE (SELECT * FROM t2 WHERE col_int ORDER BY col_varchar_16 LIMIT 3) UNION (SELECT * FROM t1 ORDER BY col_int DESC LIMIT 3);
+id	select_type	table	type	possible_keys	key	key_len	ref	rows	r_rows	filtered	r_filtered	Extra
+1	PRIMARY	t2	NULL	NULL	NULL	NULL	NULL	5	2.00	100.00	100.00	Using where with pushed condition; Using pushed ORDER BY; Storage engine handles access type
+2	UNION	t1	NULL	NULL	NULL	NULL	NULL	5	3.00	100.00	100.00	Using pushed ORDER BY; Storage engine handles access type
+NULL	UNION RESULT	<union1,2>	ALL	NULL	NULL	NULL	NULL	NULL	3.00	NULL	NULL	
+EXPLAIN FORMAT = JSON (SELECT * FROM t2 WHERE col_int ORDER BY col_varchar_16 LIMIT 3) UNION (SELECT * FROM t1 ORDER BY col_int DESC LIMIT 3);
+EXPLAIN
+{
+  "query_block": {
+    "union_result": {
+      "table_name": "<union1,2>",
+      "access_type": "ALL",
+      "query_specifications": [
+        {
+          "query_block": {
+            "select_id": 1,
+            "table": {
+              "table_name": "t2",
+              "partitions": ["p0", "p1", "p2", "p3"],
+              "rows": 5,
+              "filtered": 100,
+              "pushed_condition": true,
+              "using_pushed_order_by": true,
+              "storage_engine_handle_access_type": true
+            }
+          }
+        },
+        {
+          "query_block": {
+            "select_id": 2,
+            "operation": "UNION",
+            "table": {
+              "table_name": "t1",
+              "partitions": ["p0", "p1", "p2", "p3"],
+              "rows": 5,
+              "filtered": 100,
+              "using_pushed_order_by": true,
+              "storage_engine_handle_access_type": true
+            }
+          }
+        }
+      ]
+    }
+  }
+}
+(SELECT * FROM t2 WHERE col_int ORDER BY col_varchar_16 LIMIT 3) UNION (SELECT * FROM t1 ORDER BY col_int DESC LIMIT 3);
+col_int	col_varchar_16	col_date	col_date2
+1	a	2020-02-02	2020-01-01
+3	d	1999-09-09	1999-09-09
+0	b	2020-02-01	2020-01-01
+[Note] SequoiaDB: Query message: condition[{}], selector[{}], order_by[{ "col_int": -1 }], hint[{ "": "" }], limit[3], offset[0], table[explain_direct_sort_29809.t1]
+EXPLAIN INSERT INTO t2 SELECT * FROM t1 WHERE col_int BETWEEN 1 AND 2 ORDER BY col_int LIMIT 10;
+id	select_type	table	type	possible_keys	key	key_len	ref	rows	Extra
+1	SIMPLE	t1	NULL	NULL	NULL	NULL	NULL	5	Using where with pushed condition; Using pushed ORDER BY; Storage engine handles access type
+ANALYZE SELECT * FROM t1 ORDER BY col_int LIMIT 2;
+id	select_type	table	type	possible_keys	key	key_len	ref	rows	r_rows	filtered	r_filtered	Extra
+1	SIMPLE	t1	NULL	NULL	NULL	NULL	NULL	5	2.00	100.00	100.00	Using pushed ORDER BY; Storage engine handles access type
+EXPLAIN FORMAT = JSON SELECT * FROM t1 ORDER BY col_int LIMIT 2;
+EXPLAIN
+{
+  "query_block": {
+    "select_id": 1,
+    "table": {
+      "table_name": "t1",
+      "partitions": ["p0", "p1", "p2", "p3"],
+      "rows": 5,
+      "filtered": 100,
+      "using_pushed_order_by": true,
+      "storage_engine_handle_access_type": true
+    }
+  }
+}
+SELECT * FROM t1 ORDER BY col_int LIMIT 2;
+col_int	col_varchar_16	col_date	col_date2
+NULL	NULL	NULL	NULL
+NULL	NULL	NULL	NULL
+[Note] SequoiaDB: Query message: condition[{}], selector[{}], order_by[{ "col_int": 1 }], hint[{ "": "" }], limit[2], offset[0], table[explain_direct_sort_29809.t1]
+EXPLAIN EXTENDED SELECT * FROM t1 WHERE col_int > 1 ORDER BY col_int;
+id	select_type	table	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	range	col_int	col_int	5	NULL	4	100.00	Using where with pushed condition
+Warnings:
+Note	1003	select `explain_direct_sort_29809`.`t1`.`col_int` AS `col_int`,`explain_direct_sort_29809`.`t1`.`col_varchar_16` AS `col_varchar_16`,`explain_direct_sort_29809`.`t1`.`col_date` AS `col_date`,`explain_direct_sort_29809`.`t1`.`col_date2` AS `col_date2` from `explain_direct_sort_29809`.`t1` where `explain_direct_sort_29809`.`t1`.`col_int` > 1 order by `explain_direct_sort_29809`.`t1`.`col_int`
+SELECT * FROM t1 WHERE col_int > 1 ORDER BY col_int;
+col_int	col_varchar_16	col_date	col_date2
+3	d	1999-09-09	1999-09-09
+[Note] SequoiaDB: Query message: condition[{ "col_int": { "$gt": 1 } }], selector[{}], order_by[{ "col_int": 1 }], hint[{ "": "col_int" }], limit[-1], offset[0], table[explain_direct_sort_29809.t1]
+EXPLAIN PARTITIONS SELECT * FROM t1 WHERE col_int > 1 ORDER BY col_int;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	Extra
+1	SIMPLE	t1	p0,p1,p2,p3	range	col_int	col_int	5	NULL	4	Using where with pushed condition
+[Note] SequoiaDB: optimizer pushdown autocommit: 1
+DROP TABLE t1,t2;
+SET SESSION optimizer_switch = 'optimizer_sort_pushdown=OFF';
+CREATE TABLE t1(
+col_int INT,
+col_varchar_16 VARCHAR(16),
+col_date DATE,
+col_date2 DATE
+) PARTITION BY KEY (col_varchar_16) PARTITIONS 4;
+ALTER TABLE t1 ADD INDEX(col_int);
+ALTER TABLE t1 ADD UNIQUE INDEX(col_varchar_16);
+INSERT INTO t1 VALUES
+(NULL, NULL, NULL, NULL),
+(NULL, NULL, NULL, NULL),
+(1, 'a', '2020-02-02', '2020-01-01'),
+(0, 'b', '2020-02-01', '2020-01-01'),
+(3, 'd', '1999-09-09', '1999-09-09');
+CREATE TABLE t2 LIKE t1;
+INSERT INTO t2 SELECT * FROM t1;
+ANALYZE SELECT * FROM t1 ORDER BY col_int;
+id	select_type	table	type	possible_keys	key	key_len	ref	rows	r_rows	filtered	r_filtered	Extra
+1	SIMPLE	t1	NULL	NULL	NULL	NULL	NULL	5	5.00	100.00	100.00	Using pushed ORDER BY; Storage engine handles access type
+EXPLAIN FORMAT = JSON SELECT * FROM t1 ORDER BY col_int;
+EXPLAIN
+{
+  "query_block": {
+    "select_id": 1,
+    "table": {
+      "table_name": "t1",
+      "partitions": ["p0", "p1", "p2", "p3"],
+      "rows": 5,
+      "filtered": 100,
+      "using_pushed_order_by": true,
+      "storage_engine_handle_access_type": true
+    }
+  }
+}
+SELECT * FROM t1 ORDER BY col_int;
+col_int	col_varchar_16	col_date	col_date2
+NULL	NULL	NULL	NULL
+NULL	NULL	NULL	NULL
+0	b	2020-02-01	2020-01-01
+1	a	2020-02-02	2020-01-01
+3	d	1999-09-09	1999-09-09
+[Note] SequoiaDB: Query message: condition[{}], selector[{}], order_by[{ "col_int": 1 }], hint[{}], limit[-1], offset[0], table[explain_direct_sort_29809.t1]
+ANALYZE SELECT col_int FROM t1 WHERE col_int <= 1 OR col_varchar_16 = 'a' GROUP BY col_int;
+id	select_type	table	type	possible_keys	key	key_len	ref	rows	r_rows	filtered	r_filtered	Extra
+1	SIMPLE	t1	NULL	NULL	NULL	NULL	NULL	5	2.00	100.00	100.00	Using where with pushed condition; Using pushed GROUP BY; Storage engine handles access type
+EXPLAIN FORMAT = JSON SELECT col_int FROM t1 WHERE col_int <= 1 OR col_varchar_16 = 'a' GROUP BY col_int;
+EXPLAIN
+{
+  "query_block": {
+    "select_id": 1,
+    "table": {
+      "table_name": "t1",
+      "partitions": ["p0", "p1", "p2", "p3"],
+      "rows": 5,
+      "filtered": 100,
+      "pushed_condition": true,
+      "using_pushed_group_by": true,
+      "storage_engine_handle_access_type": true
+    }
+  }
+}
+SELECT col_int FROM t1 WHERE col_int <= 1 OR col_varchar_16 = 'a' GROUP BY col_int;
+col_int
+0
+1
+[Note] SequoiaDB: Query message: match[{ "$match": { "$or": [ { "col_int": { "$lte": 1 } }, { "col_varchar_16": { "$et": "a" } } ] } }], group[{ "$group": { "col_int": { "$first": "$col_int" }, "_id": { "col_int": "$col_int" }, "col_varchar_16": { "$first": "$col_varchar_16" } } }], sort[{ "$sort": { "col_int": 1 } }], skip[{ "$skip": 0 }], limit[{ "$limit": -1 }]
+ANALYZE SELECT * FROM t1 WHERE col_int BETWEEN 0 AND 1 ORDER BY col_int;
+id	select_type	table	type	possible_keys	key	key_len	ref	rows	r_rows	filtered	r_filtered	Extra
+1	SIMPLE	t1	NULL	NULL	NULL	NULL	NULL	5	2.00	100.00	100.00	Using where with pushed condition; Using pushed ORDER BY; Storage engine handles access type
+EXPLAIN FORMAT = JSON SELECT * FROM t1 WHERE col_int BETWEEN 0 AND 1 ORDER BY col_int;
+EXPLAIN
+{
+  "query_block": {
+    "select_id": 1,
+    "table": {
+      "table_name": "t1",
+      "partitions": ["p0", "p1", "p2", "p3"],
+      "rows": 5,
+      "filtered": 100,
+      "pushed_condition": true,
+      "using_pushed_order_by": true,
+      "storage_engine_handle_access_type": true
+    }
+  }
+}
+SELECT * FROM t1 WHERE col_int BETWEEN 0 AND 1 ORDER BY col_int;
+col_int	col_varchar_16	col_date	col_date2
+0	b	2020-02-01	2020-01-01
+1	a	2020-02-02	2020-01-01
+[Note] SequoiaDB: Query message: condition[{ "$and": [ { "col_int": { "$gte": 0 } }, { "col_int": { "$lte": 1 } } ] }], selector[{}], order_by[{ "col_int": 1 }], hint[{}], limit[-1], offset[0], table[explain_direct_sort_29809.t1]
+ANALYZE SELECT col_int FROM t1 WHERE col_int <= 1 OR col_varchar_16 = 'a' ORDER BY col_int;
+id	select_type	table	type	possible_keys	key	key_len	ref	rows	r_rows	filtered	r_filtered	Extra
+1	SIMPLE	t1	NULL	NULL	NULL	NULL	NULL	5	2.00	100.00	100.00	Using where with pushed condition; Using pushed ORDER BY; Storage engine handles access type
+EXPLAIN FORMAT = JSON SELECT col_int FROM t1 WHERE col_int <= 1 OR col_varchar_16 = 'a' ORDER BY col_int;
+EXPLAIN
+{
+  "query_block": {
+    "select_id": 1,
+    "table": {
+      "table_name": "t1",
+      "partitions": ["p0", "p1", "p2", "p3"],
+      "rows": 5,
+      "filtered": 100,
+      "pushed_condition": true,
+      "using_pushed_order_by": true,
+      "storage_engine_handle_access_type": true
+    }
+  }
+}
+SELECT col_int FROM t1 WHERE col_int <= 1 OR col_varchar_16 = 'a' ORDER BY col_int;
+col_int
+0
+1
+[Note] SequoiaDB: Query message: condition[{ "$or": [ { "col_int": { "$lte": 1 } }, { "col_varchar_16": { "$et": "a" } } ] }], selector[{}], order_by[{ "col_int": 1 }], hint[{}], limit[-1], offset[0], table[explain_direct_sort_29809.t1]
+ANALYZE SELECT * FROM t1 WHERE col_int = 1 ORDER BY col_int;
+id	select_type	table	type	possible_keys	key	key_len	ref	rows	r_rows	filtered	r_filtered	Extra
+1	SIMPLE	t1	ref	col_int	col_int	5	const	0	1.00	0.00	100.00	Using pushed ORDER BY
+EXPLAIN FORMAT = JSON SELECT * FROM t1 WHERE col_int = 1 ORDER BY col_int;
+EXPLAIN
+{
+  "query_block": {
+    "select_id": 1,
+    "table": {
+      "table_name": "t1",
+      "partitions": ["p0", "p1", "p2", "p3"],
+      "access_type": "ref",
+      "possible_keys": ["col_int"],
+      "key": "col_int",
+      "key_length": "5",
+      "used_key_parts": ["col_int"],
+      "ref": ["const"],
+      "rows": 0,
+      "filtered": 0,
+      "using_pushed_order_by": true
+    }
+  }
+}
+SELECT * FROM t1 WHERE col_int = 1 ORDER BY col_int;
+col_int	col_varchar_16	col_date	col_date2
+1	a	2020-02-02	2020-01-01
+[Note] SequoiaDB: Query message: condition[{ "col_int": { "$et": 1 } }], selector[{}], order_by[{ "col_int": 1 }], hint[{ "": "col_int" }], limit[-1], offset[0], table[explain_direct_sort_29809.t1]
+ANALYZE SELECT col_int FROM t1 WHERE col_int = 1 GROUP BY col_int;
+id	select_type	table	type	possible_keys	key	key_len	ref	rows	r_rows	filtered	r_filtered	Extra
+1	SIMPLE	t1	ref	col_int	col_int	5	const	0	1.00	0.00	100.00	Using index; Using pushed GROUP BY
+EXPLAIN FORMAT = JSON SELECT col_int FROM t1 WHERE col_int = 1 GROUP BY col_int;
+EXPLAIN
+{
+  "query_block": {
+    "select_id": 1,
+    "table": {
+      "table_name": "t1",
+      "partitions": ["p0", "p1", "p2", "p3"],
+      "access_type": "ref",
+      "possible_keys": ["col_int"],
+      "key": "col_int",
+      "key_length": "5",
+      "used_key_parts": ["col_int"],
+      "ref": ["const"],
+      "rows": 0,
+      "filtered": 0,
+      "using_index": true,
+      "using_pushed_group_by": true
+    }
+  }
+}
+SELECT col_int FROM t1 WHERE col_int = 1 GROUP BY col_int;
+col_int
+1
+[Note] SequoiaDB: Query message: match[{ "$match": { "col_int": { "$et": 1 } } }], group[{ "$group": { "col_int": { "$first": "$col_int" }, "_id": { "col_int": "$col_int" } } }], sort[{ "$sort": { "col_int": 1 } }], skip[{ "$skip": 0 }], limit[{ "$limit": -1 }]
+ANALYZE SELECT * FROM t1 WHERE col_int = 1 OR col_int IS NULL ORDER BY col_int;
+id	select_type	table	type	possible_keys	key	key_len	ref	rows	r_rows	filtered	r_filtered	Extra
+1	SIMPLE	t1	ref_or_null	col_int	col_int	5	const	2	3.00	100.00	100.00	Using where with pushed condition; Using filesort
+EXPLAIN FORMAT = JSON SELECT * FROM t1 WHERE col_int = 1 OR col_int IS NULL ORDER BY col_int;
+EXPLAIN
+{
+  "query_block": {
+    "select_id": 1,
+    "read_sorted_file": {
+      "filesort": {
+        "sort_key": "t1.col_int",
+        "table": {
+          "table_name": "t1",
+          "partitions": ["p0", "p1", "p2", "p3"],
+          "access_type": "ref_or_null",
+          "possible_keys": ["col_int"],
+          "key": "col_int",
+          "key_length": "5",
+          "used_key_parts": ["col_int"],
+          "ref": ["const"],
+          "rows": 2,
+          "filtered": 100,
+          "pushed_condition": true
+        }
+      }
+    }
+  }
+}
+SELECT * FROM t1 WHERE col_int = 1 OR col_int IS NULL ORDER BY col_int;
+col_int	col_varchar_16	col_date	col_date2
+NULL	NULL	NULL	NULL
+NULL	NULL	NULL	NULL
+1	a	2020-02-02	2020-01-01
+[Note] SequoiaDB: Query message: condition[{ "col_int": { "$isnull": 1 } }], selector[{}], order_by[{}], hint[{ "": "col_int" }], limit[-1], offset[0], table[explain_direct_sort_29809.t1]
+ANALYZE SELECT col_int FROM t1 WHERE col_int > 1 ORDER BY col_int;
+id	select_type	table	type	possible_keys	key	key_len	ref	rows	r_rows	filtered	r_filtered	Extra
+1	SIMPLE	t1	index	col_int	col_int	5	NULL	5	1.00	100.00	100.00	Using where with pushed condition; Using index; Using pushed ORDER BY
+EXPLAIN FORMAT = JSON SELECT col_int FROM t1 WHERE col_int > 1 ORDER BY col_int;
+EXPLAIN
+{
+  "query_block": {
+    "select_id": 1,
+    "table": {
+      "table_name": "t1",
+      "partitions": ["p0", "p1", "p2", "p3"],
+      "access_type": "index",
+      "possible_keys": ["col_int"],
+      "key": "col_int",
+      "key_length": "5",
+      "used_key_parts": ["col_int"],
+      "rows": 5,
+      "filtered": 100,
+      "pushed_condition": true,
+      "using_index": true,
+      "using_pushed_order_by": true
+    }
+  }
+}
+SELECT col_int FROM t1 WHERE col_int > 1 ORDER BY col_int;
+col_int
+3
+[Note] SequoiaDB: Query message: condition[{ "col_int": { "$gt": 1 } }], selector[{ "col_int": null }], order_by[{ "col_int": 1 }], hint[{ "": "col_int" }], limit[-1], offset[0], table[explain_direct_sort_29809.t1]
+ANALYZE SELECT * FROM t1 WHERE col_varchar_16 = 'a' ORDER BY col_varchar_16;
+id	select_type	table	type	possible_keys	key	key_len	ref	rows	r_rows	filtered	r_filtered	Extra
+1	SIMPLE	t1	const	col_varchar_16	col_varchar_16	19	const	1	NULL	100.00	NULL	Using pushed ORDER BY
+EXPLAIN FORMAT = JSON SELECT * FROM t1 WHERE col_varchar_16 = 'a' ORDER BY col_varchar_16;
+EXPLAIN
+{
+  "query_block": {
+    "select_id": 1,
+    "table": {
+      "table_name": "t1",
+      "partitions": ["p0"],
+      "access_type": "const",
+      "possible_keys": ["col_varchar_16"],
+      "key": "col_varchar_16",
+      "key_length": "19",
+      "used_key_parts": ["col_varchar_16"],
+      "ref": ["const"],
+      "rows": 1,
+      "filtered": 100,
+      "using_pushed_order_by": true
+    }
+  }
+}
+SELECT * FROM t1 WHERE col_varchar_16 = 'a' ORDER BY col_varchar_16;
+col_int	col_varchar_16	col_date	col_date2
+1	a	2020-02-02	2020-01-01
+[Note] SequoiaDB: Query message: condition[{ "col_varchar_16": { "$et": "a" } }], selector[{}], order_by[{ "col_varchar_16": 1 }], hint[{ "": "col_varchar_16" }], limit[-1], offset[0], table[explain_direct_sort_29809.t1]
+ANALYZE SELECT * FROM (SELECT col_varchar_16 FROM t1 WHERE col_int > 1 GROUP BY col_varchar_16 DESC LIMIT 4) dt WHERE col_varchar_16 >"aef" ORDER BY col_varchar_16 DESC LIMIT 2,2;
+id	select_type	table	type	possible_keys	key	key_len	ref	rows	r_rows	filtered	r_filtered	Extra
+1	PRIMARY	<derived2>	ALL	NULL	NULL	NULL	NULL	4	1.00	100.00	100.00	Using where; Using filesort
+2	DERIVED	t1	NULL	NULL	NULL	NULL	NULL	5	1.00	100.00	100.00	Using where with pushed condition; Using pushed GROUP BY; Storage engine handles access type
+EXPLAIN FORMAT = JSON SELECT * FROM (SELECT col_varchar_16 FROM t1 WHERE col_int > 1 GROUP BY col_varchar_16 DESC LIMIT 4) dt WHERE col_varchar_16 >"aef" ORDER BY col_varchar_16 DESC LIMIT 2,2;
+EXPLAIN
+{
+  "query_block": {
+    "select_id": 1,
+    "read_sorted_file": {
+      "filesort": {
+        "sort_key": "dt.col_varchar_16 desc",
+        "table": {
+          "table_name": "<derived2>",
+          "access_type": "ALL",
+          "rows": 4,
+          "filtered": 100,
+          "attached_condition": "dt.col_varchar_16 > 'aef'",
+          "materialized": {
+            "query_block": {
+              "select_id": 2,
+              "table": {
+                "table_name": "t1",
+                "partitions": ["p0", "p1", "p2", "p3"],
+                "rows": 5,
+                "filtered": 100,
+                "pushed_condition": true,
+                "using_pushed_group_by": true,
+                "storage_engine_handle_access_type": true
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
+SELECT * FROM (SELECT col_varchar_16 FROM t1 WHERE col_int > 1 GROUP BY col_varchar_16 DESC LIMIT 4) dt WHERE col_varchar_16 >"aef" ORDER BY col_varchar_16 DESC LIMIT 2,2;
+col_varchar_16
+[Note] SequoiaDB: Query message: match[{ "$match": { "col_int": { "$gt": 1 } } }], group[{ "$group": { "col_varchar_16": { "$first": "$col_varchar_16" }, "_id": { "col_varchar_16": "$col_varchar_16" }, "col_int": { "$first": "$col_int" } } }], sort[{ "$sort": { "col_varchar_16": -1 } }], skip[{ "$skip": 0 }], limit[{ "$limit": 4 }]
+ANALYZE SELECT col_int, (SELECT col_varchar_16 FROM t1 WHERE col_int < 3 ORDER BY col_int LIMIT 0, 1) AS c FROM t2;
+id	select_type	table	type	possible_keys	key	key_len	ref	rows	r_rows	filtered	r_filtered	Extra
+1	PRIMARY	t2	index	NULL	col_int	5	NULL	5	5.00	100.00	100.00	Using index
+2	SUBQUERY	t1	NULL	NULL	NULL	NULL	NULL	5	1.00	100.00	100.00	Using where with pushed condition; Using pushed ORDER BY; Storage engine handles access type
+EXPLAIN FORMAT = JSON SELECT col_int, (SELECT col_varchar_16 FROM t1 WHERE col_int < 3 ORDER BY col_int LIMIT 0, 1) AS c FROM t2;
+EXPLAIN
+{
+  "query_block": {
+    "select_id": 1,
+    "table": {
+      "table_name": "t2",
+      "partitions": ["p0", "p1", "p2", "p3"],
+      "access_type": "index",
+      "key": "col_int",
+      "key_length": "5",
+      "used_key_parts": ["col_int"],
+      "rows": 5,
+      "filtered": 100,
+      "using_index": true
+    },
+    "subqueries": [
+      {
+        "query_block": {
+          "select_id": 2,
+          "table": {
+            "table_name": "t1",
+            "partitions": ["p0", "p1", "p2", "p3"],
+            "rows": 5,
+            "filtered": 100,
+            "pushed_condition": true,
+            "using_pushed_order_by": true,
+            "storage_engine_handle_access_type": true
+          }
+        }
+      }
+    ]
+  }
+}
+SELECT col_int, (SELECT col_varchar_16 FROM t1 WHERE col_int < 3 ORDER BY col_int LIMIT 0, 1) AS c FROM t2;
+col_int	c
+NULL	b
+NULL	b
+0	b
+1	b
+3	b
+[Note] SequoiaDB: Query message: condition[{ "col_int": { "$lt": 3 } }], selector[{}], order_by[{ "col_int": 1 }], hint[{ "": "" }], limit[1], offset[0], table[explain_direct_sort_29809.t1]
+ANALYZE (SELECT * FROM t2 WHERE col_int ORDER BY col_varchar_16 LIMIT 3) UNION (SELECT * FROM t1 ORDER BY col_int DESC LIMIT 3);
+id	select_type	table	type	possible_keys	key	key_len	ref	rows	r_rows	filtered	r_filtered	Extra
+1	PRIMARY	t2	NULL	NULL	NULL	NULL	NULL	5	2.00	100.00	100.00	Using where with pushed condition; Using pushed ORDER BY; Storage engine handles access type
+2	UNION	t1	NULL	NULL	NULL	NULL	NULL	5	3.00	100.00	100.00	Using pushed ORDER BY; Storage engine handles access type
+NULL	UNION RESULT	<union1,2>	ALL	NULL	NULL	NULL	NULL	NULL	3.00	NULL	NULL	
+EXPLAIN FORMAT = JSON (SELECT * FROM t2 WHERE col_int ORDER BY col_varchar_16 LIMIT 3) UNION (SELECT * FROM t1 ORDER BY col_int DESC LIMIT 3);
+EXPLAIN
+{
+  "query_block": {
+    "union_result": {
+      "table_name": "<union1,2>",
+      "access_type": "ALL",
+      "query_specifications": [
+        {
+          "query_block": {
+            "select_id": 1,
+            "table": {
+              "table_name": "t2",
+              "partitions": ["p0", "p1", "p2", "p3"],
+              "rows": 5,
+              "filtered": 100,
+              "pushed_condition": true,
+              "using_pushed_order_by": true,
+              "storage_engine_handle_access_type": true
+            }
+          }
+        },
+        {
+          "query_block": {
+            "select_id": 2,
+            "operation": "UNION",
+            "table": {
+              "table_name": "t1",
+              "partitions": ["p0", "p1", "p2", "p3"],
+              "rows": 5,
+              "filtered": 100,
+              "using_pushed_order_by": true,
+              "storage_engine_handle_access_type": true
+            }
+          }
+        }
+      ]
+    }
+  }
+}
+(SELECT * FROM t2 WHERE col_int ORDER BY col_varchar_16 LIMIT 3) UNION (SELECT * FROM t1 ORDER BY col_int DESC LIMIT 3);
+col_int	col_varchar_16	col_date	col_date2
+1	a	2020-02-02	2020-01-01
+3	d	1999-09-09	1999-09-09
+0	b	2020-02-01	2020-01-01
+[Note] SequoiaDB: Query message: condition[{}], selector[{}], order_by[{ "col_int": -1 }], hint[{ "": "" }], limit[3], offset[0], table[explain_direct_sort_29809.t1]
+EXPLAIN INSERT INTO t2 SELECT * FROM t1 WHERE col_int BETWEEN 1 AND 2 ORDER BY col_int LIMIT 10;
+id	select_type	table	type	possible_keys	key	key_len	ref	rows	Extra
+1	SIMPLE	t1	NULL	NULL	NULL	NULL	NULL	5	Using where with pushed condition; Using pushed ORDER BY; Storage engine handles access type
+ANALYZE SELECT * FROM t1 ORDER BY col_int LIMIT 2;
+id	select_type	table	type	possible_keys	key	key_len	ref	rows	r_rows	filtered	r_filtered	Extra
+1	SIMPLE	t1	NULL	NULL	NULL	NULL	NULL	5	2.00	100.00	100.00	Using pushed ORDER BY; Storage engine handles access type
+EXPLAIN FORMAT = JSON SELECT * FROM t1 ORDER BY col_int LIMIT 2;
+EXPLAIN
+{
+  "query_block": {
+    "select_id": 1,
+    "table": {
+      "table_name": "t1",
+      "partitions": ["p0", "p1", "p2", "p3"],
+      "rows": 5,
+      "filtered": 100,
+      "using_pushed_order_by": true,
+      "storage_engine_handle_access_type": true
+    }
+  }
+}
+SELECT * FROM t1 ORDER BY col_int LIMIT 2;
+col_int	col_varchar_16	col_date	col_date2
+NULL	NULL	NULL	NULL
+NULL	NULL	NULL	NULL
+[Note] SequoiaDB: Query message: condition[{}], selector[{}], order_by[{ "col_int": 1 }], hint[{ "": "" }], limit[2], offset[0], table[explain_direct_sort_29809.t1]
+EXPLAIN EXTENDED SELECT * FROM t1 WHERE col_int > 1 ORDER BY col_int;
+id	select_type	table	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	NULL	NULL	NULL	NULL	5	100.00	Using where with pushed condition; Using pushed ORDER BY; Storage engine handles access type
+Warnings:
+Note	1003	select `explain_direct_sort_29809`.`t1`.`col_int` AS `col_int`,`explain_direct_sort_29809`.`t1`.`col_varchar_16` AS `col_varchar_16`,`explain_direct_sort_29809`.`t1`.`col_date` AS `col_date`,`explain_direct_sort_29809`.`t1`.`col_date2` AS `col_date2` from `explain_direct_sort_29809`.`t1` where `explain_direct_sort_29809`.`t1`.`col_int` > 1 order by `explain_direct_sort_29809`.`t1`.`col_int`
+SELECT * FROM t1 WHERE col_int > 1 ORDER BY col_int;
+col_int	col_varchar_16	col_date	col_date2
+3	d	1999-09-09	1999-09-09
+[Note] SequoiaDB: Query message: condition[{ "col_int": { "$gt": 1 } }], selector[{}], order_by[{ "col_int": 1 }], hint[{}], limit[-1], offset[0], table[explain_direct_sort_29809.t1]
+EXPLAIN PARTITIONS SELECT * FROM t1 WHERE col_int > 1 ORDER BY col_int;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	Extra
+1	SIMPLE	t1	p0,p1,p2,p3	NULL	NULL	NULL	NULL	NULL	5	Using where with pushed condition; Using pushed ORDER BY; Storage engine handles access type
+[Note] SequoiaDB: optimizer pushdown autocommit: 1
+DROP TABLE t1,t2;
+DROP DATABASE explain_direct_sort_29809;
+SET SESSION optimizer_switch = 'optimizer_sort_pushdown=default';
+SET SESSION sequoiadb_debug_log=default;
+SET SESSION optimizer_index_sort_prune=default;
