@@ -1,0 +1,33 @@
+drop database if exists refresh_sequoiadb_34078;
+create database refresh_sequoiadb_34078;
+drop database refresh_sequoiadb_34078;
+create database refresh_sequoiadb_34078;
+use refresh_sequoiadb_34078;
+set session sequoiadb_secure_log = off;
+set session sequoiadb_share_log_output = on;
+CREATE TABLE `t1` (
+`a` int(11) DEFAULT NULL,
+`b` int(11) DEFAULT NULL,
+`c` int(11) DEFAULT NULL,
+KEY `a` (`a`),
+KEY `b` (`b`),
+KEY `c` (`c`),
+KEY `a_2` (`a`,`b`),
+KEY `a_3` (`a`,`c`)
+);
+analyze table t1;
+Table	Op	Msg_type	Msg_text
+refresh_sequoiadb_34078.t1	analyze	status	OK
+refresh table t1 stats;
+[Note] Testcase: Operation log begin
+[Note] SequoiaDB: Sdb_share has marked expired in update_stats(),replace the Sdb_share in the bucket with a new one ,sql_str:refresh table t1 stats , table_name:./refresh_sequoiadb_34078/t1, current idx stats map:0
+[Note] SequoiaDB: cl get index stat static on ensure_index_stat(),table_name:t1 ,key_name:a, sql_str:refresh table t1 stats, rc :0
+[Note] SequoiaDB: cl get index stat static on ensure_index_stat(),table_name:t1 ,key_name:b, sql_str:refresh table t1 stats, rc :0
+[Note] SequoiaDB: cl get index stat static on ensure_index_stat(),table_name:t1 ,key_name:c, sql_str:refresh table t1 stats, rc :0
+[Note] SequoiaDB: cl get index stat static on ensure_index_stat(),table_name:t1 ,key_name:a_2, sql_str:refresh table t1 stats, rc :0
+[Note] SequoiaDB: cl get index stat static on ensure_index_stat(),table_name:t1 ,key_name:a_3, sql_str:refresh table t1 stats, rc :0
+[Note] SequoiaDB: Sdb_share has marked expired in extra(), replace the Sdb_share in the bucket with a new one ,sql_str:refresh table t1 stats , table_name:./refresh_sequoiadb_34078/t1, new idx stats map:31
+select * from t1 where a=1 and b=2;
+a	b	c
+[Note] Testcase: Operation log begin
+drop database refresh_sequoiadb_34078;

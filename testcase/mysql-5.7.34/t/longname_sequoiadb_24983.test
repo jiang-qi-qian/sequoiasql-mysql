@@ -1,0 +1,26 @@
+#SEQUOIASQLMAINSTREAM-1215
+#Case 24983
+--source include/have_sequoiadb.inc
+set names utf8;
+drop database if exists longname;
+create database longname;
+use longname;
+
+#len =42 中文字符
+CREATE table 魑魅魍魉魑魅魍魉魑魅魍魉魑魅魍魉魑魅魍魉魑魅魍魉魑魅魍魉魑魅魍魉魑魅魍魉魑魅魍魉魑魅(a int);
+insert into 魑魅魍魉魑魅魍魉魑魅魍魉魑魅魍魉魑魅魍魉魑魅魍魉魑魅魍魉魑魅魍魉魑魅魍魉魑魅魍魉魑魅 values(4); 
+select * from 魑魅魍魉魑魅魍魉魑魅魍魉魑魅魍魉魑魅魍魉魑魅魍魉魑魅魍魉魑魅魍魉魑魅魍魉魑魅魍魉魑魅; 
+drop table 魑魅魍魉魑魅魍魉魑魅魍魉魑魅魍魉魑魅魍魉魑魅魍魉魑魅魍魉魑魅魍魉魑魅魍魉魑魅魍魉魑魅;
+
+#len=42 中文字符 + 1 普通字符
+--error 1296
+CREATE table 魑魅魍魉魑魅魍魉魑魅魍魉魑魅魍魉魑魅魍魉魑魅魍魉魑魅魍魉魑魅魍魉魑魅魍魉魑魅魍魉魑魅a(a int); 
+
+#len=32 普通字符 + 31 中文字符
+CREATE table abcdefghabcdefghabcdefghabcdefgh魑魅魍魉魑魅魍魉魑魅魍魉魑魅魍魉魑魅魍魉魑魅魍魉魑魅魍魉魑魅魍(a int); 
+insert into abcdefghabcdefghabcdefghabcdefgh魑魅魍魉魑魅魍魉魑魅魍魉魑魅魍魉魑魅魍魉魑魅魍魉魑魅魍魉魑魅魍 values(3); 
+select * from abcdefghabcdefghabcdefghabcdefgh魑魅魍魉魑魅魍魉魑魅魍魉魑魅魍魉魑魅魍魉魑魅魍魉魑魅魍魉魑魅魍; 
+drop table abcdefghabcdefghabcdefghabcdefgh魑魅魍魉魑魅魍魉魑魅魍魉魑魅魍魉魑魅魍魉魑魅魍魉魑魅魍魉魑魅魍;
+drop database longname;
+
+set names default;

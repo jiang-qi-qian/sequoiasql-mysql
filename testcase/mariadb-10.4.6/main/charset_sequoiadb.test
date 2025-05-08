@@ -1,0 +1,190 @@
+#Case 25075
+#Case 25076
+#Case 25077
+#Case 25078
+#Case 25079
+#Case 25080
+--source include/have_sequoiadb.inc
+
+set names utf8;
+
+DROP DATABASE IF EXISTS charset_sequoiadb;
+CREATE DATABASE charset_sequoiadb;
+USE charset_sequoiadb;
+
+#Case 25075
+DROP TABLE IF EXISTS charset_sequoiadb;
+SET SESSION sequoiadb_support_mode='';
+CREATE TABLE charset_sequoiadb ( 
+  id INT NOT NULL AUTO_INCREMENT PRIMARY KEY, 
+  a VARCHAR(10) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci, 
+  KEY(a,id) )CHARSET=utf8mb4 COLLATE=utf8mb4_bin;
+
+SHOW CREATE TABLE charset_sequoiadb;
+
+INSERT INTO charset_sequoiadb (a) VALUES (0xE0A080),(0xEFBFBF),(0xF0908080); 
+
+SELECT COUNT(*) FROM charset_sequoiadb ORDER BY a;
+SELECT * FROM charset_sequoiadb;
+
+DROP TABLE charset_sequoiadb;
+SET SESSION sequoiadb_support_mode=DEFAULT;
+
+#Case 25076
+SET SESSION sequoiadb_support_mode='strict_on_table';
+
+--error 131
+create table charset_sequoiadb(
+  a int primary key, 
+  b varchar(10) COLLATE latin1_swedish_ci, 
+  c int)CHARSET=utf8mb4 COLLATE=utf8mb4_bin; 
+
+create table charset_sequoiadb_2(
+  a int primary key, 
+  b int COLLATE utf8mb4_general_ci, 
+  c int)CHARSET=utf8mb4 COLLATE=utf8mb4_bin; 
+
+INSERT INTO charset_sequoiadb_2 values(1,2,3);
+SELECT * FROM charset_sequoiadb_2;
+
+create table charset_sequoiadb_3(
+  a int primary key,
+  b varchar(10) COLLATE utf8mb4_bin,
+  c int)CHARSET=utf8mb4 COLLATE=utf8mb4_bin;
+
+INSERT INTO charset_sequoiadb_3 values (1,"test",1),(2,"sql",2),(3,"case",3);
+SELECT * FROM charset_sequoiadb_3;
+
+CREATE table charset_sequoiadb_4 SELECT * FROM charset_sequoiadb_3;
+INSERT INTO charset_sequoiadb_4 values (4,"se",4),(5,"quo",5),(6,"iadb",5);
+SELECT * FROM charset_sequoiadb_4;
+
+DROP TABLE charset_sequoiadb_2,charset_sequoiadb_3,charset_sequoiadb_4;
+
+#Case 25077
+SET SESSION sequoiadb_support_mode='strict_on_table';
+create table charset_sequoiadb(a int) CHARSET=utf8mb4 COLLATE=utf8mb4_bin; 
+
+--error 131
+alter table charset_sequoiadb add b varchar(18) COLLATE utf8mb4_general_ci; 
+
+--error 131
+alter table charset_sequoiadb add b varchar(18) COLLATE utf8mb4_general_ci, algorithm = copy; 
+
+alter table charset_sequoiadb add b int COLLATE utf8mb4_general_ci; 
+
+SHOW CREATE TABLE charset_sequoiadb;
+
+INSERT INTO charset_sequoiadb VALUES (1,1),(2,2),(3,3),(4,4),(5,5);
+SELECT * FROM charset_sequoiadb;
+
+DROP TABLE charset_sequoiadb;
+SET SESSION sequoiadb_support_mode=DEFAULT;
+
+
+#Case 25078
+SET SESSION sequoiadb_support_mode='strict_on_table';
+create table charset_sequoiadb(a int, b int) CHARSET=utf8mb4 COLLATE=utf8mb4_bin; 
+
+--error 131
+alter table charset_sequoiadb change b b varchar(18) COLLATE utf8mb4_general_ci; 
+
+alter table charset_sequoiadb change b b int COLLATE utf8mb4_general_ci; 
+
+SHOW CREATE TABLE charset_sequoiadb;
+
+INSERT INTO charset_sequoiadb VALUES (1,1),(2,2),(3,3),(4,4),(5,5);
+SELECT * FROM charset_sequoiadb;
+
+DROP TABLE charset_sequoiadb;
+SET SESSION sequoiadb_support_mode=DEFAULT;
+
+#Case 25079
+SET SESSION sequoiadb_support_mode='';
+create table charset_sequoiadb(a int primary key, 
+                b varchar(10) COLLATE utf8mb4_general_ci,
+                c int)CHARSET=utf8mb4 COLLATE=utf8mb4_bin; 
+
+SHOW CREATE TABLE charset_sequoiadb;
+
+INSERT INTO charset_sequoiadb VALUES(1,"test111",1),(2,"test222",2),(3,"test333",3);
+SELECT * FROM charset_sequoiadb;
+
+DROP TABLE charset_sequoiadb;
+
+SET SESSION sequoiadb_support_mode='strict_on_table';
+
+--error 131
+create table charset_sequoiadb(a int primary key, 
+                b varchar(10) COLLATE utf8mb4_general_ci, 
+                c int)CHARSET=utf8mb4 COLLATE=utf8mb4_bin; 
+
+#Case 25080
+SET SESSION sequoiadb_support_mode='strict_on_table';
+
+--error 131 
+create table charset_sequoiadb(a int primary key, b CHAR(10), c int)CHARSET=latin1 COLLATE=latin1_bin;
+ 
+--error 131
+create table charset_sequoiadb(a int primary key, b SET("1"), c int)CHARSET=latin1 COLLATE=latin1_bin; 
+
+--error 131
+create table charset_sequoiadb(a int primary key, b ENUM("1"), c int)CHARSET=latin1 COLLATE=latin1_bin; 
+
+--error 131
+create table charset_sequoiadb(a int primary key, b VARCHAR(10), c int)CHARSET=latin1 COLLATE=latin1_bin; 
+
+--error 131
+create table charset_sequoiadb(a int primary key, b TINYTEXT, c int)CHARSET=latin1 COLLATE=latin1_bin; 
+
+--error 131
+create table charset_sequoiadb(a int primary key, b TEXT(10), c int)CHARSET=latin1 COLLATE=latin1_bin; 
+
+--error 131
+create table charset_sequoiadb(a int primary key, b MEDIUMTEXT, c int)CHARSET=latin1 COLLATE=latin1_bin; 
+
+--error 131
+create table charset_sequoiadb(a int primary key, b LONGTEXT, c int)CHARSET=latin1 COLLATE=latin1_bin; 
+
+
+DROP TABLE IF EXISTS charset_sequoiadb_1,charset_sequoiadb_2,charset_sequoiadb_3,charset_sequoiadb_4,charset_sequoiadb_5,charset_sequoiadb_6,charset_sequoiadb_7,charset_sequoiadb_8;
+
+SET SESSION sequoiadb_support_mode="";
+create table charset_sequoiadb_1(a int primary key, b CHAR(10), c int)CHARSET=latin1 COLLATE=latin1_bin; 
+create table charset_sequoiadb_2(a int primary key, b SET("1"), c int)CHARSET=latin1 COLLATE=latin1_bin; 
+create table charset_sequoiadb_3(a int primary key, b ENUM("1"), c int)CHARSET=latin1 COLLATE=latin1_bin; 
+create table charset_sequoiadb_4(a int primary key, b VARCHAR(10), c int)CHARSET=latin1 COLLATE=latin1_bin; 
+create table charset_sequoiadb_5(a int primary key, b TINYTEXT, c int)CHARSET=latin1 COLLATE=latin1_bin; 
+create table charset_sequoiadb_6(a int primary key, b TEXT(10), c int)CHARSET=latin1 COLLATE=latin1_bin; 
+create table charset_sequoiadb_7(a int primary key, b MEDIUMTEXT, c int)CHARSET=latin1 COLLATE=latin1_bin; 
+create table charset_sequoiadb_8(a int primary key, b LONGTEXT, c int)CHARSET=latin1 COLLATE=latin1_bin; 
+
+INSERT INTO charset_sequoiadb_1 values (1,"test111",1),(2,"test222",2);
+SELECT * FROM charset_sequoiadb_1;
+
+INSERT INTO charset_sequoiadb_2 values (1,"1",1),(2,"1",2);
+SELECT * FROM charset_sequoiadb_2;
+
+INSERT INTO charset_sequoiadb_3 values (1,"1",1),(2,"1",2);
+SELECT * FROM charset_sequoiadb_3;
+
+INSERT INTO charset_sequoiadb_4 values (1,"test111",1),(2,"test222",2);
+SELECT * FROM charset_sequoiadb_4;
+
+INSERT INTO charset_sequoiadb_5 values (1,"test111",1),(2,"test222",2);
+SELECT * FROM charset_sequoiadb_5;
+
+INSERT INTO charset_sequoiadb_6 values (1,"test111",1),(2,"test222",2);
+SELECT * FROM charset_sequoiadb_6;
+
+INSERT INTO charset_sequoiadb_7 values (1,"test111",1),(2,"test222",2);
+SELECT * FROM charset_sequoiadb_7;
+
+INSERT INTO charset_sequoiadb_8 values (1,"test111",1),(2,"test222",2);
+SELECT * FROM charset_sequoiadb_8;
+
+DROP TABLE charset_sequoiadb_1,charset_sequoiadb_2,charset_sequoiadb_3,charset_sequoiadb_4,charset_sequoiadb_5,charset_sequoiadb_6,charset_sequoiadb_7,charset_sequoiadb_8;
+DROP DATABASE charset_sequoiadb;
+
+SET SESSION sequoiadb_support_mode=DEFAULT;
+set names default;

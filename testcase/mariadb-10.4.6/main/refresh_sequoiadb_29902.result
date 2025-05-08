@@ -1,0 +1,27 @@
+drop database if exists refresh_sequoiadb_29902;
+create database refresh_sequoiadb_29902;
+use refresh_sequoiadb_29902;
+drop table if exists refresh_sequoiadb_29902_1;
+drop table if exists refresh_sequoiadb_29902_2;
+create table refresh_sequoiadb_29902_1(a int,b int,key(a));
+insert into refresh_sequoiadb_29902_1 values(1,1),(2,2),(3,3);
+create table refresh_sequoiadb_29902_2 like refresh_sequoiadb_29902_1;
+analyze table refresh_sequoiadb_29902_1;
+Table	Op	Msg_type	Msg_text
+refresh_sequoiadb_29902.refresh_sequoiadb_29902_1	analyze	status	Engine-independent statistics collected
+refresh_sequoiadb_29902.refresh_sequoiadb_29902_1	analyze	status	OK
+analyze table refresh_sequoiadb_29902_2;
+Table	Op	Msg_type	Msg_text
+refresh_sequoiadb_29902.refresh_sequoiadb_29902_2	analyze	status	Engine-independent statistics collected
+refresh_sequoiadb_29902.refresh_sequoiadb_29902_2	analyze	status	OK
+insert into refresh_sequoiadb_29902_1 values (4,4),(5,5),(6,6);
+insert into refresh_sequoiadb_29902_2 values (7,7),(8,8),(9,9);
+refresh table refresh_sequoiadb_29902_3 stats;
+ERROR 42S02: Table 'refresh_sequoiadb_29902.refresh_sequoiadb_29902_3' doesn't exist
+refresh table int stats;
+ERROR 42000: You have an error in your SQL syntax; check the manual that corresponds to your MariaDB server version for the right syntax to use near 'int stats' at line 1
+refresh table &&& stats;
+ERROR 42000: You have an error in your SQL syntax; check the manual that corresponds to your MariaDB server version for the right syntax to use near '&&& stats' at line 1
+drop table refresh_sequoiadb_29902_1;
+drop table refresh_sequoiadb_29902_2;
+drop database refresh_sequoiadb_29902;

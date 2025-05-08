@@ -1,0 +1,613 @@
+# SEQUOIASQLMAINSTREAM-1192
+--source include/have_sequoiadb.inc
+#
+# case start: Save old parameters.  
+#
+connection default;
+SET @old_slow_query_log = @@global.slow_query_log;
+SET @old_long_query_time = @@global.long_query_time;
+SET @old_log_output = @@global.log_output;
+
+SET @old_general_log = @@global.general_log;
+
+SELECT @old_slow_query_log, @old_long_query_time, @old_log_output, @old_general_log;
+# end case
+
+
+#
+# case : ensure every redo this test case will be succeed even table exists on sdb.
+#
+# end case
+create database if not exists log_table;
+use log_table;
+create table if not exists t1(a int) engine = sequoiadb;
+# create and then drop the log_table database to ensure clear env on sdb.
+drop database log_table;
+create database if not exists log_table;
+set global slow_query_log = off;
+set global general_log = off;
+
+
+use mysql;
+set global slow_query_log = on;
+set global general_log=on;
+# create and then drop the mysql.slow_log/general_log to ensure clear env on sdb.
+set global slow_query_log=off;
+set global general_log=off;
+select @@slow_query_log;
+select @@general_log;
+select @slow_query_log;
+select @general_log;
+drop table if exists mysql.slow_log;
+drop table if exists mysql.general_log;
+
+create table if not exists mysql.slow_log (a int not null, b int not null)
+  engine = SequoiaDB DEFAULT CHARSET=utf8
+  COMMENT='Slow log, sequoiadb:{table_options: {NoTrans: true}}';
+create table if not exists mysql.general_log (a int not null, b int not null) 
+  engine = SequoiaDB DEFAULT CHARSET=utf8
+  COMMENT='Slow log, sequoiadb:{table_options: {NoTrans: true}}';
+drop table if exists mysql.slow_log;
+drop table if exists mysql.general_log;
+
+#
+# case 00: set env, alter slow_log/general_log to sequoiadb engine.
+#
+use mysql;
+--disable_warnings
+drop table if exists slow_log;
+drop table if exists general_log;
+#set @save_sequoiadb_support_mode= IFNULL('', @@global.sequoiadb_support_mode);
+set @save_sequoiadb_support_mode= @@global.sequoiadb_support_mode;
+set sequoiadb_support_mode='';
+CREATE TABLE IF NOT EXISTS `slow_log` (
+  `start_time` timestamp(6) NOT NULL DEFAULT current_timestamp(6) ON UPDATE current_timestamp(6),
+  `user_host` mediumtext NOT NULL,
+  `query_time` time(6) NOT NULL,
+  `lock_time` time(6) NOT NULL,
+  `rows_sent` int(11) NOT NULL,
+  `rows_examined` int(11) NOT NULL,
+  `db` varchar(512) NOT NULL,
+  `last_insert_id` int(11) NOT NULL,
+  `insert_id` int(11) NOT NULL,
+  `server_id` int(10) unsigned NOT NULL,
+  `sql_text` mediumtext NOT NULL,
+  `thread_id` bigint(21) unsigned NOT NULL,
+  `rows_affected` int(11) NOT NULL
+) ENGINE=SequoiaDB DEFAULT CHARSET=utf8 COMMENT='Slow log, sequoiadb:{table_options: {NoTrans: true}}';
+
+CREATE TABLE IF NOT EXISTS `general_log` (
+  `event_time` timestamp(6) NOT NULL DEFAULT current_timestamp(6) ON UPDATE current_timestamp(6),
+  `user_host` mediumtext NOT NULL,
+  `thread_id` bigint(21) unsigned NOT NULL,
+  `server_id` int(10) unsigned NOT NULL,
+  `command_type` varchar(64) NOT NULL,
+  `argument` mediumtext NOT NULL
+) ENGINE=SequoiaDB DEFAULT CHARSET=utf8 COMMENT='General log, sequoiadb:{table_options: {NoTrans: true}}';
+set sequoiadb_support_mode = @save_sequoiadb_support_mode;
+--disable_ps_protocol
+use mysql;
+#
+# Check the log tables work and do basic selects.
+#
+truncate table general_log;
+--replace_column 1 TIMESTAMP 2 USER_HOST 3 THREAD_ID
+select * from general_log;
+truncate table slow_log;
+--replace_column 1 TIMESTAMP 2 USER_HOST 3 QUERY_TIME 4 LOCK_TIME 12 THREAD_ID 13 ROWS_AFFECTED
+select * from slow_log;
+--enable_warnings
+# end case
+
+#
+# case 01: switch, turn slow_query_log on
+#
+use log_table;
+create table if not exists t1(a int) engine = sequoiadb;
+insert into t1 values(1),(2);
+# qi, 增加一个循环启停 slow_log/general_log 的场景
+set global log_output='TABLE';
+# turn on slow_log/general_log
+set global long_query_time = 1;
+set global slow_query_log = on;
+set global general_log=on;
+
+connect  con1, localhost, root;
+connection con1;
+use log_table;
+select * from t1 where sleep(1);
+--replace_regex /test_parallel_[0-9]/x/
+--replace_column 1 TIMESTAMP 2 USER_HOST 3 QUERY_TIME 4 LOCK_TIME 12 THREAD_ID 13 ROWS_AFFECTED
+select * from mysql.slow_log;
+--replace_regex /test_parallel_[0-9]/x/
+--replace_column 1 TIMESTAMP 2 USER_HOST 3 THREAD_ID
+select * from mysql.general_log;
+
+# turn off slow_log/general_log
+set global slow_query_log=off;
+set global general_log=off;
+select * from t1 where sleep(1);
+--replace_column 1 TIMESTAMP 2 USER_HOST 3 QUERY_TIME 4 LOCK_TIME 12 THREAD_ID 13 ROWS_AFFECTED
+select * from mysql.slow_log;
+--replace_regex /test_parallel_[0-9]/x/
+--replace_column 1 TIMESTAMP 2 USER_HOST 3 THREAD_ID
+select * from mysql.general_log;
+
+# turn on slow_log/general_log
+set global slow_query_log = on;
+set global general_log=on;
+
+select * from t1 where sleep(1);
+--replace_column 1 TIMESTAMP 2 USER_HOST 3 QUERY_TIME 4 LOCK_TIME 12 THREAD_ID 13 ROWS_AFFECTED
+select * from mysql.slow_log;
+--replace_regex /test_parallel_[0-9]/x/
+--replace_column 1 TIMESTAMP 2 USER_HOST 3 THREAD_ID
+select * from mysql.general_log;
+
+# qi, 增加一个循环变更 slow_log/general_log 的引擎的场景
+use mysql;
+# alter the engine of log tables to csv
+set global slow_query_log=off;
+set global general_log=off;
+alter table mysql.slow_log engine = csv;
+alter table mysql.general_log engine = csv;
+set global slow_query_log = on;
+set global general_log=on;
+
+select * from log_table.t1 where sleep(1);
+--replace_column 1 TIMESTAMP 2 USER_HOST 3 QUERY_TIME 4 LOCK_TIME 12 THREAD_ID 13 ROWS_AFFECTED
+select * from mysql.slow_log;
+--replace_regex /test_parallel_[0-9]/x/
+--replace_column 1 TIMESTAMP 2 USER_HOST 3 THREAD_ID
+select * from mysql.general_log;
+
+# alter the engine of log tables to sequoiadb
+set global slow_query_log=off;
+set global general_log=off;
+alter table mysql.slow_log engine = sequoiadb;
+alter table mysql.general_log engine = sequoiadb;
+set global slow_query_log = on;
+set global general_log=on;
+
+select * from log_table.t1 where sleep(1);
+--replace_column 1 TIMESTAMP 2 USER_HOST 3 QUERY_TIME 4 LOCK_TIME 12 THREAD_ID 13 ROWS_AFFECTED
+select * from mysql.slow_log;
+--replace_regex /test_parallel_[0-9]/x/
+--replace_column 1 TIMESTAMP 2 USER_HOST 3 THREAD_ID
+select * from mysql.general_log;
+
+# alter the engine of log tables to csv
+set global slow_query_log=off;
+set global general_log=off;
+alter table mysql.slow_log engine = csv;
+alter table mysql.general_log engine = csv;
+set global slow_query_log = on;
+set global general_log=on;
+
+select * from log_table.t1 where sleep(1);
+--replace_column 1 TIMESTAMP 2 USER_HOST 3 QUERY_TIME 4 LOCK_TIME 12 THREAD_ID 13 ROWS_AFFECTED
+select * from mysql.slow_log;
+--replace_regex /test_parallel_[0-9]/x/
+--replace_column 1 TIMESTAMP 2 USER_HOST 3 THREAD_ID
+select * from mysql.general_log;
+
+select @@general_log;
+# select @@general_log_file;
+select @@log_output;
+# end case
+
+#
+# case 02: normal write slow log to slow_log/general table.
+#
+set global slow_query_log=off;
+set global general_log=off;
+alter table mysql.slow_log engine = sequoiadb;
+alter table mysql.general_log engine = sequoiadb;
+set global long_query_time=1;
+set global slow_query_log = on;
+
+# zys, sleep(1) 可能不适用 mariadb，不写日志 -- 澄清：MariaDB 一样有用
+select sleep(1);
+--replace_column 1 TIMESTAMP 2 USER_HOST 3 QUERY_TIME 4 LOCK_TIME 12 THREAD_ID 13 ROWS_AFFECTED
+select * from slow_log;
+set global slow_query_log=off;
+
+set global general_log=on;
+--replace_regex /test_parallel_[0-9]/x/
+--replace_column 1 TIMESTAMP 2 USER_HOST 3 THREAD_ID
+select * from general_log;
+set global general_log=off;
+# end case
+
+#
+# case 03: slow_log/general_log with server_id
+#
+set @save_server_id = @@global.server_id;
+set global server_id = 15;
+set global long_query_time=1;
+set global slow_query_log = on;
+set global general_log=on;
+
+select sleep(1);
+set global slow_query_log=off;
+set global general_log=off;
+--replace_column 1 TIMESTAMP 2 USER_HOST 3 QUERY_TIME 4 LOCK_TIME 12 THREAD_ID 13 ROWS_AFFECTED
+select * from slow_log;
+--replace_regex /test_parallel_[0-9]/x/
+--replace_column 1 TIMESTAMP 2 USER_HOST 3 THREAD_ID
+select * from general_log;
+# end case
+
+set global server_id = @save_server_id;
+# end case
+
+
+
+#
+# case 10: simple query with autocommit transaction
+#
+set @save_autocommit= @@autocommit;
+set autocommit = 1;
+use log_table;
+drop table if exists t1;
+create table if not exists t1(a int, b int) engine = sequoiadb;
+insert into t1 values(1,2),(2,3);
+set global long_query_time=1;
+set global slow_query_log = on;
+
+select *, sleep(1) from t1;
+# qi, add another autocommit select transaction here.
+select *, sleep(1) from t1;
+set global slow_query_log=off;
+set autocommit = @save_autocommit;
+--replace_column 1 TIMESTAMP 2 USER_HOST 3 QUERY_TIME 4 LOCK_TIME 12 THREAD_ID 13 ROWS_AFFECTED
+select * from mysql.slow_log;
+# end case
+
+#
+# case 11: simple query with session transaction
+#
+create table if not exists t2(a int, b int) engine = sequoiadb;
+insert into t2 values(1,2),(2,3);
+
+# case 111: slow_log turn on before transaction
+set global long_query_time=1;
+set global slow_query_log = on;
+begin;
+update t1 set b = 5 where a = 2;
+insert into t2 select * from t2 where sleep(1);
+commit;
+# qi, add another select transaction here.
+select * from t2;
+set global slow_query_log = off;
+--replace_column 1 TIMESTAMP 2 USER_HOST 3 QUERY_TIME 4 LOCK_TIME 12 THREAD_ID 13 ROWS_AFFECTED
+select * from mysql.slow_log;
+# end case
+
+# case 112: slow_log turn on during transaction
+begin;
+update t1 set b = 6 where a = 2;
+set global long_query_time=1;
+set global slow_query_log = on;
+insert into t2 select * from t2 where sleep(1);
+commit;
+# qi, add another select transaction here.
+select * from t2;
+set global slow_query_log = off;
+--replace_column 1 TIMESTAMP 2 USER_HOST 3 QUERY_TIME 4 LOCK_TIME 12 THREAD_ID 13 ROWS_AFFECTED
+select * from mysql.slow_log;
+# end case
+# end case
+
+
+#
+# case 20: store procedure
+#
+#
+# case 21: turn on slow_log in store procedure.
+#
+delimiter $$;
+use log_table $$
+create procedure turn_on_slow_log(loops int)
+begin
+  declare i int default 0;
+  while i < loops do
+    truncate mysql.slow_log;
+    set global slow_query_log = on;
+    set global long_query_time = 1;
+    set i = i + 1;
+    select sleep(1) from log_table.t1;
+    set global slow_query_log = off;
+  end while;
+end$$
+
+delimiter ;$$
+set @iterations = 3;
+--disable_result_log
+call turn_on_slow_log(@iterations);
+--enable_result_log
+--replace_column 1 TIMESTAMP 2 USER_HOST 3 QUERY_TIME 4 LOCK_TIME 12 THREAD_ID 13 ROWS_AFFECTED
+select * from mysql.slow_log;
+# end case
+
+#
+# case 21: turn on general_log in store procedure
+#
+delimiter $$;
+use log_table $$
+create procedure turn_on_general_log(loops int)
+begin
+  declare i int default 0;
+  while i < loops do
+    truncate mysql.general_log;
+    set global general_log = on;
+    set i = i + 1;
+    select * from log_table.t1;
+    set global general_log = off;
+  end while;
+end$$
+
+delimiter ;$$
+--disable_result_log
+call turn_on_general_log(@iterations);
+--enable_result_log
+--replace_column 1 TIMESTAMP 2 USER_HOST 3 THREAD_ID
+select * from mysql.general_log;
+# end case
+
+
+#
+# case 22: store procedure with autocommit transaction
+#
+delimiter $$;
+use log_table $$
+create procedure loop_select(loops int)
+begin
+  declare i int default 0;
+  while i < loops do
+    set i = i + 1;
+    select * from log_table.t1;
+  end while;
+end$$
+
+delimiter ;$$
+set global slow_query_log = on;
+set global general_log = on;
+--disable_result_log
+call loop_select(@iterations);
+--enable_result_log
+set global slow_query_log = off;
+set global general_log = off;
+--replace_column 1 TIMESTAMP 2 USER_HOST 3 QUERY_TIME 4 LOCK_TIME 12 THREAD_ID 13 ROWS_AFFECTED
+select * from mysql.slow_log;
+--replace_column 1 TIMESTAMP 2 USER_HOST 3 THREAD_ID
+select * from mysql.general_log;
+# end case
+
+#
+# case 23: store procedure with session transaction
+#
+set global long_query_time = 1;
+set global slow_query_log = on;
+set global general_log = on;
+begin;
+select sleep(1) from t1;
+update t2 set b = 4 where a = 1 and sleep(1);
+--disable_result_log
+call loop_select(@iterations);
+--enable_result_log
+commit;
+set global slow_query_log = off;
+set global general_log = off;
+--replace_column 1 TIMESTAMP 2 USER_HOST 3 QUERY_TIME 4 LOCK_TIME 12 THREAD_ID 13 ROWS_AFFECTED
+select * from mysql.slow_log;
+--replace_column 1 TIMESTAMP 2 USER_HOST 3 THREAD_ID
+select * from mysql.general_log;
+
+begin;
+select sleep(1) from t1;
+update t2 set b = 4 where a = 1 and sleep(1);
+--disable_result_log
+call loop_select(@iterations);
+--enable_result_log
+rollback;
+set global slow_query_log = off;
+set global general_log = off;
+--replace_column 1 TIMESTAMP 2 USER_HOST 3 QUERY_TIME 4 LOCK_TIME 12 THREAD_ID 13 ROWS_AFFECTED
+select * from mysql.slow_log;
+--replace_column 1 TIMESTAMP 2 USER_HOST 3 THREAD_ID
+select * from mysql.general_log;
+# end case
+
+#
+# case 30: slow_log/general_log tables are in normal transaction if switch turned off
+#
+use mysql;
+truncate slow_log;
+begin;
+--error ER_CANT_LOCK_LOG_TABLE
+insert into slow_log(start_time) values(CURRENT_TIMESTAMP(6));
+commit;
+# end case
+
+#
+# case 31: UDI on slow/general log
+#
+# write rows
+--error ER_CANT_LOCK_LOG_TABLE
+insert into slow_log(start_time) values(CURRENT_TIMESTAMP(6));
+--error ER_CANT_LOCK_LOG_TABLE
+insert into general_log(event_time) values(CURRENT_TIMESTAMP(6));
+# update rows
+set global long_query_time = 1;
+set global slow_query_log = on;
+set global general_log = on;
+select sleep(1);
+
+set global slow_query_log = off;
+set global general_log = off;
+--replace_column 1 TIMESTAMP 2 USER_HOST 3 QUERY_TIME 4 LOCK_TIME 12 THREAD_ID 13 ROWS_AFFECTED
+select * from mysql.slow_log;
+--replace_column 1 TIMESTAMP 2 USER_HOST 3 THREAD_ID
+select * from mysql.general_log;
+--error ER_CANT_LOCK_LOG_TABLE
+update slow_log set rows_sent = 10 where server_id = 1;
+--error ER_CANT_LOCK_LOG_TABLE
+update general_log set thread_id = 10 where server_id = 1;
+#delete
+--error ER_CANT_LOCK_LOG_TABLE
+delete from slow_log;
+--error ER_CANT_LOCK_LOG_TABLE
+delete from general_log;
+# end case
+
+
+#
+# case 40: utf8 vs utf8mb4 and utf8mb4_bin# set sequoiadb_support_mode
+#
+# ywx, document, only support utf8 but not utf8mb4
+set global slow_query_log = off;
+set global general_log = off;
+drop table if exists mysql.slow_log;
+# table check error during writing slow_log 
+set @save_sequoiadb_support_mode= @@global.sequoiadb_support_mode;
+set sequoiadb_support_mode='';
+CREATE TABLE IF NOT EXISTS `slow_log` (
+  `start_time` timestamp(6) NOT NULL DEFAULT current_timestamp(6) ON UPDATE current_timestamp(6),
+  `user_host` mediumtext NOT NULL,
+  `query_time` time(6) NOT NULL,
+  `lock_time` time(6) NOT NULL,
+  `rows_sent` int(11) NOT NULL,
+  `rows_examined` int(11) NOT NULL,
+  `db` varchar(512) NOT NULL,
+  `last_insert_id` int(11) NOT NULL,
+  `insert_id` int(11) NOT NULL,
+  `server_id` int(10) unsigned NOT NULL,
+  `sql_text` mediumtext NOT NULL,
+  `thread_id` bigint(21) unsigned NOT NULL,
+  `rows_affected` int(11) NOT NULL
+) ENGINE=SequoiaDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin 
+  COMMENT='Slow log, sequoiadb:{table_options: {NoTrans: true}}';
+
+CREATE TABLE IF NOT EXISTS `general_log` (
+  `event_time` timestamp(6) NOT NULL DEFAULT current_timestamp(6) ON UPDATE current_timestamp(6),
+  `user_host` mediumtext NOT NULL,
+  `thread_id` bigint(21) unsigned NOT NULL,
+  `server_id` int(10) unsigned NOT NULL,
+  `command_type` varchar(64) NOT NULL,
+  `argument` mediumtext NOT NULL
+) ENGINE=SequoiaDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin 
+  COMMENT='General log, sequoiadb:{table_options: {NoTrans: true}}';
+
+set global long_query_time = 1;
+set global slow_query_log = on;
+set global general_log = on;
+
+#
+# write slow query to slow_log with utf8mb4 on SequoiaDB will not affect the 
+# normal query, but will report error in server log.
+#
+# [ERROR] Incorrect definition of table mysql.slow_log: expected the type of 
+#         column 'user_host' at position 1 to have character set 'utf8' but found
+#         character set 'utf8mb4'.
+# [ERROR] Incorrect definition of table mysql.slow_log: expected the type of 
+#         column 'db' at position 6 to have character set 'utf8' but found 
+#         character set 'utf8mb4'.
+# --replace_regex /^([^s]*)\[ERROR\]/[ERROR]/
+# --exec tail -n 3 $MYSQLTEST_VARDIR/log/mysqld.1.err
+# manual exec cause the test will be failed when found warnings/errors in server log file 
+# select * from log_table.t1 where sleep(1);
+
+#
+# case 40: NoTrans table vs non NoTrans table
+#
+# ywx, document, only support NoTrans but not non-NoTrans
+set global slow_query_log = off;
+set global general_log = off;
+drop table if exists mysql.slow_log;
+drop table if exists mysql.general_log;
+CREATE TABLE IF NOT EXISTS `slow_log` (
+  `start_time` timestamp(6) NOT NULL DEFAULT current_timestamp(6) ON UPDATE current_timestamp(6),
+  `user_host` mediumtext NOT NULL,
+  `query_time` time(6) NOT NULL,
+  `lock_time` time(6) NOT NULL,
+  `rows_sent` int(11) NOT NULL,
+  `rows_examined` int(11) NOT NULL,
+  `db` varchar(512) NOT NULL,
+  `last_insert_id` int(11) NOT NULL,
+  `insert_id` int(11) NOT NULL,
+  `server_id` int(10) unsigned NOT NULL,
+  `sql_text` mediumtext NOT NULL,
+  `thread_id` bigint(21) unsigned NOT NULL,
+  `rows_affected` int(11) NOT NULL
+) ENGINE=SequoiaDB DEFAULT CHARSET=utf8 COMMENT='Slow log';
+
+CREATE TABLE IF NOT EXISTS `general_log` (
+  `event_time` timestamp(6) NOT NULL DEFAULT current_timestamp(6) ON UPDATE current_timestamp(6),
+  `user_host` mediumtext NOT NULL,
+  `thread_id` bigint(21) unsigned NOT NULL,
+  `server_id` int(10) unsigned NOT NULL,
+  `command_type` varchar(64) NOT NULL,
+  `argument` mediumtext NOT NULL
+) ENGINE=SequoiaDB DEFAULT CHARSET=utf8 COMMENT='General log';
+
+# manual exec cause the test will be failed when found warnings/errors in server log file 
+# --error 122
+# set global slow_query_log = on;
+# manual exec cause the test will be failed when found warnings/errors in server log file 
+# --error 122
+# set global general_log = on;
+
+#
+# write slow query to slow_log without NoTrans on SequoiaDB will not affect the 
+# normal query, but will report error in server log.
+#
+# [ERROR] SequoiaDB: The table[mysql.slow_log] on SequoiaDB should be NoTrans, 
+#         the logs written to log table may be lost during session transaction.
+# [ERROR] SequoiaDB: The table[mysql.general_log] on SequoiaDB should be NoTrans,
+#         the logs written to log table may be lost during session transaction.
+# --replace_regex /^([^s]*)\[ERROR\]/[ERROR]/
+# --exec tail -n 3 $MYSQLTEST_VARDIR/log/mysqld.1.err
+# manual exec cause the test will be failed when found warnings/errors in server log file 
+# select * from log_table.t1 where sleep(1);
+set sequoiadb_support_mode = @save_sequoiadb_support_mode;
+# end case
+
+#
+# case end: restore and clear env
+set global slow_query_log = off;
+set global general_log = off;
+drop table if exists mysql.slow_log;
+drop table if exists mysql.general_log;
+CREATE TABLE IF NOT EXISTS `slow_log` (
+  `start_time` timestamp(6) NOT NULL DEFAULT current_timestamp(6) ON UPDATE current_timestamp(6),
+  `user_host` mediumtext NOT NULL,
+  `query_time` time(6) NOT NULL,
+  `lock_time` time(6) NOT NULL,
+  `rows_sent` int(11) NOT NULL,
+  `rows_examined` int(11) NOT NULL,
+  `db` varchar(512) NOT NULL,
+  `last_insert_id` int(11) NOT NULL,
+  `insert_id` int(11) NOT NULL,
+  `server_id` int(10) unsigned NOT NULL,
+  `sql_text` mediumtext NOT NULL,
+  `thread_id` bigint(21) unsigned NOT NULL,
+  `rows_affected` int(11) NOT NULL
+) ENGINE=csv DEFAULT CHARSET=utf8 COMMENT='Slow log';
+
+CREATE TABLE `general_log` (
+  `event_time` timestamp(6) NOT NULL DEFAULT current_timestamp(6) ON UPDATE current_timestamp(6),
+  `user_host` mediumtext NOT NULL,
+  `thread_id` bigint(21) unsigned NOT NULL,
+  `server_id` int(10) unsigned NOT NULL,
+  `command_type` varchar(64) NOT NULL,
+  `argument` mediumtext NOT NULL
+) ENGINE=CSV DEFAULT CHARSET=utf8 COMMENT='General log';
+
+connection default;
+set global slow_query_log = @old_slow_query_log;
+set global long_query_time = @old_long_query_time;
+set global log_output = @old_log_output;
+set global general_log = @old_general_log;
+drop database if exists log_table;
+# end case

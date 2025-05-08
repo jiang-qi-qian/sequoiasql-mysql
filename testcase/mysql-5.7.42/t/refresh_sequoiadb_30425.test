@@ -1,0 +1,62 @@
+#seqDB-30425
+--source include/have_sequoiadb.inc
+
+--disable_warnings
+drop database if exists refresh_sequoiadb_30425;
+create database refresh_sequoiadb_30425;
+drop database refresh_sequoiadb_30425;
+create database refresh_sequoiadb_30425;
+use refresh_sequoiadb_30425;
+--enable_warnings
+
+create table t1(a int);
+insert into t1 values(1),(2),(3);
+
+connect(conn1,localhost,root,,refresh_sequoiadb_30425);
+select @@refresh_all_cached_tables_supported;
+--error 1235
+refresh table stats;
+refresh table t1 stats;
+
+set session refresh_all_cached_tables_supported=off;
+select @@refresh_all_cached_tables_supported;
+--error 1235
+refresh table stats;
+refresh table t1 stats;
+
+set session refresh_all_cached_tables_supported=on;
+select @@refresh_all_cached_tables_supported;
+refresh table stats;
+refresh table t1 stats;
+--error 1295
+prepare stmt from 'refresh table stats';
+--error 1295
+prepare stmt from 'refresh table t1 stats';
+
+set refresh_all_cached_tables_supported=on;
+select @@refresh_all_cached_tables_supported;
+connect(conn2,localhost,root,,refresh_sequoiadb_30425);
+select @@refresh_all_cached_tables_supported;
+--error 1235
+refresh table stats;
+
+set session refresh_all_cached_tables_supported=1;
+select @@refresh_all_cached_tables_supported;
+refresh table stats;
+set session refresh_all_cached_tables_supported=0;
+select @@refresh_all_cached_tables_supported;
+--error 1235
+refresh table stats;
+--error 1231 
+set session refresh_all_cached_tables_supported=-1;
+--error 1231
+set session refresh_all_cached_tables_supported=2;
+--error 1231
+set session refresh_all_cached_tables_supported=null;
+--error 1231
+set session refresh_all_cached_tables_supported=str;
+--error 1231 
+set session refresh_all_cached_tables_supported=$#%;
+
+drop database refresh_sequoiadb_30425;
+--source include/uninstall_sequoiadb.inc

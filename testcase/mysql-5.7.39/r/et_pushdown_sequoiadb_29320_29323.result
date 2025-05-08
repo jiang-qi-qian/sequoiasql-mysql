@@ -1,0 +1,128 @@
+DROP DATABASE IF EXISTS db_20320;
+CREATE DATABASE db_20320;
+use db_20320;
+set session sequoiadb_debug_log=on;
+CREATE TABLE t1 (a int ,b int);
+INSERT INTO t1 values(1,2),(null,null),(3,null),(null,4),(3,null),(3,4);
+SELECT * FROM t1 where a=b;
+a	b
+[Note] SequoiaDB: Query message: condition[{ "b": { "$et": { "$field": "a" } } }], selector[{}], order_by[{}], hint[{}], limit[-1], offset[0], table[db_20320.t1]
+EXPLAIN SELECT * FROM t1 where a=b;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	ALL	NULL	NULL	NULL	NULL	6	100.00	Using where with pushed condition (`db_20320`.`t1`.`b` = `db_20320`.`t1`.`a`)
+SELECT * FROM t1 where a<=>b;
+a	b
+NULL	NULL
+[Note] SequoiaDB: Query message: condition[{ "$or": [ { "a": { "$et": { "$field": "b" } } }, { "$and": [ { "a": { "$isnull": 1 } }, { "b": { "$isnull": 1 } } ] } ] }], selector[{}], order_by[{}], hint[{}], limit[-1], offset[0], table[db_20320.t1]
+EXPLAIN SELECT * FROM t1 where a<=>b;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	ALL	NULL	NULL	NULL	NULL	6	16.67	Using where with pushed condition (`db_20320`.`t1`.`a` <=> `db_20320`.`t1`.`b`)
+SELECT * FROM t1 where a<=>b and (a=3 or a is null);
+a	b
+NULL	NULL
+[Note] SequoiaDB: Query message: condition[{ "$and": [ { "$or": [ { "a": { "$et": { "$field": "b" } } }, { "$and": [ { "a": { "$isnull": 1 } }, { "b": { "$isnull": 1 } } ] } ] }, { "$or": [ { "a": { "$et": 3 } }, { "a": { "$isnull": 1 } } ] } ] }], selector[{}], order_by[{}], hint[{}], limit[-1], offset[0], table[db_20320.t1]
+EXPLAIN SELECT * FROM t1 where a<=>b and (a=3 or a is null);
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	ALL	NULL	NULL	NULL	NULL	6	16.67	Using where with pushed condition ((`db_20320`.`t1`.`a` <=> `db_20320`.`t1`.`b`) and ((`db_20320`.`t1`.`a` = 3) or isnull(`db_20320`.`t1`.`a`)))
+SELECT * FROM t1 where a<=>b and a=3;
+a	b
+[Note] SequoiaDB: Query message: condition[{ "$and": [ { "a": { "$et": 3 } }, { "b": { "$et": 3 } } ] }], selector[{}], order_by[{}], hint[{}], limit[-1], offset[0], table[db_20320.t1]
+EXPLAIN SELECT * FROM t1 where a<=>b and a=3;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	ALL	NULL	NULL	NULL	NULL	6	16.67	Using where with pushed condition ((`db_20320`.`t1`.`a` = 3) and (3 <=> `db_20320`.`t1`.`b`))
+SELECT * FROM t1 where a<=>b and a<=>3;
+a	b
+[Note] SequoiaDB: Query message: condition[{ "$and": [ { "b": { "$et": 3 } }, { "a": { "$et": 3 } } ] }], selector[{}], order_by[{}], hint[{}], limit[-1], offset[0], table[db_20320.t1]
+EXPLAIN SELECT * FROM t1 where a<=>b and a<=>3;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	ALL	NULL	NULL	NULL	NULL	6	16.67	Using where with pushed condition ((`db_20320`.`t1`.`b` <=> 3) and (`db_20320`.`t1`.`a` <=> 3))
+SELECT * FROM t1 where a<=>b or (a=3 and a is null);
+a	b
+NULL	NULL
+[Note] SequoiaDB: Query message: condition[{ "$or": [ { "a": { "$et": { "$field": "b" } } }, { "$and": [ { "a": { "$isnull": 1 } }, { "b": { "$isnull": 1 } } ] } ] }], selector[{}], order_by[{}], hint[{}], limit[-1], offset[0], table[db_20320.t1]
+EXPLAIN SELECT * FROM t1 where a<=>b or (a=3 and a is null);
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	ALL	NULL	NULL	NULL	NULL	6	16.67	Using where with pushed condition (`db_20320`.`t1`.`a` <=> `db_20320`.`t1`.`b`)
+SELECT * FROM t1 where a<=>b or a=3;
+a	b
+3	4
+3	NULL
+3	NULL
+NULL	NULL
+[Note] SequoiaDB: Query message: condition[{ "$or": [ { "$or": [ { "a": { "$et": { "$field": "b" } } }, { "$and": [ { "a": { "$isnull": 1 } }, { "b": { "$isnull": 1 } } ] } ] }, { "a": { "$et": 3 } } ] }], selector[{}], order_by[{}], hint[{}], limit[-1], offset[0], table[db_20320.t1]
+EXPLAIN SELECT * FROM t1 where a<=>b or a=3;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	ALL	NULL	NULL	NULL	NULL	6	30.56	Using where with pushed condition ((`db_20320`.`t1`.`a` <=> `db_20320`.`t1`.`b`) or (`db_20320`.`t1`.`a` = 3))
+SELECT * FROM t1 where a<=>b or a<=>3;
+a	b
+3	4
+3	NULL
+3	NULL
+NULL	NULL
+[Note] SequoiaDB: Query message: condition[{ "$or": [ { "$or": [ { "a": { "$et": { "$field": "b" } } }, { "$and": [ { "a": { "$isnull": 1 } }, { "b": { "$isnull": 1 } } ] } ] }, { "a": { "$et": 3 } } ] }], selector[{}], order_by[{}], hint[{}], limit[-1], offset[0], table[db_20320.t1]
+EXPLAIN SELECT * FROM t1 where a<=>b or a<=>3;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	ALL	NULL	NULL	NULL	NULL	6	30.56	Using where with pushed condition ((`db_20320`.`t1`.`a` <=> `db_20320`.`t1`.`b`) or (`db_20320`.`t1`.`a` <=> 3))
+CREATE TABLE t2 (a int not null, b int);
+INSERT INTO t2 values(1,2),(2,null),(3,null),(4,4),(3,null),(3,4);
+SELECT * FROM t2 where a=b;
+a	b
+4	4
+[Note] SequoiaDB: Query message: condition[{ "b": { "$et": { "$field": "a" } } }], selector[{}], order_by[{}], hint[{}], limit[-1], offset[0], table[db_20320.t2]
+EXPLAIN SELECT * FROM t2 where a=b;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t2	NULL	ALL	NULL	NULL	NULL	NULL	6	100.00	Using where with pushed condition (`db_20320`.`t2`.`b` = `db_20320`.`t2`.`a`)
+SELECT * FROM t2 where a<=>b;
+a	b
+4	4
+[Note] SequoiaDB: Query message: condition[{ "a": { "$et": { "$field": "b" } } }], selector[{}], order_by[{}], hint[{}], limit[-1], offset[0], table[db_20320.t2]
+EXPLAIN SELECT * FROM t2 where a<=>b;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t2	NULL	ALL	NULL	NULL	NULL	NULL	6	16.67	Using where with pushed condition (`db_20320`.`t2`.`a` <=> `db_20320`.`t2`.`b`)
+SELECT * FROM t2 where a<=>b and (a=3 or a is null);
+a	b
+[Note] SequoiaDB: Query message: condition[{ "$and": [ { "a": { "$et": { "$field": "b" } } }, { "a": { "$et": 3 } } ] }], selector[{}], order_by[{}], hint[{}], limit[-1], offset[0], table[db_20320.t2]
+EXPLAIN SELECT * FROM t2 where a<=>b and (a=3 or a is null);
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t2	NULL	ALL	NULL	NULL	NULL	NULL	6	16.67	Using where with pushed condition ((`db_20320`.`t2`.`a` <=> `db_20320`.`t2`.`b`) and (`db_20320`.`t2`.`a` = 3))
+SELECT * FROM t2 where a<=>b and a=3;
+a	b
+[Note] SequoiaDB: Query message: condition[{ "$and": [ { "a": { "$et": 3 } }, { "b": { "$et": 3 } } ] }], selector[{}], order_by[{}], hint[{}], limit[-1], offset[0], table[db_20320.t2]
+EXPLAIN SELECT * FROM t2 where a<=>b and a=3;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t2	NULL	ALL	NULL	NULL	NULL	NULL	6	16.67	Using where with pushed condition ((`db_20320`.`t2`.`a` = 3) and (3 <=> `db_20320`.`t2`.`b`))
+SELECT * FROM t2 where a<=>b and a<=>3;
+a	b
+[Note] SequoiaDB: Query message: condition[{ "$and": [ { "b": { "$et": 3 } }, { "a": { "$et": 3 } } ] }], selector[{}], order_by[{}], hint[{}], limit[-1], offset[0], table[db_20320.t2]
+EXPLAIN SELECT * FROM t2 where a<=>b and a<=>3;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t2	NULL	ALL	NULL	NULL	NULL	NULL	6	16.67	Using where with pushed condition ((`db_20320`.`t2`.`b` <=> 3) and (`db_20320`.`t2`.`a` <=> 3))
+SELECT * FROM t2 where a<=>b or (a=3 and a is null);
+a	b
+4	4
+[Note] SequoiaDB: Query message: condition[{ "a": { "$et": { "$field": "b" } } }], selector[{}], order_by[{}], hint[{}], limit[-1], offset[0], table[db_20320.t2]
+EXPLAIN SELECT * FROM t2 where a<=>b or (a=3 and a is null);
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t2	NULL	ALL	NULL	NULL	NULL	NULL	6	16.67	Using where with pushed condition (`db_20320`.`t2`.`a` <=> `db_20320`.`t2`.`b`)
+SELECT * FROM t2 where a<=>b or a=3;
+a	b
+3	4
+3	NULL
+3	NULL
+4	4
+[Note] SequoiaDB: Query message: condition[{ "$or": [ { "a": { "$et": { "$field": "b" } } }, { "a": { "$et": 3 } } ] }], selector[{}], order_by[{}], hint[{}], limit[-1], offset[0], table[db_20320.t2]
+EXPLAIN SELECT * FROM t2 where a<=>b or a=3;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t2	NULL	ALL	NULL	NULL	NULL	NULL	6	30.56	Using where with pushed condition ((`db_20320`.`t2`.`a` <=> `db_20320`.`t2`.`b`) or (`db_20320`.`t2`.`a` = 3))
+SELECT * FROM t2 where a<=>b or a<=>3;
+a	b
+3	4
+3	NULL
+3	NULL
+4	4
+[Note] SequoiaDB: Query message: condition[{ "$or": [ { "a": { "$et": { "$field": "b" } } }, { "a": { "$et": 3 } } ] }], selector[{}], order_by[{}], hint[{}], limit[-1], offset[0], table[db_20320.t2]
+EXPLAIN SELECT * FROM t2 where a<=>b or a<=>3;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t2	NULL	ALL	NULL	NULL	NULL	NULL	6	30.56	Using where with pushed condition ((`db_20320`.`t2`.`a` <=> `db_20320`.`t2`.`b`) or (`db_20320`.`t2`.`a` <=> 3))
+DROP DATABASE db_20320;
+set session sequoiadb_debug_log=default;

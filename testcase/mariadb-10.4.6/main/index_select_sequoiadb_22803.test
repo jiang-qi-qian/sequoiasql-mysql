@@ -1,0 +1,253 @@
+# Testcase: seqDB-22803
+
+--source include/big_test.inc
+--source include/have_sequoiadb.inc
+
+set session sequoiadb_stats_cache_level=1;
+
+CREATE DATABASE index_select_sequoiadb_22803;
+USE index_select_sequoiadb_22803;
+
+#
+# seqDB-22803: index select, type: signed float/double/decimal, range query
+#
+
+#
+# table t1, type: float(M,D)
+#
+create table t1 (a float(20,15), b float(20,15));
+load data infile '../../std_data/loaddata_large_sequoiadb_4.dat' ignore into table t1 fields terminated by ',';
+alter table t1 add primary key(a);
+alter table t1 add unique index idx_b(b);
+alter table t1 add index idx_ab(a, b);
+alter table t1 add index idx_ba(b, a);
+
+# condition: a<
+--replace_column 9 x
+explain select * from t1 where a<90000.1;
+--sorted_result
+select * from t1 where a<90000.1 limit 5;
+analyze table t1;
+--replace_column 9 x
+explain select * from t1 where a<90000.1;
+--sorted_result
+select * from t1 where a<90000.1 limit 5;
+
+# condition: b>
+--replace_column 9 x
+explain select * from t1 where b>10000.1;
+--sorted_result
+select * from t1 where b>10000.1 limit 5;
+analyze table t1;
+--replace_column 9 x
+explain select * from t1 where b>10000.1;
+--sorted_result
+select * from t1 where b>10000.1 limit 5;
+
+# condition: a> and a<
+--replace_column 9 x
+explain select * from t1 where a>10000.1 and a<90000.1;
+--sorted_result
+select * from t1 where a>10000.1 and a<90000.1 limit 5;
+analyze table t1;
+--replace_column 9 x
+explain select * from t1 where b>10000.1 and a<90000.1;
+--sorted_result
+select * from t1 where a>10000.1 and a<90000.1 limit 5;
+
+# condition: b> and a<
+--replace_column 9 x
+explain select * from t1 where b>10000.1 and a<90000.1;
+--sorted_result
+select * from t1 where b>10000.1 and a<90000.1 limit 5;
+analyze table t1;
+--replace_column 9 x
+explain select * from t1 where b>10000.1 and a<90000.1;
+--sorted_result
+select * from t1 where b>10000.1 and a<90000.1 limit 5;
+
+# condition: in
+--replace_column 9 x
+explain select * from t1 where a in (1.1, 10000.1, 20000.1, 30000.1, 40000.1, 50000.1, 60000.1, 70000.1, 80000.1, 90000.1, 99999.1);
+--sorted_result
+select * from t1 where a in (1.1, 10000.1, 20000.1, 30000.1, 40000.1, 50000.1, 60000.1, 70000.1, 80000.1, 90000.1, 99999.1);
+analyze table t1;
+explain select * from t1 where a in (1.1, 10000.1, 20000.1, 30000.1, 40000.1, 50000.1, 60000.1, 70000.1, 80000.1, 90000.1, 99999.1);
+--sorted_result
+select * from t1 where a in (1.1, 10000.1, 20000.1, 30000.1, 40000.1, 50000.1, 60000.1, 70000.1, 80000.1, 90000.1, 99999.1);
+
+# condition: between
+--replace_column 9 x
+explain select * from t1 where a between 10000.1 and 90000.1;
+--sorted_result
+select * from t1 where a between 10000.1 and 90000.1 limit 5;
+analyze table t1;
+--replace_column 9 x
+explain select * from t1 where a between 10000.1 and 90000.1;
+--sorted_result
+select * from t1 where a between 10000.1 and 90000.1 limit 5;
+
+drop table t1;
+
+#
+# table t1, type: double(M,D)
+#
+create table t1 (a double(20,15), b double(20,15));
+load data infile '../../std_data/loaddata_large_sequoiadb_4.dat' ignore into table t1 fields terminated by ',';
+alter table t1 add primary key(a);
+alter table t1 add unique index idx_b(b);
+alter table t1 add index idx_ab(a, b);
+alter table t1 add index idx_ba(b, a);
+
+# condition: a<
+--replace_column 9 x
+explain select * from t1 where a<90000.1;
+--sorted_result
+select * from t1 where a<90000.1 limit 5;
+analyze table t1;
+--replace_column 9 x
+explain select * from t1 where a<90000.1;
+--sorted_result
+select * from t1 where a<90000.1 limit 5;
+
+# condition: b>
+--replace_column 9 x
+explain select * from t1 where b>10000.1;
+--sorted_result
+select * from t1 where b>10000.1 limit 5;
+analyze table t1;
+--replace_column 9 x
+explain select * from t1 where b>10000.1;
+--sorted_result
+select * from t1 where b>10000.1 limit 5;
+
+# condition: a> and a<
+--replace_column 9 x
+explain select * from t1 where a>10000.1 and a<90000.1;
+--sorted_result
+select * from t1 where a>10000.1 and a<90000.1 limit 5;
+analyze table t1;
+--replace_column 9 x
+explain select * from t1 where b>10000.1 and a<90000.1;
+--sorted_result
+select * from t1 where a>10000.1 and a<90000.1 limit 5;
+
+# condition: b> and a<
+--replace_column 9 x
+explain select * from t1 where b>10000.1 and a<90000.1;
+--sorted_result
+select * from t1 where b>10000.1 and a<90000.1 limit 5;
+analyze table t1;
+--replace_column 9 x
+explain select * from t1 where b>10000.1 and a<90000.1;
+--sorted_result
+select * from t1 where b>10000.1 and a<90000.1 limit 5;
+
+# condition: in
+--replace_column 9 x
+explain select * from t1 where a in (1.1, 10000.1, 20000.1, 30000.1, 40000.1, 50000.1, 60000.1, 70000.1, 80000.1, 90000.1, 99999.1);
+--sorted_result
+select * from t1 where a in (1.1, 10000.1, 20000.1, 30000.1, 40000.1, 50000.1, 60000.1, 70000.1, 80000.1, 90000.1, 99999.1);
+analyze table t1;
+explain select * from t1 where a in (1.1, 10000.1, 20000.1, 30000.1, 40000.1, 50000.1, 60000.1, 70000.1, 80000.1, 90000.1, 99999.1);
+--sorted_result
+select * from t1 where a in (1.1, 10000.1, 20000.1, 30000.1, 40000.1, 50000.1, 60000.1, 70000.1, 80000.1, 90000.1, 99999.1);
+
+# condition: between
+--replace_column 9 x
+explain select * from t1 where a between 10000.1 and 90000.1;
+--sorted_result
+select * from t1 where a between 10000.1 and 90000.1 limit 5;
+analyze table t1;
+--replace_column 9 x
+explain select * from t1 where a between 10000.1 and 90000.1;
+--sorted_result
+select * from t1 where a between 10000.1 and 90000.1 limit 5;
+
+drop table t1;
+
+#
+# table t1, type: decimal(M,D)
+#
+create table t1 (a decimal(20,15), b decimal(20,15));
+load data infile '../../std_data/loaddata_large_sequoiadb_4.dat' ignore into table t1 fields terminated by ',';
+alter table t1 add primary key(a);
+alter table t1 add unique index idx_b(b);
+alter table t1 add index idx_ab(a, b);
+alter table t1 add index idx_ba(b, a);
+
+# condition: a<
+--replace_column 9 x
+explain select * from t1 where a<90000.1;
+--sorted_result
+select * from t1 where a<90000.1 limit 5;
+analyze table t1;
+--replace_column 9 x
+explain select * from t1 where a<90000.1;
+--sorted_result
+select * from t1 where a<90000.1 limit 5;
+
+# condition: b>
+--replace_column 9 x
+explain select * from t1 where b>10000.1;
+--sorted_result
+select * from t1 where b>10000.1 limit 5;
+analyze table t1;
+--replace_column 9 x
+explain select * from t1 where b>10000.1;
+--sorted_result
+select * from t1 where b>10000.1 limit 5;
+
+# condition: a> and a<
+--replace_column 9 x
+explain select * from t1 where a>10000.1 and a<90000.1;
+--sorted_result
+select * from t1 where a>10000.1 and a<90000.1 limit 5;
+analyze table t1;
+--replace_column 9 x
+explain select * from t1 where b>10000.1 and a<90000.1;
+--sorted_result
+select * from t1 where a>10000.1 and a<90000.1 limit 5;
+
+# condition: b> and a<
+--replace_column 9 x
+explain select * from t1 where b>10000.1 and a<90000.1;
+--sorted_result
+select * from t1 where b>10000.1 and a<90000.1 limit 5;
+analyze table t1;
+--replace_column 9 x
+explain select * from t1 where b>10000.1 and a<90000.1;
+--sorted_result
+select * from t1 where b>10000.1 and a<90000.1 limit 5;
+
+# condition: in
+--replace_column 9 x
+explain select * from t1 where a in (1.1, 10000.1, 20000.1, 30000.1, 40000.1, 50000.1, 60000.1, 70000.1, 80000.1, 90000.1, 99999.1);
+--sorted_result
+select * from t1 where a in (1.1, 10000.1, 20000.1, 30000.1, 40000.1, 50000.1, 60000.1, 70000.1, 80000.1, 90000.1, 99999.1);
+analyze table t1;
+explain select * from t1 where a in (1.1, 10000.1, 20000.1, 30000.1, 40000.1, 50000.1, 60000.1, 70000.1, 80000.1, 90000.1, 99999.1);
+--sorted_result
+select * from t1 where a in (1.1, 10000.1, 20000.1, 30000.1, 40000.1, 50000.1, 60000.1, 70000.1, 80000.1, 90000.1, 99999.1);
+
+# condition: between
+--replace_column 9 x
+explain select * from t1 where a between 10000.1 and 90000.1;
+--sorted_result
+select * from t1 where a between 10000.1 and 90000.1 limit 5;
+analyze table t1;
+--replace_column 9 x
+explain select * from t1 where a between 10000.1 and 90000.1;
+--sorted_result
+select * from t1 where a between 10000.1 and 90000.1 limit 5;
+
+
+#
+# clear env
+#
+DROP DATABASE index_select_sequoiadb_22803;
+
+set session sequoiadb_stats_cache_level=default;
+
+--source include/uninstall_sequoiadb.inc
+

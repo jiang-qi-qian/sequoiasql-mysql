@@ -1,0 +1,111 @@
+drop database if exists log_secure_sequoiadb;
+create database log_secure_sequoiadb;
+drop database log_secure_sequoiadb;
+create database log_secure_sequoiadb;
+use log_secure_sequoiadb;
+create table t1(a int);
+insert into t1 values(1),(2),(3),(4),(5);
+create table t2 like t1;
+set session sequoiadb_debug_log = on;
+set session sequoiadb_secure_log = default;
+show variables like "sequoiadb_secure_log";
+Variable_name	Value
+sequoiadb_secure_log	ON
+set session sequoiadb_secure_log = on;
+show variables like "sequoiadb_secure_log";
+Variable_name	Value
+sequoiadb_secure_log	ON
+set session sequoiadb_secure_log = 1;
+show variables like "sequoiadb_secure_log";
+Variable_name	Value
+sequoiadb_secure_log	ON
+select @@sequoiadb_secure_log;
+@@sequoiadb_secure_log
+1
+set session sequoiadb_secure_log = off;
+show variables like "sequoiadb_secure_log";
+Variable_name	Value
+sequoiadb_secure_log	OFF
+set session sequoiadb_secure_log = 0;
+show variables like "sequoiadb_secure_log";
+Variable_name	Value
+sequoiadb_secure_log	OFF
+select @@sequoiadb_secure_log;
+@@sequoiadb_secure_log
+0
+set session sequoiadb_secure_log = default;
+set session sequoiadb_secure_log = 2;
+ERROR 42000: Variable 'sequoiadb_secure_log' can't be set to the value of '2'
+set session sequoiadb_secure_log = "";
+ERROR 42000: Variable 'sequoiadb_secure_log' can't be set to the value of ''
+set session sequoiadb_secure_log = "0";
+ERROR 42000: Variable 'sequoiadb_secure_log' can't be set to the value of '0'
+select @@sequoiadb_secure_log;
+@@sequoiadb_secure_log
+1
+"---con1"
+set session sequoiadb_secure_log = default;
+select @@sequoiadb_secure_log;
+@@sequoiadb_secure_log
+1
+"---con2"
+set session sequoiadb_secure_log = default;
+select @@sequoiadb_secure_log;
+@@sequoiadb_secure_log
+1
+"---con1"
+set session sequoiadb_secure_log = off;
+select @@sequoiadb_secure_log;
+@@sequoiadb_secure_log
+0
+"---con2"
+select @@sequoiadb_secure_log;
+@@sequoiadb_secure_log
+1
+set global sequoiadb_secure_log = 1;
+select @@sequoiadb_secure_log;
+@@sequoiadb_secure_log
+1
+set session sequoiadb_secure_log = off;
+select @@sequoiadb_secure_log;
+@@sequoiadb_secure_log
+0
+select * from t1 where a = 1;
+a
+1
+[Note] Testcase: Operation log begin
+[Note] SequoiaDB: optimizer pushdown autocommit: 1
+[Note] SequoiaDB: Query message: condition[{ "a": { "$et": 1 } }], selector[{}], order_by[{}], hint[{}], limit[-1], offset[0], table[log_secure_sequoiadb.t1]
+delete from t1 where a = 1;
+[Note] Testcase: Operation log begin
+[Note] SequoiaDB: optimizer pushdown autocommit: 1
+[Note] SequoiaDB: optimizer delete: 1, condition: [{ "a": { "$et": 1 } }], table: log_secure_sequoiadb.t1
+select * from (select * from t1 where a>3) t2 group by a;
+a
+4
+5
+[Note] Testcase: Operation log begin
+[Note] SequoiaDB: optimizer pushdown autocommit: 1
+[Note] SequoiaDB: Query message: match[{ "$match": { "a": { "$gt": 3 } } }], group[{ "$group": { "a": { "$first": "$a" }, "_id": { "a": "$a" } } }], sort[{ "$sort": { "a": 1 } }], skip[{ "$skip": 0 }], limit[{ "$limit": -1 }]
+set session sequoiadb_secure_log = on;
+select @@sequoiadb_secure_log;
+@@sequoiadb_secure_log
+1
+select * from t1 where a = 1;
+a
+[Note] Testcase: Operation log begin
+[Note] SequoiaDB: optimizer pushdown autocommit: 1
+[Note] SequoiaDB: Query message: condition[SDBSECURE0000(hfIcFWC1CPwoCcDznJC1CNHogWK2)], selector[SDBSECURE0000(h5/=)], order_by[SDBSECURE0000(h5/=)], hint[SDBSECURE0000(h5/=)], limit[-1], offset[0], table[log_secure_sequoiadb.t1]
+delete from t1 where a = 1;
+[Note] Testcase: Operation log begin
+[Note] SequoiaDB: optimizer pushdown autocommit: 1
+[Note] SequoiaDB: optimizer delete: 1, condition: [SDBSECURE0000(hfIcFWC1CPwoCcDznJC1CNHogWK2)], table: log_secure_sequoiadb.t1
+select * from (select * from t1 where a>3) t2 group by a;
+a
+4
+5
+[Note] Testcase: Operation log begin
+[Note] SequoiaDB: optimizer pushdown autocommit: 1
+[Note] SequoiaDB: Query message: match[SDBSECURE0000(hfIcQO4pnOTbCqbohfIcFWC1CPwoCcDtnJC1CNSogWK2CP/=)], group[SDBSECURE0000(hfIcQOnfk5LaCqbohfIcFWC1CPwoCcDsiYQmnJC1CJCrFWCogWaoCz2uMJC1CPwoCsHcBcIcQOHcCP/ogWK2)], sort[SDBSECURE0000(hfIcQPTljtVcBcK6CJQpCqboSWK2CP/=)], skip[SDBSECURE0000(hfIcQPTdiYIcBcIaCP/=)], limit[SDBSECURE0000(hfIcQOyukAz/CqboZXHogV==)]
+set global sequoiadb_secure_log = 1;
+drop database log_secure_sequoiadb;

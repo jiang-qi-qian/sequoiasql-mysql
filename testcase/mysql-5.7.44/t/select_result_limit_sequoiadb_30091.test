@@ -1,0 +1,53 @@
+#Case 30091
+--source include/have_sequoiadb.inc
+
+--disable_warnings
+drop database if exists select_result_limit_sequoiadb_30091;
+--enable_warnings
+
+create database select_result_limit_sequoiadb_30091;
+use select_result_limit_sequoiadb_30091;
+
+--disable_warnings
+drop table if exists select_result_limit_show_30091_1;
+drop table if exists select_result_limit_show_30091_2;
+drop table if exists select_result_limit_show_30091_3;
+drop table if exists select_result_limit_show_30091_4;
+--enable_warnings
+
+create table select_result_limit_show_30091_1(a int,b int);
+create table select_result_limit_show_30091_2(a int,b int);
+create table select_result_limit_show_30091_3(a int,b int);
+create table select_result_limit_show_30091_4(a int,b int);
+
+set session sql_select_result_limit=2;
+show tables;
+set session sql_select_result_limit=4;
+show tables;
+set session sql_select_result_limit=6;
+show tables;
+
+set session sql_select_result_limit_exceed_handling=1;
+set session sql_select_result_limit=2;
+show tables;
+set session sql_select_result_limit=4;
+show tables;
+set session sql_select_result_limit=6;
+show tables;
+
+set session sql_select_result_limit_exceed_handling=2;
+set session sql_select_result_limit=2;
+show tables;
+set session sql_select_result_limit=4;
+show tables;
+set session sql_select_result_limit=6;
+show tables;
+
+drop table select_result_limit_show_30091_1;
+drop table select_result_limit_show_30091_2;
+drop table select_result_limit_show_30091_3;
+drop table select_result_limit_show_30091_4;
+
+drop database select_result_limit_sequoiadb_30091;
+
+--source include/uninstall_sequoiadb.inc

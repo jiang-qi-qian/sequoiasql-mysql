@@ -1,0 +1,1402 @@
+--source include/have_sequoiadb.inc
+
+# 收集实例端口号
+--let $PORT_1 = 7600
+# 还原实例端口号
+--let $PORT_2 = 7700
+# 当前 mysql 根目录
+let $SQL_PATH = query_get_value(show variables like "basedir",Value,1);
+# 会在 mysql-test 目录下产生收集到的中间文件及文件夹: diaginfo/、diaginfo2/、d1/、d2/、diaginfo.tar.gz
+# 中间使用到的文件名
+--let $SQL_SET_DIAG_PATH = sql_set_diag_path.sql
+
+# 收集实例
+--exec ../bin/sdb_sql_ctl addinst inst$PORT_1 -D ../database/$PORT_1 -p $PORT_1 | grep -v $PORT_1
+--connect(conn1, 127.0.0.1, root, , information_schema, $PORT_1)
+
+# 还原实例
+--exec ../bin/sdb_sql_ctl addinst inst$PORT_2 -D ../database/$PORT_2 -p $PORT_2 | grep -v $PORT_2
+--connect(conn2, 127.0.0.1, root, , information_schema, $PORT_2)
+
+
+# Testcase:seqDB-28351:收集指定存储过程/函数信息,函数和存储过程 fullname 中的数据库名不相同
+# 收集
+--connection conn1
+--disable_warnings
+drop database if exists sdb_diag_info_dump_2_1;
+drop database if exists sdb_diag_info_dump_2_2;
+--enable_warnings
+
+create database sdb_diag_info_dump_2_1;
+show create database sdb_diag_info_dump_2_1;
+use sdb_diag_info_dump_2_1;
+delimiter $;
+create function `f1`() returns varchar(10)
+begin
+return concat("test","func1");
+end $
+CREATE PROCEDURE `p1`(in a int)
+begin
+select 1 + 2;
+end $
+delimiter ;$
+show create function f1;
+show create procedure p1;
+
+create database sdb_diag_info_dump_2_2;
+show create database sdb_diag_info_dump_2_2;
+use sdb_diag_info_dump_2_2;
+delimiter $;
+create function `f1`() returns varchar(10)
+begin
+return concat("test","func1");
+end $
+CREATE PROCEDURE `p1`(in a int)
+begin
+select 1 + 2;
+end $
+delimiter ;$
+show create function f1;
+show create procedure p1;
+
+--exec ../tools/diagnostic/sdb_diag_info_dump -h 127.0.0.1 -P $PORT_1 -u root -i inst$PORT_1 -o ./diaginfo -R "sdb_diag_info_dump_2_1.f1,sdb_diag_info_dump_2_2.p1" | grep -vE "^INFO: Compress|^Spend .* sec\$" | sort
+drop database sdb_diag_info_dump_2_1;
+drop database sdb_diag_info_dump_2_2;
+
+--exec tar -zxvf diaginfo.tar.gz
+
+# 还原
+--connection conn2
+--disable_warnings
+drop database if exists sdb_diag_info_dump_2_1;
+drop database if exists sdb_diag_info_dump_2_2;
+--enable_warnings
+
+set sequoiadb_diag_info_path=DEFAULT;
+--source $SQL_PATH/mysql-test/diaginfo/catalog/sdb_diag_info_dump_2_1/database_catalog.sql
+;
+use sdb_diag_info_dump_2_1;
+show create database sdb_diag_info_dump_2_1;
+--exec sed -i 's/^delimiter\(.*\)/delimiter\1;/' $SQL_PATH/mysql-test/diaginfo/routine/sdb_diag_info_dump_2_1/f1/function_routine_catalog.sql
+--exec sed -i 's/^delimiter ;;/delimiter ;\$\$\$/' $SQL_PATH/mysql-test/diaginfo/routine/sdb_diag_info_dump_2_1/f1/function_routine_catalog.sql
+--source $SQL_PATH/mysql-test/diaginfo/routine/sdb_diag_info_dump_2_1/f1/function_routine_catalog.sql
+show create function f1;
+--source $SQL_PATH/mysql-test/diaginfo/catalog/sdb_diag_info_dump_2_2/database_catalog.sql
+;
+use sdb_diag_info_dump_2_2;
+show create database sdb_diag_info_dump_2_2;
+--exec sed -i 's/^delimiter\(.*\)/delimiter\1;/' $SQL_PATH/mysql-test/diaginfo/routine/sdb_diag_info_dump_2_2/p1/procedure_routine_catalog.sql
+--exec sed -i 's/^delimiter ;;/delimiter ;\$\$\$/' $SQL_PATH/mysql-test/diaginfo/routine/sdb_diag_info_dump_2_2/p1/procedure_routine_catalog.sql
+--source $SQL_PATH/mysql-test/diaginfo/routine/sdb_diag_info_dump_2_2/p1/procedure_routine_catalog.sql
+show create procedure p1;
+drop database sdb_diag_info_dump_2_1;
+drop database sdb_diag_info_dump_2_2;
+--exec rm -rf diaginfo diaginfo.tar.gz
+
+
+# Testcase:seqDB-28352:收集指定存储过程/函数信息,函数或存储过程名称没带数据库名
+# 收集
+--connection conn1
+--disable_warnings
+drop database if exists sdb_diag_info_dump_2_1;
+drop database if exists sdb_diag_info_dump_2_2;
+--enable_warnings
+
+create database sdb_diag_info_dump_2_1;
+show create database sdb_diag_info_dump_2_1;
+use sdb_diag_info_dump_2_1;
+delimiter $;
+create function `f1`() returns varchar(10)
+begin
+return concat("test","func1");
+end $
+CREATE PROCEDURE `p1`(in a int)
+begin
+select 1 + 2;
+end $
+delimiter ;$
+show create function f1;
+show create procedure p1;
+
+create database sdb_diag_info_dump_2_2;
+show create database sdb_diag_info_dump_2_2;
+use sdb_diag_info_dump_2_2;
+delimiter $;
+create function `f1`() returns varchar(10)
+begin
+return concat("test","func1");
+end $
+CREATE PROCEDURE `p1`(in a int)
+begin
+select 1 + 2;
+end $
+delimiter ;$
+
+# 不带 -D
+--exec ../tools/diagnostic/sdb_diag_info_dump -h 127.0.0.1 -P $PORT_1 -u root -i inst$PORT_1 -o ./diaginfo -R "p1" | grep -vE "^INFO: Compress|^Spend .* sec\$"
+--exec rm -rf diaginfo diaginfo.tar.gz
+
+# 带 -D
+--exec ../tools/diagnostic/sdb_diag_info_dump -h 127.0.0.1 -P $PORT_1 -u root -i inst$PORT_1 -o ./diaginfo -D sdb_diag_info_dump_2_1 -R "p1" | grep -vE "^INFO: Compress|^Spend .* sec\$"
+drop database sdb_diag_info_dump_2_1;
+drop database sdb_diag_info_dump_2_2;
+
+--exec tar -zxvf diaginfo.tar.gz
+
+# 还原
+--connection conn2
+--disable_warnings
+drop database if exists sdb_diag_info_dump_2_1;
+drop database if exists sdb_diag_info_dump_2_2;
+--enable_warnings
+
+set sequoiadb_diag_info_path=DEFAULT;
+--source $SQL_PATH/mysql-test/diaginfo/catalog/sdb_diag_info_dump_2_1/database_catalog.sql
+;
+use sdb_diag_info_dump_2_1;
+show create database sdb_diag_info_dump_2_1;
+--exec sed -i 's/^delimiter\(.*\)/delimiter\1;/' $SQL_PATH/mysql-test/diaginfo/routine/sdb_diag_info_dump_2_1/p1/procedure_routine_catalog.sql
+--exec sed -i 's/^delimiter ;;/delimiter ;\$\$\$/' $SQL_PATH/mysql-test/diaginfo/routine/sdb_diag_info_dump_2_1/p1/procedure_routine_catalog.sql
+--source $SQL_PATH/mysql-test/diaginfo/routine/sdb_diag_info_dump_2_1/p1/procedure_routine_catalog.sql
+show create procedure p1;
+drop database sdb_diag_info_dump_2_1;
+--exec rm -rf diaginfo diaginfo.tar.gz
+
+
+# Testcase:seqDB-28353:收集指定表/视图和存储过程/函数信息,全有fullname
+# 收集
+--connection conn1
+--disable_warnings
+drop database if exists sdb_diag_info_dump_2_1;
+drop database if exists sdb_diag_info_dump_2_2;
+--enable_warnings
+
+create database sdb_diag_info_dump_2_1;
+show create database sdb_diag_info_dump_2_1;
+use sdb_diag_info_dump_2_1;
+CREATE TABLE `t1` (
+    `a` int(11) DEFAULT NULL, 
+    `b` varchar(10) COLLATE utf8mb4_bin DEFAULT NULL,
+    KEY `a` (`a`)
+) ENGINE=SequoiaDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin;
+insert into t1 values(1,"a"),(2,"b"),(3,"c");
+insert into t1 select * from t1;
+analyze table t1;
+show create table t1;
+CREATE TABLE `t2` (
+    `a` int(11) DEFAULT NULL, 
+    `b` varchar(10) COLLATE utf8mb4_bin DEFAULT NULL,
+    KEY `a` (`a`)
+) ENGINE=SequoiaDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin;
+insert into t2 values(1,"a"),(2,"b"),(3,"c");
+insert into t2 select * from t2;
+analyze table t2;
+show create table t2;
+
+create database sdb_diag_info_dump_2_2;
+show create database sdb_diag_info_dump_2_2;
+use sdb_diag_info_dump_2_2;
+CREATE TABLE `t1` (
+    `a` int(11) DEFAULT NULL, 
+    `b` varchar(10) COLLATE utf8mb4_bin DEFAULT NULL,
+    KEY `a` (`a`)
+) ENGINE=SequoiaDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin;
+insert into t1 values(1,"a"),(2,"b"),(3,"c");
+insert into t1 select * from t1;
+analyze table t1;
+show create table t1;
+CREATE TABLE `t2` (
+    `a` int(11) DEFAULT NULL, 
+    `b` varchar(10) COLLATE utf8mb4_bin DEFAULT NULL,
+    KEY `a` (`a`)
+) ENGINE=SequoiaDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin;
+insert into t2 values(1,"a"),(2,"b"),(3,"c");
+insert into t2 select * from t2;
+analyze table t2;
+show create table t2;
+
+use sdb_diag_info_dump_2_1;
+delimiter $;
+create function `f1`() returns varchar(10)
+begin
+return concat("test","func1");
+end $
+CREATE PROCEDURE `p1`(in a int)
+begin
+select 1 + 2;
+end $
+delimiter ;$
+show create function f1;
+show create procedure p1;
+
+use sdb_diag_info_dump_2_2;
+delimiter $;
+create function `f1`() returns varchar(10)
+begin
+return concat("test","func1");
+end $
+CREATE PROCEDURE `p1`(in a int)
+begin
+select 1 + 2;
+end $
+delimiter ;$
+
+--exec ../tools/diagnostic/sdb_diag_info_dump -h 127.0.0.1 -P $PORT_1 -u root -i inst$PORT_1 -o ./d1 -t "sdb_diag_info_dump_2_1.t1,t2" -R "sdb_diag_info_dump_2_1.f1,p1" -q "select * from t1 where a > 1;" | grep -vE "^INFO: Compress|^Spend .* sec\$" | sort
+--exec tar -zxvf d1/diaginfo.tar.gz
+--exec mv diaginfo d1/
+
+--exec ../tools/diagnostic/sdb_diag_info_dump -h 127.0.0.1 -P $PORT_1 -u root -i inst$PORT_1 -o ./d2 -t "sdb_diag_info_dump_2_1.t1,t2" -R "sdb_diag_info_dump_2_2.f1,sdb_diag_info_dump_2_2.p1" -q "select * from t1 where a > 1" | grep -vE "^INFO: Compress|^Spend .* sec\$" |sort
+--exec tar -zxvf d2/diaginfo.tar.gz
+--exec mv diaginfo d2/
+
+drop database sdb_diag_info_dump_2_1;
+drop database sdb_diag_info_dump_2_2;
+
+# 还原
+--connection conn2
+--disable_warnings
+drop database if exists sdb_diag_info_dump_2_1;
+drop database if exists sdb_diag_info_dump_2_2;
+--enable_warnings
+
+set sequoiadb_diag_info_path=DEFAULT;
+--source $SQL_PATH/mysql-test/d1/diaginfo/catalog/sdb_diag_info_dump_2_1/database_catalog.sql
+;
+use sdb_diag_info_dump_2_1;
+show create database sdb_diag_info_dump_2_1;
+--source $SQL_PATH/mysql-test/d1/diaginfo/catalog/sdb_diag_info_dump_2_1/t1/table_catalog.sql
+;
+show create table t1;
+--source $SQL_PATH/mysql-test/d1/diaginfo/catalog/sdb_diag_info_dump_2_1/t2/table_catalog.sql
+;
+show create table t2;
+--exec sed -i 's/^delimiter\(.*\)/delimiter\1;/' $SQL_PATH/mysql-test/d1/diaginfo/routine/sdb_diag_info_dump_2_1/f1/function_routine_catalog.sql
+--exec sed -i 's/^delimiter ;;/delimiter ;\$\$\$/' $SQL_PATH/mysql-test/d1/diaginfo/routine/sdb_diag_info_dump_2_1/f1/function_routine_catalog.sql
+--source $SQL_PATH/mysql-test/d1/diaginfo/routine/sdb_diag_info_dump_2_1/f1/function_routine_catalog.sql
+show create function f1;
+--exec sed -i 's/^delimiter\(.*\)/delimiter\1;/' $SQL_PATH/mysql-test/d1/diaginfo/routine/sdb_diag_info_dump_2_1/p1/procedure_routine_catalog.sql
+--exec sed -i 's/^delimiter ;;/delimiter ;\$\$\$/' $SQL_PATH/mysql-test/d1/diaginfo/routine/sdb_diag_info_dump_2_1/p1/procedure_routine_catalog.sql
+--source $SQL_PATH/mysql-test/d1/diaginfo/routine/sdb_diag_info_dump_2_1/p1/procedure_routine_catalog.sql
+show create procedure p1;
+
+--exec echo 'set sequoiadb_diag_info_path="$SQL_PATH/mysql-test/d1/diaginfo";' > $SQL_SET_DIAG_PATH
+--replace_regex /(set sequoiadb_diag_info_path=).*/\1/
+--source $SQL_PATH/mysql-test/$SQL_SET_DIAG_PATH
+--exec cat d1/diaginfo/query/explain.result
+flush tables;
+explain select * from t1 where a > 1;
+
+drop database sdb_diag_info_dump_2_1;
+
+set sequoiadb_diag_info_path=DEFAULT;
+--source $SQL_PATH/mysql-test/d2/diaginfo/catalog/sdb_diag_info_dump_2_1/database_catalog.sql
+;
+use sdb_diag_info_dump_2_1;
+show create database sdb_diag_info_dump_2_1;
+--source $SQL_PATH/mysql-test/d2/diaginfo/catalog/sdb_diag_info_dump_2_1/t1/table_catalog.sql
+;
+show create table t1;
+--source $SQL_PATH/mysql-test/d2/diaginfo/catalog/sdb_diag_info_dump_2_1/t2/table_catalog.sql
+;
+show create table t2;
+--source $SQL_PATH/mysql-test/d2/diaginfo/catalog/sdb_diag_info_dump_2_2/database_catalog.sql
+;
+use sdb_diag_info_dump_2_2;
+show create database sdb_diag_info_dump_2_2;
+--exec sed -i 's/^delimiter\(.*\)/delimiter\1;/' $SQL_PATH/mysql-test/d2/diaginfo/routine/sdb_diag_info_dump_2_2/f1/function_routine_catalog.sql
+--exec sed -i 's/^delimiter ;;/delimiter ;\$\$\$/' $SQL_PATH/mysql-test/d2/diaginfo/routine/sdb_diag_info_dump_2_2/f1/function_routine_catalog.sql
+--source $SQL_PATH/mysql-test/d2/diaginfo/routine/sdb_diag_info_dump_2_2/f1/function_routine_catalog.sql
+show create function f1;
+--exec sed -i 's/^delimiter\(.*\)/delimiter\1;/' $SQL_PATH/mysql-test/d2/diaginfo/routine/sdb_diag_info_dump_2_2/p1/procedure_routine_catalog.sql
+--exec sed -i 's/^delimiter ;;/delimiter ;\$\$\$/' $SQL_PATH/mysql-test/d2/diaginfo/routine/sdb_diag_info_dump_2_2/p1/procedure_routine_catalog.sql
+--source $SQL_PATH/mysql-test/d2/diaginfo/routine/sdb_diag_info_dump_2_2/p1/procedure_routine_catalog.sql
+show create procedure p1;
+
+drop database sdb_diag_info_dump_2_1;
+drop database sdb_diag_info_dump_2_2;
+--exec rm -rf d1/ d2/
+
+
+# Testcase:seqDB-28354:收集指定表/视图和存储过程/函数信息,部分有无fullname
+# 收集
+--connection conn1
+--disable_warnings
+drop database if exists sdb_diag_info_dump_2_1;
+drop database if exists sdb_diag_info_dump_2_2;
+--enable_warnings
+
+create database sdb_diag_info_dump_2_1;
+show create database sdb_diag_info_dump_2_1;
+use sdb_diag_info_dump_2_1;
+CREATE TABLE `t1` (
+    `a` int(11) DEFAULT NULL, 
+    `b` varchar(10) COLLATE utf8mb4_bin DEFAULT NULL,
+    KEY `a` (`a`)
+) ENGINE=SequoiaDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin;
+insert into t1 values(1,"a"),(2,"b"),(3,"c");
+insert into t1 select * from t1;
+analyze table t1;
+show create table t1;
+CREATE TABLE `t2` (
+    `a` int(11) DEFAULT NULL, 
+    `b` varchar(10) COLLATE utf8mb4_bin DEFAULT NULL,
+    KEY `a` (`a`)
+) ENGINE=SequoiaDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin;
+insert into t2 values(1,"a"),(2,"b"),(3,"c");
+insert into t2 select * from t2;
+analyze table t2;
+show create table t2;
+
+create database sdb_diag_info_dump_2_2;
+show create database sdb_diag_info_dump_2_2;
+use sdb_diag_info_dump_2_2;
+CREATE TABLE `t1` (
+    `a` int(11) DEFAULT NULL, 
+    `b` varchar(10) COLLATE utf8mb4_bin DEFAULT NULL,
+    KEY `a` (`a`)
+) ENGINE=SequoiaDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin;
+insert into t1 values(1,"a"),(2,"b"),(3,"c");
+insert into t1 select * from t1;
+analyze table t1;
+show create table t1;
+CREATE TABLE `t2` (
+    `a` int(11) DEFAULT NULL, 
+    `b` varchar(10) COLLATE utf8mb4_bin DEFAULT NULL,
+    KEY `a` (`a`)
+) ENGINE=SequoiaDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin;
+insert into t2 values(1,"a"),(2,"b"),(3,"c");
+insert into t2 select * from t2;
+analyze table t2;
+show create table t2;
+
+use sdb_diag_info_dump_2_1;
+delimiter $;
+create function `f1`() returns varchar(10)
+begin
+return concat("test","func1");
+end $
+CREATE PROCEDURE `p1`(in a int)
+begin
+select 1 + 2;
+end $
+delimiter ;$
+show create function f1;
+show create procedure p1;
+
+use sdb_diag_info_dump_2_2;
+delimiter $;
+create function `f1`() returns varchar(10)
+begin
+return concat("test","func1");
+end $
+CREATE PROCEDURE `p1`(in a int)
+begin
+select 1 + 2;
+end $
+delimiter ;$
+
+--exec ../tools/diagnostic/sdb_diag_info_dump -h 127.0.0.1 -P $PORT_1 -u root -i inst$PORT_1 -o ./diaginfo -t "t1,t2" -R "sdb_diag_info_dump_2_1.f1,p1" | grep -vE "^INFO: Compress|^Spend .* sec\$"
+--exec rm -rf diaginfo diaginfo.tar.gz
+
+--exec ../tools/diagnostic/sdb_diag_info_dump -h 127.0.0.1 -P $PORT_1 -u root -i inst$PORT_1 -o ./diaginfo -t "sdb_diag_info_dump_2_1.t1,t2" -R "f1,p1" | grep -vE "^INFO: Compress|^Spend .* sec\$" | sort
+--exec tar -zxvf diaginfo.tar.gz
+
+drop database sdb_diag_info_dump_2_1;
+drop database sdb_diag_info_dump_2_2;
+
+# 还原
+--connection conn2
+--disable_warnings
+drop database if exists sdb_diag_info_dump_2_1;
+drop database if exists sdb_diag_info_dump_2_2;
+--enable_warnings
+
+set sequoiadb_diag_info_path=DEFAULT;
+--source $SQL_PATH/mysql-test/diaginfo/catalog/sdb_diag_info_dump_2_1/database_catalog.sql
+;
+use sdb_diag_info_dump_2_1;
+show create database sdb_diag_info_dump_2_1;
+--source $SQL_PATH/mysql-test/diaginfo/catalog/sdb_diag_info_dump_2_1/t1/table_catalog.sql
+;
+show create table t1;
+--source $SQL_PATH/mysql-test/diaginfo/catalog/sdb_diag_info_dump_2_1/t2/table_catalog.sql
+;
+show create table t2;
+--exec sed -i 's/^delimiter\(.*\)/delimiter\1;/' $SQL_PATH/mysql-test/diaginfo/routine/sdb_diag_info_dump_2_1/f1/function_routine_catalog.sql
+--exec sed -i 's/^delimiter ;;/delimiter ;\$\$\$/' $SQL_PATH/mysql-test/diaginfo/routine/sdb_diag_info_dump_2_1/f1/function_routine_catalog.sql
+--source $SQL_PATH/mysql-test/diaginfo/routine/sdb_diag_info_dump_2_1/f1/function_routine_catalog.sql
+show create function f1;
+--exec sed -i 's/^delimiter\(.*\)/delimiter\1;/' $SQL_PATH/mysql-test/diaginfo/routine/sdb_diag_info_dump_2_1/p1/procedure_routine_catalog.sql
+--exec sed -i 's/^delimiter ;;/delimiter ;\$\$\$/' $SQL_PATH/mysql-test/diaginfo/routine/sdb_diag_info_dump_2_1/p1/procedure_routine_catalog.sql
+--source $SQL_PATH/mysql-test/diaginfo/routine/sdb_diag_info_dump_2_1/p1/procedure_routine_catalog.sql
+show create procedure p1;
+
+drop database sdb_diag_info_dump_2_1;
+--exec rm -rf diaginfo diaginfo.tar.gz
+
+
+# Testcase:seqDB-28355:收集指定表/视图 、存储过程/函数和 query 的 EXPLAIN 和 optimizer_trace 结果
+# 收集
+--connection conn1
+--disable_warnings
+drop database if exists sdb_diag_info_dump_2_1;
+drop database if exists sdb_diag_info_dump_2_2;
+--enable_warnings
+
+create database sdb_diag_info_dump_2_1;
+show create database sdb_diag_info_dump_2_1;
+use sdb_diag_info_dump_2_1;
+CREATE TABLE `t1` (
+    `a` int(11) DEFAULT NULL, 
+    `b` varchar(10) COLLATE utf8mb4_bin DEFAULT NULL,
+    KEY `a` (`a`)
+) ENGINE=SequoiaDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin;
+insert into t1 values(1,"a"),(2,"b"),(3,"c");
+insert into t1 select * from t1;
+analyze table t1;
+show create table t1;
+CREATE TABLE `t2` (
+    `a` int(11) DEFAULT NULL, 
+    `b` varchar(10) COLLATE utf8mb4_bin DEFAULT NULL,
+    KEY `a` (`a`)
+) ENGINE=SequoiaDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin;
+insert into t2 values(1,"a"),(2,"b"),(3,"c");
+insert into t2 select * from t2;
+analyze table t2;
+show create table t2;
+
+create database sdb_diag_info_dump_2_2;
+show create database sdb_diag_info_dump_2_2;
+use sdb_diag_info_dump_2_2;
+CREATE TABLE `t1` (
+    `a` int(11) DEFAULT NULL, 
+    `b` varchar(10) COLLATE utf8mb4_bin DEFAULT NULL,
+    KEY `a` (`a`)
+) ENGINE=SequoiaDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin;
+insert into t1 values(1,"a"),(2,"b"),(3,"c");
+insert into t1 select * from t1;
+analyze table t1;
+show create table t1;
+CREATE TABLE `t2` (
+    `a` int(11) DEFAULT NULL, 
+    `b` varchar(10) COLLATE utf8mb4_bin DEFAULT NULL,
+    KEY `a` (`a`)
+) ENGINE=SequoiaDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin;
+insert into t2 values(1,"a"),(2,"b"),(3,"c");
+insert into t2 select * from t2;
+analyze table t2;
+show create table t2;
+
+use sdb_diag_info_dump_2_1;
+delimiter $;
+create function `f1`() returns varchar(10)
+begin
+return concat("test","func1");
+end $
+CREATE PROCEDURE `p1`(in a int)
+begin
+select 1 + 2;
+end $
+delimiter ;$
+show create function f1;
+show create procedure p1;
+
+use sdb_diag_info_dump_2_2;
+delimiter $;
+create function `f1`() returns varchar(10)
+begin
+return concat("test","func1");
+end $
+CREATE PROCEDURE `p1`(in a int)
+begin
+select 1 + 2;
+end $
+delimiter ;$
+
+--exec ../tools/diagnostic/sdb_diag_info_dump -h 127.0.0.1 -P $PORT_1 -u root -i inst$PORT_1 -o ./diaginfo -t "sdb_diag_info_dump_2_1.t1" -R "sdb_diag_info_dump_2_1.p1" -q "select * from t1 where a > 1;" | grep -vE "^INFO: Compress|^Spend .* sec\$"
+--exec tar -zxvf diaginfo.tar.gz
+
+drop database sdb_diag_info_dump_2_1;
+drop database sdb_diag_info_dump_2_2;
+
+# 还原
+--connection conn2
+--disable_warnings
+drop database if exists sdb_diag_info_dump_2_1;
+drop database if exists sdb_diag_info_dump_2_2;
+--enable_warnings
+
+set sequoiadb_diag_info_path=DEFAULT;
+--source $SQL_PATH/mysql-test/diaginfo/catalog/sdb_diag_info_dump_2_1/database_catalog.sql
+;
+use sdb_diag_info_dump_2_1;
+show create database sdb_diag_info_dump_2_1;
+--source $SQL_PATH/mysql-test/diaginfo/catalog/sdb_diag_info_dump_2_1/t1/table_catalog.sql
+;
+show create table t1;
+--exec sed -i 's/^delimiter\(.*\)/delimiter\1;/' $SQL_PATH/mysql-test/diaginfo/routine/sdb_diag_info_dump_2_1/p1/procedure_routine_catalog.sql
+--exec sed -i 's/^delimiter ;;/delimiter ;\$\$\$/' $SQL_PATH/mysql-test/diaginfo/routine/sdb_diag_info_dump_2_1/p1/procedure_routine_catalog.sql
+--source $SQL_PATH/mysql-test/diaginfo/routine/sdb_diag_info_dump_2_1/p1/procedure_routine_catalog.sql
+show create procedure p1;
+--exec echo 'set sequoiadb_diag_info_path="$SQL_PATH/mysql-test/diaginfo";' > $SQL_SET_DIAG_PATH
+--replace_regex /(set sequoiadb_diag_info_path=).*/\1/
+--source $SQL_PATH/mysql-test/$SQL_SET_DIAG_PATH
+--exec cat diaginfo/query/explain.result
+flush tables;
+explain select * from t1 where a > 1;
+
+drop database sdb_diag_info_dump_2_1;
+--exec rm -rf diaginfo diaginfo.tar.gz
+
+
+# Testcase:seqDB-28356:还原表类型包含普通表（有索引）和 分区表（有索引），表数量为多个
+# 收集
+--connection conn1
+--disable_warnings
+drop database if exists sdb_diag_info_dump_2_1;
+--enable_warnings
+
+create database sdb_diag_info_dump_2_1;
+show create database sdb_diag_info_dump_2_1;
+use sdb_diag_info_dump_2_1;
+CREATE TABLE `t1` (
+    `a` int(11) DEFAULT NULL, 
+    `b` varchar(10) COLLATE utf8mb4_bin DEFAULT NULL,
+    KEY `a` (`a`)
+) ENGINE=SequoiaDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin;
+insert into t1 values(1,"a"),(2,"b"),(3,"c");
+insert into t1 select * from t1;
+analyze table t1;
+show create table t1;
+CREATE TABLE `t2` (
+  `id` int(11) DEFAULT NULL,
+  `a` varchar(10) COLLATE utf8mb4_bin DEFAULT NULL,
+  KEY `a` (`a`)
+) ENGINE=SequoiaDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin
+/*!50100 PARTITION BY LIST (`id`)
+(PARTITION id1 VALUES IN (1) ENGINE = SequoiaDB,
+ PARTITION id2 VALUES IN (2) ENGINE = SequoiaDB,
+ PARTITION id3 VALUES IN (3) ENGINE = SequoiaDB) */;
+
+DROP PROCEDURE IF EXISTS insert_data;
+delimiter $;
+CREATE PROCEDURE insert_data()
+begin
+declare i int DEFAULT 1;
+declare j int DEFAULT 1;
+declare return_str1 varchar(10) DEFAULT '';
+while i <= 3 do
+   while j <= 100 do
+      set return_str1 = concat(i,j);
+      insert into t2 values(i,return_str1);
+      set j = j+1;
+      set return_str1='';
+   end while;
+   set j = 1;
+   set i = i+1;
+end while;
+end $
+delimiter ;$
+call insert_data(); 
+analyze table t2;
+show create table t2;
+
+--exec ../tools/diagnostic/sdb_diag_info_dump -h 127.0.0.1 -P $PORT_1 -u root -i inst$PORT_1 -o ./diaginfo -D sdb_diag_info_dump_2_1 -t "t1,t2" -R "insert_data" -q "select * from t2 where a > 1" | grep -vE "^INFO: Compress|^Spend .* sec\$" | sort
+--exec tar -zxvf diaginfo.tar.gz
+
+drop database sdb_diag_info_dump_2_1;
+
+# 还原
+--connection conn2
+--disable_warnings
+drop database if exists sdb_diag_info_dump_2_1;
+--enable_warnings
+
+set sequoiadb_diag_info_path=DEFAULT;
+--source $SQL_PATH/mysql-test/diaginfo/catalog/sdb_diag_info_dump_2_1/database_catalog.sql
+;
+use sdb_diag_info_dump_2_1;
+show create database sdb_diag_info_dump_2_1;
+--source $SQL_PATH/mysql-test/diaginfo/catalog/sdb_diag_info_dump_2_1/t1/table_catalog.sql
+;
+show create table t1;
+--source $SQL_PATH/mysql-test/diaginfo/catalog/sdb_diag_info_dump_2_1/t2/table_catalog.sql
+;
+show create table t2;
+--exec sed -i 's/^delimiter\(.*\)/delimiter\1;/' $SQL_PATH/mysql-test/diaginfo/routine/sdb_diag_info_dump_2_1/insert_data/procedure_routine_catalog.sql
+--exec sed -i 's/^delimiter ;;/delimiter ;\$\$\$/' $SQL_PATH/mysql-test/diaginfo/routine/sdb_diag_info_dump_2_1/insert_data/procedure_routine_catalog.sql
+--source $SQL_PATH/mysql-test/diaginfo/routine/sdb_diag_info_dump_2_1/insert_data/procedure_routine_catalog.sql
+show create procedure insert_data;
+
+--exec echo 'set sequoiadb_diag_info_path="$SQL_PATH/mysql-test/diaginfo";' > $SQL_SET_DIAG_PATH
+--replace_regex /(set sequoiadb_diag_info_path=).*/\1/
+--source $SQL_PATH/mysql-test/$SQL_SET_DIAG_PATH
+--exec cat diaginfo/query/explain.result
+flush tables;
+explain select * from t2 where a > 1;
+drop database sdb_diag_info_dump_2_1;
+--exec rm -rf diaginfo diaginfo.tar.gz
+
+
+# Testcase:seqDB-28358:还原前对统计信息进行修改造成格式错误
+# 收集
+--connection conn1
+--disable_warnings
+drop database if exists sdb_diag_info_dump_2_1;
+--enable_warnings
+
+create database sdb_diag_info_dump_2_1;
+show create database sdb_diag_info_dump_2_1;
+use sdb_diag_info_dump_2_1;
+CREATE TABLE `t1` (
+    `a` int(11) DEFAULT NULL, 
+    `b` varchar(10) COLLATE utf8mb4_bin DEFAULT NULL,
+    KEY `a` (`a`)
+) ENGINE=SequoiaDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin;
+insert into t1 values(1,"a"),(2,"b"),(3,"c");
+insert into t1 select * from t1;
+analyze table t1;
+show create table t1;
+
+--exec ../tools/diagnostic/sdb_diag_info_dump -h 127.0.0.1 -P $PORT_1 -u root -i inst$PORT_1 -o ./diaginfo -D sdb_diag_info_dump_2_1 -t t1 -q "select * from t1 where a > 1" | grep -vE "^INFO: Compress|^Spend .* sec\$"
+--exec tar -zxvf diaginfo.tar.gz
+
+drop database sdb_diag_info_dump_2_1;
+
+# 修改统计信息
+--exec truncate -s 100 $SQL_PATH/mysql-test/diaginfo/catalog/sdb_diag_info_dump_2_1/t1/table_statistics.json
+
+# 还原
+--connection conn2
+--disable_warnings
+drop database if exists sdb_diag_info_dump_2_1;
+--enable_warnings
+
+set sequoiadb_diag_info_path=DEFAULT;
+--source $SQL_PATH/mysql-test/diaginfo/catalog/sdb_diag_info_dump_2_1/database_catalog.sql
+;
+show create database sdb_diag_info_dump_2_1;
+use sdb_diag_info_dump_2_1;
+--source $SQL_PATH/mysql-test/diaginfo/catalog/sdb_diag_info_dump_2_1/t1/table_catalog.sql
+;
+show create table t1;
+--exec echo 'set sequoiadb_diag_info_path="$SQL_PATH/mysql-test/diaginfo";' > $SQL_SET_DIAG_PATH
+--replace_regex /(set sequoiadb_diag_info_path=).*/\1/
+--source $SQL_PATH/mysql-test/$SQL_SET_DIAG_PATH
+--exec cat diaginfo/query/explain.result
+flush tables;
+explain select * from sdb_diag_info_dump_2_1.t1 where a > 1;
+--exec rm -rf diaginfo diaginfo.tar.gz
+drop database sdb_diag_info_dump_2_1;
+
+
+# Testcase:seqDB-28359:没有还原表结构
+# 收集
+--connection conn1
+--disable_warnings
+drop database if exists sdb_diag_info_dump_2_1;
+--enable_warnings
+
+create database sdb_diag_info_dump_2_1;
+show create database sdb_diag_info_dump_2_1;
+use sdb_diag_info_dump_2_1;
+CREATE TABLE `t1` (
+    `a` int(11) DEFAULT NULL, 
+    `b` varchar(10) COLLATE utf8mb4_bin DEFAULT NULL,
+    KEY `a` (`a`)
+) ENGINE=SequoiaDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin;
+insert into t1 values(1,"a"),(2,"b"),(3,"c");
+insert into t1 select * from t1;
+analyze table t1;
+show create table t1;
+
+--exec ../tools/diagnostic/sdb_diag_info_dump -h 127.0.0.1 -P $PORT_1 -u root -i inst$PORT_1 -o ./diaginfo -D sdb_diag_info_dump_2_1 -t t1 -q "select * from t1 where a > 1" | grep -vE "^INFO: Compress|^Spend .* sec\$"
+--exec tar -zxvf diaginfo.tar.gz
+
+drop database sdb_diag_info_dump_2_1;
+
+# 还原
+--connection conn2
+--disable_warnings
+drop database if exists sdb_diag_info_dump_2_1;
+--enable_warnings
+
+set sequoiadb_diag_info_path=DEFAULT;
+--source $SQL_PATH/mysql-test/diaginfo/catalog/sdb_diag_info_dump_2_1/database_catalog.sql
+;
+show create database sdb_diag_info_dump_2_1;
+use sdb_diag_info_dump_2_1;
+
+--exec echo 'set sequoiadb_diag_info_path="$SQL_PATH/mysql-test/diaginfo";' > $SQL_SET_DIAG_PATH
+--replace_regex /(set sequoiadb_diag_info_path=).*/\1/
+--source $SQL_PATH/mysql-test/$SQL_SET_DIAG_PATH
+--exec cat diaginfo/query/explain.result
+flush tables;
+--disable_abort_on_error
+explain select * from .t1 where a > 1;
+--enable_abort_on_error
+--exec rm -rf diaginfo diaginfo.tar.gz
+drop database sdb_diag_info_dump_2_1;
+
+
+--connection conn1
+delete from mysql.user where user='test_1';
+flush privileges;
+create user 'test_1'@'*' identified by 'test';
+grant all privileges on *.* to test_1@'%' identified by 'test';
+flush privileges;
+
+
+# Testcase:seqDB-28363:登录参数组合验证（有效参数）
+# 收集
+--connection conn1
+--disable_warnings
+drop database if exists sdb_diag_info_dump_2_1;
+--enable_warnings
+
+create database sdb_diag_info_dump_2_1;
+show create database sdb_diag_info_dump_2_1;
+use sdb_diag_info_dump_2_1;
+CREATE TABLE `t1` (
+    `a` int(11) DEFAULT NULL, 
+    `b` varchar(10) COLLATE utf8mb4_bin DEFAULT NULL,
+    KEY `a` (`a`)
+) ENGINE=SequoiaDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin;
+insert into t1 values(1,"a"),(2,"b"),(3,"c");
+insert into t1 select * from t1;
+analyze table t1;
+
+--exec ../tools/diagnostic/sdb_diag_info_dump -h 127.0.0.1 -P $PORT_1 -u test_1 -ptest -i inst$PORT_1 -o ./diaginfo -q "select * from sdb_diag_info_dump_2_1.t1 where a > 1" | grep -vE "^INFO: Compress|^Spend .* sec\$"
+--exec tar -zxvf diaginfo.tar.gz
+--exec cat diaginfo/query/explain.result
+--exec rm -rf diaginfo diaginfo.tar.gz
+
+--disable_abort_on_error
+--exec ../tools/diagnostic/sdb_diag_info_dump -h u16-t66 -P $PORT_1 -u test_1 -ptest -i inst$PORT_1 -o ./diaginfo -q "select * from sdb_diag_info_dump_2_1.t1 where a > 1"
+--enable_abort_on_error
+--exec rm -rf diaginfo diaginfo.tar.gz
+
+drop database sdb_diag_info_dump_2_1;
+
+
+# Testcase:seqDB-28364:主机-h参数验证
+# 收集
+--connection conn1
+--disable_warnings
+drop database if exists sdb_diag_info_dump_2_1;
+--enable_warnings
+
+create database sdb_diag_info_dump_2_1;
+show create database sdb_diag_info_dump_2_1;
+use sdb_diag_info_dump_2_1;
+CREATE TABLE `t1` (
+    `a` int(11) DEFAULT NULL, 
+    `b` varchar(10) COLLATE utf8mb4_bin DEFAULT NULL,
+    KEY `a` (`a`)
+) ENGINE=SequoiaDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin;
+insert into t1 values(1,"a"),(2,"b"),(3,"c");
+insert into t1 select * from t1;
+analyze table t1;
+
+--disable_abort_on_error
+--exec ../tools/diagnostic/sdb_diag_info_dump -h "" -P $PORT_1 -u test_1 -ptest -i inst$PORT_1 -o ./diaginfo -q "select * from sdb_diag_info_dump_2_1.t1 where a > 1"
+--enable_abort_on_error
+--exec rm -rf diaginfo diaginfo.tar.gz
+
+--disable_abort_on_error
+--exec ../tools/diagnostic/sdb_diag_info_dump -P $PORT_1 -u test_1 -ptest -i inst$PORT_1 -o ./diaginfo -q "select * from sdb_diag_info_dump_2_1.t1 where a > 1"
+--enable_abort_on_error
+--exec rm -rf diaginfo diaginfo.tar.gz
+
+--disable_abort_on_error
+--exec ../tools/diagnostic/sdb_diag_info_dump -h error_host -P $PORT_1 -u test_1 -ptest -i inst$PORT_1 -o ./diaginfo -q "select * from sdb_diag_info_dump_2_1.t1 where a > 1"
+--enable_abort_on_error
+--exec rm -rf diaginfo diaginfo.tar.gz
+
+--disable_abort_on_error
+--exec ../tools/diagnostic/sdb_diag_info_dump -h localhost -P $PORT_1 -u test_1 -ptest -i inst$PORT_1 -o ./diaginfo -q "select * from sdb_diag_info_dump_2_1.t1 where a > 1"
+--enable_abort_on_error
+--exec rm -rf diaginfo diaginfo.tar.gz
+
+drop database sdb_diag_info_dump_2_1;
+
+
+# Testcase:seqDB-28365:用户名-u参数验证
+# 收集
+--connection conn1
+--disable_warnings
+drop database if exists sdb_diag_info_dump_2_1;
+--enable_warnings
+
+create database sdb_diag_info_dump_2_1;
+show create database sdb_diag_info_dump_2_1;
+use sdb_diag_info_dump_2_1;
+CREATE TABLE `t1` (
+    `a` int(11) DEFAULT NULL, 
+    `b` varchar(10) COLLATE utf8mb4_bin DEFAULT NULL,
+    KEY `a` (`a`)
+) ENGINE=SequoiaDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin;
+insert into t1 values(1,"a"),(2,"b"),(3,"c");
+insert into t1 select * from t1;
+analyze table t1;
+
+--disable_abort_on_error
+--exec ../tools/diagnostic/sdb_diag_info_dump -h 127.0.0.1 -P $PORT_1 -u "" -i inst$PORT_1 -o ./diaginfo -q "select * from sdb_diag_info_dump_2_1.t1 where a > 1"
+--enable_abort_on_error
+--exec rm -rf diaginfo diaginfo.tar.gz
+
+--disable_abort_on_error
+--exec ../tools/diagnostic/sdb_diag_info_dump -h 127.0.0.1 -P $PORT_1 -u "中文" -i inst$PORT_1 -o ./diaginfo -q "select * from sdb_diag_info_dump_2_1.t1 where a > 1"
+--enable_abort_on_error
+--exec rm -rf diaginfo diaginfo.tar.gz
+
+--disable_abort_on_error
+--exec ../tools/diagnostic/sdb_diag_info_dump -h 127.0.0.1 -P $PORT_1 -u '@^#* _' -i inst$PORT_1 -o ./diaginfo -q "select * from sdb_diag_info_dump_2_1.t1 where a > 1"
+--enable_abort_on_error
+--exec rm -rf diaginfo diaginfo.tar.gz
+
+--disable_abort_on_error
+--exec ../tools/diagnostic/sdb_diag_info_dump -h 127.0.0.1 -P $PORT_1 -u '@^#*_' -i inst$PORT_1 -o ./diaginfo -q "select * from sdb_diag_info_dump_2_1.t1 where a > 1"
+--enable_abort_on_error
+--exec rm -rf diaginfo diaginfo.tar.gz
+
+--disable_abort_on_error
+--exec ../tools/diagnostic/sdb_diag_info_dump -h 127.0.0.1 -P $PORT_1 -i inst$PORT_1 -o ./diaginfo -q "select * from sdb_diag_info_dump_2_1.t1 where a > 1"
+--enable_abort_on_error
+--exec rm -rf diaginfo diaginfo.tar.gz
+
+--disable_abort_on_error
+--exec ../tools/diagnostic/sdb_diag_info_dump -h 127.0.0.1 -P $PORT_1 -u unknown -i inst$PORT_1 -o ./diaginfo -q "select * from sdb_diag_info_dump_2_1.t1 where a > 1"
+--enable_abort_on_error
+--exec rm -rf diaginfo diaginfo.tar.gz
+
+drop database sdb_diag_info_dump_2_1;
+
+
+# Testcase:seqDB-28366:密码-p参数验证
+# 收集
+--connection conn1
+--disable_warnings
+drop database if exists sdb_diag_info_dump_2_1;
+--enable_warnings
+
+create database sdb_diag_info_dump_2_1;
+show create database sdb_diag_info_dump_2_1;
+use sdb_diag_info_dump_2_1;
+CREATE TABLE `t1` (
+    `a` int(11) DEFAULT NULL, 
+    `b` varchar(10) COLLATE utf8mb4_bin DEFAULT NULL,
+    KEY `a` (`a`)
+) ENGINE=SequoiaDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin;
+insert into t1 values(1,"a"),(2,"b"),(3,"c");
+insert into t1 select * from t1;
+analyze table t1;
+
+grant all privileges on *.* to test_1@'%' identified by 'test';
+flush privileges;
+--exec ../tools/diagnostic/sdb_diag_info_dump -h 127.0.0.1 -P $PORT_1 -u test_1 -ptest -i inst$PORT_1 -o ./diaginfo -q "select * from sdb_diag_info_dump_2_1.t1 where a > 1" | grep -vE "^INFO: Compress|^Spend .* sec\$"
+--exec tar -zxvf diaginfo.tar.gz
+--exec rm -rf diaginfo diaginfo.tar.gz
+
+grant all privileges on *.* to test_1@'%' identified by '中文';
+flush privileges;
+--exec ../tools/diagnostic/sdb_diag_info_dump -h 127.0.0.1 -P $PORT_1 -u test_1 -p中文 -i inst$PORT_1 -o ./diaginfo -q "select * from sdb_diag_info_dump_2_1.t1 where a > 1" | grep -vE "^INFO: Compress|^Spend .* sec\$"
+--exec tar -zxvf diaginfo.tar.gz
+--exec rm -rf diaginfo diaginfo.tar.gz
+
+grant all privileges on *.* to test_1@'%' identified by '@^#* _';
+flush privileges;
+--exec ../tools/diagnostic/sdb_diag_info_dump -h 127.0.0.1 -P $PORT_1 -u test_1 -p'@^#* _' -i inst$PORT_1 -o ./diaginfo -q "select * from sdb_diag_info_dump_2_1.t1 where a > 1" | grep -vE "^INFO: Compress|^Spend .* sec\$"
+--exec tar -zxvf diaginfo.tar.gz
+--exec rm -rf diaginfo diaginfo.tar.gz
+
+grant all privileges on *.* to test_1@'%' identified by '@^#*_';
+flush privileges;
+--exec ../tools/diagnostic/sdb_diag_info_dump -h 127.0.0.1 -P $PORT_1 -u test_1 -p'@^#*_' -i inst$PORT_1 -o ./diaginfo -q "select * from sdb_diag_info_dump_2_1.t1 where a > 1" | grep -vE "^INFO: Compress|^Spend .* sec\$"
+--exec tar -zxvf diaginfo.tar.gz
+--exec rm -rf diaginfo diaginfo.tar.gz
+
+--exec ../tools/diagnostic/sdb_diag_info_dump -h 127.0.0.1 -P $PORT_1 -u root -i inst$PORT_1 -o ./diaginfo -q "select * from sdb_diag_info_dump_2_1.t1 where a > 1" | grep -vE "^INFO: Compress|^Spend .* sec\$"
+--exec tar -zxvf diaginfo.tar.gz
+--exec rm -rf diaginfo diaginfo.tar.gz
+
+--disable_abort_on_error
+--exec ../tools/diagnostic/sdb_diag_info_dump -h 127.0.0.1 -P $PORT_1 -u test_1 -perror -i inst$PORT_1 -o ./diaginfo -q "select * from sdb_diag_info_dump_2_1.t1 where a > 1"
+--enable_abort_on_error
+--exec rm -rf diaginfo diaginfo.tar.gz
+
+--disable_abort_on_error
+--exec ../tools/diagnostic/sdb_diag_info_dump -h 127.0.0.1 -P $PORT_1 -u test_1 -i inst$PORT_1 -o ./diaginfo -q "select * from sdb_diag_info_dump_2_1.t1 where a > 1"
+--enable_abort_on_error
+--exec rm -rf diaginfo diaginfo.tar.gz
+
+grant all privileges on *.* to test_1@'%' identified by 'test';
+flush privileges;
+drop database sdb_diag_info_dump_2_1;
+
+
+# Testcase:seqDB-28367:端口号-P参数验证
+# 收集
+--connection conn1
+--disable_warnings
+drop database if exists sdb_diag_info_dump_2_1;
+--enable_warnings
+
+create database sdb_diag_info_dump_2_1;
+show create database sdb_diag_info_dump_2_1;
+use sdb_diag_info_dump_2_1;
+CREATE TABLE `t1` (
+    `a` int(11) DEFAULT NULL, 
+    `b` varchar(10) COLLATE utf8mb4_bin DEFAULT NULL,
+    KEY `a` (`a`)
+) ENGINE=SequoiaDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin;
+insert into t1 values(1,"a"),(2,"b"),(3,"c");
+insert into t1 select * from t1;
+analyze table t1;
+
+--disable_abort_on_error
+--exec ../tools/diagnostic/sdb_diag_info_dump -h 127.0.0.1 -P 12345 -u test_1 -ptest -i inst$PORT_1 -o ./diaginfo -q "select * from sdb_diag_info_dump_2_1.t1 where a > 1"
+--enable_abort_on_error
+--exec rm -rf diaginfo diaginfo.tar.gz
+
+--disable_abort_on_error
+--exec ../tools/diagnostic/sdb_diag_info_dump -h 127.0.0.1 -u test_1 -ptest -i inst$PORT_1 -o ./diaginfo -q "select * from sdb_diag_info_dump_2_1.t1 where a > 1"
+--enable_abort_on_error
+--exec rm -rf diaginfo diaginfo.tar.gz
+
+--disable_abort_on_error
+--exec ../tools/diagnostic/sdb_diag_info_dump -h 127.0.0.1 -P "" -u test_1 -ptest -i inst$PORT_1 -o ./diaginfo -q "select * from sdb_diag_info_dump_2_1.t1 where a > 1"
+--enable_abort_on_error
+--exec rm -rf diaginfo diaginfo.tar.gz
+
+drop database sdb_diag_info_dump_2_1;
+
+
+# Testcase:seqDB-28368:实例名-i参数验证
+# 收集
+--connection conn1
+--disable_warnings
+drop database if exists sdb_diag_info_dump_2_1;
+--enable_warnings
+
+create database sdb_diag_info_dump_2_1;
+show create database sdb_diag_info_dump_2_1;
+use sdb_diag_info_dump_2_1;
+CREATE TABLE `t1` (
+    `a` int(11) DEFAULT NULL, 
+    `b` varchar(10) COLLATE utf8mb4_bin DEFAULT NULL,
+    KEY `a` (`a`)
+) ENGINE=SequoiaDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin;
+insert into t1 values(1,"a"),(2,"b"),(3,"c");
+insert into t1 select * from t1;
+analyze table t1;
+
+--exec ../tools/diagnostic/sdb_diag_info_dump -h 127.0.0.1 -P $PORT_1 -u test_1 -ptest -i error -o ./diaginfo -t "sdb_diag_info_dump_2_1.t1" -q "select * from sdb_diag_info_dump_2_1.t1 where a > 1" | grep -vE "^INFO: Compress|^Spend .* sec\$"
+--exec tar -zxvf diaginfo.tar.gz
+--exec rm -rf diaginfo diaginfo.tar.gz
+
+--disable_abort_on_error
+--exec ../tools/diagnostic/sdb_diag_info_dump -h 127.0.0.1 -P $PORT_1 -u test_1 -ptest -o ./diaginfo -t "sdb_diag_info_dump_2_1.t1" -q "select * from sdb_diag_info_dump_2_1.t1 where a > 1"
+--exec rm -rf diaginfo diaginfo.tar.gz
+--enable_abort_on_error
+
+--exec ../tools/diagnostic/sdb_diag_info_dump -h 127.0.0.1 -P $PORT_1 -u test_1 -ptest -i "" -o ./diaginfo -t "sdb_diag_info_dump_2_1.t1" -q "select * from sdb_diag_info_dump_2_1.t1 where a > 1" | grep -vE "^INFO: Compress|^Spend .* sec\$"
+--exec rm -rf diaginfo diaginfo.tar.gz
+
+drop database sdb_diag_info_dump_2_1;
+
+
+# Testcase:seqDB-28369:输出路径-o参数验证
+# 收集
+--connection conn1
+--disable_warnings
+drop database if exists sdb_diag_info_dump_2_1;
+--enable_warnings
+
+create database sdb_diag_info_dump_2_1;
+show create database sdb_diag_info_dump_2_1;
+use sdb_diag_info_dump_2_1;
+CREATE TABLE `t1` (
+    `a` int(11) DEFAULT NULL, 
+    `b` varchar(10) COLLATE utf8mb4_bin DEFAULT NULL,
+    KEY `a` (`a`)
+) ENGINE=SequoiaDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin;
+insert into t1 values(1,"a"),(2,"b"),(3,"c");
+insert into t1 select * from t1;
+analyze table t1;
+
+--exec ../tools/diagnostic/sdb_diag_info_dump -h 127.0.0.1 -P $PORT_1 -u test_1 -ptest -i inst$PORT_1 -o ./diaginfo -t "sdb_diag_info_dump_2_1.t1" -q "select * from sdb_diag_info_dump_2_1.t1 where a > 1" | grep -vE "^INFO: Compress|^Spend .* sec\$"
+--exec tar -zxvf diaginfo.tar.gz
+--exec rm -rf diaginfo diaginfo.tar.gz
+
+--disable_abort_on_error
+--exec ../tools/diagnostic/sdb_diag_info_dump -h 127.0.0.1 -P $PORT_1 -u test_1 -ptest -i inst$PORT_1 -t "sdb_diag_info_dump_2_1.t1" -q "select * from sdb_diag_info_dump_2_1.t1 where a > 1"
+--enable_abort_on_error
+
+--disable_abort_on_error
+--exec ../tools/diagnostic/sdb_diag_info_dump -h 127.0.0.1 -P $PORT_1 -u test_1 -ptest -i inst$PORT_1 -o "" -t "sdb_diag_info_dump_2_1.t1" -q "select * from sdb_diag_info_dump_2_1.t1 where a > 1" | grep -vE "^INFO: Compress|^Spend .* sec\$"
+--exec rm -rf diaginfo diaginfo.tar.gz
+--enable_abort_on_error
+
+# 用户文件权限问题暂无法自动化
+
+drop database sdb_diag_info_dump_2_1;
+
+
+# Testcase:seqDB-28370:Socket登录-S参数验证
+# 收集
+--connection conn1
+--disable_warnings
+drop database if exists sdb_diag_info_dump_2_1;
+--enable_warnings
+
+create database sdb_diag_info_dump_2_1;
+show create database sdb_diag_info_dump_2_1;
+use sdb_diag_info_dump_2_1;
+CREATE TABLE `t1` (
+    `a` int(11) DEFAULT NULL, 
+    `b` varchar(10) COLLATE utf8mb4_bin DEFAULT NULL,
+    KEY `a` (`a`)
+) ENGINE=SequoiaDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin;
+insert into t1 values(1,"a"),(2,"b"),(3,"c");
+insert into t1 select * from t1;
+analyze table t1;
+
+--exec ../tools/diagnostic/sdb_diag_info_dump -S ../database/$PORT_1/mysqld.sock -h 127.0.0.1 -P $PORT_1 -u test_1 -ptest -i inst$PORT_1 -o ./diaginfo -t "sdb_diag_info_dump_2_1.t1" -q "select * from sdb_diag_info_dump_2_1.t1 where a > 1" | grep -vE "^INFO: Compress|^Spend .* sec\$"
+--exec tar -zxvf diaginfo.tar.gz
+--exec rm -rf diaginfo diaginfo.tar.gz
+
+--exec ../tools/diagnostic/sdb_diag_info_dump -S ../database/$PORT_1/mysqld.sock -u test_1 -ptest -i inst$PORT_1 -o ./diaginfo -t "sdb_diag_info_dump_2_1.t1" -q "select * from sdb_diag_info_dump_2_1.t1 where a > 1" | grep -vE "^INFO: Compress|^Spend .* sec\$"
+--exec tar -zxvf diaginfo.tar.gz
+--exec rm -rf diaginfo diaginfo.tar.gz
+
+--disable_abort_on_error
+--exec ../tools/diagnostic/sdb_diag_info_dump -u test_1 -ptest -i inst$PORT_1 -o ./diaginfo -t "sdb_diag_info_dump_2_1.t1" -q "select * from sdb_diag_info_dump_2_1.t1 where a > 1" | grep -vE "^INFO: Compress|^Spend .* sec\$"
+--enable_abort_on_error
+--exec rm -rf diaginfo diaginfo.tar.gz
+
+--disable_abort_on_error
+--exec ../tools/diagnostic/sdb_diag_info_dump -S ./error/mysqld.sock -u test_1 -ptest -i inst$PORT_1 -o ./diaginfo -t "sdb_diag_info_dump_2_1.t1" -q "select * from sdb_diag_info_dump_2_1.t1 where a > 1" | grep -vE "^INFO: Compress|^Spend .* sec\$"
+--enable_abort_on_error
+--exec rm -rf diaginfo diaginfo.tar.gz
+
+--disable_abort_on_error
+--exec ../tools/diagnostic/sdb_diag_info_dump -S "" -u test_1 -ptest -i inst$PORT_1 -o ./diaginfo -t "sdb_diag_info_dump_2_1.t1" -q "select * from sdb_diag_info_dump_2_1.t1 where a > 1" | grep -vE "^INFO: Compress|^Spend .* sec\$"
+--enable_abort_on_error
+--exec rm -rf diaginfo diaginfo.tar.gz
+
+drop database sdb_diag_info_dump_2_1;
+
+
+# Testcase:seqDB-28370:Socket登录-S参数验证
+# 收集
+--connection conn1
+--disable_warnings
+drop database if exists sdb_diag_info_dump_2_1;
+--enable_warnings
+
+create database sdb_diag_info_dump_2_1;
+show create database sdb_diag_info_dump_2_1;
+use sdb_diag_info_dump_2_1;
+CREATE TABLE `t1` (
+    `a` int(11) DEFAULT NULL, 
+    `b` varchar(10) COLLATE utf8mb4_bin DEFAULT NULL,
+    KEY `a` (`a`)
+) ENGINE=SequoiaDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin;
+insert into t1 values(1,"a"),(2,"b"),(3,"c");
+insert into t1 select * from t1;
+analyze table t1;
+
+--exec ../tools/diagnostic/sdb_diag_info_dump -S ../database/$PORT_1/mysqld.sock -u test_1 -ptest -i inst$PORT_1 -o ./diaginfo -D sdb_diag_info_dump_2_1 -q "select * from sdb_diag_info_dump_2_1.t1 where a > 1" | grep -vE "^INFO: Compress|^Spend .* sec\$"
+--exec tar -zxvf diaginfo.tar.gz
+--exec rm -rf diaginfo diaginfo.tar.gz
+
+--exec ../tools/diagnostic/sdb_diag_info_dump -S ../database/$PORT_1/mysqld.sock -u test_1 -ptest -i inst$PORT_1 -o ./diaginfo -D unknown -q "select * from sdb_diag_info_dump_2_1.t1 where a > 1" | grep -vE "^INFO: Compress|^Spend .* sec\$"
+--exec tar -zxvf diaginfo.tar.gz
+--exec cat diaginfo/catalog/unknown/database_catalog.sql
+--exec rm -rf diaginfo diaginfo.tar.gz
+
+drop database sdb_diag_info_dump_2_1;
+
+
+# Testcase:seqDB-28372:表/视图-t参数验证
+# 收集
+--connection conn1
+--disable_warnings
+drop database if exists sdb_diag_info_dump_2_1;
+--enable_warnings
+
+create database sdb_diag_info_dump_2_1;
+show create database sdb_diag_info_dump_2_1;
+use sdb_diag_info_dump_2_1;
+CREATE TABLE `t1` (
+    `a` int(11) DEFAULT NULL, 
+    `b` varchar(10) COLLATE utf8mb4_bin DEFAULT NULL,
+    KEY `a` (`a`)
+) ENGINE=SequoiaDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin;
+insert into t1 values(1,"a"),(2,"b"),(3,"c");
+insert into t1 select * from t1;
+analyze table t1;
+create view v1 as select * from t1;
+
+--exec ../tools/diagnostic/sdb_diag_info_dump -S ../database/$PORT_1/mysqld.sock -u test_1 -ptest -i inst$PORT_1 -o ./diaginfo -t "sdb_diag_info_dump_2_1.t1,v1" -q "select * from sdb_diag_info_dump_2_1.t1 where a > 1" | grep -vE "^INFO: Compress|^Spend .* sec\$" | sort
+--exec tar -zxvf diaginfo.tar.gz
+--exec rm -rf diaginfo diaginfo.tar.gz
+
+--exec ../tools/diagnostic/sdb_diag_info_dump -S ../database/$PORT_1/mysqld.sock -u test_1 -ptest -i inst$PORT_1 -o ./diaginfo -t "sdb_diag_info_dump_2_1.t2,v2" | grep -vE "^INFO: Compress|^Spend .* sec\$" | grep -v "diaginfo/sdb.js:" | sort
+--exec tar -zxvf diaginfo.tar.gz
+--exec cat diaginfo/catalog/sdb_diag_info_dump_2_1/t2/table_catalog.sql
+--exec cat diaginfo/catalog/sdb_diag_info_dump_2_1/v2/table_catalog.sql
+--exec rm -rf diaginfo diaginfo.tar.gz
+
+drop database sdb_diag_info_dump_2_1;
+
+
+# Testcase:seqDB-28373:存储过程/函数-R参数验证
+# 收集
+--connection conn1
+--disable_warnings
+drop database if exists sdb_diag_info_dump_2_1;
+--enable_warnings
+
+create database sdb_diag_info_dump_2_1;
+show create database sdb_diag_info_dump_2_1;
+use sdb_diag_info_dump_2_1;
+delimiter $;
+create function `f1`() returns varchar(10)
+begin
+return concat("test","func1");
+end $
+CREATE PROCEDURE `f1`(in a int)
+begin
+select 1 + 2;
+end $
+delimiter ;$
+
+--exec ../tools/diagnostic/sdb_diag_info_dump -S ../database/$PORT_1/mysqld.sock -u test_1 -ptest -i inst$PORT_1 -o ./diaginfo -R "sdb_diag_info_dump_2_1.f1,p1" | grep -vE "^INFO: Compress|^Spend .* sec\$" | sort
+--exec tar -zxvf diaginfo.tar.gz
+--exec rm -rf diaginfo diaginfo.tar.gz
+
+--exec ../tools/diagnostic/sdb_diag_info_dump -S ../database/$PORT_1/mysqld.sock -u test_1 -ptest -i inst$PORT_1 -o ./diaginfo -R "sdb_diag_info_dump_2_1.f2,p2" | grep -vE "^INFO: Compress|^Spend .* sec\$" | sort
+--exec tar -zxvf diaginfo.tar.gz
+--exec rm -rf diaginfo diaginfo.tar.gz
+
+drop database sdb_diag_info_dump_2_1;
+
+
+# Testcase:seqDB-28374:查询语句-q参数验证
+# 收集
+--connection conn1
+--disable_warnings
+drop database if exists sdb_diag_info_dump_2_1;
+--enable_warnings
+
+create database sdb_diag_info_dump_2_1;
+show create database sdb_diag_info_dump_2_1;
+use sdb_diag_info_dump_2_1;
+CREATE TABLE `t1` (
+    `a` int(11) DEFAULT NULL, 
+    `b` varchar(10) COLLATE utf8mb4_bin DEFAULT NULL,
+    KEY `a` (`a`)
+) ENGINE=SequoiaDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin;
+insert into t1 values(1,"a"),(2,"b"),(3,"c");
+insert into t1 select * from t1;
+analyze table t1;
+
+--exec ../tools/diagnostic/sdb_diag_info_dump -S ../database/$PORT_1/mysqld.sock -u test_1 -ptest -i inst$PORT_1 -o ./diaginfo -q "select * from sdb_diag_info_dump_2_1.t1 where a > 1" | grep -vE "^INFO: Compress|^Spend .* sec\$"
+--exec tar -zxvf diaginfo.tar.gz
+--exec rm -rf diaginfo diaginfo.tar.gz
+
+--exec ../tools/diagnostic/sdb_diag_info_dump -S ../database/$PORT_1/mysqld.sock -u test_1 -ptest -i inst$PORT_1 -o ./diaginfo -q "select * from sdb_diag_info_dump_2_1.t1 where a > 1;select * from sdb_diag_info_dump_2_1.t1 where a > 1" | grep -vE "^INFO: Compress|^Spend .* sec\$"
+--exec rm -rf diaginfo diaginfo.tar.gz
+
+--exec ../tools/diagnostic/sdb_diag_info_dump -S ../database/$PORT_1/mysqld.sock -u test_1 -ptest -i inst$PORT_1 -o ./diaginfo -q "select * sdb_diag_info_dump_2_1.t1 where a > 1" | grep -vE "^INFO: Compress|^Spend .* sec\$"
+--exec rm -rf diaginfo diaginfo.tar.gz
+
+drop database sdb_diag_info_dump_2_1;
+
+
+# Testcase:seqDB-28375:指定分隔符-F参数验证
+# 收集
+--connection conn1
+--disable_warnings
+drop database if exists sdb_diag_info_dump_2_1;
+--enable_warnings
+
+create database sdb_diag_info_dump_2_1;
+show create database sdb_diag_info_dump_2_1;
+use sdb_diag_info_dump_2_1;
+CREATE TABLE `t1` (
+    `a` int(11) DEFAULT NULL, 
+    `b` varchar(10) COLLATE utf8mb4_bin DEFAULT NULL,
+    KEY `a` (`a`)
+) ENGINE=SequoiaDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin;
+insert into t1 values(1,"a"),(2,"b"),(3,"c");
+insert into t1 select * from t1;
+analyze table t1;
+CREATE TABLE `t2` (
+    `a` int(11) DEFAULT NULL, 
+    `b` varchar(10) COLLATE utf8mb4_bin DEFAULT NULL,
+    KEY `a` (`a`)
+) ENGINE=SequoiaDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin;
+insert into t2 values(1,"a"),(2,"b"),(3,"c");
+insert into t2 select * from t2;
+analyze table t2;
+
+--exec ../tools/diagnostic/sdb_diag_info_dump -S ../database/$PORT_1/mysqld.sock -u test_1 -ptest -i inst$PORT_1 -o ./diaginfo -t "sdb_diag_info_dump_2_1.t1|t2" -F "|" | grep -vE "^INFO: Compress|^Spend .* sec\$"
+--exec tar -zxvf diaginfo.tar.gz
+--exec rm -rf diaginfo diaginfo.tar.gz
+
+drop database sdb_diag_info_dump_2_1;
+
+
+# Testcase:seqDB-28376:help帮助信息--help参数验证
+--exec ../tools/diagnostic/sdb_diag_info_dump --help
+
+
+# Testcase:seqDB-28378:diag_info_path 参数校验
+# 收集
+--connection conn1
+--disable_warnings
+drop database if exists sdb_diag_info_dump_2_1;
+--enable_warnings
+
+create database sdb_diag_info_dump_2_1;
+show create database sdb_diag_info_dump_2_1;
+use sdb_diag_info_dump_2_1;
+CREATE TABLE `t1` ( 
+    `id` int(11) DEFAULT NULL, 
+    `a` varchar(10) COLLATE utf8mb4_bin DEFAULT NULL,
+    `b` varchar(10) COLLATE utf8mb4_bin DEFAULT NULL,
+    `c` varchar(10) COLLATE utf8mb4_bin DEFAULT NULL, 
+    KEY `a` (`a`),
+    KEY `idbc` (`id`,`b`,`c`)
+) ENGINE=SequoiaDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin;
+
+--disable_warnings
+DROP PROCEDURE IF EXISTS insert_data;
+--enable_warnings
+delimiter $;
+CREATE PROCEDURE insert_data()
+begin
+declare i int DEFAULT 1;
+declare j int DEFAULT 1;
+declare k int DEFAULT 1;
+declare return_str1 varchar(10) DEFAULT '';
+declare return_str2 varchar(10) DEFAULT '';
+declare return_str3 varchar(10) DEFAULT '';
+while i <= 3 do
+   while j <= 100 do
+      set return_str1 = concat(i,j);
+      set return_str2 = concat(j,k);
+      set return_str3 = concat(k,i);
+      insert into t1 values(i,return_str1,return_str2,return_str3);
+      set j = j+1;
+      set k = k+2;
+      set return_str1='';
+      set return_str2='';
+      set return_str3='';
+   end while;
+   set j = 1;
+   set i = i+1;
+end while;
+end $
+delimiter ;$
+call insert_data();
+analyze table t1;
+show create table t1;
+
+--exec ../tools/diagnostic/sdb_diag_info_dump -h 127.0.0.1 -P $PORT_1 -u root -i inst$PORT_1 -o ./diaginfo -D sdb_diag_info_dump_2_1 -t t1 -q 'select id,b,c from sdb_diag_info_dump_2_1.t1 where (id in (1,2,3) or id > 30) and (b like "10%" or c is NULL) order by b limit 10' | grep -vE "^INFO: Compress|^Spend .* sec\$"
+--exec tar -zxvf diaginfo.tar.gz
+
+drop database sdb_diag_info_dump_2_1;
+
+# 还原
+--connection conn2
+--disable_warnings
+drop database if exists sdb_diag_info_dump_2_1;
+--enable_warnings
+
+set sequoiadb_diag_info_path=DEFAULT;
+--source $SQL_PATH/mysql-test/diaginfo/catalog/sdb_diag_info_dump_2_1/database_catalog.sql
+;
+use sdb_diag_info_dump_2_1;
+show create database sdb_diag_info_dump_2_1;
+--source $SQL_PATH/mysql-test/diaginfo/catalog/sdb_diag_info_dump_2_1/t1/table_catalog.sql
+;
+show create table t1;
+
+# 替换前
+flush tables;
+explain select id,b,c from sdb_diag_info_dump_2_1.t1 where (id in (1,2,3) or id > 30) and (b like "10%" or c is NULL) order by b limit 10;
+
+# global-替换成功
+--exec echo 'set global sequoiadb_diag_info_path="$SQL_PATH/mysql-test/diaginfo";' > $SQL_SET_DIAG_PATH
+--replace_regex /(set global sequoiadb_diag_info_path=).*/\1/
+--source $SQL_PATH/mysql-test/$SQL_SET_DIAG_PATH
+# global 不改变当前连接的值，只改变后面新连接的值
+--connect(conn3, 127.0.0.1, root, , information_schema, $PORT_2)
+--connection conn3
+--exec cat diaginfo/query/explain.result
+flush tables;
+explain select id,b,c from sdb_diag_info_dump_2_1.t1 where (id in (1,2,3) or id > 30) and (b like "10%" or c is NULL) order by b limit 10;
+set global sequoiadb_diag_info_path=DEFAULT;
+--disconnect conn3
+
+--connection conn2
+# session-替换成功
+--exec echo 'set session sequoiadb_diag_info_path="$SQL_PATH/mysql-test/diaginfo";' > $SQL_SET_DIAG_PATH
+--replace_regex /(set session sequoiadb_diag_info_path=).*/\1/
+--source $SQL_PATH/mysql-test/$SQL_SET_DIAG_PATH
+--exec cat diaginfo/query/explain.result
+flush tables;
+explain select id,b,c from sdb_diag_info_dump_2_1.t1 where (id in (1,2,3) or id > 30) and (b like "10%" or c is NULL) order by b limit 10;
+
+# 无参数-无路径，不替换，同替换前
+--exec echo 'set sequoiadb_diag_info_path="";' > $SQL_SET_DIAG_PATH
+--replace_regex /(set sequoiadb_diag_info_path=).*/\1/
+--source $SQL_PATH/mysql-test/$SQL_SET_DIAG_PATH
+flush tables;
+explain select id,b,c from sdb_diag_info_dump_2_1.t1 where (id in (1,2,3) or id > 30) and (b like "10%" or c is NULL) order by b limit 10;
+
+# 目录下为空-替换失败，同替换前
+--exec cp -r diaginfo diaginfo2
+--exec rm -rf diaginfo/*
+--exec echo 'set sequoiadb_diag_info_path="$SQL_PATH/mysql-test/diaginfo";' > $SQL_SET_DIAG_PATH
+--replace_regex /(set sequoiadb_diag_info_path=).*/\1/
+--source $SQL_PATH/mysql-test/$SQL_SET_DIAG_PATH
+flush tables;
+explain select id,b,c from sdb_diag_info_dump_2_1.t1 where (id in (1,2,3) or id > 30) and (b like "10%" or c is NULL) order by b limit 10;
+
+# 更改目录名-替换成功
+--exec echo 'set sequoiadb_diag_info_path="$SQL_PATH/mysql-test/diaginfo2";' > $SQL_SET_DIAG_PATH
+--replace_regex /(set sequoiadb_diag_info_path=).*/\1/
+--source $SQL_PATH/mysql-test/$SQL_SET_DIAG_PATH
+--exec cat diaginfo2/query/explain.result
+flush tables;
+explain select id,b,c from sdb_diag_info_dump_2_1.t1 where (id in (1,2,3) or id > 30) and (b like "10%" or c is NULL) order by b limit 10;
+
+# 非 string 类型-替换失败，同替换前
+--exec echo 'set sequoiadb_diag_info_path="12345";' > $SQL_SET_DIAG_PATH
+--replace_regex /(set sequoiadb_diag_info_path=).*/\1/
+--source $SQL_PATH/mysql-test/$SQL_SET_DIAG_PATH
+flush tables;
+explain select id,b,c from sdb_diag_info_dump_2_1.t1 where (id in (1,2,3) or id > 30) and (b like "10%" or c is NULL) order by b limit 10;
+
+# 不存在-替换失败，同替换前
+--exec echo 'set sequoiadb_diag_info_path="error";' > $SQL_SET_DIAG_PATH
+--replace_regex /(set sequoiadb_diag_info_path=).*/\1/
+--source $SQL_PATH/mysql-test/$SQL_SET_DIAG_PATH
+flush tables;
+explain select id,b,c from sdb_diag_info_dump_2_1.t1 where (id in (1,2,3) or id > 30) and (b like "10%" or c is NULL) order by b limit 10;
+
+drop database sdb_diag_info_dump_2_1;
+--exec rm -rf diaginfo diaginfo.tar.gz
+
+
+delete from mysql.user where user='test_1';
+--exec rm -f $SQL_SET_DIAG_PATH
+--disconnect conn1
+--disconnect conn2
+--exec echo "y" | ../bin/sdb_sql_ctl delinst inst$PORT_1 | grep -v $PORT_1
+--exec echo "y" | ../bin/sdb_sql_ctl delinst inst$PORT_2 | grep -v $PORT_2

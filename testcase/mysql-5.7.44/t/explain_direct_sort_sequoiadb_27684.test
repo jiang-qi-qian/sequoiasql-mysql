@@ -1,0 +1,160 @@
+#seqDB-27684 单表查询时带有group by字句
+--source include/have_sequoiadb.inc
+--source include/turn_off_only_full_group_by.inc
+
+--disable_warnings
+drop database if exists explain_direct_sort_27684;
+--enable_warnings
+create database explain_direct_sort_27684;
+drop database explain_direct_sort_27684;
+create database explain_direct_sort_27684;
+
+use explain_direct_sort_27684;
+set session sequoiadb_debug_log=on;
+
+create table t1(
+col1 int,
+col2 varchar(10),
+col3 varchar(10),
+col4 varchar(10),
+key idx_col1(col1),
+key idx_col2(col2),
+key idx_col12(col1,col2),
+unique key uniq_idx4(col4)
+);
+insert into t1 values(null,null,null,null);
+insert into t1 values(0,'abd','def','defg');
+insert into t1 values(4,'abcdef','abde','abc');
+insert into t1 values(2,'defg','abd','efg');
+insert into t1 values(5,'xyz','abc','abd');
+insert into t1 values(3,'abde','xyz','def');
+insert into t1 values(6,'abc','abcdef','xyz');
+insert into t1 values(1,'def','defg','abcdef');
+select * from t1 order by col1;
+select * from t1 order by col2;
+select * from t1 order by col3;
+select * from t1 order by col4;
+
+#group by、order by不同字段
+explain select col1,col2,sum(col1) from t1 group by col2 order by col1;
+let $query = select col1,col2,sum(col1) from t1 group by col2 order by col1;
+--source include/query_without_sorted_and_get_mysqld_note_log_sequoiadb.inc
+explain select max(col2),min(col2) from t1 group by col1 order by col2;
+let $query = select max(col2),min(col2) from t1 group by col1 order by col2;
+--source include/query_without_sorted_and_get_mysqld_note_log_sequoiadb.inc
+
+#group by、order by相同字段
+explain select col1,col2,sum(col1) from t1 group by col2 order by col2;
+let $query = select col1,col2,sum(col1) from t1 group by col2 order by col2;
+--source include/query_without_sorted_and_get_mysqld_note_log_sequoiadb.inc
+explain select max(col2),min(col2) from t1 group by col1 order by col1;
+let $query = select max(col2),min(col2) from t1 group by col1 order by col1;
+--source include/query_without_sorted_and_get_mysqld_note_log_sequoiadb.inc
+
+#group by、order by非索引字段
+explain select col3,count(*) from t1 group by col3 order by col3; 
+let $query = select col3,count(*) from t1 group by col3 order by col3;
+--source include/query_without_sorted_and_get_mysqld_note_log_sequoiadb.inc
+
+#distinct
+explain select distinct sum(col1) from t1 group by col2;
+let $query = select distinct sum(col1) from t1 group by col2;
+--source include/query_without_sorted_and_get_mysqld_note_log_sequoiadb.inc
+
+#聚集函数带有distinct
+explain select col2,count(distinct col1) from t1 group by col2 order by col2;
+let $query = select col2,count(distinct col1) from t1 group by col2 order by col2;
+--source include/query_without_sorted_and_get_mysqld_note_log_sequoiadb.inc
+explain select col2,count(distinct col1) from t1 group by col2 having(count(distinct col1)) > 1 order by col2;
+let $query = select col2,count(distinct col1) from t1 group by col2 having(count(distinct col1)) > 1 order by col2;
+--source include/query_without_sorted_and_get_mysqld_note_log_sequoiadb.inc
+
+#group by pushdown
+explain select col1, col2 from t1 group by col1, col2;
+let $query = select col1, col2 from t1 group by col1, col2;
+--source include/query_without_sorted_and_get_mysqld_note_log_sequoiadb.inc
+explain select col1, col2 from t1 group by col1, col2 order by col2;
+let $query = select col1, col2 from t1 group by col1, col2 order by col2;
+--source include/query_without_sorted_and_get_mysqld_note_log_sequoiadb.inc
+
+#group by not pushdown
+explain select col2,count(distinct col1) from t1 group by trim(col2) order by col2;
+let $query = select col2,count(distinct col1) from t1 group by trim(col2) order by col2;
+--source include/query_without_sorted_and_get_mysqld_note_log_sequoiadb.inc
+drop table t1;
+
+create table t1(
+  idx_col1 int,
+  idx_col2 int,
+  uniq_idx_col3 int,
+  col4 int,
+  key idx1(idx_col1),
+  key idx2(idx_col2),
+  key idx1_2(idx_col1, idx_col2),
+  unique key uniq_idx(uniq_idx_col3)
+);
+insert into t1 values
+  (1, null, null, null),
+  (null, 1, null, null),
+  (1, 1, 1, 1),
+  (2, 2, 2, 2),
+  (3, 3, 3, 3),
+  (10, 10, 10, 10),
+  (100, 100, 100, 100),
+  (200, 200, 200, 200),
+  (12345, 12345, 12345, 12345);
+
+insert into t1 values
+  (11, 11, 11, 11), (12, 12, 12, 12), (13, 13, 13, 13), (14, 14, 14, 14),
+  (15, 15, 15, 15), (16, 16, 16, 16), (17, 17, 17, 17), (18, 18, 18, 18),
+  (19, 19, 19, 19), (20, 20, 20, 20), (21, 21, 21, 21), (22, 22, 22, 22),
+  (23, 23, 23, 23), (24, 24, 24, 24), (25, 25, 25, 25), (26, 26, 26, 26),
+  (27, 27, 27, 27), (28, 28, 28, 28), (29, 29, 29, 29), (30, 30, 30, 30),
+  (31, 31, 31, 31), (32, 32, 32, 32), (33, 33, 33, 33), (34, 34, 34, 34),
+  (35, 35, 35, 35), (36, 36, 36, 36), (37, 37, 37, 37), (38, 38, 38, 38),
+  (39, 39, 39, 39), (40, 40, 40, 40), (41, 41, 41, 41), (42, 42, 42, 42),
+  (43, 43, 43, 43), (44, 44, 44, 44), (45, 45, 45, 45), (46, 46, 46, 46),
+  (47, 47, 47, 47), (48, 48, 48, 48), (49, 49, 49, 49), (50, 50, 50, 50),
+  (51, 51, 51, 51), (52, 52, 52, 52), (53, 53, 53, 53), (54, 54, 54, 54),
+  (55, 55, 55, 55), (56, 56, 56, 56), (57, 57, 57, 57), (58, 58, 58, 58),
+  (59, 59, 59, 59);
+
+#simple group
+explain select max(col4) from t1 force index(idx1) group by idx_col1;
+let $query = select max(col4) from t1 force index(idx1) group by idx_col1;
+--source include/query_without_sorted_and_get_mysqld_note_log_sequoiadb.inc
+explain select max(idx_col2) from t1 group by col4;
+let $query = select max(idx_col2) from t1 group by col4;
+--source include/query_without_sorted_and_get_mysqld_note_log_sequoiadb.inc
+
+#MIN(), MAX() without GROUP BY
+explain select min(idx_col1), max(idx_col2) from t1;
+let $query = select min(idx_col1), max(idx_col2) from t1;
+--source include/query_without_sorted_and_get_mysqld_note_log_sequoiadb.inc
+
+# group min max
+explain select max(idx_col2) from t1 group by idx_col1;
+--source include/write_mysqld_note_log_sequoiadb.inc
+select max(idx_col2) from t1 group by idx_col1;
+--replace_regex /^([^s]*)\[Note\]/[Note]/  /"\$oid": "[a-f0-9]+"/"$oid": x/
+--exec tac $MYSQLTEST_VARDIR/log/mysqld.1.err |grep -m1 -B 50 'Testcase: Operation log begin' |tac |grep '\[Note\]'
+
+explain select max(idx_col2) from t1 where idx_col1 in (1, 3, 5) group by idx_col1;
+--source include/write_mysqld_note_log_sequoiadb.inc
+select max(idx_col2) from t1 where idx_col1 in (1, 3, 5) group by idx_col1;
+--replace_regex /^([^s]*)\[Note\]/[Note]/  /"\$oid": "[a-f0-9]+"/"$oid": x/
+--exec tac $MYSQLTEST_VARDIR/log/mysqld.1.err |grep -m1 -B 50 'Testcase: Operation log begin' |tac |grep '\[Note\]'
+
+# WITH ROLLUP
+explain select idx_col1, sum(col4) from t1 where idx_col1 < 10 group by idx_col1 with rollup;
+let $query = select idx_col1, sum(col4) from t1 where idx_col1 < 10 group by idx_col1 with rollup;
+--source include/query_without_sorted_and_get_mysqld_note_log_sequoiadb.inc
+explain select idx_col1, sum(col4) from t1 where idx_col1 < 10 group by idx_col2 with rollup;
+let $query = select idx_col1, sum(col4) from t1 where idx_col1 < 10 group by idx_col2 with rollup;
+--source include/query_without_sorted_and_get_mysqld_note_log_sequoiadb.inc
+
+drop table t1;
+
+set session sequoiadb_debug_log=off;
+drop database explain_direct_sort_27684;
+--source include/uninstall_sequoiadb.inc

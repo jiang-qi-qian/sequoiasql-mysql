@@ -1,0 +1,448 @@
+#!/bin/bash
+
+SDB_CONN_ADDRS="localhost:11810"
+SDB_USER=""
+SDB_PASSWD=""
+SDB_TOKEN=""
+SDB_CIPHERFILE="~/sequoiadb/passwd"
+TABLE_NAME=""
+CL_NAME=""
+INST_GROUP_NAME="DEF_INST_GROUP"
+VERBOSE=""
+
+function usage()
+{
+cat <<EOF
+Usage: ${ME} [--instance=NAME] [--table=NAME] [--collection=NAME] [-l|--long]
+Get mapping information for table or collection.
+Options:
+  --instance=NAME            MariaDB/MySQL instance name.
+  --table=TABLE_NAME         Full table name, format: 'db_name.table_name'.
+  --collection=CL_NAME       Full collection name, format: 'cs_name.cl_name'.
+  -l, --long                 Show long style.
+  -v, --version              Print version information.
+  -h, --help                 Display this help and exit.
+  --verbose                  Write more.
+EOF
+}
+
+function show_version()
+{
+   cat $INSTALL_PATH/version.info
+}
+
+function init_sdb_path()
+{
+   if [ ! -f /etc/default/sequoiadb ]; then
+      echo "ERROR: '/etc/default/sequoiadb' does not exists"
+      exit 127
+   fi
+   # initialize sdb command path
+   . /etc/default/sequoiadb
+}
+
+function init_sdb_login_args()
+{
+   # init $SQLDATA
+   CONF_INST_PATH="${INSTALL_PATH}/conf/instance"
+   if [ "${INST_NAME}" == "" ]; then
+      echo "ERROR: Instance name is not set"
+      exit 127
+   fi
+
+   if [ ! -f "$CONF_INST_PATH/${INST_NAME}.conf" ]; then
+      echo "ERROR: Instance '${INST_NAME}' does not exist"
+      exit 127
+   fi
+   . $CONF_INST_PATH/${INST_NAME}.conf
+
+   # get sequoiadb auth parameters
+   local conn_addrs=`$BIN_PATH/my_print_defaults -c $SQLDATA/auto.cnf mysqld | grep "^--sequoiadb_conn_addr="`
+   conn_addrs=${conn_addrs#*=}
+   if [ "$conn_addrs" == "" ]; then
+      # set default connection address
+      SDB_CONN_ADDRS="localhost:11810"
+   else
+      SDB_CONN_ADDRS="${conn_addrs//[[:blank:]]/}"
+   fi
+   
+   INST_GROUP_NAME=`$BIN_PATH/my_print_defaults -c $SQLDATA/auto.cnf mysqld | grep "^--server_ha_inst_group_name="`
+   INST_GROUP_NAME=${INST_GROUP_NAME#*=}
+
+   SDB_USER=`$BIN_PATH/my_print_defaults -c $SQLDATA/auto.cnf mysqld | grep "^--sequoiadb_user="`
+   SDB_USER=${SDB_USER#*=}
+
+   SDB_PASSWD=`$BIN_PATH/my_print_defaults -c $SQLDATA/auto.cnf mysqld | grep "^--sequoiadb_password="`
+   SDB_PASSWD=${SDB_PASSWD#*=}
+
+   SDB_TOKEN=`$BIN_PATH/my_print_defaults -c $SQLDATA/auto.cnf mysqld | grep "^--sequoiadb_token="`
+   SDB_TOKEN=${SDB_TOKEN#*=}
+
+   SDB_CIPHERFILE=`$BIN_PATH/my_print_defaults -c $SQLDATA/auto.cnf mysqld | grep "^--sequoiadb_cipherfile="`
+   SDB_CIPHERFILE=${SDB_CIPHERFILE#*=}
+}
+
+function check_args()
+{
+   if [ "" == "${INST_GROUP_NAME}" ]; then
+      INST_GROUP_NAME="DEF_INST_GROUP"
+   fi
+
+   if [ "" == "${TABLE_NAME}" -a "" == "${CL_NAME}" ]; then
+      if [ "${SHOW_LONG_STYLE}" == "" ]; then
+         echo "ERROR: Both 'table' and 'collection' are not set, one of them must be set if '--long' is not set."
+         return 1
+      fi
+   fi
+
+   if [ "" != "${TABLE_NAME}" ]; then
+      local db_table=(${TABLE_NAME//./ })
+      if [ "" == "${db_table[1]}" ]; then
+         echo "ERROR: Bad table name format, format: 'db.table'"
+         return 1
+      fi
+   fi
+   
+   if [ "" != "${CL_NAME}" ]; then
+      local db_table=(${CL_NAME//./ })
+      if [ "" == "${db_table[1]}" ]; then
+         echo "ERROR: Bad collection name format, format: 'cs.cl'"
+         return 1
+      fi
+   fi
+
+   # cipher relative path to absolute path
+   if [[ ${SDB_CIPHERFILE:0:1} == "~" ]]; then
+      SDB_CIPHERFILE="${HOME}/${SDB_CIPHERFILE:1}"
+   fi
+   return 0
+}
+
+function get_inst_name()
+{
+   if [ "${INST_NAME}" == "" ]; then
+      local result=$(${BIN_PATH}/sdb_sql_ctl status | egrep -v "INSTANCE|Total" | awk '{print $2, $1}' | sort -k 2 | uniq -c -f 1)
+      if [[ $? != 0 ]]; then
+         echo "ERROR: Failed to get instance info, ${result}"
+         exit 127
+      fi
+      local counts=(`echo "${result}" | awk '{print $1}' | tr -s '\n' ' '`)
+      local inst_groups=(`echo "${result}" | awk '{print $3}' | tr -s '\n' ' '`)
+      if [[ ${#counts[@]} > 1 ]]; then
+         echo "ERROR: More than one instance group[${inst_groups[@]}] in current host, please use '--instance' to specify instance name"
+         exit 127
+      elif [[ ${#counts[@]} == 1 ]]; then
+         INST_NAME=$(echo ${result} | awk '{print $2}')
+      fi
+   fi
+}
+
+function build_sdb_conn_js()
+{
+cat <<EOF
+   var db;
+   var user = '${SDB_USER}', passwd = '${SDB_PASSWD}';
+   var token = '${SDB_TOKEN}', cipherFile = '${SDB_CIPHERFILE}';
+   var hostsPorts = '${SDB_CONN_ADDRS}';
+   var initSucceed = false;
+   var lastError = "";
+
+   // convert 'localhost.11810,localhost2.11810' into
+   // 'localhost 11810 localhost2 11810'
+   hostsPorts = hostsPorts.replace(/[,:]/g, " ");
+   hostsPorts = hostsPorts.split(' ');
+   for (var i = 0; i < hostsPorts.length; i+= 2) {
+      try {
+         if ("" == passwd && "" != user) { // use cipherfile
+            var sdbUser = CipherUser(user).token(token).cipherFile(cipherFile);
+            db = new Sdb(hostsPorts[i], hostsPorts[i+1], sdbUser);
+         } else {  // use cipherfile
+            db = new Sdb(hostsPorts[i], hostsPorts[i+1], user, passwd);
+         }
+         initSucceed = true;
+         break;
+      } catch (e) {
+         lastError = getLastErrMsg();
+         continue;
+      }
+   }
+   if (false == initSucceed) {
+      throw "ERROR: Failed to connect SequoiaDB, last error: " + lastError;
+   }
+EOF
+}
+
+function init_sequoiadb_conn()
+{
+   local msg
+   local sdb_js=`build_sdb_conn_js`
+   msg=$($INSTALL_DIR/bin/sdb -s "${sdb_js}")
+   if [ $? != 0 ]; then
+      echo "${msg}" | sed 's/^.*uncaught exception: //' | egrep "INFO|ERROR|WARN"
+      return 1
+   fi
+   return 0
+}
+
+function build_prepare_get_mapping_js()
+{
+cat << EOF
+   function calculate_max_len_for_each_column(mappings, max_lens)
+   {
+      var column_num = max_lens.length;
+      for (var i = 0; i < column_num; i++)
+      {
+         for (var j = 0; j < mappings.length; j++)
+         {
+            max_lens[i] = Math.max(mappings[j][i].length, max_lens[i]);
+         }
+      }
+   }
+
+   function repeat(str, count)
+   {
+      var result = "";
+      for (var i = 0; i < count; i++)
+      {
+         result += str;
+      }
+      return result;
+   }
+
+   function push_mapping(elems, obj)
+   {
+      elems.push(obj.DBName);
+      elems.push(obj.TableName);
+      elems.push(obj.CSName);
+      elems.push(obj.CLName);
+   }
+
+   function print_short_style(mapping, print_table)
+   {
+      if (print_table)
+      {
+         return (mapping[0] + "." + mapping[1]);
+      }
+      else
+      {
+         return (mapping[2] + "." + mapping[3]);
+      }
+   }
+
+   // print vertical alignment element
+   function print_long_style(mapping, max_name_lens)
+   {
+      var str = "";
+      var tab_width = 4;
+      for (var i = 0; i < max_name_lens.length; i++)
+      {
+         str += mapping[i] + repeat(" ", max_name_lens[i] + tab_width - mapping[i].length);
+      }
+      return str;
+   }
+
+   function append_result_to_mappings(cur, mappings)
+   {
+      var obj = null;
+      while((obj = cur.next() != null))
+      {
+         if (cur.current().toObj().DBName == "")
+         {
+            continue; // skip empty mapping
+         }
+         var elem = new Array();
+         push_mapping(elem, cur.current().toObj());
+         mappings.push(elem);
+      }
+   }
+EOF
+}
+
+function prepare_get_mapping()
+{
+   local msg
+   local sdb_js=`build_prepare_get_mapping_js`
+   msg=$($INSTALL_DIR/bin/sdb -s "${sdb_js}")
+   if [ $? != 0 ]; then
+      echo "${msg}" | sed 's/^.*uncaught exception: //'
+      return 1
+   fi
+   return 0
+}
+
+function build_get_mapping_js()
+{
+   local upper_inst_group_name=`echo "${INST_GROUP_NAME}" | tr a-z A-Z`
+cat <<EOF
+   var full_table_name = '${TABLE_NAME}';
+   var full_cl_name = '${CL_NAME}';
+   var max_lens_of_column = ["DBName".length, "TableName".length, "CSName".length, "CLName".length];
+   try {
+      var mapping_cs_name = "SQL_NAME_MAPPING_" + '${upper_inst_group_name}';
+      println("DEBUG: Get mapping information from '" + mapping_cs_name + ".TABLE_MAPPING'");
+      var mapping_cl = db.getCS(mapping_cs_name).getCL("TABLE_MAPPING");
+      var db_name, table_name, cs_name, cl_name;
+      var mappings = [["DBName", "TableName", "CSName", "CLName"]];
+
+      if ("" != full_table_name) {
+         println("DEBUG: Get mapping for table '" + full_table_name + "'");
+         var db_table = full_table_name.split('.');
+         db_name = db_table[0];
+
+         // table cond is {TableName: "t1"}, {TableName: {$regex: "^t1#P#"}}
+         var table_name_regex = "^" + db_table[1] + "#P#";
+         var cur = mapping_cl.find({DBName: db_name, TableName: db_table[1]});
+         println("DEBUG: DBName cond is '" + db_name + "', TableName cond is '" + db_table[1] + "'");
+         append_result_to_mappings(cur, mappings);
+
+         // find mapping for table partition
+         cur = mapping_cl.find({DBName: db_name, TableName: {\$regex: table_name_regex}});
+         println("DEBUG: DBName cond is '" + db_name + "', TableName regex cond is '" + table_name_regex + "'");
+         append_result_to_mappings(cur, mappings);
+      } else if ("" != full_cl_name) {
+         println("DEBUG: Get mapping for collection '" + full_cl_name + "'");
+         var cs_cl_name = full_cl_name.split('.');
+         cs_name = cs_cl_name[0];
+         cl_name = cs_cl_name[1];
+         println("DEBUG: CSName cond '" + cs_name + "', CLName cond '" + cl_name + "'");
+         var cur = mapping_cl.find({CSName: cs_name, CLName: cl_name});
+         append_result_to_mappings(cur, mappings);
+      } else {
+         var cur = mapping_cl.find();
+         append_result_to_mappings(cur, mappings);
+      }
+
+      calculate_max_len_for_each_column(mappings, max_lens_of_column);
+      for (var i = 0; i < mappings.length && mappings.length > 1; i++) {
+         if ( "${SHOW_LONG_STYLE}" != "") {
+            println(print_long_style(mappings[i], max_lens_of_column));
+         } else if (i > 0) { // do not print header for short style
+            println(print_short_style(mappings[i], full_cl_name));
+         }
+      }
+   } catch (e) {
+      if (SDB_DMS_CS_NOTEXIST == e || SDB_DMS_NOTEXIST == e) {
+        throw "ERROR: Mapping table SQL_NAME_MAPPING_" + '${upper_inst_group_name}' + ".TABLE_MAPPING does not exist.";
+      } else {
+        throw "ERROR: Failed to get mapping, error " + getLastErrMsg();
+      }
+   }
+EOF
+}
+
+function get_mapping()
+{
+   local msg
+   local log_prefix="INFO|ERROR|WARN"
+   if [ "" != "${VERBOSE}" ]; then
+      log_prefix="${log_prefix}|DEBUG"
+   fi
+   local sdb_js=`build_get_mapping_js`
+   msg=$($INSTALL_DIR/bin/sdb -s "${sdb_js}")
+   if [ $? != 0 ]; then
+      echo "${msg}" | sed 's/^.*uncaught exception: //' | egrep "${log_prefix}"
+      return 1
+   fi
+
+   if [ "" != "${VERBOSE}" ]; then
+      echo "${msg}" | sed 's/^.*uncaught exception: //'
+   else
+      echo "${msg}" | sed 's/^.*uncaught exception: //' |  egrep -v "DEBUG"
+   fi
+   return 0
+}
+
+##################################
+#    main entry
+##################################
+ME=$(basename "$0")
+
+ARGS=`getopt -o vhl --long version,verbose,help,long,instance:,table:,collection: -n "${ME}" -- "$@"`
+test $? -ne 0 && exit 10
+
+# get path
+dir_name=`dirname $0`
+if [[ ${dir_name:0:1} != "/" ]]; then
+   BIN_PATH=$(pwd)/$dir_name  # relative path
+else
+   BIN_PATH=$dir_name         # absolute path
+fi
+
+cur_path=`pwd`
+cd $BIN_PATH/../ && INSTALL_PATH=`pwd`
+cd $cur_path >> /dev/null >&1
+
+eval set -- "${ARGS}"
+while true
+do
+   case "$1" in
+      --instance )                            INST_NAME=$2
+                                              shift 2
+                                              ;;
+      --table )                               TABLE_NAME=$2
+                                              shift 2
+                                              ;;
+      --collection )                          CL_NAME=$2
+                                              shift 2
+                                              ;;
+      --verbose )                             VERBOSE=true
+                                              shift 1
+                                              ;;
+      -l | --long )                           SHOW_LONG_STYLE=true
+                                              shift 1
+                                              ;;
+      -v | --version )                        show_version
+                                              exit 0
+                                              ;;
+      -h | --help )                           usage
+                                              exit 0
+                                              ;;
+      --)                                     shift
+                                              break
+                                              ;;
+      *)                                      echo "Internal error!"
+                                              exit 10
+                                              ;;
+   esac
+done
+
+# initialize sdb environment variables
+init_sdb_path
+
+# get instance name
+get_inst_name
+
+# get sequoiadb login parameter
+init_sdb_login_args
+
+# 1. check arguments
+check_args
+if [ $? != 0 ]; then
+   echo "ERROR: Failed to check arguments"
+   exit 127
+fi
+
+# 2. init sequoiadb connection
+init_sequoiadb_conn
+if [ $? != 0 ]; then
+   echo "ERROR: Failed to connect to sequoiadb"
+   exit 127
+fi
+
+# 3. prepare get mapping
+prepare_get_mapping
+if [ $? != 0 ]; then
+   echo "ERROR: Failed to connect to sequoiadb"
+   exit 127
+fi
+
+# 4. get mapping
+get_mapping
+if [ $? != 0 ]; then
+   if [ "" != "${TABLE_NAME}" ]; then
+      echo "ERROR: Failed to get mapping for table ${TABLE_NAME}"
+   else
+      echo "ERROR: Failed to get mapping for collection ${CL_NAME}"
+   fi
+   exit 127
+fi

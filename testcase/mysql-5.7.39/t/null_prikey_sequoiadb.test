@@ -1,0 +1,21 @@
+#Case 29870
+--source include/have_sequoiadb.inc
+
+--disable_warnings
+drop table if exists null_prikey_sequoiadb;
+--enable_warnings
+
+
+create table null_prikey_sequoiadb(a int);
+insert into null_prikey_sequoiadb values(null);
+set session sequoiadb_execute_only_in_mysql=on;
+drop table null_prikey_sequoiadb;
+set session sequoiadb_execute_only_in_mysql=off;
+
+--error 40339
+create table null_prikey_sequoiadb(a int not null, primary key(a));
+
+
+
+--source include/uninstall_sequoiadb.inc
+

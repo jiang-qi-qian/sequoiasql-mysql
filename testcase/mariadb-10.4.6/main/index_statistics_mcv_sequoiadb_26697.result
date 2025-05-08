@@ -1,0 +1,50 @@
+CREATE DATABASE  IF NOT EXISTS index_statistics_mcv_sequoiadb_26697;
+DROP DATABASE IF EXISTS index_statistics_mcv_sequoiadb_26697;
+CREATE DATABASE  IF NOT EXISTS index_statistics_mcv_sequoiadb_26697;
+use index_statistics_mcv_sequoiadb_26697;
+CREATE TABLE t1(
+a INT NOT NULL,
+b INT NOT NULL,
+c INT NOT NULL,
+INDEX idx_a(a),
+INDEX idx_b(b)
+)
+PARTITION BY RANGE COLUMNS (a)
+SUBPARTITION BY KEY (b)
+SUBPARTITIONS 2 (
+PARTITION p0 VALUES LESS THAN (4),
+PARTITION p1 VALUES LESS THAN (7),
+PARTITION p2 VALUES LESS THAN (11)
+);
+CREATE PROCEDURE p1()
+BEGIN
+DECLARE i INT;
+DECLARE j INT;
+SET i=1;
+WHILE i<=10 DO
+set j=1;
+WHILE j<=20 DO
+INSERT INTO t1(a,b,c) values (i, i, i);
+SET j=j+1;
+END WHILE;
+SET i=i+1;
+END WHILE;
+END $
+CALL p1();
+SELECT * FROM t1 WHERE b<=0;
+a	b	c
+SELECT * FROM t1 WHERE b>=11;
+a	b	c
+ANALYZE TABLE t1;
+Table	Op	Msg_type	Msg_text
+index_statistics_mcv_sequoiadb_26697.t1	analyze	status	Engine-independent statistics collected
+index_statistics_mcv_sequoiadb_26697.t1	analyze	status	OK
+EXPLAIN SELECT * FROM t1 WHERE b<=0;
+id	select_type	table	type	possible_keys	key	key_len	ref	rows	Extra
+1	SIMPLE	t1	range	idx_b	idx_b	4	NULL	2	Using where with pushed condition
+EXPLAIN SELECT * FROM t1 WHERE b>=11;
+id	select_type	table	type	possible_keys	key	key_len	ref	rows	Extra
+1	SIMPLE	t1	range	idx_b	idx_b	4	NULL	2	Using where with pushed condition
+DROP PROCEDURE p1;
+DROP TABLE t1;
+DROP DATABASE index_statistics_mcv_sequoiadb_26697;

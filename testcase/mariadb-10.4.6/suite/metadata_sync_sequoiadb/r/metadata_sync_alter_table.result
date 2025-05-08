@@ -1,0 +1,618 @@
+connection conn1;
+set session sequoiadb_support_mode="";
+DROP DATABASE IF EXISTS metasync_alter_tables;
+connection conn2;
+set session sequoiadb_support_mode="";
+SHOW CREATE DATABASE metasync_alter_tables;
+ERROR 42000: Unknown database 'metasync_alter_tables'
+connection conn1;
+CREATE DATABASE metasync_alter_tables;
+USE metasync_alter_tables;
+CREATE TABLE t1 ( a INT );
+CREATE TABLE t2 ( a VARCHAR(255) );
+CREATE TABLE t3 ( a INT ) ENGINE = SEQUOIADB;
+CREATE TABLE t4 ( a INT );
+CREATE TABLE t5 ( a INT );
+CREATE TABLE t6 ( a INT );
+CREATE TABLE t7 ( a INT );
+ALTER TABLE t1 COMMENT "{table_options:{ShardingKey:{a:1}},ShardingType:'range',Compressed:true,CompressionType:'lzw',ReplSize:3,EnsureShardingIndex:false, StrictDataMode:true,AutoIndexId:true}", ALGORITHM=COPY;
+ALTER TABLE t2 CONVERT TO CHARACTER SET 'cp1251', ALGORITHM=COPY;
+ALTER TABLE t3 ENGINE INNODB;
+ALTER TABLE t4 TABLESPACE ts, ALGORITHM = INPLACE;
+ALTER TABLE t4 ADD CHECK ( a > 10 );
+ALTER TABLE t5 PAGE_CHECKSUM = 1,SEQUENCE = 0,TRANSACTIONAL = 1;
+ALTER TABLE t6
+ADD COLUMN ts TIMESTAMP(6) GENERATED ALWAYS AS ROW START,
+ADD COLUMN te TIMESTAMP(6) GENERATED ALWAYS AS ROW END,
+ADD PERIOD FOR SYSTEM_TIME(ts, te),
+ADD SYSTEM VERSIONING;
+ALTER ONLINE IGNORE TABLE t7 WAIT 1 ALGORITHM=NOCOPY;
+connection conn2;
+USE metasync_alter_tables;
+SHOW CREATE TABLE t1;
+Table	Create Table
+t1	CREATE TABLE `t1` (
+  `a` int(11) DEFAULT NULL
+) ENGINE=SequoiaDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin COMMENT='{table_options:{ShardingKey:{a:1}},ShardingType:''range'',Compressed:true,CompressionType:''lzw'',ReplSize:3,EnsureShardingIndex:false, StrictDataMode:true,AutoIndexId:true}'
+SHOW CREATE TABLE t2;
+Table	Create Table
+t2	CREATE TABLE `t2` (
+  `a` varchar(255) DEFAULT NULL
+) ENGINE=SequoiaDB DEFAULT CHARSET=cp1251
+SHOW CREATE TABLE t3;
+Table	Create Table
+t3	CREATE TABLE `t3` (
+  `a` int(11) DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin
+SHOW CREATE TABLE t4;
+Table	Create Table
+t4	CREATE TABLE `t4` (
+  `a` int(11) DEFAULT NULL,
+  CONSTRAINT `CONSTRAINT_1` CHECK (`a` > 10)
+) ENGINE=SequoiaDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin
+SHOW CREATE TABLE t5;
+Table	Create Table
+t5	CREATE TABLE `t5` (
+  `a` int(11) DEFAULT NULL
+) ENGINE=SequoiaDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin PAGE_CHECKSUM=1 TRANSACTIONAL=1
+SHOW CREATE TABLE t6;
+Table	Create Table
+t6	CREATE TABLE `t6` (
+  `a` int(11) DEFAULT NULL,
+  `ts` timestamp(6) GENERATED ALWAYS AS ROW START,
+  `te` timestamp(6) GENERATED ALWAYS AS ROW END,
+  PERIOD FOR SYSTEM_TIME (`ts`, `te`)
+) ENGINE=SequoiaDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin WITH SYSTEM VERSIONING
+SHOW CREATE TABLE t7;
+Table	Create Table
+t7	CREATE TABLE `t7` (
+  `a` int(11) DEFAULT NULL
+) ENGINE=SequoiaDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin
+connection conn1;
+DROP TABLE t1,t2,t3,t4,t5,t6,t7;
+connection conn2;
+SHOW CREATE TABLE t1;
+ERROR 42S02: Table 'metasync_alter_tables.t1' doesn't exist
+SHOW CREATE TABLE t2;
+ERROR 42S02: Table 'metasync_alter_tables.t2' doesn't exist
+SHOW CREATE TABLE t3;
+ERROR 42S02: Table 'metasync_alter_tables.t3' doesn't exist
+SHOW CREATE TABLE t4;
+ERROR 42S02: Table 'metasync_alter_tables.t4' doesn't exist
+SHOW CREATE TABLE t5;
+ERROR 42S02: Table 'metasync_alter_tables.t5' doesn't exist
+SHOW CREATE TABLE t6;
+ERROR 42S02: Table 'metasync_alter_tables.t6' doesn't exist
+SHOW CREATE TABLE t7;
+ERROR 42S02: Table 'metasync_alter_tables.t7' doesn't exist
+connection conn1;
+CREATE TABLE t1 ( a INT, b INT, c INT );
+CREATE TABLE t2 ( a INT UNIQUE KEY );
+CREATE TABLE t3 ( a INT PRIMARY KEY );
+CREATE TABLE t4 ( a INT PRIMARY KEY );
+CREATE TABLE t5 ( a INT UNIQUE KEY );
+CREATE TABLE t6 ( a INT CHECK ( a > 10 ) );
+ALTER TABLE t1 ADD COLUMN ( d INT, e INT, f INT );
+ALTER TABLE t1 ADD COLUMN IF NOT EXISTS ( g INT NOT NULL, h FLOAT NOT NULL, i DECIMAL(10,2) NOT NULL, j BIT NOT NULL );
+ALTER TABLE t1 ADD COLUMN IF NOT EXISTS ( g BIGINT INVISIBLE NOT NULL DEFAULT 1, h FLOAT ZEROFILL NOT NULL, i DECIMAL(10,2) NOT NULL DEFAULT ( g + 0.99 ) );
+Warnings:
+Note	1060	Duplicate column name 'g'
+Note	1060	Duplicate column name 'h'
+Note	1060	Duplicate column name 'i'
+ALTER TABLE t1 ADD COLUMN ( k DATE NOT NULL, l DATETIME NOT NULL, m TIME NOT NULL, n YEAR NOT NULL );
+ALTER TABLE t1 ADD COLUMN ( o CHAR NOT NULL, p VARCHAR(255) NOT NULL, q BINARY NOT NULL, r VARBINARY(255) NOT NULL, s BLOB NOT NULL, t TEXT NOT NULL );
+ALTER TABLE t1 ADD COLUMN ( u ENUM("a","b") NOT NULL, v SET('a', 'b') );
+ALTER TABLE t1 ADD w INT NOT NULL DEFAULT 10;
+ALTER TABLE t1 ADD COLUMN x VARCHAR(255) AFTER b;
+ALTER TABLE t1 ADD COLUMN y VARCHAR(255) FIRST;
+ALTER TABLE t1 ADD ( z INT COMMENT "alter table" COLLATE utf8_bin );
+ALTER TABLE t2 ADD ( b INT REFERENCES t2(a) MATCH FULL ON DELETE RESTRICT );
+ALTER TABLE t2 DROP FOREIGN KEY IF EXISTS a;
+Warnings:
+Note	1091	Can't DROP FOREIGN KEY `a`; check that it exists
+ALTER TABLE t2 DROP FOREIGN KEY IF EXISTS nonexists;
+Warnings:
+Note	1091	Can't DROP FOREIGN KEY `nonexists`; check that it exists
+ALTER TABLE t3 ADD ( b INT REFERENCES t2(a) MATCH PARTIAL ON UPDATE CASCADE );
+ALTER TABLE t3 DROP FOREIGN KEY a;
+ALTER TABLE t4 ADD ( b INT REFERENCES t2(a) MATCH FULL ON DELETE RESTRICT );
+ALTER TABLE t5 ADD ( b INT REFERENCES t2(a) MATCH PARTIAL ON UPDATE CASCADE );
+ALTER TABLE t6 DROP CONSTRAINT IF EXISTS `a`;
+Warnings:
+Note	1091	Can't DROP CONSTRAINT `a`; check that it exists
+ALTER TABLE t1 DROP COLUMN c;
+ALTER TABLE t1 DROP COLUMN IF EXISTS b;
+ALTER TABLE t1 DROP COLUMN IF EXISTS b;
+Warnings:
+Note	1091	Can't DROP COLUMN `b`; check that it exists
+connection conn2;
+SHOW CREATE TABLE t1;
+Table	Create Table
+t1	CREATE TABLE `t1` (
+  `y` varchar(255) COLLATE utf8mb4_bin DEFAULT NULL,
+  `a` int(11) DEFAULT NULL,
+  `x` varchar(255) COLLATE utf8mb4_bin DEFAULT NULL,
+  `d` int(11) DEFAULT NULL,
+  `e` int(11) DEFAULT NULL,
+  `f` int(11) DEFAULT NULL,
+  `g` int(11) NOT NULL,
+  `h` float NOT NULL,
+  `i` decimal(10,2) NOT NULL,
+  `j` bit(1) NOT NULL,
+  `k` date NOT NULL,
+  `l` datetime NOT NULL,
+  `m` time NOT NULL,
+  `n` year(4) NOT NULL,
+  `o` char(1) COLLATE utf8mb4_bin NOT NULL,
+  `p` varchar(255) COLLATE utf8mb4_bin NOT NULL,
+  `q` binary(1) NOT NULL,
+  `r` varbinary(255) NOT NULL,
+  `s` blob NOT NULL,
+  `t` text COLLATE utf8mb4_bin NOT NULL,
+  `u` enum('a','b') COLLATE utf8mb4_bin NOT NULL,
+  `v` set('a','b') COLLATE utf8mb4_bin DEFAULT NULL,
+  `w` int(11) NOT NULL DEFAULT 10,
+  `z` int(11) DEFAULT NULL COMMENT 'alter table'
+) ENGINE=SequoiaDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin
+SHOW CREATE TABLE t2;
+Table	Create Table
+t2	CREATE TABLE `t2` (
+  `a` int(11) DEFAULT NULL,
+  `b` int(11) DEFAULT NULL,
+  UNIQUE KEY `a` (`a`)
+) ENGINE=SequoiaDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin
+SHOW CREATE TABLE t3;
+Table	Create Table
+t3	CREATE TABLE `t3` (
+  `a` int(11) NOT NULL,
+  `b` int(11) DEFAULT NULL,
+  PRIMARY KEY (`a`)
+) ENGINE=SequoiaDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin
+SHOW CREATE TABLE t4;
+Table	Create Table
+t4	CREATE TABLE `t4` (
+  `a` int(11) NOT NULL,
+  `b` int(11) DEFAULT NULL,
+  PRIMARY KEY (`a`)
+) ENGINE=SequoiaDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin
+SHOW CREATE TABLE t5;
+Table	Create Table
+t5	CREATE TABLE `t5` (
+  `a` int(11) DEFAULT NULL,
+  `b` int(11) DEFAULT NULL,
+  UNIQUE KEY `a` (`a`)
+) ENGINE=SequoiaDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin
+SHOW CREATE TABLE t6;
+Table	Create Table
+t6	CREATE TABLE `t6` (
+  `a` int(11) DEFAULT NULL CHECK (`a` > 10)
+) ENGINE=SequoiaDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin
+connection conn1;
+DROP TABLE t1,t2,t3,t4,t5,t6;
+connection conn2;
+SHOW CREATE TABLE t1;
+ERROR 42S02: Table 'metasync_alter_tables.t1' doesn't exist
+SHOW CREATE TABLE t2;
+ERROR 42S02: Table 'metasync_alter_tables.t2' doesn't exist
+SHOW CREATE TABLE t3;
+ERROR 42S02: Table 'metasync_alter_tables.t3' doesn't exist
+SHOW CREATE TABLE t4;
+ERROR 42S02: Table 'metasync_alter_tables.t4' doesn't exist
+SHOW CREATE TABLE t5;
+ERROR 42S02: Table 'metasync_alter_tables.t5' doesn't exist
+SHOW CREATE TABLE t6;
+ERROR 42S02: Table 'metasync_alter_tables.t6' doesn't exist
+connection conn1;
+CREATE TABLE t1 ( a CHAR(8) DEFAULT NULL );
+CREATE TABLE t2 ( a CHAR(8) PRIMARY KEY );
+CREATE TABLE t3 ( a CHAR(8) PRIMARY KEY );
+CREATE TABLE t4 ( a CHAR(8) DEFAULT NULL, b INT );
+CREATE TABLE t5 ( a CHAR(8) DEFAULT NULL, UNIQUE INDEX(a) );
+CREATE TABLE t6 ( a CHAR(8) DEFAULT NULL, b INT, c FLOAT );
+ALTER TABLE t1 ADD PRIMARY KEY(a);
+ALTER TABLE t2 DROP PRIMARY KEY, ADD PRIMARY KEY(a);
+ALTER TABLE t3 DROP PRIMARY KEY;
+ALTER TABLE t4 ADD UNIQUE KEY a(b,a);
+ALTER TABLE t5 DROP INDEX a, ALGORITHM = DEFAULT;
+ALTER TABLE t5 DROP INDEX IF EXISTS a;
+Warnings:
+Note	1091	Can't DROP INDEX `a`; check that it exists
+ALTER TABLE t6 ADD INDEX(a,c,b);
+ALTER TABLE t6 ADD INDEX IF NOT EXISTS(a,nonexists);
+Warnings:
+Note	1061	Duplicate key name 'a'
+connection conn2;
+SHOW CREATE TABLE t1;
+Table	Create Table
+t1	CREATE TABLE `t1` (
+  `a` char(8) COLLATE utf8mb4_bin NOT NULL,
+  PRIMARY KEY (`a`)
+) ENGINE=SequoiaDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin
+SHOW CREATE TABLE t2;
+Table	Create Table
+t2	CREATE TABLE `t2` (
+  `a` char(8) COLLATE utf8mb4_bin NOT NULL,
+  PRIMARY KEY (`a`)
+) ENGINE=SequoiaDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin
+SHOW CREATE TABLE t3;
+Table	Create Table
+t3	CREATE TABLE `t3` (
+  `a` char(8) COLLATE utf8mb4_bin NOT NULL
+) ENGINE=SequoiaDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin
+SHOW CREATE TABLE t4;
+Table	Create Table
+t4	CREATE TABLE `t4` (
+  `a` char(8) COLLATE utf8mb4_bin DEFAULT NULL,
+  `b` int(11) DEFAULT NULL,
+  UNIQUE KEY `a` (`b`,`a`)
+) ENGINE=SequoiaDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin
+SHOW CREATE TABLE t5;
+Table	Create Table
+t5	CREATE TABLE `t5` (
+  `a` char(8) COLLATE utf8mb4_bin DEFAULT NULL
+) ENGINE=SequoiaDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin
+SHOW CREATE TABLE t6;
+Table	Create Table
+t6	CREATE TABLE `t6` (
+  `a` char(8) COLLATE utf8mb4_bin DEFAULT NULL,
+  `b` int(11) DEFAULT NULL,
+  `c` float DEFAULT NULL,
+  KEY `a` (`a`,`c`,`b`)
+) ENGINE=SequoiaDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin
+connection conn1;
+DROP TABLE t1,t2,t3,t4,t5,t6;
+connection conn2;
+SHOW CREATE TABLE t1;
+ERROR 42S02: Table 'metasync_alter_tables.t1' doesn't exist
+SHOW CREATE TABLE t2;
+ERROR 42S02: Table 'metasync_alter_tables.t2' doesn't exist
+SHOW CREATE TABLE t3;
+ERROR 42S02: Table 'metasync_alter_tables.t3' doesn't exist
+SHOW CREATE TABLE t4;
+ERROR 42S02: Table 'metasync_alter_tables.t4' doesn't exist
+SHOW CREATE TABLE t5;
+ERROR 42S02: Table 'metasync_alter_tables.t5' doesn't exist
+SHOW CREATE TABLE t6;
+ERROR 42S02: Table 'metasync_alter_tables.t6' doesn't exist
+connection conn1;
+CREATE TABLE t1 ( a INT, b INT, c INT );
+CREATE TABLE t2 ( a INT, b INT, c INT );
+CREATE TABLE t3 ( a INT, b INT, c INT );
+CREATE TABLE t4 ( a INT AUTO_INCREMENT, b INT, PRIMARY KEY(a) );
+ALTER TABLE t1 ADD COLUMN ( d INT AUTO_INCREMENT PRIMARY KEY );
+ALTER TABLE t2 ADD COLUMN ( e INT AUTO_INCREMENT UNIQUE KEY );
+ALTER TABLE t3 ADD COLUMN ( f INT AUTO_INCREMENT KEY );
+ALTER TABLE t4 CHANGE a a INT;
+ALTER TABLE t4 DROP PRIMARY KEY, ADD PRIMARY KEY(b,a);
+ALTER TABLE t4 MODIFY b INT AUTO_INCREMENT;
+connection conn2;
+SHOW CREATE TABLE t1;
+Table	Create Table
+t1	CREATE TABLE `t1` (
+  `a` int(11) DEFAULT NULL,
+  `b` int(11) DEFAULT NULL,
+  `c` int(11) DEFAULT NULL,
+  `d` int(11) NOT NULL AUTO_INCREMENT,
+  PRIMARY KEY (`d`)
+) ENGINE=SequoiaDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin
+SHOW CREATE TABLE t2;
+Table	Create Table
+t2	CREATE TABLE `t2` (
+  `a` int(11) DEFAULT NULL,
+  `b` int(11) DEFAULT NULL,
+  `c` int(11) DEFAULT NULL,
+  `e` int(11) NOT NULL AUTO_INCREMENT,
+  UNIQUE KEY `e` (`e`)
+) ENGINE=SequoiaDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin
+SHOW CREATE TABLE t3;
+Table	Create Table
+t3	CREATE TABLE `t3` (
+  `a` int(11) DEFAULT NULL,
+  `b` int(11) DEFAULT NULL,
+  `c` int(11) DEFAULT NULL,
+  `f` int(11) NOT NULL AUTO_INCREMENT,
+  PRIMARY KEY (`f`)
+) ENGINE=SequoiaDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin
+SHOW CREATE TABLE t4;
+Table	Create Table
+t4	CREATE TABLE `t4` (
+  `a` int(11) NOT NULL,
+  `b` int(11) NOT NULL AUTO_INCREMENT,
+  PRIMARY KEY (`b`,`a`)
+) ENGINE=SequoiaDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin
+connection conn1;
+DROP TABLE t1,t2,t3,t4;
+connection conn2;
+SHOW CREATE TABLE t1;
+ERROR 42S02: Table 'metasync_alter_tables.t1' doesn't exist
+SHOW CREATE TABLE t2;
+ERROR 42S02: Table 'metasync_alter_tables.t2' doesn't exist
+SHOW CREATE TABLE t3;
+ERROR 42S02: Table 'metasync_alter_tables.t3' doesn't exist
+SHOW CREATE TABLE t4;
+ERROR 42S02: Table 'metasync_alter_tables.t4' doesn't exist
+connection conn1;
+CREATE TABLE t1 ( a INT, b INT, c INT, d INT );
+CREATE TABLE t2 ( a INT COMMENT "a", b INT, c INT );
+CREATE TABLE t3 ( a INT, b INT, c INT );
+CREATE TABLE t4 ( a INT COMMENT "a", b INT, c INT );
+CREATE TABLE t5 ( a INT, b INT, c INT );
+CREATE TABLE t6 ( a INT DEFAULT 1, b INT, c INT );
+CREATE TABLE t7 ( a INT DEFAULT 3, b INT, c INT );
+CREATE TABLE t8 ( d INT );
+CREATE TABLE t9 ( d INT DEFAULT 5 );
+CREATE TABLE t10 ( a INT, b INT, c INT );
+CREATE TABLE t11 ( a INT NOT NULL, b INT, c INT );
+CREATE TABLE t12 ( a INT, b INT, c INT );
+CREATE TABLE t13 ( a INT NOT NULL DEFAULT 1, b INT, c INT );
+CREATE TABLE t14 ( a ENUM('a','b'), b SET('a', 'b'), c INT );
+ALTER TABLE t1 CHANGE IF EXISTS a a INT COMMENT "alter table" COLLATE utf8_bin;
+ALTER TABLE t1 CHANGE IF EXISTS nonexists nonexists INT NOT NULL;
+Warnings:
+Note	1054	Unknown column 'nonexists' in 't1'
+ALTER TABLE t2 CHANGE a a INT;
+ALTER TABLE t3 MODIFY IF EXISTS a INT COMMENT "alter table" COLLATE utf8_bin;
+ALTER TABLE t3 MODIFY IF EXISTS nonexists INT NOT NULL;
+Warnings:
+Note	1054	Unknown column 'nonexists' in 't3'
+ALTER TABLE t4 MODIFY a INT;
+ALTER TABLE t5 ALTER a SET DEFAULT 10;
+ALTER TABLE t6 ALTER a DROP DEFAULT;
+ALTER TABLE t7 CHANGE COLUMN a d INT DEFAULT 10;
+ALTER TABLE t8 CHANGE COLUMN d d INT DEFAULT 100;
+ALTER TABLE t9 MODIFY COLUMN d INT;
+ALTER TABLE t10 CHANGE a a INT NOT NULL;
+ALTER TABLE t11 CHANGE a a INT;
+ALTER TABLE t12 MODIFY a INT NOT NULL DEFAULT 10;
+ALTER TABLE t13 MODIFY a INT;
+ALTER TABLE t1 CHANGE a a INT AFTER b;
+ALTER TABLE t1 MODIFY c INT FIRST;
+ALTER TABLE t1 CHANGE d e BIGINT;
+ALTER TABLE t1 FORCE;
+ALTER TABLE t14 CHANGE a a ENUM('a', 'b', 'c');
+ALTER TABLE t14 CHANGE b b SET("a", "b", "c");
+connection conn2;
+SHOW CREATE TABLE t1;
+Table	Create Table
+t1	CREATE TABLE `t1` (
+  `c` int(11) DEFAULT NULL,
+  `b` int(11) DEFAULT NULL,
+  `a` int(11) DEFAULT NULL,
+  `e` bigint(20) DEFAULT NULL
+) ENGINE=SequoiaDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin
+SHOW CREATE TABLE t2;
+Table	Create Table
+t2	CREATE TABLE `t2` (
+  `a` int(11) DEFAULT NULL,
+  `b` int(11) DEFAULT NULL,
+  `c` int(11) DEFAULT NULL
+) ENGINE=SequoiaDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin
+SHOW CREATE TABLE t3;
+Table	Create Table
+t3	CREATE TABLE `t3` (
+  `a` int(11) DEFAULT NULL COMMENT 'alter table',
+  `b` int(11) DEFAULT NULL,
+  `c` int(11) DEFAULT NULL
+) ENGINE=SequoiaDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin
+SHOW CREATE TABLE t4;
+Table	Create Table
+t4	CREATE TABLE `t4` (
+  `a` int(11) DEFAULT NULL,
+  `b` int(11) DEFAULT NULL,
+  `c` int(11) DEFAULT NULL
+) ENGINE=SequoiaDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin
+SHOW CREATE TABLE t5;
+Table	Create Table
+t5	CREATE TABLE `t5` (
+  `a` int(11) DEFAULT 10,
+  `b` int(11) DEFAULT NULL,
+  `c` int(11) DEFAULT NULL
+) ENGINE=SequoiaDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin
+SHOW CREATE TABLE t6;
+Table	Create Table
+t6	CREATE TABLE `t6` (
+  `a` int(11),
+  `b` int(11) DEFAULT NULL,
+  `c` int(11) DEFAULT NULL
+) ENGINE=SequoiaDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin
+SHOW CREATE TABLE t7;
+Table	Create Table
+t7	CREATE TABLE `t7` (
+  `d` int(11) DEFAULT 10,
+  `b` int(11) DEFAULT NULL,
+  `c` int(11) DEFAULT NULL
+) ENGINE=SequoiaDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin
+SHOW CREATE TABLE t8;
+Table	Create Table
+t8	CREATE TABLE `t8` (
+  `d` int(11) DEFAULT 100
+) ENGINE=SequoiaDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin
+SHOW CREATE TABLE t9;
+Table	Create Table
+t9	CREATE TABLE `t9` (
+  `d` int(11) DEFAULT NULL
+) ENGINE=SequoiaDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin
+SHOW CREATE TABLE t10;
+Table	Create Table
+t10	CREATE TABLE `t10` (
+  `a` int(11) NOT NULL,
+  `b` int(11) DEFAULT NULL,
+  `c` int(11) DEFAULT NULL
+) ENGINE=SequoiaDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin
+SHOW CREATE TABLE t11;
+Table	Create Table
+t11	CREATE TABLE `t11` (
+  `a` int(11) DEFAULT NULL,
+  `b` int(11) DEFAULT NULL,
+  `c` int(11) DEFAULT NULL
+) ENGINE=SequoiaDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin
+SHOW CREATE TABLE t12;
+Table	Create Table
+t12	CREATE TABLE `t12` (
+  `a` int(11) NOT NULL DEFAULT 10,
+  `b` int(11) DEFAULT NULL,
+  `c` int(11) DEFAULT NULL
+) ENGINE=SequoiaDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin
+SHOW CREATE TABLE t13;
+Table	Create Table
+t13	CREATE TABLE `t13` (
+  `a` int(11) DEFAULT NULL,
+  `b` int(11) DEFAULT NULL,
+  `c` int(11) DEFAULT NULL
+) ENGINE=SequoiaDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin
+SHOW CREATE TABLE t14;
+Table	Create Table
+t14	CREATE TABLE `t14` (
+  `a` enum('a','b','c') COLLATE utf8mb4_bin DEFAULT NULL,
+  `b` set('a','b','c') COLLATE utf8mb4_bin DEFAULT NULL,
+  `c` int(11) DEFAULT NULL
+) ENGINE=SequoiaDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin
+connection conn1;
+DROP TABLE t1,t2,t3,t4,t5,t6,t7,t8,t9,t10,t11,t12,t13,t14;
+connection conn2;
+SHOW CREATE TABLE t1;
+ERROR 42S02: Table 'metasync_alter_tables.t1' doesn't exist
+SHOW CREATE TABLE t2;
+ERROR 42S02: Table 'metasync_alter_tables.t2' doesn't exist
+SHOW CREATE TABLE t3;
+ERROR 42S02: Table 'metasync_alter_tables.t3' doesn't exist
+SHOW CREATE TABLE t4;
+ERROR 42S02: Table 'metasync_alter_tables.t4' doesn't exist
+SHOW CREATE TABLE t5;
+ERROR 42S02: Table 'metasync_alter_tables.t5' doesn't exist
+SHOW CREATE TABLE t6;
+ERROR 42S02: Table 'metasync_alter_tables.t6' doesn't exist
+SHOW CREATE TABLE t7;
+ERROR 42S02: Table 'metasync_alter_tables.t7' doesn't exist
+SHOW CREATE TABLE t8;
+ERROR 42S02: Table 'metasync_alter_tables.t8' doesn't exist
+SHOW CREATE TABLE t9;
+ERROR 42S02: Table 'metasync_alter_tables.t9' doesn't exist
+SHOW CREATE TABLE t10;
+ERROR 42S02: Table 'metasync_alter_tables.t10' doesn't exist
+SHOW CREATE TABLE t11;
+ERROR 42S02: Table 'metasync_alter_tables.t11' doesn't exist
+SHOW CREATE TABLE t12;
+ERROR 42S02: Table 'metasync_alter_tables.t12' doesn't exist
+SHOW CREATE TABLE t13;
+ERROR 42S02: Table 'metasync_alter_tables.t13' doesn't exist
+SHOW CREATE TABLE t14;
+ERROR 42S02: Table 'metasync_alter_tables.t14' doesn't exist
+connection conn1;
+CREATE TABLE t1 ( a INT, b INT, c INT );
+CREATE TABLE t2 ( a INT, b INT, c INT );
+CREATE TABLE t3 ( a INT, b INT, c INT );
+CREATE TEMPORARY TABLE t1 ( a INT, b INT, c INT );
+CREATE TABLE t11 ( a INT, b INT, c INT );
+CREATE TABLE t12 ( a INT, b INT, c INT );
+ALTER TABLE t3 RENAME t103, MIN_ROWS 10 MAX_ROWS 100;
+RENAME TABLE t2 WAIT 1 TO t4, t1 TO t_tmp, t1 TO t101;
+ALTER TABLE t11 RENAME t13, ALGORITHM = COPY;
+ALTER TABLE t12 RENAME TO t14, ALGORITHM = COPY;
+connection conn2;
+SHOW CREATE TABLE t1;
+ERROR 42S02: Table 'metasync_alter_tables.t1' doesn't exist
+SHOW CREATE TABLE t2;
+ERROR 42S02: Table 'metasync_alter_tables.t2' doesn't exist
+SHOW CREATE TABLE t3;
+ERROR 42S02: Table 'metasync_alter_tables.t3' doesn't exist
+SHOW CREATE TABLE t4;
+Table	Create Table
+t4	CREATE TABLE `t4` (
+  `a` int(11) DEFAULT NULL,
+  `b` int(11) DEFAULT NULL,
+  `c` int(11) DEFAULT NULL
+) ENGINE=SequoiaDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin
+SHOW CREATE TABLE t101;
+Table	Create Table
+t101	CREATE TABLE `t101` (
+  `a` int(11) DEFAULT NULL,
+  `b` int(11) DEFAULT NULL,
+  `c` int(11) DEFAULT NULL
+) ENGINE=SequoiaDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin
+SHOW CREATE TABLE t103;
+Table	Create Table
+t103	CREATE TABLE `t103` (
+  `a` int(11) DEFAULT NULL,
+  `b` int(11) DEFAULT NULL,
+  `c` int(11) DEFAULT NULL
+) ENGINE=SequoiaDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin MIN_ROWS=10 MAX_ROWS=100
+SHOW CREATE TABLE t11;
+ERROR 42S02: Table 'metasync_alter_tables.t11' doesn't exist
+SHOW CREATE TABLE t12;
+ERROR 42S02: Table 'metasync_alter_tables.t12' doesn't exist
+SHOW CREATE TABLE t13;
+Table	Create Table
+t13	CREATE TABLE `t13` (
+  `a` int(11) DEFAULT NULL,
+  `b` int(11) DEFAULT NULL,
+  `c` int(11) DEFAULT NULL
+) ENGINE=SequoiaDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin
+SHOW CREATE TABLE t14;
+Table	Create Table
+t14	CREATE TABLE `t14` (
+  `a` int(11) DEFAULT NULL,
+  `b` int(11) DEFAULT NULL,
+  `c` int(11) DEFAULT NULL
+) ENGINE=SequoiaDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin
+connection conn1;
+DROP TABLE t4,t13,t14,t101,t103,t_tmp;
+connection conn2;
+SHOW CREATE TABLE t1;
+ERROR 42S02: Table 'metasync_alter_tables.t1' doesn't exist
+SHOW CREATE TABLE t4;
+ERROR 42S02: Table 'metasync_alter_tables.t4' doesn't exist
+SHOW CREATE TABLE t13;
+ERROR 42S02: Table 'metasync_alter_tables.t13' doesn't exist
+SHOW CREATE TABLE t14;
+ERROR 42S02: Table 'metasync_alter_tables.t14' doesn't exist
+SHOW CREATE TABLE t101;
+ERROR 42S02: Table 'metasync_alter_tables.t101' doesn't exist
+SHOW CREATE TABLE t103;
+ERROR 42S02: Table 'metasync_alter_tables.t103' doesn't exist
+connection conn1;
+CREATE TABLE t1 ( id INT NOT NULL, a INT, PRIMARY KEY( id ) ) ENGINE SEQUOIADB;
+CREATE TABLE t2 ( id INT ) ENGINE SEQUOIADB
+PARTITION BY RANGE ( id )
+(PARTITION p0 VALUES LESS THAN (0),
+PARTITION p1 VALUES LESS THAN (1) );
+ALTER TABLE t1 PARTITION BY RANGE ( id )
+SUBPARTITION BY HASH ( id )
+(PARTITION p0 VALUES LESS THAN (0) ( SUBPARTITION sp0 ),
+PARTITION p1 VALUES LESS THAN (1) ( SUBPARTITION sp1 ),
+PARTITION p2 VALUES LESS THAN (2) ( SUBPARTITION sp2 ) );
+ALTER TABLE t1 ADD PARTITION ( PARTITION p3 VALUES LESS THAN (3) ( SUBPARTITION sp3 ) );
+ALTER TABLE t1 REORGANIZE PARTITION p0,p1 INTO ( PARTITION p1 VALUES LESS THAN (1) );
+ALTER TABLE t1 DROP PARTITION p2;
+ALTER TABLE t2 REMOVE PARTITIONING;
+connection conn2;
+SHOW CREATE TABLE t1;
+Table	Create Table
+t1	CREATE TABLE `t1` (
+  `id` int(11) NOT NULL,
+  `a` int(11) DEFAULT NULL,
+  PRIMARY KEY (`id`)
+) ENGINE=SequoiaDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin
+ PARTITION BY RANGE (`id`)
+SUBPARTITION BY HASH (`id`)
+(PARTITION `p1` VALUES LESS THAN (1)
+ (SUBPARTITION `p1sp0` ENGINE = SequoiaDB),
+ PARTITION `p3` VALUES LESS THAN (3)
+ (SUBPARTITION `sp3` ENGINE = SequoiaDB))
+SHOW CREATE TABLE t2;
+Table	Create Table
+t2	CREATE TABLE `t2` (
+  `id` int(11) DEFAULT NULL
+) ENGINE=SequoiaDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin
+connection conn1;
+DROP TABLE t1,t2;
+connection conn2;
+SHOW CREATE TABLE t1;
+ERROR 42S02: Table 'metasync_alter_tables.t1' doesn't exist
+SHOW CREATE TABLE t2;
+ERROR 42S02: Table 'metasync_alter_tables.t2' doesn't exist
+connection conn1;
+DROP DATABASE metasync_alter_tables;
+connection conn2;
+SHOW CREATE DATABASE metasync_alter_tables;
+ERROR 42000: Unknown database 'metasync_alter_tables'

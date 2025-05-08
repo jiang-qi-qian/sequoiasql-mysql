@@ -1,0 +1,120 @@
+#seqDB-27689 UDI场景测试
+--source include/have_sequoiadb.inc
+--disable_warnings
+drop database if exists explain_direct_sort_27689;
+--enable_warnings
+create database explain_direct_sort_27689;
+drop database explain_direct_sort_27689;
+create database explain_direct_sort_27689;
+
+use explain_direct_sort_27689;
+set session sequoiadb_debug_log=on;
+set session optimizer_switch='mrr=on';
+
+--disable_warnings
+drop table if exists t1,t2;
+--enable_warnings
+create table t1(
+col1 int,
+col2 varchar(10),
+col3 varchar(10),
+col4 varchar(10),
+key idx_col1(col1),
+key idx_col2(col2),
+key idx_col12(col1,col2),
+key idx_col4(col4)
+);
+insert into t1 values(5,'xyz','abd','abd');
+insert into t1 values(4,'abc','abcdef','xyz');
+insert into t1 values(3,'abd','def','defg');
+insert into t1 values(0,'abde','xyz','def');
+insert into t1 values(2,'defg','abc','efg');
+insert into t1 values(null,null,null,null);
+insert into t1 values(6,'abcdef','abde','abc');
+insert into t1 values(1,'def','defg','abcdef');
+
+select * from t1 order by col1;
+select * from t1 order by col2;
+select * from t1 order by col3;
+select * from t1 order by col4;
+
+create table t2 like t1;
+insert into t2 select * from t1;
+
+#单表update
+explain update t1 set col3 = 'hello' where col1 = 6;
+update t1 set col3 = 'hello' where col1 = 6;
+--source include/query_pushdown_condition_sequoiadb.inc
+explain update t1 set col3 = 'hello' where col1 > 6;
+update t1 set col3 = 'hello' where col1 > 6;
+--source include/query_pushdown_condition_sequoiadb.inc
+explain update t1 set col3 = concat(col3, '-updated') where col1 > 7;
+update t1 set col3 = concat(col3, '-updated') where col1 > 7;
+--source include/query_pushdown_condition_sequoiadb.inc
+
+#多表update
+explain update t1,t2 set t1.col3 = 'ghi' where t1.col1 = t2.col1 and t1.col2 > 'def';
+update t1,t2 set t1.col3 = 'ghi' where t1.col1 = t2.col1 and t1.col2 > 'def';
+--source include/query_pushdown_condition_sequoiadb.inc
+
+#单表delete
+explain delete from t1 where col1 is null or col2 = 'xyz';
+delete from t1 where col1 is null or col2 = 'xyz';
+--source include/query_pushdown_condition_sequoiadb_3.inc
+explain delete from t1 where col1 <=> null or col2 <=> 'xyz';
+delete from t1 where col1 <=> null or col2 <=> 'xyz';
+--source include/query_pushdown_condition_sequoiadb_3.inc
+
+#delete带有子查询
+explain delete from t1 where t1.col1 = (select t2.col1 from t2 where t2.col4 = 'xyz');
+delete from t1 where t1.col1 = (select t2.col1 from t2 where t2.col4 = 'xyz');
+--source include/query_pushdown_condition_sequoiadb.inc
+
+#insert操作
+explain insert into t1 select * from t2 where t2.col2 in ('abc','def');
+insert into t1 select * from t2 where t2.col2 in ('abc','def') ;
+--source include/query_pushdown_condition_sequoiadb.inc
+explain insert into t1 select * from t2 where t2.col2 < 'def' order by t2.col4 limit 2;
+insert into t1 select * from t2 where t2.col2 < 'def' order by t2.col4 limit 2;
+--source include/query_pushdown_condition_sequoiadb.inc
+explain insert into t1 select * from t2 where t2.col2 < 'def' order by t2.col2 limit 2;
+insert into t1 select * from t2 where t2.col2 < 'def' order by t2.col2 limit 2;
+--source include/query_pushdown_condition_sequoiadb.inc
+
+#单表update/delete + order by + limit
+explain update t1 set col3 = 'udi' where col1 > 3 order by col1 limit 2;
+update t1 set col3 = 'udi' where col1 > 3 order by col1 limit 2;
+--source include/query_pushdown_condition_sequoiadb.inc
+explain update t1 set col3 = 'udi' where col1 > 3 order by col1 desc limit 2;
+update t1 set col3 = 'udi' where col1 > 3 order by col1 desc limit 2;
+--source include/query_pushdown_condition_sequoiadb.inc
+explain delete from t1 order by col1 limit 2;
+delete from t1 order by col1 limit 2;
+--source include/query_pushdown_condition_sequoiadb.inc
+explain delete from t1 order by col1 desc limit 2;
+delete from t1 order by col1 desc limit 2;
+--source include/query_pushdown_condition_sequoiadb.inc
+explain delete from t1 order by col3 limit 2;
+delete from t1 order by col3 limit 2;
+--source include/query_pushdown_condition_sequoiadb.inc
+
+#多表update/delete（mysql不支持update + order by / limit）
+explain update t1,t2 set t1.col2 = 'aaa' where t1.col4 = t2.col4 and t1.col1 < 5;
+update t1,t2 set t1.col2 = 'aaa' where t1.col4 = t2.col4 and t1.col1 < 5;
+--source include/query_pushdown_condition_sequoiadb.inc
+explain update t1,t2 set t1.col2 = 'aaa' where t1.col4 = t2.col4 and t1.col1 < 5;
+update t1,t2 set t1.col2 = 'aaa' where t1.col4 = t2.col4 and t1.col1 < 5;
+--source include/query_pushdown_condition_sequoiadb.inc
+explain delete from t1 where t1.col1 < (select col1 from t2 where t2.col4 = 'def') order by t1.col1 limit 3;
+delete from t1 where t1.col1 < (select col1 from t2 where t2.col4 = 'def') order by t1.col1 limit 3;
+--source include/query_pushdown_condition_sequoiadb.inc
+explain delete from t1 where t1.col1 < (select col1 from t2 where t2.col4 = 'def') order by t1.col3 limit 3;
+delete from t1 where t1.col1 < (select col1 from t2 where t2.col4 = 'def') order by t1.col3 limit 3;
+--source include/query_pushdown_condition_sequoiadb.inc
+drop table t1,t2;
+
+set session sequoiadb_debug_log=off;
+set session optimizer_switch=default;
+drop database explain_direct_sort_27689;
+--source include/uninstall_sequoiadb.inc
+

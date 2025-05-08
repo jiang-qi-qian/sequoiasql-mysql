@@ -1,0 +1,364 @@
+# (#Case #15535: range query for all data type support index)
+
+--source include/have_sequoiadb.inc
+
+#range query use tiny
+CREATE TABLE t1( a tinyint, b tinyint, KEY( a, b ) );
+
+INSERT INTO t1( a, b ) 
+VALUES (0, 1), (1, 2), (1, 4), (2, 3), (5, 0), (9, 7);
+
+SELECT * FROM t1 WHERE
+3 <= a AND a < 5 OR 
+5 < a AND b = 3 OR
+3 <= a;
+
+SELECT * FROM t1 WHERE
+3 <= a AND a <= 5 OR 
+5 <= a AND b = 3 OR
+3 <= a;
+
+DROP TABLE t1;
+
+#range query use tiny unsigned
+CREATE TABLE t1( a tinyint unsigned, b tinyint unsigned, KEY( a, b ) );
+
+INSERT INTO t1( a, b ) 
+VALUES (0, 1), (1, 2), (1, 4), (2, 3), (5, 0), (9, 7);
+
+SELECT * FROM t1 WHERE
+3 <= a AND a < 5 OR 
+5 < a AND b = 3 OR
+3 <= a;
+
+SELECT * FROM t1 WHERE
+3 <= a AND a <= 5 OR 
+5 <= a AND b = 3 OR
+3 <= a;
+
+DROP TABLE t1;
+
+#range query use smallint
+CREATE TABLE t1( a smallint, b smallint, KEY( a, b ) );
+
+INSERT INTO t1( a, b ) 
+VALUES (0, 1), (1, 2), (1, 4), (2, 3), (5, 0), (9, 7);
+
+SELECT * FROM t1 WHERE
+3 <= a AND a < 5 OR 
+5 < a AND b = 3 OR
+3 <= a;
+
+SELECT * FROM t1 WHERE
+3 <= a AND a <= 5 OR 
+5 <= a AND b = 3 OR
+3 <= a;
+
+DROP TABLE t1;
+
+#range query use smallint unsigned
+CREATE TABLE t1( a smallint unsigned, b smallint unsigned, KEY( a, b ) );
+
+INSERT INTO t1( a, b ) 
+VALUES (0, 1), (1, 2), (1, 4), (2, 3), (5, 0), (9, 7);
+
+SELECT * FROM t1 WHERE
+3 <= a AND a < 5 OR 
+5 < a AND b = 3 OR
+3 <= a;
+
+SELECT * FROM t1 WHERE
+3 <= a AND a <= 5 OR 
+5 <= a AND b = 3 OR
+3 <= a;
+
+DROP TABLE t1;
+
+#range query use int
+CREATE TABLE t1( a int, b int, KEY( a, b ) );
+
+INSERT INTO t1( a, b ) 
+VALUES (0, 1), (1, 2), (1, 4), (2, 3), (5, 0), (9, 7);
+
+SELECT * FROM t1 WHERE
+3 <= a AND a < 5 OR 
+5 < a AND b = 3 OR
+3 <= a;
+
+SELECT * FROM t1 WHERE
+3 <= a AND a <= 5 OR 
+5 <= a AND b = 3 OR
+3 <= a;
+
+DROP TABLE t1;
+
+#range query use int unsigned
+CREATE TABLE t1( a int unsigned, b int unsigned, KEY( a, b ) );
+
+INSERT INTO t1( a, b ) 
+VALUES (0, 1), (1, 2), (1, 4), (2, 3), (5, 0), (9, 7);
+
+SELECT * FROM t1 WHERE
+3 <= a AND a < 5 OR 
+5 < a AND b = 3 OR
+3 <= a;
+
+SELECT * FROM t1 WHERE
+3 <= a AND a <= 5 OR 
+5 <= a AND b = 3 OR
+3 <= a;
+
+DROP TABLE t1;
+
+#range query use mediumint
+CREATE TABLE t1( a mediumint, b mediumint, KEY( a, b ) );
+
+INSERT INTO t1( a, b ) 
+VALUES (0, 1), (1, 2), (1, 4), (2, 3), (5, 0), (9, 7);
+
+SELECT * FROM t1 WHERE
+3 <= a AND a < 5 OR 
+5 < a AND b = 3 OR
+3 <= a;
+
+SELECT * FROM t1 WHERE
+3 <= a AND a <= 5 OR 
+5 <= a AND b = 3 OR
+3 <= a;
+
+DROP TABLE t1;
+
+#range query use mediumint unsigned
+CREATE TABLE t1( a mediumint unsigned, b mediumint unsigned, KEY( a, b ) );
+
+INSERT INTO t1( a, b ) 
+VALUES (0, 1), (1, 2), (1, 4), (2, 3), (5, 0), (9, 7);
+
+SELECT * FROM t1 WHERE
+3 <= a AND a < 5 OR 
+5 < a AND b = 3 OR
+3 <= a;
+
+SELECT * FROM t1 WHERE
+3 <= a AND a <= 5 OR 
+5 <= a AND b = 3 OR
+3 <= a;
+
+DROP TABLE t1;
+
+#range query use bigint
+CREATE TABLE t1( a bigint, b bigint, KEY( a, b ) );
+INSERT INTO t1( a, b ) 
+VALUES (0, 1), (1, 2), (1, 4), (2, 3), (5, 0), (9, 7);
+
+SELECT * FROM t1 WHERE
+3 <= a AND a < 5 OR 
+5 < a AND b = 3 OR
+3 <= a;
+
+SELECT * FROM t1 WHERE
+3 <= a AND a <= 5 OR 
+5 <= a AND b = 3 OR
+3 <= a;
+
+DROP TABLE t1;
+
+#range query use bigint unsigned
+CREATE TABLE t1( a bigint unsigned, b bigint unsigned, KEY( a, b ) );
+
+INSERT INTO t1( a, b ) 
+VALUES (0, 1), (1, 2), (1, 4), (2, 3), (5, 0), (9, 7);
+
+SELECT * FROM t1 WHERE
+3 <= a AND a < 5 OR 
+5 < a AND b = 3 OR
+3 <= a;
+
+SELECT * FROM t1 WHERE
+3 <= a AND a <= 5 OR 
+5 <= a AND b = 3 OR
+3 <= a;
+
+DROP TABLE t1;
+
+#range query use float
+CREATE TABLE t1( a float, b float, KEY( a, b ) );
+
+INSERT INTO t1( a, b ) 
+VALUES (0.5, 1.5), (1.5, 2.5), (1.5, 4.5), (2.5, 3.5), (5.5, 0.5), (9.5, 7.5);
+
+SELECT * FROM t1 WHERE
+3.5 <= a AND a < 5.5 OR 
+5.5 < a AND b = 3.5 OR
+3.5 <= a;
+
+SELECT * FROM t1 WHERE
+3.5 <= a AND a <= 5.5 OR 
+5.5 <= a AND b = 3.5 OR
+3.5 <= a;
+
+DROP TABLE t1;
+
+#range query use float unsigned
+CREATE TABLE t1( a float unsigned, b float unsigned, KEY( a, b ) );
+
+INSERT INTO t1( a, b ) 
+VALUES (0.5, 1.5), (1.5, 2.5), (1.5, 4.5), (2.5, 3.5), (5.5, 0.5), (9.5, 7.5);
+
+SELECT * FROM t1 WHERE
+3.5 <= a AND a < 5.5 OR 
+5.5 < a AND b = 3.5 OR
+3.5 <= a;
+
+SELECT * FROM t1 WHERE
+3.5 <= a AND a <= 5.5 OR 
+5.5 <= a AND b = 3.5 OR
+3.5 <= a;
+
+DROP TABLE t1;
+
+#range query use double
+CREATE TABLE t1( a double, b double, KEY( a, b ) );
+
+INSERT INTO t1( a, b ) 
+VALUES (0.5, 1.5), (1.5, 2.5), (1.5, 4.5), (2.5, 3.5), (5.5, 0.5), (9.5, 7.5);
+
+SELECT * FROM t1 WHERE
+3.5 <= a AND a < 5.5 OR 
+5.5 < a AND b = 3.5 OR
+3.5 <= a;
+
+SELECT * FROM t1 WHERE
+3.5 <= a AND a <= 5.5 OR 
+5.5 <= a AND b = 3.5 OR
+3.5 <= a;
+
+DROP TABLE t1;
+
+#range query use double unsigned
+CREATE TABLE t1( a double unsigned, b double unsigned, KEY( a, b ) );
+
+INSERT INTO t1( a, b ) 
+VALUES (0.5, 1.5), (1.5, 2.5), (1.5, 4.5), (2.5, 3.5), (5.5, 0.5), (9.5, 7.5);
+
+SELECT * FROM t1 WHERE
+3.5 <= a AND a < 5.5 OR 
+5.5 < a AND b = 3.5 OR
+3.5 <= a;
+
+SELECT * FROM t1 WHERE
+3.5 <= a AND a <= 5.5 OR 
+5.5 <= a AND b = 3.5 OR
+3.5 <= a;
+
+DROP TABLE t1;
+
+#range query use char
+CREATE TABLE t1( a char, b char, KEY( a, b ) );
+
+INSERT INTO t1( a, b ) 
+VALUES ('a', 'b'), ('b', 'c'), ('b', 'e'), ('c', 'd'), ('f', 'a'), ('m', 'k');
+
+SELECT * FROM t1 WHERE
+'d' <= a AND a < 'f' OR 
+'f' < a AND b = 'd' OR
+'d' <= a;
+
+SELECT * FROM t1 WHERE
+'d' <= a AND a <= 'f' OR 
+'f' <= a AND b = 'd' OR
+'d' <= a;
+
+DROP TABLE t1;
+
+#range query use varchar
+CREATE TABLE t1( a varchar(255), b varchar(255), KEY( a, b ) );
+
+INSERT INTO t1( a, b ) 
+VALUES ('a', 'b'), ('b', 'c'), ('b', 'e'), ('c', 'd'), ('f', 'a'), ('m', 'k');
+
+SELECT * FROM t1 WHERE
+'d' <= a AND a < 'f' OR 
+'f' < a AND b = 'd' OR
+'d' <= a;
+
+SELECT * FROM t1 WHERE
+'d' <= a AND a <= 'f' OR 
+'f' <= a AND b = 'd' OR
+'d' <= a;
+
+DROP TABLE t1;
+
+#range query use tinytext
+CREATE TABLE t1( a tinytext, b tinytext, KEY( a(255), b(255) ) );
+
+INSERT INTO t1( a, b ) 
+VALUES ('a', 'b'), ('b', 'c'), ('b', 'e'), ('c', 'd'), ('f', 'a'), ('m', 'k');
+
+SELECT * FROM t1 WHERE
+'d' <= a AND a < 'f' OR 
+'f' < a AND b = 'd' OR
+'d' <= a;
+
+SELECT * FROM t1 WHERE
+'d' <= a AND a <= 'f' OR 
+'f' <= a AND b = 'd' OR
+'d' <= a;
+
+DROP TABLE t1;
+
+#range query use mediumtext
+CREATE TABLE t1( a mediumtext, b mediumtext, KEY( a(255), b(255) ) );
+
+INSERT INTO t1( a, b ) 
+VALUES ('a', 'b'), ('b', 'c'), ('b', 'e'), ('c', 'd'), ('f', 'a'), ('m', 'k');
+
+SELECT * FROM t1 WHERE
+'d' <= a AND a < 'f' OR 
+'f' < a AND b = 'd' OR
+'d' <= a;
+
+SELECT * FROM t1 WHERE
+'d' <= a AND a <= 'f' OR 
+'f' <= a AND b = 'd' OR
+'d' <= a;
+
+DROP TABLE t1;
+
+#range query use text
+CREATE TABLE t1( a text, b text, KEY( a(255), b(255) ) );
+
+INSERT INTO t1( a, b ) 
+VALUES ('a', 'b'), ('b', 'c'), ('b', 'e'), ('c', 'd'), ('f', 'a'), ('m', 'k');
+
+SELECT * FROM t1 WHERE
+'d' <= a AND a < 'f' OR 
+'f' < a AND b = 'd' OR
+'d' <= a;
+
+SELECT * FROM t1 WHERE
+'d' <= a AND a <= 'f' OR 
+'f' <= a AND b = 'd' OR
+'d' <= a;
+
+DROP TABLE t1;
+
+#range query use text
+CREATE TABLE t1( a longtext, b longtext, KEY( a(255), b(255) ) );
+
+INSERT INTO t1( a, b ) 
+VALUES ('a', 'b'), ('b', 'c'), ('b', 'e'), ('c', 'd'), ('f', 'a'), ('m', 'k');
+
+SELECT * FROM t1 WHERE
+'d' <= a AND a < 'f' OR 
+'f' < a AND b = 'd' OR
+'d' <= a;
+
+SELECT * FROM t1 WHERE
+'d' <= a AND a <= 'f' OR 
+'f' <= a AND b = 'd' OR
+'d' <= a;
+
+DROP TABLE t1;
+
+--source include/uninstall_sequoiadb.inc

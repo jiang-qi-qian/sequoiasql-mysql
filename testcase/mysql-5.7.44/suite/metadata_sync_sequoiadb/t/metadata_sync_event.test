@@ -1,0 +1,161 @@
+#Case 22539
+
+--source include/have_sequoiadb.inc
+--source suite/metadata_sync_sequoiadb/inc/insts_connect_sequoiadb.inc
+
+# connect to conn1, clear databases in the beginning
+connection conn1;
+--disable_warnings
+DROP DATABASE IF EXISTS metasync_event;
+--enable_warnings
+
+# connect to conn2, check databases are cleaned in the beginning
+connection conn2;
+--sleep $sleep
+--error ER_BAD_DB_ERROR
+SHOW CREATE DATABASE metasync_event;
+
+# seqDB-22539
+# begin testing
+# create event
+connection conn1;
+CREATE DATABASE metasync_event;
+USE metasync_event;
+CREATE EVENT IF NOT EXISTS e_hourly
+    ON SCHEDULE AT CURRENT_TIMESTAMP + INTERVAL 1 HOUR
+    DO
+      UPDATE myschema.mytable SET mycol = mycol + 1;
+--disable_warnings
+CREATE DEFINER='sdbadmin'@'%' EVENT e_daily
+    ON SCHEDULE
+      EVERY 1 DAY
+    ON COMPLETION NOT PRESERVE
+    ENABLE
+    COMMENT 'Clears out sessions table each hour.'
+    DO
+      DELETE FROM site_activity.sessions;
+--enable_warnings
+DELIMITER |;
+CREATE EVENT e_yearly
+    ON SCHEDULE
+      EVERY 1 YEAR
+      STARTS '2020-02-02 20:00:02' + INTERVAL 1 YEAR
+      ENDS '2035-12-31 23:59:59' + INTERVAL 13 MONTH
+    COMMENT 'Saves total number of sessions then clears the table each day'
+    DO
+      BEGIN
+        INSERT INTO site_activity.totals (time, total)
+          SELECT CURRENT_TIMESTAMP, COUNT(*)
+            FROM site_activity.sessions;
+        DELETE FROM site_activity.sessions;
+      END |
+DELIMITER ;|
+CREATE EVENT e_call_myproc
+    ON SCHEDULE
+      AT CURRENT_TIMESTAMP + INTERVAL 1 DAY
+    DO CALL myproc(5, 27);
+--replace_regex /DEFINER=`.*`@/DEFINER=`x`@/ /SCHEDULE AT '.*'/SCHEDULE AT 'y'/
+SHOW CREATE EVENT e_hourly;
+--replace_regex /STARTS '.*'/STARTS 'y'/
+SHOW CREATE EVENT e_daily;
+--replace_regex /DEFINER=`.*`@/DEFINER=`x`@/ /STARTS '.*'/STARTS 'y'/ /ENDS '.*'/ENDS 'y'/
+SHOW CREATE EVENT e_yearly;
+--replace_regex /DEFINER=`.*`@/DEFINER=`x`@/ /SCHEDULE AT '.*'/SCHEDULE AT 'y'/
+SHOW CREATE EVENT e_call_myproc;
+
+# check metadatas after create
+connection conn2;
+--sleep $sleep
+USE metasync_event;
+--replace_regex /DEFINER=`.*`@/DEFINER=`x`@/ /SCHEDULE AT '.*'/SCHEDULE AT 'y'/
+SHOW CREATE EVENT e_hourly;
+--replace_regex /STARTS '.*'/STARTS 'y'/
+SHOW CREATE EVENT e_daily;
+--replace_regex /DEFINER=`.*`@/DEFINER=`x`@/ /STARTS '.*'/STARTS 'y'/ /ENDS '.*'/ENDS 'y'/
+SHOW CREATE EVENT e_yearly;
+--replace_regex /DEFINER=`.*`@/DEFINER=`x`@/ /SCHEDULE AT '.*'/SCHEDULE AT 'y'/
+SHOW CREATE EVENT e_call_myproc;
+
+# alter event
+ALTER EVENT e_hourly
+    ON SCHEDULE
+      EVERY 12 HOUR
+    STARTS CURRENT_TIMESTAMP + INTERVAL 4 HOUR
+        COMMENT 'New comment. ';
+ALTER DEFINER='root'@'localhost' EVENT e_daily
+    ON SCHEDULE
+      EVERY 1 SECOND
+    ON COMPLETION NOT PRESERVE
+    RENAME TO e_daily_new
+    DISABLE
+    COMMENT 'Alter Event e_daily.'
+    DO DROP DATABASE testdb;
+DELIMITER |;
+ALTER EVENT e_yearly
+   ON SCHEDULE
+      AT CURRENT_TIMESTAMP + INTERVAL 1 MONTH
+   COMMENT 'Alter Event e_yearly.'
+   DO
+     BEGIN
+       INSERT INTO site_activity.totals VALUES (time, total);
+       SELECT CURRENT_TIMESTAMP, COUNT(*) FROM site_activity.sessions;
+       DELETE FROM site_activity.sessions;
+       CREATE VIEW site_activity.view AS SELECT * FROM site_activity.sessions;
+       CALL myproc(5, 27);
+       SELECT user,host FROM mysql.user;
+    END |
+DELIMITER ;|
+--replace_regex /DEFINER=`.*`@/DEFINER=`x`@/ /STARTS '.*'/STARTS 'y'/
+SHOW CREATE EVENT e_hourly;
+--error ER_EVENT_DOES_NOT_EXIST
+SHOW CREATE EVENT e_daily;
+--replace_regex /STARTS '.*'/STARTS 'y'/
+SHOW CREATE EVENT e_daily_new;
+--replace_regex /DEFINER=`.*`@/DEFINER=`x`@/ /SCHEDULE AT '.*'/SCHEDULE AT 'y'/
+SHOW CREATE EVENT e_yearly;
+--replace_regex /DEFINER=`.*`@/DEFINER=`x`@/ /SCHEDULE AT '.*'/SCHEDULE AT 'y'/
+SHOW CREATE EVENT e_call_myproc;
+
+# check metadatas after alter
+connection conn1;
+--sleep $sleep
+--replace_regex /DEFINER=`.*`@/DEFINER=`x`@/ /STARTS '.*'/STARTS 'y'/
+SHOW CREATE EVENT e_hourly;
+--error ER_EVENT_DOES_NOT_EXIST
+SHOW CREATE EVENT e_daily;
+--replace_regex /STARTS '.*'/STARTS 'y'/
+SHOW CREATE EVENT e_daily_new;
+--replace_regex /DEFINER=`.*`@/DEFINER=`x`@/ /SCHEDULE AT '.*'/SCHEDULE AT 'y'/
+SHOW CREATE EVENT e_yearly;
+--replace_regex /DEFINER=`.*`@/DEFINER=`x`@/ /SCHEDULE AT '.*'/SCHEDULE AT 'y'/
+SHOW CREATE EVENT e_call_myproc;
+
+# drop event 
+DROP EVENT IF EXISTS e_hourly;
+DROP EVENT e_daily_new;
+DROP EVENT e_yearly;
+DROP EVENT e_call_myproc;
+DROP EVENT IF EXISTS e_call_myproc;
+
+# check metadatas after drop
+connection conn2;
+--sleep $sleep
+--error ER_EVENT_DOES_NOT_EXIST
+SHOW CREATE EVENT e_hourly;
+--error ER_EVENT_DOES_NOT_EXIST
+SHOW CREATE EVENT e_daily_new;
+--error ER_EVENT_DOES_NOT_EXIST
+SHOW CREATE EVENT e_yearly;
+--error ER_EVENT_DOES_NOT_EXIST
+SHOW CREATE EVENT e_call_myproc;
+
+# clear databases in the ending
+DROP DATABASE metasync_event;
+# check databases are cleaned in the ending
+connection conn1;
+--sleep $sleep
+--error ER_BAD_DB_ERROR
+SHOW CREATE DATABASE metasync_event;
+
+--source include/uninstall_sequoiadb.inc
+--source suite/metadata_sync_sequoiadb/inc/insts_disconnect_sequoiadb.inc

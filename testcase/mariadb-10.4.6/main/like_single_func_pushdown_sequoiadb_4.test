@@ -1,0 +1,277 @@
+#seqDB-26641
+--source include/have_sequoiadb.inc
+
+--disable_warnings
+drop database if exists like_single_func_pushdown_sequoiadb_4;
+--enable_warnings
+create database like_single_func_pushdown_sequoiadb_4;
+drop database like_single_func_pushdown_sequoiadb_4;
+create database like_single_func_pushdown_sequoiadb_4;
+use like_single_func_pushdown_sequoiadb_4;
+set session sequoiadb_debug_log=on;
+set session sequoiadb_support_mode='';
+
+--disable_warnings
+drop table if exists t1, t2, t3, t4, t5;
+--enable_warnings
+
+create table t1(
+    a varchar(514) charset utf8mb4 collate utf8mb4_bin
+);
+create table t2(
+    a varchar(20) charset utf8mb4 collate utf8mb4_bin
+);
+create table t3(
+    a set('a1','b2','c3') charset utf8mb4 collate utf8mb4_bin
+);
+create table t4(
+    a int
+);
+create table t5(
+    a varchar(20) charset utf8mb4 collate utf8mb4_unicode_ci
+);
+
+#-----------------------------------------------json functions-----------------------------------------------#
+
+#json_array
+select json_array(1,'abc');
+insert into t1 values(json_array(1,'abc'));
+select * from t1 where a like json_array(1,'abc') order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t2 where a like json_array((a),'abc');
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t3 where a like json_array(1,'abc');
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t4 where a like json_array(1,'abc');
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t5 where a like json_array(1,'abc');
+--source include/query_pushdown_condition_sequoiadb.inc
+
+#json_array_append
+select json_array_append('["a","b"]','$[0]',1);
+insert into t1 values(json_array_append('["a","b"]','$[0]',1));
+select * from t1 where a like json_array_append('["a","b"]','$[0]',1) order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+
+#json_array_insert
+select json_array_insert('["a","b"]','$[0]',1);
+insert into t1 values(json_array_insert('["a","b"]','$[0]',1));
+select * from t1 where a like json_array_insert('["a","b"]','$[0]',1) order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+
+#json_compact
+select json_compact('{"A":1,"B":[2,3]}');
+insert into t1 values(json_compact('{"A":1,"B":[2,3]}'));
+select * from t1 where a like json_compact('{"A":1,"B":[2,3]}') order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+
+#json_contains
+select json_contains('{"a":1,"b":2}','1','$.a');
+insert into t1 values(json_contains('{"a":1,"b":2}','1','$.a'));
+select * from t1 where a like json_contains('{"a":1,"b":2}','1','$.a') order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t2 where a like json_contains((a),'1','$.a');
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t2 where a like json_contains(null,'1','$.a');
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t3 where a like json_contains('{"a":1,"b":2}','1','$.a');
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t4 where a like json_contains('{"a":1,"b":2}','1','$.a');
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t5 where a like json_contains('{"a":1,"b":2}','1','$.a');
+--source include/query_pushdown_condition_sequoiadb.inc
+
+#json_contains_path
+select json_contains_path('{"a":1,"b":2}','one','$.a','$.c');
+insert into t1 values(json_contains_path('{"a":1,"b":2}','one','$.a','$.c'));
+select * from t1 where a like json_contains_path('{"a":1,"b":2}','one','$.a','$.c') order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+
+#json_depth
+select json_depth('[1,[2,[3,4],5],6]');
+insert into t1 values(json_depth('[1,[2,[3,4],5],6]'));
+select * from t1 where a like json_depth('[1,[2,[3,4],5],6]') order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+
+#json_detailed
+select json_detailed('{"A":1,"B":[2,3]}');
+insert into t1 values(json_detailed('{"A":1,"B":[2,3]}'));
+select * from t1 where a like json_detailed('{"A":1,"B":[2,3]}') order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+
+#json_exists
+select json_exists('{"key1":"xxxx","key2":[1,2,3]}','$.key2');
+insert into t1 values(json_exists('{"key1":"xxxx","key2":[1,2,3]}','$.key2'));
+select * from t1 where a like json_exists('{"key1":"xxxx","key2":[1,2,3]}','$.key2') order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+
+#json_extract
+select json_extract('[10,20]','$[1]');
+insert into t1 values(json_extract('[10,20]','$[1]'));
+select * from t1 where a like json_extract('[10,20]','$[1]') order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+
+#json_insert
+select json_insert('{"a":1,"b":2}','$.c','3'),json_insert('{"a":1,"b":2}','$.c',4);
+insert into t1 values(json_insert('{"a":1,"b":2}','$.c','3')),(json_insert('{"a":1,"b":2}','$.c',4));
+select * from t1 where a like json_insert('{"a":1,"b":2}','$.c','3') order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t1 where a like json_insert('{"a":1,"b":2}','$.c',4) order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t2 where a like json_insert((a),'$.c','3');
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t3 where a like json_insert('{"a":1,"b":2}','$.c','3');
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t4 where a like json_insert('{"a":1,"b":2}','$.c','3');
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t5 where a like json_insert('{"a":1,"b":2}','$.c','3');
+--source include/query_pushdown_condition_sequoiadb.inc
+
+#json_keys
+select json_keys('{"a":1,"b":2}');
+insert into t1 values(json_keys('{"a":1,"b":2}'));
+select * from t1 where a like json_keys('{"a":1,"b":2}') order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+
+#json_length
+select json_length('{"a":1,"b":2}');
+insert into t1 values(json_length('{"a":1,"b":2}'));
+select * from t1 where a like json_length('{"a":1,"b":2}') order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+
+#json_loose
+select json_loose('{"A":1,"B":[2,3]}');
+insert into t1 values(json_loose('{"A":1,"B":[2,3]}'));
+select * from t1 where a like json_loose('{"A":1,"B":[2,3]}') order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+
+#json_merge
+select json_merge('{"a":1,"b":2}','{"c":3,"d":4}');
+insert into t1 values(json_merge('{"a":1,"b":2}','{"c":3,"d":4}'));
+select * from t1 where a like json_merge('{"a":1,"b":2}','{"c":3,"d":4}') order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+
+#json_merge_patch
+select json_merge_patch('1','true');
+insert into t1 values(json_merge_patch('1','true'));
+select * from t1 where a like json_merge_patch('1','true') order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+
+#json_merge_preserve
+select json_merge_preserve('[1]','[true]');
+insert into t1 values(json_merge_preserve('[1]','[true]'));
+select * from t1 where a like json_merge_preserve('[1]','[true]') order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+
+#json_object
+select json_object('id','1');
+insert into t1 values(json_object('id','1'));
+select * from t1 where a like json_object('id','1') order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+
+#json_query
+select json_query('{"x":[0,1],"y":"[0,1]","z":"Monty"}','$');
+insert into t1 values(json_query('{"x":[0,1],"y":"[0,1]","z":"Monty"}','$'));
+select * from t1 where a like json_query('{"x":[0,1],"y":"[0,1]","z":"Monty"}','$') order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+
+#json_quote
+select json_quote('[1,3,5]');
+insert into t1 values(json_quote('[1,3,5]'));
+select * from t1 where a like json_quote('[1,3,5]') order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+
+#json_remove
+select json_remove('["a","b","c"]','$[1]');
+insert into t1 values(json_remove('["a","b","c"]','$[1]'));
+select * from t1 where a like json_remove('["a","b","c"]','$[1]') order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+
+#json_replace
+select json_replace('{"a":1,"b":2}','$.a',10);
+insert into t1 values(json_replace('{"a":1,"b":2}','$.a',10));
+select * from t1 where a like json_replace('{"a":1,"b":2}','$.a',10) order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+
+#json_search
+select json_search('["a","b"]','one','a');
+insert into t1 values(json_search('["a","b"]','one','a'));
+select * from t1 where a like json_search('["a","b"]','one','a') order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+
+#json_set
+select json_set('{"a":1,"b":2}','$.a',10,'$.c',3);
+insert into t1 values(json_set('{"a":1,"b":2}','$.a',10,'$.c',3));
+select * from t1 where a like json_set('{"a":1,"b":2}','$.a',10,'$.c',3) order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+
+#json_type
+select json_type('["a","b"]');
+insert into t1 values(json_type('["a","b"]'));
+select * from t1 where a like json_type('["a","b"]') order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+
+#json_unquote
+select json_unquote('"abc"');
+insert into t1 values(json_unquote('"abc"'));
+select * from t1 where a like json_unquote('"abc"') order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+
+#json_valid
+select json_valid('["a","b"]');
+insert into t1 values(json_valid('["a","b"]'));
+select * from t1 where a like json_valid('["a","b"]') order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+
+#json_value
+select json_value('{"x":[0,1],"y":"[0,1]","z":"Monty"}','$.z');
+insert into t1 values(json_value('{"x":[0,1],"y":"[0,1]","z":"Monty"}','$.z'));
+select * from t1 where a like json_value('{"x":[0,1],"y":"[0,1]","z":"Monty"}','$.z') order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+
+#-----------------------------------------------json functions-----------------------------------------------#
+
+#-----------------------------------------------dynamic columns functions------------------------------------#
+
+#column_add
+select * from t2 where a like column_add('',(a),'abc') order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+
+#column_check
+select * from t2 where a like column_check((a)) order by a;
+--replace_regex /^([^s]*)\[Note\]/[Note]/
+--exec grep -w "Query message" $MYSQLTEST_VARDIR/log/mysqld.1.err | tail -1 | sed 's/: ".*",/: "",/'
+
+#column_create
+select * from t2 where a like column_create((a),'b') order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+
+#column_delete
+select * from t2 where a like column_delete('',(a),'b') order by a;
+--replace_regex /^([^s]*)\[Note\]/[Note]/
+--exec grep -w "Query message" $MYSQLTEST_VARDIR/log/mysqld.1.err | tail -1 | sed 's/: ".*",/: "",/'
+
+#column_exists
+select * from t2 where a like column_exists('',(a)) order by a;
+--replace_regex /^([^s]*)\[Note\]/[Note]/
+--exec grep -w "Query message" $MYSQLTEST_VARDIR/log/mysqld.1.err | tail -1 | sed 's/: ".*",/: "",/'
+
+#column_get
+select * from t2 where a like column_get('',a as char) order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+
+#column_json
+select * from t1 where a like column_json('') order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+
+#column_list
+select * from t1 where a like column_list('') order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+
+#-----------------------------------------------dynamic columns functions------------------------------------#
+
+set session sequoiadb_debug_log=default;
+set session sequoiadb_support_mode=default;
+drop table t1, t2, t3, t4, t5;
+drop database like_single_func_pushdown_sequoiadb_4;
+--source include/uninstall_sequoiadb.inc

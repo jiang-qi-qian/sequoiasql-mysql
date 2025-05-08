@@ -1,0 +1,26 @@
+#seqDB-28095 server_ha_dml_max_retry_count参数校验
+--source include/have_sequoiadb.inc
+
+# show variables测试，预期为查询不到server_ha_dml_max_retry_count
+show variables like "server_ha_dml_max_retry_count";
+# 参数默认值测试，预期默认值为20
+select @@server_ha_dml_max_retry_count;
+
+# 参数有效值测试
+set @@server_ha_dml_max_retry_count=20;
+select @@server_ha_dml_max_retry_count;
+
+set @@server_ha_dml_max_retry_count=-1;
+select @@server_ha_dml_max_retry_count;
+
+set @@server_ha_dml_max_retry_count=101;
+select @@server_ha_dml_max_retry_count;
+
+# 参数边界值测试
+set @@server_ha_dml_max_retry_count=0;
+select @@server_ha_dml_max_retry_count;
+
+set @@server_ha_dml_max_retry_count=100;
+select @@server_ha_dml_max_retry_count;
+
+--source include/uninstall_sequoiadb.inc

@@ -1,0 +1,34 @@
+# Case 30686
+
+--source include/have_sequoiadb.inc
+
+--disable_warnings
+DROP TABLE IF EXISTS group_by_rollup_sequoiadb;
+--enable_warnings
+
+CREATE TABLE `group_by_rollup_sequoiadb` (
+  `col_varchar_16_key` varchar(16) COLLATE utf8mb4_bin DEFAULT NULL,
+  `col_int_key` int(11) DEFAULT NULL,
+  `pk` int(11) NOT NULL AUTO_INCREMENT,
+  `col_varchar_16` varchar(16) COLLATE utf8mb4_bin DEFAULT NULL,
+  `col_int` int(11) DEFAULT NULL,
+  PRIMARY KEY (`pk`),
+  KEY `col_varchar_16_key` (`col_varchar_16_key`),
+  KEY `col_int_key` (`col_int_key`)
+) ENGINE=SequoiaDB AUTO_INCREMENT=1001 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin;
+
+INSERT INTO `group_by_rollup_sequoiadb` VALUES
+('a', 1, 1, 'a', 1),
+('b', 2, 2, 'b', 2),
+('c', 3, 3, 'c', 3),
+('d', 4, 4, 'd', 4),
+('e', 5, 5, 'e', 5),
+('f', 6, 6, 'f', 6),
+('g', 7, 7, 'g', 7),
+('h', 8, 8, 'h', 8);
+
+SELECT ALL SQL_SMALL_RESULT col_varchar_16_key AS field1 FROM `group_by_rollup_sequoiadb` WHERE pk = 6 GROUP BY field1 with rollup LIMIT 4;
+
+DROP TABLE group_by_rollup_sequoiadb;
+
+--source include/uninstall_sequoiadb.inc

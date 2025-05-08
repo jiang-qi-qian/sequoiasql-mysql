@@ -1,0 +1,62 @@
+  --index-sort-cost-optimization 
+SEQUOIASQLMAINSTREAM-2032
+--
+  --optimizer-index-sort-prune 
+SEQUOIASQLMAINSTREAM-1054
+--
+  --perfschema-time-unit[=name] 
+SEQUOIASQLMAINSTREAM-2001
+--
+  --ref-prefer-more-keypart 
+SEQUOIASQLMAINSTREAM-1876
+--
+  --refresh-all-cached-tables-supported 
+SEQUOIASQLMAINSTREAM-1726
+--
+  --reject-nested-func-for-group-min-max 
+SEQUOIASQLMAINSTREAM-1816
+--
+  --sequoiadb-bka-remove-orderby 
+SEQUOIASQLMAINSTREAM-1478
+--
+  --sequoiadb-build-sort-cond-on-runtime 
+SEQUOIASQLMAINSTREAM-1571
+--
+  --sequoiadb-choose-all-in-mrr-info 
+SEQUOIASQLMAINSTREAM-1606
+--
+  --sequoiadb-cls-pushdown-expand 
+SEQUOIASQLMAINSTREAM-1534
+--
+  --sequoiadb-diag-info-path 
+SEQUOIASQLMAINSTREAM-1470
+--
+  --sequoiadb-enable-null-reject-for-bka-join 
+SEQUOIASQLMAINSTREAM-1749
+--
+  --sequoiadb-lossy-end-range 
+SEQUOIASQLMAINSTREAM-1479
+--
+  --sequoiadb-orderby-limit-optimization 
+SEQUOIASQLMAINSTREAM-2025
+--
+  --sequoiadb-share-log-output 
+SEQUOIASQLMAINSTREAM-1974
+--
+  --sequoiadb-stats-persistence 
+SEQUOIASQLMAINSTREAM-1989
+--
+  --sequoiadb-support-cond-const-bool 
+SEQUOIASQLMAINSTREAM-1744
+--
+  --sequoiadb-support-cond-not 
+SEQUOIASQLMAINSTREAM-1533
+--
+  --server-ha-dml-max-retry-count[=#] 
+SEQUOIASQLMAINSTREAM-1501
+--
+  --server-ha-retry-prepared-stmt 
+SEQUOIASQLMAINSTREAM-1748
+--
+  --skip-ref-null-if-null-reject 
+SEQUOIASQLMAINSTREAM-1752

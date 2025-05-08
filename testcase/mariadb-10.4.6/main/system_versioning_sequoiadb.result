@@ -1,0 +1,889 @@
+CREATE TABLE t1 (   # trx_id, should return fail
+id int primary key,
+name varchar(16),
+start_timestamp bigint GENERATED ALWAYS as ROW START INVISIBLE,
+end_timestamp bigint GENERATED ALWAYS as ROW END INVISIBLE,
+PERIOD FOR SYSTEM_TIME (start_timestamp, end_timestamp)
+) WITH SYSTEM VERSIONING;
+ERROR HY000: `start_timestamp` must be of type TIMESTAMP(6) for system-versioned table `t1`
+CREATE TABLE t1 (   # default system table
+x int primary key,
+y int
+) WITH SYSTEM VERSIONING;
+CREATE TABLE t2 ( x int primary key, y int );
+SHOW CREATE TABLE t1;
+Table	Create Table
+t1	CREATE TABLE `t1` (
+  `x` int(11) NOT NULL,
+  `y` int(11) DEFAULT NULL,
+  PRIMARY KEY (`x`)
+) ENGINE=SequoiaDB DEFAULT CHARSET=latin1 WITH SYSTEM VERSIONING
+SHOW CREATE TABLE t2;
+Table	Create Table
+t2	CREATE TABLE `t2` (
+  `x` int(11) NOT NULL,
+  `y` int(11) DEFAULT NULL,
+  PRIMARY KEY (`x`)
+) ENGINE=SequoiaDB DEFAULT CHARSET=latin1
+INSERT INTO t1(x,y) VALUES (1,1),(2,2),(3,3);
+INSERT INTO t2(x,y) VALUES (1,1),(2,2),(3,3);
+SELECT * FROM t1 FOR SYSTEM_TIME ALL ORDER BY x;
+x	y
+1	1
+2	2
+3	3
+ALTER TABLE t1 DROP SYSTEM VERSIONING;
+SHOW CREATE TABLE t1;
+Table	Create Table
+t1	CREATE TABLE `t1` (
+  `x` int(11) NOT NULL,
+  `y` int(11) DEFAULT NULL,
+  PRIMARY KEY (`x`)
+) ENGINE=SequoiaDB DEFAULT CHARSET=latin1
+INSERT INTO t1(x,y) VALUES (4,4);
+SELECT * FROM t1 ORDER BY x;
+x	y
+1	1
+2	2
+3	3
+4	4
+SELECT * FROM t1 FOR SYSTEM_TIME ALL;
+ERROR HY000: Table `t1` is not system-versioned
+SET system_versioning_alter_history = KEEP;
+ALTER TABLE t1 ADD COLUMN ts TIMESTAMP (6) GENERATED ALWAYS as ROW START,
+ADD COLUMN te TIMESTAMP (6) GENERATED ALWAYS as ROW END,
+ADD PERIOD FOR SYSTEM_TIME (ts, te),
+ADD SYSTEM VERSIONING;
+ALTER TABLE t1 ADD name VARCHAR(16), MODIFY x int auto_increment, DROP y;
+ALTER TABLE t2 ADD SYSTEM VERSIONING;
+SET system_versioning_alter_history = DEFAULT;
+SHOW CREATE TABLE t1;
+Table	Create Table
+t1	CREATE TABLE `t1` (
+  `x` int(11) NOT NULL AUTO_INCREMENT,
+  `ts` timestamp(6) GENERATED ALWAYS AS ROW START,
+  `te` timestamp(6) GENERATED ALWAYS AS ROW END,
+  `name` varchar(16) DEFAULT NULL,
+  PRIMARY KEY (`x`,`te`),
+  PERIOD FOR SYSTEM_TIME (`ts`, `te`)
+) ENGINE=SequoiaDB AUTO_INCREMENT=1001 DEFAULT CHARSET=latin1 WITH SYSTEM VERSIONING
+SHOW CREATE TABLE t2;
+Table	Create Table
+t2	CREATE TABLE `t2` (
+  `x` int(11) NOT NULL,
+  `y` int(11) DEFAULT NULL,
+  PRIMARY KEY (`x`)
+) ENGINE=SequoiaDB DEFAULT CHARSET=latin1 WITH SYSTEM VERSIONING
+INSERT INTO t1(name) VALUES ('Joe'),('Bob'),('Mary');
+INSERT INTO t2(x,y) VALUES (4,4);
+UPDATE t1 SET name = 'update_name' WHERE x < 3;
+UPDATE t2 SET y = y - 1 WHERE x >= 3;
+DELETE FROM t1 WHERE x > 4;
+DELETE FROM t2 WHERE x >= 3 OR y = 2;
+SELECT x,name FROM t1 ORDER BY x;
+x	name
+1	update_name
+2	update_name
+3	NULL
+4	NULL
+SELECT * FROM t2 ORDER BY x;
+x	y
+1	1
+SELECT x,name FROM t1 FOR SYSTEM_TIME ALL ORDER BY x,ts;
+x	name
+1	NULL
+1	update_name
+2	NULL
+2	update_name
+3	NULL
+4	NULL
+5	Joe
+6	Bob
+7	Mary
+SELECT * FROM t2 FOR SYSTEM_TIME ALL ORDER BY x,y;
+x	y
+1	1
+2	2
+3	2
+3	3
+4	3
+4	4
+DROP TABLE t1,t2;
+CREATE TABLE t1 (   # specify timestamp rows, without primary key
+x int,
+y int,
+start_timestamp TIMESTAMP (6) GENERATED ALWAYS as ROW START,
+end_timestamp TIMESTAMP (6) GENERATED ALWAYS as ROW END, 
+PERIOD FOR SYSTEM_TIME (start_timestamp, end_timestamp)
+) WITH SYSTEM VERSIONING;
+CREATE TABLE t2 (   # specify timestamp rows, with primary key
+x int primary key,
+y int,
+start_timestamp TIMESTAMP (6) GENERATED ALWAYS as ROW START INVISIBLE,
+end_timestamp TIMESTAMP (6) GENERATED ALWAYS as ROW END INVISIBLE,
+PERIOD FOR SYSTEM_TIME (start_timestamp, end_timestamp)
+) WITH SYSTEM VERSIONING;
+SHOW CREATE TABLE t1;
+Table	Create Table
+t1	CREATE TABLE `t1` (
+  `x` int(11) DEFAULT NULL,
+  `y` int(11) DEFAULT NULL,
+  `start_timestamp` timestamp(6) GENERATED ALWAYS AS ROW START,
+  `end_timestamp` timestamp(6) GENERATED ALWAYS AS ROW END,
+  PERIOD FOR SYSTEM_TIME (`start_timestamp`, `end_timestamp`)
+) ENGINE=SequoiaDB DEFAULT CHARSET=latin1 WITH SYSTEM VERSIONING
+SHOW CREATE TABLE t2;
+Table	Create Table
+t2	CREATE TABLE `t2` (
+  `x` int(11) NOT NULL,
+  `y` int(11) DEFAULT NULL,
+  `start_timestamp` timestamp(6) GENERATED ALWAYS AS ROW START INVISIBLE,
+  `end_timestamp` timestamp(6) GENERATED ALWAYS AS ROW END INVISIBLE,
+  PRIMARY KEY (`x`,`end_timestamp`),
+  PERIOD FOR SYSTEM_TIME (`start_timestamp`, `end_timestamp`)
+) ENGINE=SequoiaDB DEFAULT CHARSET=latin1 WITH SYSTEM VERSIONING
+INSERT INTO t1(x,y) VALUES (1,1),(2,2),(3,3);
+INSERT IGNORE INTO t1(x,y) VALUES (1,-1),(4,4);
+REPLACE INTO t1(x,y) VALUES (4,-2),(5,5);
+INSERT INTO t2(x,y) VALUES (1,1),(2,2),(3,3);
+INSERT IGNORE INTO t2(x,y) VALUES (1,-1),(4,4);
+Warnings:
+Warning	1062	1 duplicated records were ignored
+REPLACE INTO t2(x,y) VALUES (4,-2),(5,5);
+SELECT x,y FROM t1 ORDER BY x,y;
+x	y
+1	-1
+1	1
+2	2
+3	3
+4	-2
+4	4
+5	5
+SELECT * FROM t2 ORDER BY x;
+x	y
+1	1
+2	2
+3	3
+4	-2
+5	5
+SELECT x,y FROM t1 FOR SYSTEM_TIME ALL ORDER BY x,y;
+x	y
+1	-1
+1	1
+2	2
+3	3
+4	-2
+4	4
+5	5
+SELECT * FROM t2 FOR SYSTEM_TIME ALL ORDER BY x,y;
+x	y
+1	1
+2	2
+3	3
+4	-2
+4	4
+5	5
+UPDATE t1 SET y = y - 10 WHERE x > 3;
+UPDATE t2 SET y = y - 10 WHERE x > 3;
+UPDATE IGNORE t1 SET x = -3 WHERE y < -10;
+UPDATE IGNORE t2 SET x = -3 WHERE y < -10;
+REPLACE INTO t1(x,y) VALUES (-3,10),(5,11);
+REPLACE INTO t2(x,y) VALUES (-3,10),(5,11);
+INSERT INTO t1(x,y) VALUES (1,100) ON DUPLICATE KEY UPDATE y = 100;
+INSERT INTO t2(x,y) VALUES (1,100) ON DUPLICATE KEY UPDATE y = 100;
+SELECT x,y FROM t1 ORDER BY x,y;
+x	y
+-3	-12
+-3	10
+1	-1
+1	1
+1	100
+2	2
+3	3
+4	-6
+5	-5
+5	11
+SELECT * FROM t2 ORDER BY x;
+x	y
+-3	10
+1	100
+2	2
+3	3
+5	11
+SELECT x,y FROM t1 FOR SYSTEM_TIME ALL ORDER BY x,y;
+x	y
+-3	-12
+-3	10
+1	-1
+1	1
+1	100
+2	2
+3	3
+4	-12
+4	-6
+4	-2
+4	4
+5	-5
+5	5
+5	11
+SELECT * FROM t2 FOR SYSTEM_TIME ALL ORDER BY x,y;
+x	y
+-3	-12
+-3	10
+1	1
+1	100
+2	2
+3	3
+4	-12
+4	-2
+4	4
+5	-5
+5	5
+5	11
+DELETE FROM t1 WHERE x > 3 OR y = 3;
+DELETE FROM t2 WHERE x > 3 OR y = 3;
+SELECT x,y FROM t1 ORDER BY x,y;
+x	y
+-3	-12
+-3	10
+1	-1
+1	1
+1	100
+2	2
+SELECT * FROM t2 ORDER BY x;
+x	y
+-3	10
+1	100
+2	2
+SELECT x,y FROM t1 FOR SYSTEM_TIME ALL ORDER BY x,y;
+x	y
+-3	-12
+-3	10
+1	-1
+1	1
+1	100
+2	2
+3	3
+4	-12
+4	-6
+4	-2
+4	4
+5	-5
+5	5
+5	11
+SELECT * FROM t2 FOR SYSTEM_TIME ALL ORDER BY x,y;
+x	y
+-3	-12
+-3	10
+1	1
+1	100
+2	2
+3	3
+4	-12
+4	-2
+4	4
+5	-5
+5	5
+5	11
+DELETE FROM t1;
+DELETE FROM t2;
+SELECT x,y FROM t1 ORDER BY x;
+x	y
+SELECT * FROM t2 ORDER BY x;
+x	y
+SELECT x,y FROM t1 FOR SYSTEM_TIME ALL ORDER BY x,y;
+x	y
+-3	-12
+-3	10
+1	-1
+1	1
+1	100
+2	2
+3	3
+4	-12
+4	-6
+4	-2
+4	4
+5	-5
+5	5
+5	11
+SELECT * FROM t2 FOR SYSTEM_TIME ALL ORDER BY x,y;
+x	y
+-3	-12
+-3	10
+1	1
+1	100
+2	2
+3	3
+4	-12
+4	-2
+4	4
+5	-5
+5	5
+5	11
+DROP TABLE t1,t2;
+CREATE TABLE t1 (
+x int auto_increment primary key WITHOUT SYSTEM VERSIONING,
+y int,
+z int WITHOUT SYSTEM VERSIONING
+) WITH SYSTEM VERSIONING;
+CREATE OR REPLACE TABLE t2 (
+x int,
+y int,
+z int primary key WITH SYSTEM VERSIONING
+);
+SHOW CREATE TABLE t1;
+Table	Create Table
+t1	CREATE TABLE `t1` (
+  `x` int(11) NOT NULL WITHOUT SYSTEM VERSIONING AUTO_INCREMENT,
+  `y` int(11) DEFAULT NULL,
+  `z` int(11) DEFAULT NULL WITHOUT SYSTEM VERSIONING,
+  PRIMARY KEY (`x`)
+) ENGINE=SequoiaDB DEFAULT CHARSET=latin1 WITH SYSTEM VERSIONING
+SHOW CREATE TABLE t2;
+Table	Create Table
+t2	CREATE TABLE `t2` (
+  `x` int(11) DEFAULT NULL WITHOUT SYSTEM VERSIONING,
+  `y` int(11) DEFAULT NULL WITHOUT SYSTEM VERSIONING,
+  `z` int(11) NOT NULL,
+  PRIMARY KEY (`z`)
+) ENGINE=SequoiaDB DEFAULT CHARSET=latin1 WITH SYSTEM VERSIONING
+INSERT INTO t1(y,z) VALUES (1,1),(2,2),(3,3);
+INSERT INTO t2 VALUES (1,1,1),(2,2,2),(3,3,3);
+UPDATE t1 SET z = -1 WHERE x = 1;
+UPDATE t1 SET y = -1 WHERE x = 1;
+UPDATE t2 SET x = -1 WHERE z = 1;
+UPDATE t2 SET y = -1 WHERE z = 1;
+SELECT * FROM t1 FOR SYSTEM_TIME ALL ORDER BY x,y;
+x	y	z
+1	-1	-1
+1	1	-1
+2	2	2
+3	3	3
+SELECT * FROM t2 FOR SYSTEM_TIME ALL ORDER BY x,y;
+x	y	z
+-1	-1	1
+2	2	2
+3	3	3
+SET system_versioning_alter_history = KEEP;
+ALTER TABLE t1 MODIFY z int WITH SYSTEM VERSIONING, algorithm=copy;
+ALTER TABLE t1 MODIFY x int WITH SYSTEM VERSIONING, MODIFY z int WITHOUT SYSTEM VERSIONING, algorithm=copy;
+SET system_versioning_alter_history = DEFAULT;
+SHOW CREATE TABLE t1;
+Table	Create Table
+t1	CREATE TABLE `t1` (
+  `x` int(11) NOT NULL,
+  `y` int(11) DEFAULT NULL,
+  `z` int(11) DEFAULT NULL WITHOUT SYSTEM VERSIONING,
+  PRIMARY KEY (`x`)
+) ENGINE=SequoiaDB DEFAULT CHARSET=latin1 WITH SYSTEM VERSIONING
+SHOW CREATE TABLE t2;
+Table	Create Table
+t2	CREATE TABLE `t2` (
+  `x` int(11) DEFAULT NULL WITHOUT SYSTEM VERSIONING,
+  `y` int(11) DEFAULT NULL WITHOUT SYSTEM VERSIONING,
+  `z` int(11) NOT NULL,
+  PRIMARY KEY (`z`)
+) ENGINE=SequoiaDB DEFAULT CHARSET=latin1 WITH SYSTEM VERSIONING
+UPDATE t1 SET z = -2 WHERE x = 2;
+UPDATE t2 SET x = -2 WHERE x = 2;
+SELECT * FROM t1 ORDER BY x;
+x	y	z
+1	-1	-1
+2	2	-2
+3	3	3
+SELECT * FROM t2 ORDER BY x;
+x	y	z
+-2	2	2
+-1	-1	1
+3	3	3
+SELECT * FROM t1 FOR SYSTEM_TIME ALL ORDER BY x,y;
+x	y	z
+1	-1	-1
+1	1	-1
+2	2	-2
+3	3	3
+SELECT * FROM t2 FOR SYSTEM_TIME ALL ORDER BY x,y;
+x	y	z
+-2	2	2
+-1	-1	1
+3	3	3
+DROP TABLE t1,t2;
+CREATE TABLE t1(
+id int auto_increment primary key, 
+start_time datetime,
+end_time datetime,
+PERIOD FOR dt_period(start_time, end_time));
+CREATE TABLE t2 (   # non-periods table
+id int,
+te timestamp,
+ts timestamp
+);
+SHOW CREATE TABLE t1;
+Table	Create Table
+t1	CREATE TABLE `t1` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `start_time` datetime NOT NULL,
+  `end_time` datetime NOT NULL,
+  PRIMARY KEY (`id`),
+  PERIOD FOR `dt_period` (`start_time`, `end_time`)
+) ENGINE=SequoiaDB DEFAULT CHARSET=latin1
+SHOW CREATE TABLE t2;
+Table	Create Table
+t2	CREATE TABLE `t2` (
+  `id` int(11) DEFAULT NULL,
+  `te` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
+  `ts` timestamp NOT NULL DEFAULT '0000-00-00 00:00:00'
+) ENGINE=SequoiaDB DEFAULT CHARSET=latin1
+INSERT INTO t1(start_time,end_time) VALUES ('1997-01-01 00:00:00', '2001-01-01 10:10:10');
+INSERT INTO t1(start_time,end_time) VALUES ('2005-05-05 10:10:10', '2010-10-10 10:10:10');
+INSERT INTO t1(start_time,end_time) VALUES ('2008-08-08 08:08:08', '2018-10-10 10:10:10');
+INSERT INTO t2 VALUES (1, '2001-01-01 10:10:10', '1997-01-01 00:00:00');
+INSERT INTO t2 VALUES (2, '2010-10-10 10:10:10', '2005-05-05 10:10:10');
+INSERT INTO t2 VALUES (3, '2018-10-10 10:10:10', '2008-08-08 08:08:08');
+SELECT * FROM t1 ORDER BY id;
+id	start_time	end_time
+1	1997-01-01 00:00:00	2001-01-01 10:10:10
+2	2005-05-05 10:10:10	2010-10-10 10:10:10
+3	2008-08-08 08:08:08	2018-10-10 10:10:10
+SELECT * FROM t2 ORDER BY id;
+id	te	ts
+1	2001-01-01 10:10:10	1997-01-01 00:00:00
+2	2010-10-10 10:10:10	2005-05-05 10:10:10
+3	2018-10-10 10:10:10	2008-08-08 08:08:08
+ALTER TABLE t1 DROP PERIOD FOR dt_period;
+ALTER TABLE t2 ADD PERIOD FOR timestamp_period(ts,te);
+SHOW CREATE TABLE t1;
+Table	Create Table
+t1	CREATE TABLE `t1` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `start_time` datetime NOT NULL,
+  `end_time` datetime NOT NULL,
+  PRIMARY KEY (`id`)
+) ENGINE=SequoiaDB AUTO_INCREMENT=1001 DEFAULT CHARSET=latin1
+SHOW CREATE TABLE t2;
+Table	Create Table
+t2	CREATE TABLE `t2` (
+  `id` int(11) DEFAULT NULL,
+  `te` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
+  `ts` timestamp NOT NULL DEFAULT '0000-00-00 00:00:00',
+  PERIOD FOR `timestamp_period` (`ts`, `te`)
+) ENGINE=SequoiaDB DEFAULT CHARSET=latin1
+INSERT INTO t1(start_time,end_time) VALUES ('2020-12-12 00:00:00', '2021-01-01 00:00:00');
+INSERT INTO t2 VALUES (4, '2020-12-12 00:00:00', '1998-09-09 09:09:09');
+UPDATE t1
+FOR PORTION OF timestamp_period
+FROM '1999-01-01 10:10:10' TO '2007-07-07 07:07:07' SET id = id * 2;
+ERROR HY000: Period `timestamp_period` is not found in table
+UPDATE t2 
+FOR PORTION OF timestamp_period
+FROM '1999-01-01 10:10:10' TO '2007-07-07 07:07:07' SET id = id * 2;
+SELECT id FROM t2 ORDER BY id;
+id
+1
+2
+2
+3
+4
+4
+4
+8
+DELETE FROM t2 
+FOR PORTION OF timestamp_period FROM '2010-01-01 00:00:00' TO '2020-11-30 00:00:00';
+SELECT id FROM t2 ORDER BY id;
+id
+1
+2
+2
+2
+3
+4
+4
+4
+4
+4
+8
+8
+DROP TABLE t1,t2;
+CREATE TABLE t1(
+id int auto_increment primary key,
+name varchar(32),
+date_1 date,
+date_2 date,
+PERIOD FOR date_period(date_1, date_2));
+CREATE TABLE t2(
+name varchar(32),
+ts timestamp(6) primary key,
+te timestamp(6),
+PERIOD FOR timestamp_period(ts, te));
+SHOW CREATE TABLE t1;
+Table	Create Table
+t1	CREATE TABLE `t1` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `name` varchar(32) DEFAULT NULL,
+  `date_1` date NOT NULL,
+  `date_2` date NOT NULL,
+  PRIMARY KEY (`id`),
+  PERIOD FOR `date_period` (`date_1`, `date_2`)
+) ENGINE=SequoiaDB DEFAULT CHARSET=latin1
+SHOW CREATE TABLE t2;
+Table	Create Table
+t2	CREATE TABLE `t2` (
+  `name` varchar(32) DEFAULT NULL,
+  `ts` timestamp(6) NOT NULL DEFAULT '0000-00-00 00:00:00.000000',
+  `te` timestamp(6) NOT NULL DEFAULT '0000-00-00 00:00:00.000000',
+  PRIMARY KEY (`ts`),
+  PERIOD FOR `timestamp_period` (`ts`, `te`)
+) ENGINE=SequoiaDB DEFAULT CHARSET=latin1
+INSERT INTO t1(name,date_1,date_2) VALUES ('Joe', '1997-01-01', '2001-01-01');
+INSERT INTO t1(name,date_1,date_2) VALUES ('Mary', '2005-05-05', '2010-10-10');
+INSERT INTO t1(name,date_1,date_2) VALUES ('Bob', '2008-08-08', '2018-10-10');
+INSERT INTO t2 VALUES ('Joe', '1997-01-01 00:00:00', '2001-01-01 10:10:10');
+INSERT INTO t2 VALUES ('Mary', '2005-05-05 10:10:10', '2010-10-10 10:10:10');
+INSERT INTO t2 VALUES ('Bob', '2008-08-08 08:08:08', '2018-10-10 10:10:10');
+INSERT IGNORE INTO t1 VALUES (1, 'Tom', '1990-01-01', '1995-01-01');
+Warnings:
+Warning	1062	1 duplicated records were ignored
+REPLACE INTO t1 VALUES (1, 'Jack', '1991-01-01', '1997-01-01');
+INSERT IGNORE INTO t2 VALUES ('Tom', '2008-08-08 08:08:08', '2009-09-09 09:09:09');
+Warnings:
+Warning	1062	1 duplicated records were ignored
+REPLACE INTO t2 VALUES ('Jack', '2008-08-08 08:08:08', '2021-01-01 00:00:00');
+SELECT * FROM t1 ORDER BY id;
+id	name	date_1	date_2
+1	Jack	1991-01-01	1997-01-01
+2	Mary	2005-05-05	2010-10-10
+3	Bob	2008-08-08	2018-10-10
+SELECT * FROM t2 ORDER BY name;
+name	ts	te
+Jack	2008-08-08 08:08:08.000000	2021-01-01 00:00:00.000000
+Joe	1997-01-01 00:00:00.000000	2001-01-01 10:10:10.000000
+Mary	2005-05-05 10:10:10.000000	2010-10-10 10:10:10.000000
+UPDATE t1   # update 0 row
+FOR PORTION OF date_period
+FROM '1997-01-01' TO '2001-01-01' SET name = CONCAT('first update: ', name);
+UPDATE t1   # update 1 row
+FOR PORTION OF date_period
+FROM '1991-01-01' TO '2001-01-01' SET name = CONCAT('first update: ', name);
+UPDATE t1   # update 1 row insert 2 rows 
+FOR PORTION OF date_period
+FROM '2006-01-01' TO '2007-01-01' SET name = CONCAT('second update: ', name);
+UPDATE t1   # update 2 rows insert 1 row 
+FOR PORTION OF date_period
+FROM '2007-12-12' TO '2021-01-01' SET name = CONCAT('third update: ', name);
+UPDATE t1 SET date_2 = '2038-01-01 03:03:03' WHERE id > 5;
+Warnings:
+Note	1265	Data truncated for column 'date_2' at row 1
+UPDATE t2   # update 2 rows insert 2 rows
+FOR PORTION OF timestamp_period
+FROM '1999-01-01 10:10:10' TO '2007-07-07 07:07:07' SET name = CONCAT('first update: ', name);
+UPDATE t2
+FOR PORTION OF timestamp_period
+FROM '1998-08-08 08:08:08' TO '2009-09-09 09:09:09' SET name = CONCAT('first update: ', name);
+SELECT * FROM t1 ORDER BY id;
+id	name	date_1	date_2
+1	first update: Jack	1991-01-01	1997-01-01
+2	second update: Mary	2006-01-01	2007-01-01
+3	third update: Bob	2008-08-08	2018-10-10
+4	Mary	2005-05-05	2006-01-01
+5	third update: Mary	2007-12-12	2010-10-10
+6	Mary	2007-01-01	2038-01-01
+SELECT * FROM t2 ORDER BY name;
+name	ts	te
+Jack	2008-08-08 08:08:08.000000	2021-01-01 00:00:00.000000
+Joe	1997-01-01 00:00:00.000000	1999-01-01 10:10:10.000000
+Mary	2007-07-07 07:07:07.000000	2010-10-10 10:10:10.000000
+first update: Joe	1999-01-01 10:10:10.000000	2001-01-01 10:10:10.000000
+first update: Mary	2005-05-05 10:10:10.000000	2007-07-07 07:07:07.000000
+DELETE FROM t1    # delete 1 row
+FOR PORTION OF date_period FROM '1991-01-01' TO '1997-01-01';
+DELETE FROM t1    # delete many rows
+FOR PORTION OF date_period FROM '2005-12-12' TO '2015-01-01';
+DELETE FROM t2
+FOR PORTION OF timestamp_period FROM '2005-05-05 00:00:00' TO '2020-11-30 00:00:00';
+SELECT * FROM t1 ORDER BY id;
+id	name	date_1	date_2
+7	third update: Bob	2015-01-01	2018-10-10
+8	Mary	2005-05-05	2005-12-12
+9	Mary	2015-01-01	2038-01-01
+SELECT * FROM t2 ORDER BY name;
+name	ts	te
+Jack	2020-11-30 00:00:00.000000	2021-01-01 00:00:00.000000
+Joe	1997-01-01 00:00:00.000000	1999-01-01 10:10:10.000000
+first update: Joe	1999-01-01 10:10:10.000000	2001-01-01 10:10:10.000000
+DROP TABLE t1,t2;
+CREATE TABLE t1 (
+id int auto_increment primary key,
+name varchar(32),
+date_1 date,
+date_2 date,
+row_start timestamp(6) AS ROW START INVISIBLE,
+row_end timestamp(6) AS ROW END INVISIBLE,
+PERIOD FOR application_time(date_1, date_2),
+PERIOD FOR system_time(row_start, row_end))
+WITH SYSTEM VERSIONING;
+CREATE TABLE t2 (   # non-versioning table
+id int primary key, 
+name varchar(32),
+date_1 date,
+date_2 date
+);
+SHOW CREATE TABLE t1;
+Table	Create Table
+t1	CREATE TABLE `t1` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `name` varchar(32) DEFAULT NULL,
+  `date_1` date NOT NULL,
+  `date_2` date NOT NULL,
+  `row_start` timestamp(6) GENERATED ALWAYS AS ROW START INVISIBLE,
+  `row_end` timestamp(6) GENERATED ALWAYS AS ROW END INVISIBLE,
+  PRIMARY KEY (`id`,`row_end`),
+  PERIOD FOR SYSTEM_TIME (`row_start`, `row_end`),
+  PERIOD FOR `application_time` (`date_1`, `date_2`)
+) ENGINE=SequoiaDB DEFAULT CHARSET=latin1 WITH SYSTEM VERSIONING
+SHOW CREATE TABLE t2;
+Table	Create Table
+t2	CREATE TABLE `t2` (
+  `id` int(11) NOT NULL,
+  `name` varchar(32) DEFAULT NULL,
+  `date_1` date DEFAULT NULL,
+  `date_2` date DEFAULT NULL,
+  PRIMARY KEY (`id`)
+) ENGINE=SequoiaDB DEFAULT CHARSET=latin1
+INSERT INTO t1(name,date_1,date_2) VALUES ('Joe', '1997-01-01', '2001-01-01');
+INSERT INTO t1(name,date_1,date_2) VALUES ('Mary', '2005-05-05', '2010-10-10');
+INSERT INTO t1(name,date_1,date_2) VALUES ('Bob', '2008-08-08', '2018-10-10');
+INSERT IGNORE INTO t1(name,date_1,date_2) VALUES ('Tom', '2008-08-08', '2009-09-09');
+REPLACE INTO t1(name,date_1,date_2) VALUES ('Jack', '2008-08-08', '2021-01-01');
+INSERT INTO t2 VALUES (1, 'Joe', '1997-01-01', '2001-01-01');
+INSERT INTO t2 VALUES (2, 'Mary', '2005-05-05', '2010-10-10');
+INSERT INTO t2 VALUES (3, 'Mary', '2008-08-08', '2018-10-10');
+SELECT * FROM t1 ORDER BY id;
+id	name	date_1	date_2
+1	Joe	1997-01-01	2001-01-01
+2	Mary	2005-05-05	2010-10-10
+3	Bob	2008-08-08	2018-10-10
+4	Tom	2008-08-08	2009-09-09
+5	Jack	2008-08-08	2021-01-01
+SELECT * FROM t1 FOR SYSTEM_TIME ALL ORDER BY id;
+id	name	date_1	date_2
+1	Joe	1997-01-01	2001-01-01
+2	Mary	2005-05-05	2010-10-10
+3	Bob	2008-08-08	2018-10-10
+4	Tom	2008-08-08	2009-09-09
+5	Jack	2008-08-08	2021-01-01
+UPDATE t1 SET name = 'first update: Joe' WHERE id < 2;
+UPDATE t1   # update 3 rows insert 6 rows
+FOR PORTION OF application_time
+FROM '1999-09-09' TO '2009-09-09' SET name = CONCAT('second update: ', name);
+SELECT * FROM t1 ORDER BY id;
+id	name	date_1	date_2
+1	second update: first update: Joe	1999-09-09	2001-01-01
+2	second update: Mary	2005-05-05	2009-09-09
+3	second update: Bob	2008-08-08	2009-09-09
+4	second update: Tom	2008-08-08	2009-09-09
+5	second update: Jack	2008-08-08	2009-09-09
+6	first update: Joe	1997-01-01	1999-09-09
+7	Mary	2009-09-09	2010-10-10
+8	Bob	2009-09-09	2018-10-10
+9	Jack	2009-09-09	2021-01-01
+SELECT * FROM t1 FOR SYSTEM_TIME ALL ORDER BY id,name;
+id	name	date_1	date_2
+1	Joe	1997-01-01	2001-01-01
+1	first update: Joe	1997-01-01	2001-01-01
+1	second update: first update: Joe	1999-09-09	2001-01-01
+2	Mary	2005-05-05	2010-10-10
+2	second update: Mary	2005-05-05	2009-09-09
+3	Bob	2008-08-08	2018-10-10
+3	second update: Bob	2008-08-08	2009-09-09
+4	Tom	2008-08-08	2009-09-09
+4	second update: Tom	2008-08-08	2009-09-09
+5	Jack	2008-08-08	2021-01-01
+5	second update: Jack	2008-08-08	2009-09-09
+6	first update: Joe	1997-01-01	1999-09-09
+7	Mary	2009-09-09	2010-10-10
+8	Bob	2009-09-09	2018-10-10
+9	Jack	2009-09-09	2021-01-01
+DELETE FROM t1 WHERE id > 4 AND id < 7;
+DELETE FROM t1    # delete many rows
+FOR PORTION OF application_time FROM '2000-01-01' TO '2010-01-01';
+SELECT * FROM t1 ORDER BY id;
+id	name	date_1	date_2
+10	second update: first update: Joe	1999-09-09	2000-01-01
+11	Mary	2010-01-01	2010-10-10
+12	Bob	2010-01-01	2018-10-10
+13	Jack	2010-01-01	2021-01-01
+SELECT * FROM t1 FOR SYSTEM_TIME ALL ORDER BY id,name;
+id	name	date_1	date_2
+1	Joe	1997-01-01	2001-01-01
+1	first update: Joe	1997-01-01	2001-01-01
+1	second update: first update: Joe	1999-09-09	2001-01-01
+2	Mary	2005-05-05	2010-10-10
+2	second update: Mary	2005-05-05	2009-09-09
+3	Bob	2008-08-08	2018-10-10
+3	second update: Bob	2008-08-08	2009-09-09
+4	Tom	2008-08-08	2009-09-09
+4	second update: Tom	2008-08-08	2009-09-09
+5	Jack	2008-08-08	2021-01-01
+5	second update: Jack	2008-08-08	2009-09-09
+6	first update: Joe	1997-01-01	1999-09-09
+7	Mary	2009-09-09	2010-10-10
+8	Bob	2009-09-09	2018-10-10
+9	Jack	2009-09-09	2021-01-01
+10	second update: first update: Joe	1999-09-09	2000-01-01
+11	Mary	2010-01-01	2010-10-10
+12	Bob	2010-01-01	2018-10-10
+13	Jack	2010-01-01	2021-01-01
+ALTER TABLE t1 DROP PERIOD FOR application_time;
+ALTER TABLE t2 ADD SYSTEM VERSIONING;
+ALTER TABLE t2 ADD PERIOD FOR date_period(date_1,date_2);
+SHOW CREATE TABLE t1;
+Table	Create Table
+t1	CREATE TABLE `t1` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `name` varchar(32) DEFAULT NULL,
+  `date_1` date NOT NULL,
+  `date_2` date NOT NULL,
+  `row_start` timestamp(6) GENERATED ALWAYS AS ROW START INVISIBLE,
+  `row_end` timestamp(6) GENERATED ALWAYS AS ROW END INVISIBLE,
+  PRIMARY KEY (`id`,`row_end`),
+  PERIOD FOR SYSTEM_TIME (`row_start`, `row_end`)
+) ENGINE=SequoiaDB AUTO_INCREMENT=1001 DEFAULT CHARSET=latin1 WITH SYSTEM VERSIONING
+SHOW CREATE TABLE t2;
+Table	Create Table
+t2	CREATE TABLE `t2` (
+  `id` int(11) NOT NULL,
+  `name` varchar(32) DEFAULT NULL,
+  `date_1` date NOT NULL,
+  `date_2` date NOT NULL,
+  PRIMARY KEY (`id`),
+  PERIOD FOR `date_period` (`date_1`, `date_2`)
+) ENGINE=SequoiaDB DEFAULT CHARSET=latin1 WITH SYSTEM VERSIONING
+INSERT INTO t1(name,date_1,date_2) VALUES ('David', '1998-01-01', '2008-01-01');
+UPDATE t1 SET name = 'third update: David' WHERE id > 5;
+UPDATE t2 SET name = 'first update: Joe' WHERE id < 2;
+UPDATE t2   # update 1 row
+FOR PORTION OF date_period
+FROM '1997-01-01' TO '2001-01-01' SET name = CONCAT('second update: ', name);
+SELECT * FROM t1 ORDER BY id;
+id	name	date_1	date_2
+10	third update: David	1999-09-09	2000-01-01
+11	third update: David	2010-01-01	2010-10-10
+12	third update: David	2010-01-01	2018-10-10
+13	third update: David	2010-01-01	2021-01-01
+14	third update: David	1998-01-01	2008-01-01
+SELECT * FROM t2 ORDER BY id;
+id	name	date_1	date_2
+1	second update: first update: Joe	1997-01-01	2001-01-01
+2	Mary	2005-05-05	2010-10-10
+3	Mary	2008-08-08	2018-10-10
+SELECT * FROM t2 FOR SYSTEM_TIME ALL ORDER BY id,name;
+id	name	date_1	date_2
+1	Joe	1997-01-01	2001-01-01
+1	first update: Joe	1997-01-01	2001-01-01
+1	second update: first update: Joe	1997-01-01	2001-01-01
+2	Mary	2005-05-05	2010-10-10
+3	Mary	2008-08-08	2018-10-10
+DELETE FROM t1 WHERE date_1 BETWEEN '2000-12-12' AND '2010-01-01';
+DELETE FROM t2 WHERE id > 2;
+DELETE FROM t2    # delete many rows
+FOR PORTION OF date_period FROM '2000-01-01' TO '2010-01-01';
+SELECT * FROM t1 ORDER BY id;
+id	name	date_1	date_2
+10	third update: David	1999-09-09	2000-01-01
+14	third update: David	1998-01-01	2008-01-01
+SELECT * FROM t1 FOR SYSTEM_TIME ALL ORDER BY id,name;
+id	name	date_1	date_2
+1	Joe	1997-01-01	2001-01-01
+1	first update: Joe	1997-01-01	2001-01-01
+1	second update: first update: Joe	1999-09-09	2001-01-01
+2	Mary	2005-05-05	2010-10-10
+2	second update: Mary	2005-05-05	2009-09-09
+3	Bob	2008-08-08	2018-10-10
+3	second update: Bob	2008-08-08	2009-09-09
+4	Tom	2008-08-08	2009-09-09
+4	second update: Tom	2008-08-08	2009-09-09
+5	Jack	2008-08-08	2021-01-01
+5	second update: Jack	2008-08-08	2009-09-09
+6	first update: Joe	1997-01-01	1999-09-09
+7	Mary	2009-09-09	2010-10-10
+8	Bob	2009-09-09	2018-10-10
+9	Jack	2009-09-09	2021-01-01
+10	second update: first update: Joe	1999-09-09	2000-01-01
+10	third update: David	1999-09-09	2000-01-01
+11	Mary	2010-01-01	2010-10-10
+11	third update: David	2010-01-01	2010-10-10
+12	Bob	2010-01-01	2018-10-10
+12	third update: David	2010-01-01	2018-10-10
+13	Jack	2010-01-01	2021-01-01
+13	third update: David	2010-01-01	2021-01-01
+14	David	1998-01-01	2008-01-01
+14	third update: David	1998-01-01	2008-01-01
+SELECT * FROM t2 ORDER BY id;
+id	name	date_1	date_2
+1	second update: first update: Joe	1997-01-01	2000-01-01
+2	Mary	2010-01-01	2010-10-10
+SELECT * FROM t2 FOR SYSTEM_TIME ALL ORDER BY id,name;
+id	name	date_1	date_2
+1	Joe	1997-01-01	2001-01-01
+1	first update: Joe	1997-01-01	2001-01-01
+1	second update: first update: Joe	1997-01-01	2001-01-01
+1	second update: first update: Joe	1997-01-01	2000-01-01
+2	Mary	2005-05-05	2010-10-10
+2	Mary	2010-01-01	2010-10-10
+3	Mary	2008-08-08	2018-10-10
+DROP TABLE t1,t2;
+CREATE TABLE t1 (
+x INT PRIMARY KEY,
+y int,
+start_timestamp TIMESTAMP (6) GENERATED ALWAYS as ROW START INVISIBLE,
+end_timestamp TIMESTAMP (6) GENERATED ALWAYS as ROW END INVISIBLE,
+PERIOD FOR SYSTEM_TIME (start_timestamp, end_timestamp)
+) COMMENT='sequoiadb:{ table_options: { ShardingKey: { x: 1 }, ShardingType: "hash", AutoSplit: true } }' WITH SYSTEM VERSIONING;
+SHOW CREATE TABLE t1;
+Table	Create Table
+t1	CREATE TABLE `t1` (
+  `x` int(11) NOT NULL,
+  `y` int(11) DEFAULT NULL,
+  `start_timestamp` timestamp(6) GENERATED ALWAYS AS ROW START INVISIBLE,
+  `end_timestamp` timestamp(6) GENERATED ALWAYS AS ROW END INVISIBLE,
+  PRIMARY KEY (`x`,`end_timestamp`),
+  PERIOD FOR SYSTEM_TIME (`start_timestamp`, `end_timestamp`)
+) ENGINE=SequoiaDB DEFAULT CHARSET=latin1 COMMENT='sequoiadb:{ table_options: { ShardingKey: { x: 1 }, ShardingType: "hash", AutoSplit: true } }' WITH SYSTEM VERSIONING
+INSERT INTO t1(x,y) VALUES (1,1),(2,2),(3,3);
+UPDATE t1 SET y = y * 2 WHERE x < 3;
+DELETE FROM t1 WHERE x > 2;
+SELECT x,y FROM t1 ORDER BY x;
+x	y
+1	2
+2	4
+SELECT * FROM t1 FOR SYSTEM_TIME ALL ORDER BY x,y;
+x	y
+1	1
+1	2
+2	2
+2	4
+3	3
+DROP TABLE t1;
+CREATE TABLE t1(
+id INT NULL auto_increment,
+date_1 DATE,
+date_2 DATE,
+PERIOD FOR date_period(date_1, date_2), KEY(id)) WITH SYSTEM VERSIONING
+PARTITION BY SYSTEM_TIME LIMIT 3
+(PARTITION p0 HISTORY,
+PARTITION p1 HISTORY,
+PARTITION p_cur CURRENT);
+INSERT INTO t1(date_1,date_2) VALUES('1999-01-01', '2010-12-12'),('2010-01-01', '2018-12-12');
+SELECT * FROM t1 FOR SYSTEM_TIME ALL ORDER BY id;
+id	date_1	date_2
+1	1999-01-01	2010-12-12
+2	2010-01-01	2018-12-12
+DELETE FROM t1 FOR PORTION OF date_period FROM '2000-01-01' TO '2005-01-01';
+SELECT * FROM t1 FOR SYSTEM_TIME ALL ORDER BY id;
+id	date_1	date_2
+1	1999-01-01	2010-12-12
+2	2010-01-01	2018-12-12
+3	1999-01-01	2000-01-01
+4	2005-01-01	2010-12-12
+DROP TABLE t1;

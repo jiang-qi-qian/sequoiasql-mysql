@@ -1,0 +1,6 @@
+install plugin server_audit soname 'server_audit.so';
+uninstall plugin server_audit;
+install plugin server_audit soname 'server_audit.so';
+install plugin server_audit soname 'server_audit.so';
+ERROR HY000: Function 'server_audit' already exists
+uninstall plugin server_audit;

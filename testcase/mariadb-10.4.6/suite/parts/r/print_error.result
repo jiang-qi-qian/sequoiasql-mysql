@@ -1,0 +1,21 @@
+create database print_error_sequoiadb;
+use print_error_sequoiadb;
+CREATE TABLE t1 (i INT) ENGINE=SequoiaDB PARTITION BY HASH (i) PARTITIONS 2;
+XA START 'xid';
+INSERT INTO t1 VALUES (1),(2),(3),(4);
+connect  con1,localhost,root,,print_error_sequoiadb;
+CREATE TABLE t2 SELECT * FROM t1;;
+connect  con2,localhost,root,,print_error_sequoiadb;
+SET max_statement_time= 1;
+DELETE FROM t1 PARTITION (p1) ORDER BY i LIMIT 2;
+ERROR 0A000: Cannot specify HASH or KEY partitions
+disconnect con2;
+connection default;
+XA END 'xid';
+XA ROLLBACK 'xid';
+connection con1;
+disconnect con1;
+connection default;
+call mtr.add_suppression('Sort aborted');
+DROP TABLE IF EXISTS t2, t1;
+drop database print_error_sequoiadb;

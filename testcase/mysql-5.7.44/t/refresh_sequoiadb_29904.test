@@ -1,0 +1,71 @@
+#Case 29904
+--source include/have_sequoiadb.inc
+
+--disable_warnings
+drop database if exists refresh_sequoiadb_29904;
+--enable_warnings
+
+create database refresh_sequoiadb_29904;
+use refresh_sequoiadb_29904;
+
+--disable_warnings
+drop table if exists refresh_sequoiadb_29904_1;
+drop table if exists refresh_sequoiadb_29904_2;
+--enable_warnings
+
+create table refresh_sequoiadb_29904_1(a int,b int,key(a));
+
+insert into refresh_sequoiadb_29904_1 values(1,1),(2,2),(3,3);
+
+create table refresh_sequoiadb_29904_2 like refresh_sequoiadb_29904_1;
+
+analyze table refresh_sequoiadb_29904_1;
+analyze table refresh_sequoiadb_29904_2;
+
+insert into refresh_sequoiadb_29904_1 values (4,4),(5,5),(6,6);
+insert into refresh_sequoiadb_29904_2 values (7,7),(8,8),(9,9);
+
+delimiter |;
+create procedure p1()
+begin
+  insert into refresh_sequoiadb_29904_1 values(10,10);
+end|
+delimiter ;|
+
+delimiter //;
+create function func1() returns int
+begin
+  declare e int default 0;
+  return e;
+end;
+//
+delimiter ;//
+
+create view view_mine as select * from refresh_sequoiadb_29904_2;
+
+--error 1146
+refresh table p1 stats;
+
+refresh table view_mine stats;
+select * from view_mine;
+--error 1146
+refresh table func1 stats;
+
+--error 1146
+refresh table refresh_sequoiadb_29904_1,p1 stats;
+--error 1146
+refresh table refresh_sequoiadb_29904_1,func1 stats;
+refresh table refresh_sequoiadb_29904_1,view_mine stats;
+select * from refresh_sequoiadb_29904_1;
+select * from view_mine;
+
+drop function func1;
+drop procedure p1;
+drop view view_mine;
+
+drop table refresh_sequoiadb_29904_1;
+drop table refresh_sequoiadb_29904_2;
+
+drop database refresh_sequoiadb_29904;
+
+--source include/uninstall_sequoiadb.inc

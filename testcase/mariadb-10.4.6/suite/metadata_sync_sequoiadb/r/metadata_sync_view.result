@@ -1,0 +1,55 @@
+connection conn1;
+DROP DATABASE IF EXISTS metasync_view;
+connection conn2;
+SHOW CREATE DATABASE metasync_view;
+ERROR 42000: Unknown database 'metasync_view'
+connection conn1;
+CREATE DATABASE metasync_view;
+USE metasync_view;
+CREATE TABLE t1 ( a INT, b INT, c INT );
+CREATE VIEW v1 AS SELECT * FROM t1;
+CREATE OR REPLACE VIEW v1(a) AS SELECT "abc";
+CREATE OR REPLACE VIEW v2 AS SELECT * FROM t1 local;
+CREATE OR REPLACE ALGORITHM = MERGE DEFINER = "root"@"localhost" SQL SECURITY INVOKER VIEW v3 AS SELECT * FROM t1 local;
+CREATE DEFINER = "root"@"localhost" VIEW IF NOT EXISTS v4 AS SELECT a FROM t1;
+connection conn2;
+USE metasync_view;
+SHOW CREATE TABLE t1;
+Table	Create Table
+t1	CREATE TABLE `t1` (
+  `a` int(11) DEFAULT NULL,
+  `b` int(11) DEFAULT NULL,
+  `c` int(11) DEFAULT NULL
+) ENGINE=SequoiaDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin
+SHOW CREATE VIEW v1;
+View	Create View	character_set_client	collation_connection
+v1	CREATE ALGORITHM=UNDEFINED DEFINER=`x`@`%` SQL SECURITY DEFINER VIEW `v1` AS select 'abc' AS `a`	latin1	latin1_swedish_ci
+SHOW CREATE VIEW v2;
+View	Create View	character_set_client	collation_connection
+v2	CREATE ALGORITHM=UNDEFINED DEFINER=`x`@`%` SQL SECURITY DEFINER VIEW `v2` AS select `local`.`a` AS `a`,`local`.`b` AS `b`,`local`.`c` AS `c` from `t1` `local`	latin1	latin1_swedish_ci
+SHOW CREATE VIEW v3;
+View	Create View	character_set_client	collation_connection
+v3	CREATE ALGORITHM=MERGE DEFINER=`root`@`localhost` SQL SECURITY INVOKER VIEW `v3` AS select `local`.`a` AS `a`,`local`.`b` AS `b`,`local`.`c` AS `c` from `t1` `local`	latin1	latin1_swedish_ci
+SHOW CREATE VIEW v4;
+View	Create View	character_set_client	collation_connection
+v4	CREATE ALGORITHM=UNDEFINED DEFINER=`root`@`localhost` SQL SECURITY DEFINER VIEW `v4` AS select `t1`.`a` AS `a` from `t1`	latin1	latin1_swedish_ci
+ALTER ALGORITHM = MERGE DEFINER = "root"@"localhost" SQL SECURITY INVOKER VIEW v1 AS SELECT * FROM t1 local;
+connection conn1;
+SHOW CREATE VIEW v1;
+View	Create View	character_set_client	collation_connection
+v1	CREATE ALGORITHM=MERGE DEFINER=`root`@`localhost` SQL SECURITY INVOKER VIEW `v1` AS select `local`.`a` AS `a`,`local`.`b` AS `b`,`local`.`c` AS `c` from `t1` `local`	latin1	latin1_swedish_ci
+DROP VIEW v1,v2,v3;
+DROP VIEW IF EXISTS v4;
+connection conn2;
+SHOW CREATE VIEW v1;
+ERROR 42S02: Table 'metasync_view.v1' doesn't exist
+SHOW CREATE VIEW v2;
+ERROR 42S02: Table 'metasync_view.v2' doesn't exist
+SHOW CREATE VIEW v3;
+ERROR 42S02: Table 'metasync_view.v3' doesn't exist
+SHOW CREATE VIEW v4;
+ERROR 42S02: Table 'metasync_view.v4' doesn't exist
+DROP DATABASE metasync_view;
+connection conn2;
+SHOW CREATE DATABASE metasync_view;
+ERROR 42000: Unknown database 'metasync_view'

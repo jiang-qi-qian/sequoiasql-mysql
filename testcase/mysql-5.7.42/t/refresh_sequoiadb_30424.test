@@ -1,0 +1,37 @@
+#seqDB-30424
+--source include/have_sequoiadb.inc
+
+--disable_warnings
+drop database if exists refresh_sequoiadb_30424;
+create database refresh_sequoiadb_30424;
+drop database refresh_sequoiadb_30424;
+create database refresh_sequoiadb_30424;
+use refresh_sequoiadb_30424;
+--enable_warnings
+
+create table t1(a int);
+insert into t1 values (1),(2),(3),(4),(5);
+create table t2 select * from t1;
+create temporary table tmp1 (a int);
+insert into tmp1 select * from t1;
+create temporary table tmp2 like t1;
+insert into tmp2 select * from t1;
+create temporary table tmp3 select * from t2;
+
+refresh table tmp1 stats;
+refresh table t1,tmp1 stats;
+refresh table tmp2 stats;
+refresh table t2,tmp2 stats;
+refresh table tmp3 stats;
+refresh table t1,t2,tmp3 stats;
+refresh table t1,tmp1,tmp2,tmp3,t2 stats;
+
+create temporary table t1 like t2;
+refresh table t1 stats;
+refresh table t1,t2 stats;
+
+set session refresh_all_cached_tables_supported = on;
+refresh table stats;
+
+drop database refresh_sequoiadb_30424;
+--source include/uninstall_sequoiadb.inc

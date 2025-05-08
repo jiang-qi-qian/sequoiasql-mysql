@@ -1,0 +1,30 @@
+# restart
+drop database if exists statistics_trace_sequoiadb_33966;
+create database statistics_trace_sequoiadb_33966;
+drop database statistics_trace_sequoiadb_33966;
+create database statistics_trace_sequoiadb_33966;
+use statistics_trace_sequoiadb_33966;
+set session sequoiadb_debug_log = on;
+set session sequoiadb_secure_log = off;
+set session sequoiadb_share_log_output = on;
+CREATE TABLE t1 (a int,b varchar(4),key (a),key (b)) ENGINE=SequoiaDB;
+INSERT INTO t1 values (1,"a"),(2,"b"),(3,"c");
+flush tables;
+show status like "sdb_share_updated";
+Variable_name	Value
+sdb_share_updated	2
+explain select a from t1 where a = 1 and b = "a";
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	index_merge	a,b	a,b	5,7	NULL	1	100.00	Using intersect(a,b); Using where with pushed condition ((`statistics_trace_sequoiadb_33966`.`t1`.`b` = 'a') and (`statistics_trace_sequoiadb_33966`.`t1`.`a` = 1)); Using index
+Warnings:
+Note	1003	/* select#1 */ select `statistics_trace_sequoiadb_33966`.`t1`.`a` AS `a` from `statistics_trace_sequoiadb_33966`.`t1` where ((`statistics_trace_sequoiadb_33966`.`t1`.`b` = 'a') and (`statistics_trace_sequoiadb_33966`.`t1`.`a` = 1))
+[Note] Testcase: Operation log begin
+[Note] SequoiaDB: Sdb_share has marked expired in update_stats(),replace the Sdb_share in the bucket with a new one ,sql_str:explain select a from t1 where a = 1 and b = "a" , table_name:./statistics_trace_sequoiadb_33966/t1, current idx stats map:0
+[Note] SequoiaDB: cl get index stat static on ensure_index_stat(),table_name:t1 ,key_name:a, sql_str:explain select a from t1 where a = 1 and b = "a", rc :40356
+[Note] SequoiaDB: The index stat is invalid. key_name:a, Sdb_share has marked expired in ensure_index_stat(), replace the Sdb_share in the bucket with a new one ,sql_str:explain select a from t1 where a = 1 and b = "a" , table_name:./statistics_trace_sequoiadb_33966/t1, current idx stats map :1.
+[Note] SequoiaDB: cl get index stat static on ensure_index_stat(),table_name:t1 ,key_name:b, sql_str:explain select a from t1 where a = 1 and b = "a", rc :40356
+[Note] SequoiaDB: The index stat is invalid. key_name:b, Sdb_share has marked expired in ensure_index_stat(), replace the Sdb_share in the bucket with a new one ,sql_str:explain select a from t1 where a = 1 and b = "a" , table_name:./statistics_trace_sequoiadb_33966/t1, current idx stats map :3.
+show status like "sdb_share_updated";
+Variable_name	Value
+sdb_share_updated	5
+drop database statistics_trace_sequoiadb_33966;

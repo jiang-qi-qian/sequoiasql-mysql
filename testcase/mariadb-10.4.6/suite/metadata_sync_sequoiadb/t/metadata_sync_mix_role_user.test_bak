@@ -1,0 +1,85 @@
+#case 22946
+
+--source include/have_sequoiadb.inc
+--source suite/metadata_sync_sequoiadb/inc/insts_connect_sequoiadb.inc
+
+connection conn1;
+set session server_ha_wait_sync_timeout = 10;
+connection conn2;
+set session server_ha_wait_sync_timeout = 10;
+
+# connect to conn1, clear roles in the beginning
+connection conn1;
+--disable_warnings
+DROP ROLE IF EXISTS metaSync_mix_role1;
+DROP ROLE IF EXISTS metaSync_mix_role2;
+DROP USER IF EXISTS 'metaSync_mix_ruser1'@'localhost';
+DROP USER IF EXISTS 'metaSync_mix_ruser2'@'localhost';
+FLUSH PRIVILEGES;
+--enable_warnings
+
+# connect to conn2, check roles are cleaned in the beginning
+connection conn2;
+--error ER_NONEXISTING_GRANT
+SHOW GRANTS FOR 'metaSync_mix_ruser1'@'localhost';
+--error ER_NONEXISTING_GRANT
+SHOW GRANTS FOR 'metaSync_mix_ruser2'@'localhost';
+
+# seqDB-22946
+# begin testing
+#
+# create role and user
+connection conn1;
+#SEQUOIASQLMAINSTREAM-949
+set server_ha_wait_sync_timeout = 10;
+--disable_warnings
+CREATE ROLE metaSync_mix_role1;
+CREATE ROLE metaSync_mix_role2;
+--enable_warnings	
+CREATE USER 'metaSync_mix_ruser1'@'localhost';
+CREATE USER 'metaSync_mix_ruser2'@'localhost';
+GRANT CREATE, SELECT ON *.* TO metaSync_mix_role1;
+GRANT INSERT, UPDATE, DELETE ON *.* TO metaSync_mix_role2;
+GRANT metaSync_mix_role1 TO 'metaSync_mix_ruser1'@'localhost';
+GRANT metaSync_mix_role2 TO 'metaSync_mix_ruser2'@'localhost';
+FLUSH PRIVILEGES;
+# check metadatas after create
+connection conn2;
+#SEQUOIASQLMAINSTREAM-949
+set server_ha_wait_sync_timeout = 10;
+SHOW GRANTS FOR 'metaSync_mix_ruser1'@'localhost';
+SHOW GRANTS FOR 'metaSync_mix_ruser2'@'localhost';
+SELECT * FROM mysql.roles_mapping WHERE Role='metaSync_mix_role1' AND user LIKE 'metaSync_mix_ruser%';
+SELECT * FROM mysql.roles_mapping WHERE Role='metaSync_mix_role2' AND user LIKE 'metaSync_mix_ruser%';
+# drop role
+DROP ROLE metaSync_mix_role1;
+DROP ROLE metaSync_mix_role2;
+FLUSH PRIVILEGES;
+# check metadatas after drop role
+connection conn1;
+SHOW GRANTS FOR 'metaSync_mix_ruser1'@'localhost';
+SHOW GRANTS FOR 'metaSync_mix_ruser2'@'localhost';
+SELECT * FROM mysql.roles_mapping WHERE Role = 'metaSync_mix_role1';
+SELECT * FROM mysql.roles_mapping WHERE Role = 'metaSync_mix_role2';
+# drop user
+DROP USER 'metaSync_mix_ruser1'@'localhost';
+DROP USER 'metaSync_mix_ruser2'@'localhost';
+FLUSH PRIVILEGES;
+set server_ha_wait_sync_timeout = 0;
+# check metadatas after drop user
+connection conn2;
+--error ER_NONEXISTING_GRANT
+SHOW GRANTS FOR 'metaSync_mix_ruser1'@'localhost';
+--error ER_NONEXISTING_GRANT
+SHOW GRANTS FOR 'metaSync_mix_ruser2'@'localhost';
+SELECT user, host FROM mysql.user WHERE user = 'metaSync_mix_ruser1';
+SELECT user, host FROM mysql.user WHERE user = 'metaSync_mix_ruser2';
+set server_ha_wait_sync_timeout = 0;
+
+connection conn1;
+set session server_ha_wait_sync_timeout = default;
+connection conn2;
+set session server_ha_wait_sync_timeout = default;
+
+--source include/uninstall_sequoiadb.inc
+--source suite/metadata_sync_sequoiadb/inc/insts_disconnect_sequoiadb.inc

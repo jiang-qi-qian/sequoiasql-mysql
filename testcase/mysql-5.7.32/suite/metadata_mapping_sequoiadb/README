@@ -1,0 +1,80 @@
+本地或 CI 执行元数据同步测试用例
+
+一、准备环境
+1、sequoiadb添加"SysMetaGroup"数据组，并添加数据节点，节点个数无限制
+
+2、初始化实例组
+示例：初始化 sql_group1 实例组，实例组名 和 key 可自定义，需要指定--data-group 数据组，--host 默认为 localhost:11810（根据实际情况配置）
+bin/ha_inst_group_init sql_group1 --verbose --key test --data-group group1
+bin/ha_inst_group_init sql_group2 --verbose --key test --data-group group2
+
+3、创建4个实例
+示例：创建实例 myinst1、myinst2、myinst3、myinst4，端口分别为 6101、6102、6103、6104
+bin/sdb_sql_ctl addinst myinst1 -p 6101 -D database/6101
+bin/sdb_sql_ctl addinst myinst2 -p 6102 -D database/6102
+
+bin/sdb_sql_ctl addinst myinst3 -p 6103 -D database/6103
+bin/sdb_sql_ctl addinst myinst4 -p 6104 -D database/6104
+
+4、添加实例到实例组，每个实例组添加2个实例
+示例：
+实例组1：
+bin/sdb_sql_ctl join myinst1 -g sql_group1 -k test
+bin/sdb_sql_ctl join myinst2 -g sql_group1 -k test
+实例组2：
+bin/sdb_sql_ctl join myinst3 -g sql_group2 -k test
+bin/sdb_sql_ctl join myinst4 -g sql_group2 -k test
+
+配置文件配置 sequoiadb_enable_mapping=on，重启实例生效
+
+5、查看实例组下实例元数据已同步（查看 SQLID 相同）
+> db.HAInstanceGroup_sql_group1.HAInstanceState.find()
+{
+  "InstanceID": 1,
+  "JoinID": 1,
+  "SQLID": 8,
+  ....
+}
+{
+  "InstanceID": 2,
+  "JoinID": 2,
+  "SQLID": 8,
+  ....
+}
+......
+
+6、添加用户并授权
+(用户名/密码以 sdbadmin / sdbadmin 为例)
+示例：
+1）分别在每个实例组下添加用户并授权
+在实例组1 myinst1、实例组2 myinst3下添加用户并授权，查看授权
+CREATE USER 'sdbadmin'@'%' IDENTIFIED BY 'sdbadmin';
+GRANT all on *.* TO 'sdbadmin'@'%' with grant option;
+SELECT user,host FROM mysql.user WHERE user = 'sdbadmin';
+
+2）其他实例查看用户元数据已同步
+SELECT user,host FROM mysql.user WHERE user = 'sdbadmin';
++----------+------+
+| user     | host |
++----------+------+
+| sdbadmin | %    |
++----------+------+
+1 row in set (0.00 sec)
+
+二、执行用例
+安装目录/mysql-test目录下执行用例
+./mysql-test-run.pl --suite=metadata_mapping_sequoiadb --meta-mapping-group1-addr=sdbserver1:6101,sdbserver2:6102 --meta-mapping-group2-addr=sdbserver1:6103,sdbserver2:6104 --meta-user=sdbadmin --meta-passwd=sdbadmin --retry=1 --retry-failure=1 --force --parallel=2
+
+说明：
+  测试套：metadata_mapping_sequoiadb
+  实例地址：
+     实例组1下实例地址：sdbserver1:6101,sdbserver2:6102
+     实例组2下实例地址：sdbserver1:6103,sdbserver2:6104
+  用户名/密码：sdbadmin / sdbadmin （同上述准备环境中步骤5）
+  --retry=1 --retry-failure=1，重试1次，失败重试1次
+  --force，失败不退出继续执行
+  --parallel=2，两个线程并发
+
+注意：
+实例地址主机名不能是 localhost，如localhost:6101，否则会连接失败报：failed: 1045: Access denied for user 'sdbadmin'@'localhost' (using password: YES)
+

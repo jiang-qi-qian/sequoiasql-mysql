@@ -1,0 +1,61 @@
+#seqDB-24688
+--source include/have_sequoiadb.inc
+--disable_warnings
+drop database if exists constraints_sequoiadb;
+--enable_warnings
+create database constraints_sequoiadb;
+drop database constraints_sequoiadb;
+create database constraints_sequoiadb;
+use constraints_sequoiadb;
+#主键约束测试
+create table t1(id int,name varchar(10),constraint t1_id_pk primary key(id));
+show create table t1;
+show index from t1;
+insert into t1 values(1,'sdbadmin');
+--error 1062
+insert into t1 values(1,'sequoiadb');
+--error 1364
+insert into t1(name) values('ssql');
+select * from t1;
+drop table t1;
+#唯一约束测试
+#单列唯一约束
+create table t2(id int auto_increment primary key,name varchar(10),email varchar(128),unique(email));
+show create table t2;
+show index from t2;
+insert into t2(name,email) values('libai','23456322@qq.com');
+--error 1062
+insert into t2(name,email) values('zhaoxin','23456322@qq.com');
+select * from t2;
+#多字段联合唯一约束
+create table t3(id int auto_increment primary key,name varchar(10),email varchar(128),unique(name,email));
+show create table t3;
+show index from t3;
+insert into t3(name,email) values('libai','23456322@qq.com');
+insert into t3(name,email) values('zhaoxin','23456322@qq.com');
+insert into t3(name,email) values('libai','77869322@qq.com');
+--error 1062
+insert into t3(name,email) values('zhaoxin','23456322@qq.com');
+select * from t3;
+drop table t3;
+#非空约束测试
+create table t4(id int primary key,name varchar(10) not null);
+show create table t4;
+insert into t4 values(1,'abc');
+--error 1364
+insert into t4(name) values('daqiao');
+--error 1364
+insert into t4(id) values(2);
+select * from t4;
+drop table t4;
+#默认值约束
+create table t5(id int auto_increment primary key,name varchar(10),email varchar(128) default 'sequoiadb.com');
+show create table t5;
+insert into t5(name,email) values('zhangj','qq.com');
+insert into t5(name) values('luwk');
+insert into t5(email) values('huawei.com');
+insert into t5(id) values(4);
+select * from t5;
+drop table t5;
+drop database constraints_sequoiadb;
+--source include/uninstall_sequoiadb.inc

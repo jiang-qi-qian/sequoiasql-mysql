@@ -1,0 +1,1 @@
+http://gitlab.sequoiadb.com/sequoiadb/mariadb/-/archive/v10.4.6-3.6-cgb/mariadb-v10.4.6-3.6-cgb.tar.gz

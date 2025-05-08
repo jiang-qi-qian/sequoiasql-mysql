@@ -1,0 +1,156 @@
+DROP TABLE IF EXISTS t1;
+DROP TABLE IF EXISTS t2;
+CREATE TABLE t1 (a INT, b CHAR(16), PRIMARY KEY(a));
+CREATE TABLE t2 (a INT, b CHAR(16), UNIQUE KEY(b));
+INSERT INTO t1 VALUES (1, 'a'),(2, 'b'),(3,'c');
+INSERT INTO t2 SELECT * FROM t1;
+SELECT * FROM t1;
+a	b
+1	a
+2	b
+3	c
+SELECT * FROM t2;
+a	b
+1	a
+2	b
+3	c
+INSERT IGNORE INTO t1 VALUES (1, 'aa'),(2, 'bb');
+Warnings:
+Warning	1062	2 duplicated records were ignored
+INSERT IGNORE INTO t2 VALUES (10, 'a'),(11, 'b');
+Warnings:
+Warning	1062	2 duplicated records were ignored
+SELECT * FROM t1;
+a	b
+1	a
+2	b
+3	c
+SELECT * FROM t2;
+a	b
+1	a
+2	b
+3	c
+DROP TABLE t1, t2;
+CREATE TABLE t1 (a INT, b CHAR(16));
+INSERT INTO t1 VALUES (1, 'a'),(2, 'b'),(3,'c');
+SELECT * FROM t1;
+a	b
+1	a
+2	b
+3	c
+INSERT IGNORE INTO t1 VALUES (1, 'a'),(2, 'b'),(10, 'aa'),(11, 'bb');
+SELECT * FROM t1;
+a	b
+1	a
+1	a
+10	aa
+11	bb
+2	b
+2	b
+3	c
+DROP TABLE t1;
+CREATE TABLE t1 (a INT, b CHAR(16), PRIMARY KEY(a));
+CREATE TABLE t2 (a INT, b CHAR(16), UNIQUE KEY(b));
+INSERT INTO t1 VALUES (1, 'a'),(2, 'b'),(3,'c');
+INSERT INTO t2 SELECT * FROM t1;
+SELECT * FROM t1;
+a	b
+1	a
+2	b
+3	c
+SELECT * FROM t2;
+a	b
+1	a
+2	b
+3	c
+REPLACE INTO t1 VALUES (1, 'aa'),(2, 'bb');
+SELECT * FROM t1;
+a	b
+1	aa
+2	bb
+3	c
+REPLACE INTO t1 SELECT * FROM t2;
+SELECT * FROM t1;
+a	b
+1	a
+2	b
+3	c
+REPLACE INTO t1 SET a = a + 1, b = 'update';
+SELECT * FROM t1;
+a	b
+1	update
+2	b
+3	c
+REPLACE INTO t2 VALUES (11, 'b'),(12, 'c');
+SELECT * FROM t2;
+a	b
+1	a
+11	b
+12	c
+REPLACE INTO t2 SELECT * FROM t1;
+SELECT * FROM t2;
+a	b
+1	a
+1	update
+2	b
+3	c
+REPLACE INTO t2 SET b = 'b', a = -1;
+SELECT * FROM t2;
+a	b
+-1	b
+1	a
+1	update
+3	c
+DROP TABLE t1,t2;
+CREATE TABLE t1 (a INT, b CHAR(16));
+CREATE TABLE t2 (a INT, b CHAR(16));
+INSERT INTO t1 VALUES (1, 'a'),(2, 'b'),(3,'c');
+INSERT INTO t2 SELECT * FROM t1;
+SELECT * FROM t1;
+a	b
+1	a
+2	b
+3	c
+REPLACE INTO t1 VALUES (1, 'a'),(2, 'b'),(4, 'd'),(5, 'e');
+SELECT * FROM t1;
+a	b
+1	a
+1	a
+2	b
+2	b
+3	c
+4	d
+5	e
+REPLACE INTO t1 SELECT * FROM t2;
+SELECT * FROM t1;
+a	b
+1	a
+1	a
+1	a
+2	b
+2	b
+2	b
+3	c
+3	c
+4	d
+5	e
+REPLACE INTO t1 SET b = 'b', a = -1;
+SELECT * FROM t1;
+a	b
+-1	b
+1	a
+1	a
+1	a
+2	b
+2	b
+2	b
+3	c
+3	c
+4	d
+5	e
+SELECT * FROM t2;
+a	b
+1	a
+2	b
+3	c
+DROP TABLE t1,t2;

@@ -1,0 +1,1716 @@
+DROP DATABASE IF EXISTS autocommit_pushdown_sequoiadb;
+CREATE DATABASE autocommit_pushdown_sequoiadb;
+DROP DATABASE autocommit_pushdown_sequoiadb;
+CREATE DATABASE autocommit_pushdown_sequoiadb;
+USE autocommit_pushdown_sequoiadb;
+SET NAMES utf8mb4;
+SET SESSION collation_connection='utf8mb4_bin';
+SET SESSION optimizer_switch = 'mrr=on,index_merge_intersection=on';
+SET SESSION autocommit = ON;
+SET SESSION sequoiadb_debug_log = ON;
+CREATE TABLE `t1` (
+`col_date` date DEFAULT NULL,
+`col_varchar_16` varchar(16) COLLATE utf8mb4_bin DEFAULT NULL,
+`pk` int(11) NOT NULL AUTO_INCREMENT,
+`col_int` int(11) DEFAULT NULL,
+PRIMARY KEY (`pk`),
+KEY col_int(`col_int`),
+KEY col_varchar_16(`col_varchar_16`),
+KEY multi_key(`col_varchar_16`, `col_int`)
+) ENGINE=SequoiaDB AUTO_INCREMENT=1001 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin;
+INSERT INTO `t1` VALUES ('2003-11-18',NULL,1,3),
+('2005-01-14','n',2,NULL),
+('2005-02-05','p',3,-657588224),
+(NULL,'e',4,NULL),
+('2008-12-05','q',5,NULL),
+(NULL,'s',6,-361234432),
+('2000-07-20','here',7,5),
+(NULL,'v',8,1103495168),
+(NULL,'l',9,NULL),
+(NULL,'u',10,2),
+('2000-07-17',NULL,11,-403374080),
+('2001-05-02',NULL,12,NULL),
+('2001-04-06','c',13,2),
+('2008-04-24','going',14,0),
+(NULL,'me',15,8),
+(NULL,'c',16,NULL),
+('2008-08-25','u',17,2),
+('2002-02-11',NULL,18,0),
+('2001-09-08','good',19,4),
+('2000-04-08','be',20,5),
+('2000-02-24','v',21,1287127040),
+('2001-11-08',NULL,22,2),
+('2007-12-07',NULL,23,9),
+('2003-04-28','q',24,-932839424),
+('2006-10-12','m',25,-51904512),
+('2003-04-03','his',26,NULL),
+('2002-11-13','okay',27,7),
+(NULL,'now',28,7),
+('2001-09-03','z',29,818216960),
+('2002-07-26','x',30,-1557659648),
+(NULL,'r',31,NULL),
+(NULL,NULL,32,109838336),
+('2009-09-12','l',33,0),
+('2003-06-16','i',34,1290993664),
+('2003-12-10','u',35,NULL),
+('2002-08-20','m',36,5),
+('2009-02-22','n',37,2),
+('2002-10-13','it',38,2),
+('2009-09-26','n',39,3),
+('2009-02-13',NULL,40,NULL),
+('2006-09-04','l',41,9),
+('2007-02-11','a',42,NULL),
+(NULL,NULL,43,NULL),
+('2005-10-08','g',44,NULL),
+('2008-11-13','w',45,8),
+('2005-04-21','w',46,5),
+('2005-05-12','q',47,-2067595264),
+('2007-10-01','go',48,1611137024),
+(NULL,'up',49,6),
+('2008-05-16','mean',50,4),
+('2002-07-23','r',51,NULL),
+(NULL,'n',52,8),
+('2001-06-05','u',53,2),
+('2002-12-04','s',54,NULL),
+(NULL,'x',55,NULL),
+('2007-10-17','her',56,5),
+('2008-11-09','w',57,4),
+('2003-02-19','v',58,6),
+('2006-07-26','h',59,1),
+('2007-03-08','t',60,1),
+('2001-11-23','u',61,9),
+('2000-03-28','r',62,NULL),
+('2009-11-12','j',63,NULL),
+('2005-12-16',NULL,64,-2044526592),
+('2002-11-18','y',65,9),
+('2004-08-20','the',66,-511508480),
+('2007-04-19','p',67,980746240),
+('2003-01-12',NULL,68,4),
+('2004-09-25','l',69,8),
+(NULL,NULL,70,NULL),
+('2006-02-06',NULL,71,9),
+('2009-02-20',NULL,72,6),
+('2008-08-01','when',73,8),
+('2008-08-08','n',74,8),
+('2006-03-06','l',75,8),
+('2002-07-17','q',76,2),
+(NULL,NULL,77,NULL),
+('2009-08-14',NULL,78,3),
+(NULL,'will',79,NULL),
+('2006-02-02','o',80,9),
+('2001-12-19','q',81,0),
+('2008-08-15','o',82,3),
+('2006-04-15','w',83,2),
+('2003-11-06','r',84,5),
+('2007-04-10','yes',85,NULL),
+(NULL,'now',86,1),
+('2002-07-03','u',87,5),
+(NULL,'u',88,NULL),
+('2007-02-08','d',89,235667456),
+(NULL,NULL,90,NULL),
+('2008-06-27',NULL,91,1),
+('2002-12-19','g',92,5),
+(NULL,'there',93,5),
+(NULL,'m',94,8),
+('2002-06-05',NULL,95,1),
+(NULL,'don\'t',96,NULL),
+('2009-04-20','i',97,4),
+('2005-10-11','l',98,4),
+(NULL,'e',99,2),
+('2002-08-24',NULL,100,NULL),
+('2007-08-08',NULL,101,-1187512320),
+(NULL,'b',102,533135360),
+('2009-04-24','just',103,8),
+('2006-05-17','e',104,9),
+('2000-09-13','s',105,9),
+(NULL,'u',106,2),
+(NULL,'up',107,8),
+('2005-06-14','m',108,-224722944),
+('2000-02-25','from',109,-241106944),
+(NULL,'e',110,253755392),
+('2008-10-23','oh',111,7),
+('2008-11-07','f',112,NULL),
+('2008-07-24',NULL,113,NULL),
+('2006-04-01',NULL,114,NULL),
+('2007-04-14','been',115,1639907328),
+('2006-05-27','u',116,2066415616),
+('2008-01-13',NULL,117,3),
+(NULL,'y',118,NULL),
+('2008-10-01','see',119,NULL),
+(NULL,'w',120,2),
+('2008-10-19',NULL,121,-672268288),
+('2000-09-02','f',122,-1014300672),
+('2004-09-12','h',123,NULL),
+('2004-09-14','j',124,3),
+('2004-06-18','z',125,3),
+('2001-09-14','s',126,3),
+('2000-10-25',NULL,127,NULL),
+('2004-03-01','m',128,5),
+('2004-11-16','f',129,8),
+(NULL,'a',130,-1399062528),
+(NULL,'w',131,2),
+('2005-07-02','because',132,7),
+('2006-12-19','did',133,0),
+('2001-02-26','p',134,-1171193856),
+(NULL,NULL,135,1857486848),
+('2000-07-05','i',136,NULL),
+('2005-02-25','the',137,1),
+('2006-02-04','there',138,4),
+(NULL,'I\'ll',139,6),
+(NULL,'v',140,-325976064),
+('2001-07-20','k',141,8),
+('2001-07-12','l',142,8),
+('2001-03-04','your',143,7),
+('2009-11-27',NULL,144,NULL),
+('2001-02-26','e',145,0),
+('2003-07-20','who',146,4),
+('2004-06-25',NULL,147,3),
+(NULL,'her',148,-1692270592),
+('2006-02-12','v',149,1),
+('2009-03-04','you\'re',150,NULL),
+('2009-01-07',NULL,151,-277544960),
+('2007-09-19','j',152,NULL),
+('2000-11-03','as',153,NULL),
+('2003-03-03','o',154,4),
+(NULL,'t',155,9),
+('2007-06-20','r',156,2),
+('2009-02-02','n',157,3),
+('2002-04-02','i',158,NULL),
+('2006-04-17','x',159,2),
+('2001-07-09','d',160,5767168),
+('2003-05-14','r',161,1),
+('2000-10-27','i',162,7),
+('2001-10-15','k',163,4),
+('2001-12-20','d',164,4),
+('2004-09-25','l',165,-533528576),
+('2005-12-02',NULL,166,-429522944),
+('2004-10-05','of',167,3),
+('2002-08-27','j',168,1),
+('2000-12-06','why',169,611450880),
+('2002-12-03','x',170,-1583284224),
+('2009-11-04','o',171,NULL),
+('2009-11-05','z',172,2),
+('2002-12-15','i',173,2),
+('2000-03-01',NULL,174,4),
+(NULL,NULL,175,5),
+('2001-07-15','then',176,1),
+('2005-09-13','u',177,-1968373760),
+('2000-11-19','she',178,NULL),
+(NULL,'k',179,1044905984),
+('2006-03-17','l',180,3),
+('2002-03-20','ok',181,359530496),
+('2000-11-05','o',182,1526530048),
+('2002-08-10','p',183,NULL),
+('2003-05-22','u',184,7),
+('2000-05-22','on',185,-905707520),
+('2004-12-01','be',186,0),
+('2008-08-27','d',187,-154402816),
+('2000-08-26','would',188,9),
+(NULL,'z',189,-1744371712),
+(NULL,'h',190,NULL),
+('2000-12-21','about',191,8),
+('2000-04-28','h',192,2121400320),
+('2005-04-03','y',193,3),
+('2008-03-15','I\'m',194,-1553399808),
+('2009-04-26','c',195,3),
+('2003-10-18','with',196,-549126144),
+('2001-10-25','k',197,7),
+('2009-02-12','c',198,4),
+(NULL,'u',199,2),
+('2003-12-23','c',200,7);
+CREATE TABLE t2 LIKE t1;
+INSERT INTO t2 SELECT * FROM t1;
+create table range_part_table(
+col1 int,
+col2 varchar(128),
+col3 datetime,
+col4 int,
+key idx_col1(col1),
+key idx_col2(col2),
+key idx_col1_2(col1,col2)
+)
+partition by range columns (col1)
+subpartition by key (col4)
+subpartitions 2 (
+partition p0 values less than (4),
+partition p1 values less than (7),
+partition p2 values less than (11));
+insert into range_part_table values (3,'str3','2023-02-03 15:15:15',33),(6,null,null,88),(8,null,null,66),(7,'str7','2023-02-07 15:35:35',77),(1,'str1','2023-02-01 15:05:05',11),(9,'str3','2023-02-09 15:45:45',99),(4,'str4','2023-02-04 15:20:20',44),(2,'str2','2023-02-02 15:10:10',22),(5,'str5','2023-02-05 15:25:25',55),(6,'str6','2023-02-06 15:30:15',66),(8,'str8','2023-02-08 15:40:40',88);
+select high_priority * from t1 where pk = 1;
+col_date	col_varchar_16	pk	col_int
+2003-11-18	NULL	1	3
+[Note] Testcase: Operation log begin
+[Note] SequoiaDB: optimizer pushdown autocommit: 1
+[Note] SequoiaDB: Query message: condition[{ "pk": { "$et": 1 } }], selector[{}], order_by[{}], hint[{ "": "PRIMARY" }], limit[-1], offset[0], table[autocommit_pushdown_sequoiadb.t1]
+select sql_small_result * from t1 where pk = 1;
+col_date	col_varchar_16	pk	col_int
+2003-11-18	NULL	1	3
+[Note] Testcase: Operation log begin
+[Note] SequoiaDB: optimizer pushdown autocommit: 1
+[Note] SequoiaDB: Query message: condition[{ "pk": { "$et": 1 } }], selector[{}], order_by[{}], hint[{ "": "PRIMARY" }], limit[-1], offset[0], table[autocommit_pushdown_sequoiadb.t1]
+select sql_big_result * from t1 where pk = 1;
+col_date	col_varchar_16	pk	col_int
+2003-11-18	NULL	1	3
+[Note] Testcase: Operation log begin
+[Note] SequoiaDB: optimizer pushdown autocommit: 1
+[Note] SequoiaDB: Query message: condition[{ "pk": { "$et": 1 } }], selector[{}], order_by[{}], hint[{ "": "PRIMARY" }], limit[-1], offset[0], table[autocommit_pushdown_sequoiadb.t1]
+select sql_buffer_result * from t1 where pk = 1;
+col_date	col_varchar_16	pk	col_int
+2003-11-18	NULL	1	3
+[Note] Testcase: Operation log begin
+[Note] SequoiaDB: optimizer pushdown autocommit: 1
+[Note] SequoiaDB: Query message: condition[{ "pk": { "$et": 1 } }], selector[{}], order_by[{}], hint[{ "": "PRIMARY" }], limit[-1], offset[0], table[autocommit_pushdown_sequoiadb.t1]
+select sql_cache * from t1 where pk = 1;
+col_date	col_varchar_16	pk	col_int
+2003-11-18	NULL	1	3
+Warnings:
+Warning	1681	'SQL_CACHE' is deprecated and will be removed in a future release.
+[Note] Testcase: Operation log begin
+[Note] SequoiaDB: optimizer pushdown autocommit: 1
+[Note] SequoiaDB: Query message: condition[{ "pk": { "$et": 1 } }], selector[{}], order_by[{}], hint[{ "": "PRIMARY" }], limit[-1], offset[0], table[autocommit_pushdown_sequoiadb.t1]
+select sql_no_cache * from t1 where pk = 1;
+col_date	col_varchar_16	pk	col_int
+2003-11-18	NULL	1	3
+Warnings:
+Warning	1681	'SQL_NO_CACHE' is deprecated and will be removed in a future release.
+[Note] Testcase: Operation log begin
+[Note] SequoiaDB: optimizer pushdown autocommit: 1
+[Note] SequoiaDB: Query message: condition[{ "pk": { "$et": 1 } }], selector[{}], order_by[{}], hint[{ "": "PRIMARY" }], limit[-1], offset[0], table[autocommit_pushdown_sequoiadb.t1]
+select sql_calc_found_rows * from t1 where pk = 1;
+col_date	col_varchar_16	pk	col_int
+2003-11-18	NULL	1	3
+[Note] Testcase: Operation log begin
+[Note] SequoiaDB: optimizer pushdown autocommit: 1
+[Note] SequoiaDB: Query message: condition[{ "pk": { "$et": 1 } }], selector[{}], order_by[{}], hint[{ "": "PRIMARY" }], limit[-1], offset[0], table[autocommit_pushdown_sequoiadb.t1]
+select * from t1 use index (col_int) where col_int = 1;
+col_date	col_varchar_16	pk	col_int
+2001-07-15	then	176	1
+2002-06-05	NULL	95	1
+2002-08-27	j	168	1
+2003-05-14	r	161	1
+2005-02-25	the	137	1
+2006-02-12	v	149	1
+2006-07-26	h	59	1
+2007-03-08	t	60	1
+2008-06-27	NULL	91	1
+NULL	now	86	1
+[Note] Testcase: Operation log begin
+[Note] SequoiaDB: optimizer pushdown autocommit: 1
+[Note] SequoiaDB: Query message: condition[{ "col_int": { "$et": 1 } }], selector[{}], order_by[{}], hint[{ "": "col_int" }], limit[-1], offset[0], table[autocommit_pushdown_sequoiadb.t1]
+select * from t1 ignore index (col_int) where pk = 1;
+col_date	col_varchar_16	pk	col_int
+2003-11-18	NULL	1	3
+[Note] Testcase: Operation log begin
+[Note] SequoiaDB: optimizer pushdown autocommit: 1
+[Note] SequoiaDB: Query message: condition[{ "pk": { "$et": 1 } }], selector[{}], order_by[{}], hint[{ "": "PRIMARY" }], limit[-1], offset[0], table[autocommit_pushdown_sequoiadb.t1]
+select * from t1 force index (col_int) where pk = 1;
+col_date	col_varchar_16	pk	col_int
+2003-11-18	NULL	1	3
+[Note] Testcase: Operation log begin
+[Note] SequoiaDB: optimizer pushdown autocommit: 1
+[Note] SequoiaDB: Query message: condition[{ "pk": { "$et": 1 } }], selector[{}], order_by[{}], hint[{}], limit[-1], offset[0], table[autocommit_pushdown_sequoiadb.t1]
+select straight_join * from t1,t2 where t1.pk = 1 and t2.pk = 1;
+col_date	col_varchar_16	pk	col_int	col_date	col_varchar_16	pk	col_int
+2003-11-18	NULL	1	3	2003-11-18	NULL	1	3
+[Note] Testcase: Operation log begin
+[Note] SequoiaDB: Query message: condition[{ "pk": { "$et": 1 } }], selector[{}], order_by[{ "pk": 1 }], hint[{ "": "PRIMARY" }], limit[-1], offset[0], table[autocommit_pushdown_sequoiadb.t1]
+[Note] SequoiaDB: Query message: condition[{ "pk": { "$et": 1 } }], selector[{}], order_by[{ "pk": 1 }], hint[{ "": "PRIMARY" }], limit[-1], offset[0], table[autocommit_pushdown_sequoiadb.t2]
+select * from range_part_table partition (p0) where col1 = 3;
+col1	col2	col3	col4
+3	str3	2023-02-03 15:15:15	33
+[Note] Testcase: Operation log begin
+[Note] SequoiaDB: optimizer pushdown autocommit: 1
+[Note] SequoiaDB: Query message: condition[{ "$and": [ { "$and": [ { "col1": { "$lt": 4 } } ] }, { "col1": { "$et": 3 } } ] }], selector[{}], order_by[{}], hint[{ "": "idx_col1" }], limit[-1], offset[0], table[autocommit_pushdown_sequoiadb.range_part_table]
+SELECT * FROM t1 WHERE pk <= 5 FOR UPDATE;
+col_date	col_varchar_16	pk	col_int
+2003-11-18	NULL	1	3
+2005-01-14	n	2	NULL
+2005-02-05	p	3	-657588224
+NULL	e	4	NULL
+2008-12-05	q	5	NULL
+[Note] Testcase: Operation log begin
+[Note] SequoiaDB: Query message: condition[{ "pk": { "$lte": 5 } }], selector[{}], order_by[{}], hint[{}], limit[-1], offset[0], table[autocommit_pushdown_sequoiadb.t1]
+SELECT * FROM t1 WHERE pk <= 5 LOCK IN SHARE MODE;
+col_date	col_varchar_16	pk	col_int
+2003-11-18	NULL	1	3
+2005-01-14	n	2	NULL
+2005-02-05	p	3	-657588224
+NULL	e	4	NULL
+2008-12-05	q	5	NULL
+[Note] Testcase: Operation log begin
+[Note] SequoiaDB: Query message: condition[{ "pk": { "$lte": 5 } }], selector[{}], order_by[{}], hint[{}], limit[-1], offset[0], table[autocommit_pushdown_sequoiadb.t1]
+SELECT * FROM t1 WHERE pk < 3 limit 1;
+col_date	col_varchar_16	pk	col_int
+2003-11-18	NULL	1	3
+[Note] Testcase: Operation log begin
+[Note] SequoiaDB: optimizer pushdown autocommit: 1
+[Note] SequoiaDB: Query message: condition[{ "pk": { "$lt": 3 } }], selector[{}], order_by[{}], hint[{ "": "PRIMARY" }], limit[1], offset[0], table[autocommit_pushdown_sequoiadb.t1]
+SELECT * FROM t1 WHERE pk < 3 limit 1,1;
+col_date	col_varchar_16	pk	col_int
+2005-01-14	n	2	NULL
+[Note] Testcase: Operation log begin
+[Note] SequoiaDB: optimizer pushdown autocommit: 1
+[Note] SequoiaDB: Query message: condition[{ "pk": { "$lt": 3 } }], selector[{}], order_by[{}], hint[{ "": "PRIMARY" }], limit[1], offset[1], table[autocommit_pushdown_sequoiadb.t1]
+SELECT * FROM t1 WHERE pk < 3 limit 1 offset 1;
+col_date	col_varchar_16	pk	col_int
+2005-01-14	n	2	NULL
+[Note] Testcase: Operation log begin
+[Note] SequoiaDB: optimizer pushdown autocommit: 1
+[Note] SequoiaDB: Query message: condition[{ "pk": { "$lt": 3 } }], selector[{}], order_by[{}], hint[{ "": "PRIMARY" }], limit[1], offset[1], table[autocommit_pushdown_sequoiadb.t1]
+select  * from t1 where pk < 2 into outfile '$MYSQL_TEST_DIR/../autocommit_outfile.txt';
+[Note] Testcase: Operation log begin
+[Note] SequoiaDB: optimizer pushdown autocommit: 1
+[Note] SequoiaDB: Query message: condition[{ "pk": { "$lt": 2 } }], selector[{}], order_by[{}], hint[{}], limit[-1], offset[0], table[autocommit_pushdown_sequoiadb.t1]
+select * from t1 where pk < 2 into dumpfile '$MYSQL_TEST_DIR/../autocommit_dumpfile.txt';
+[Note] Testcase: Operation log begin
+[Note] SequoiaDB: optimizer pushdown autocommit: 1
+[Note] SequoiaDB: Query message: condition[{ "pk": { "$lt": 2 } }], selector[{}], order_by[{}], hint[{}], limit[-1], offset[0], table[autocommit_pushdown_sequoiadb.t1]
+set @c=0;
+select col_int from t1 where pk = 1 into @c;
+[Note] Testcase: Operation log begin
+[Note] SequoiaDB: optimizer pushdown autocommit: 1
+[Note] SequoiaDB: Query message: condition[{ "pk": { "$et": 1 } }], selector[{}], order_by[{}], hint[{ "": "PRIMARY" }], limit[-1], offset[0], table[autocommit_pushdown_sequoiadb.t1]
+EXPLAIN select pk from t1 order by pk limit 1;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	index	NULL	PRIMARY	4	NULL	1	100.00	Using index
+select pk from t1 order by pk limit 1;
+pk
+1
+[Note] Testcase: Operation log begin
+[Note] SequoiaDB: optimizer pushdown autocommit: 1
+[Note] SequoiaDB: Query message: condition[{}], selector[{ "pk": null }], order_by[{ "pk": 1 }], hint[{ "": "PRIMARY" }], limit[1], offset[0], table[autocommit_pushdown_sequoiadb.t1]
+EXPLAIN SELECT * FROM t1 WHERE col_int = 777;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	ref	col_int	col_int	5	const	2	100.00	NULL
+SELECT * FROM t1 WHERE col_int = 777;
+col_date	col_varchar_16	pk	col_int
+[Note] Testcase: Operation log begin
+[Note] SequoiaDB: optimizer pushdown autocommit: 1
+[Note] SequoiaDB: Query message: condition[{ "col_int": { "$et": 777 } }], selector[{}], order_by[{}], hint[{ "": "col_int" }], limit[-1], offset[0], table[autocommit_pushdown_sequoiadb.t1]
+EXPLAIN SELECT * FROM t1 WHERE col_int = 6 OR col_int IS NULL;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	ref_or_null	col_int	col_int	5	const	4	100.00	Using where with pushed condition ((`autocommit_pushdown_sequoiadb`.`t1`.`col_int` = 6) or isnull(`autocommit_pushdown_sequoiadb`.`t1`.`col_int`))
+SELECT * FROM t1 WHERE col_int = 6 OR col_int IS NULL;
+col_date	col_varchar_16	pk	col_int
+2000-03-28	r	62	NULL
+2000-07-05	i	136	NULL
+2000-10-25	NULL	127	NULL
+2000-11-03	as	153	NULL
+2000-11-19	she	178	NULL
+2001-05-02	NULL	12	NULL
+2002-04-02	i	158	NULL
+2002-07-23	r	51	NULL
+2002-08-10	p	183	NULL
+2002-08-24	NULL	100	NULL
+2002-12-04	s	54	NULL
+2003-02-19	v	58	6
+2003-04-03	his	26	NULL
+2003-12-10	u	35	NULL
+2004-09-12	h	123	NULL
+2005-01-14	n	2	NULL
+2005-10-08	g	44	NULL
+2006-04-01	NULL	114	NULL
+2007-02-11	a	42	NULL
+2007-04-10	yes	85	NULL
+2007-09-19	j	152	NULL
+2008-07-24	NULL	113	NULL
+2008-10-01	see	119	NULL
+2008-11-07	f	112	NULL
+2008-12-05	q	5	NULL
+2009-02-13	NULL	40	NULL
+2009-02-20	NULL	72	6
+2009-03-04	you're	150	NULL
+2009-11-04	o	171	NULL
+2009-11-12	j	63	NULL
+2009-11-27	NULL	144	NULL
+NULL	I'll	139	6
+NULL	NULL	43	NULL
+NULL	NULL	70	NULL
+NULL	NULL	77	NULL
+NULL	NULL	90	NULL
+NULL	c	16	NULL
+NULL	don't	96	NULL
+NULL	e	4	NULL
+NULL	h	190	NULL
+NULL	l	9	NULL
+NULL	r	31	NULL
+NULL	u	88	NULL
+NULL	up	49	6
+NULL	will	79	NULL
+NULL	x	55	NULL
+NULL	y	118	NULL
+[Note] Testcase: Operation log begin
+[Note] SequoiaDB: Query message: condition[{ "col_int": { "$et": 6 } }], selector[{}], order_by[{}], hint[{ "": "col_int" }], limit[-1], offset[0], table[autocommit_pushdown_sequoiadb.t1]
+[Note] SequoiaDB: Query message: condition[{ "col_int": { "$isnull": 1 } }], selector[{}], order_by[{}], hint[{ "": "col_int" }], limit[-1], offset[0], table[autocommit_pushdown_sequoiadb.t1]
+/* default */
+/* single request */
+EXPLAIN SELECT * FROM t1 WHERE col_int BETWEEN 1 AND 3;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	range	col_int	col_int	5	NULL	2	100.00	Using where with pushed condition (`autocommit_pushdown_sequoiadb`.`t1`.`col_int` between 1 and 3)
+SELECT * FROM t1 WHERE col_int BETWEEN 1 AND 3;
+col_date	col_varchar_16	pk	col_int
+2001-04-06	c	13	2
+2001-06-05	u	53	2
+2001-07-15	then	176	1
+2001-09-14	s	126	3
+2001-11-08	NULL	22	2
+2002-06-05	NULL	95	1
+2002-07-17	q	76	2
+2002-08-27	j	168	1
+2002-10-13	it	38	2
+2002-12-15	i	173	2
+2003-05-14	r	161	1
+2003-11-18	NULL	1	3
+2004-06-18	z	125	3
+2004-06-25	NULL	147	3
+2004-09-14	j	124	3
+2004-10-05	of	167	3
+2005-02-25	the	137	1
+2005-04-03	y	193	3
+2006-02-12	v	149	1
+2006-03-17	l	180	3
+2006-04-15	w	83	2
+2006-04-17	x	159	2
+2006-07-26	h	59	1
+2007-03-08	t	60	1
+2007-06-20	r	156	2
+2008-01-13	NULL	117	3
+2008-06-27	NULL	91	1
+2008-08-15	o	82	3
+2008-08-25	u	17	2
+2009-02-02	n	157	3
+2009-02-22	n	37	2
+2009-04-26	c	195	3
+2009-08-14	NULL	78	3
+2009-09-26	n	39	3
+2009-11-05	z	172	2
+NULL	e	99	2
+NULL	now	86	1
+NULL	u	10	2
+NULL	u	106	2
+NULL	u	199	2
+NULL	w	120	2
+NULL	w	131	2
+[Note] Testcase: Operation log begin
+[Note] SequoiaDB: optimizer pushdown autocommit: 1
+[Note] SequoiaDB: Query message: condition[{ "$and": [ { "col_int": { "$gte": 1 } }, { "col_int": { "$lte": 3 } } ] }], selector[{}], order_by[{}], hint[{ "": "col_int" }], limit[-1], offset[0], table[autocommit_pushdown_sequoiadb.t1]
+/* multi request */
+SET SESSION optimizer_switch = 'mrr=off';
+EXPLAIN SELECT * FROM t1 WHERE col_varchar_16 IN ('abc', 'bce');
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	range	col_varchar_16,multi_key	col_varchar_16	67	NULL	4	100.00	Using where with pushed condition (`autocommit_pushdown_sequoiadb`.`t1`.`col_varchar_16` in ('abc','bce'))
+SELECT * FROM t1 WHERE col_varchar_16 IN ('abc', 'bce');
+col_date	col_varchar_16	pk	col_int
+[Note] Testcase: Operation log begin
+[Note] SequoiaDB: Query message: condition[{ "$and": [ { "col_varchar_16": { "$in": [ "abc", "bce" ] } }, { "col_varchar_16": { "$et": "abc" } } ] }], selector[{}], order_by[{}], hint[{ "": "col_varchar_16" }], limit[-1], offset[0], table[autocommit_pushdown_sequoiadb.t1]
+[Note] SequoiaDB: Query message: condition[{ "$and": [ { "col_varchar_16": { "$in": [ "abc", "bce" ] } }, { "col_varchar_16": { "$et": "bce" } } ] }], selector[{}], order_by[{}], hint[{ "": "col_varchar_16" }], limit[-1], offset[0], table[autocommit_pushdown_sequoiadb.t1]
+SET SESSION optimizer_switch = 'mrr=on';
+/* Using MRR  */
+EXPLAIN SELECT * FROM t1 WHERE col_varchar_16 IN ('abc', 'bce');
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	range	col_varchar_16,multi_key	col_varchar_16	67	NULL	4	100.00	Using where with pushed condition (`autocommit_pushdown_sequoiadb`.`t1`.`col_varchar_16` in ('abc','bce')); Using MRR
+SELECT * FROM t1 WHERE col_varchar_16 IN ('abc', 'bce');
+col_date	col_varchar_16	pk	col_int
+[Note] Testcase: Operation log begin
+[Note] SequoiaDB: optimizer pushdown autocommit: 1
+[Note] SequoiaDB: Query message: condition[{ "col_varchar_16": { "$in": [ "abc", "bce" ] } }], selector[{}], order_by[{}], hint[{ "": "col_varchar_16" }], limit[-1], offset[0], table[autocommit_pushdown_sequoiadb.t1]
+EXPLAIN SELECT * FROM t1 WHERE col_int IN (1, 2, 3);
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	range	col_int	col_int	5	NULL	6	100.00	Using where with pushed condition (`autocommit_pushdown_sequoiadb`.`t1`.`col_int` in (1,2,3)); Using MRR
+SELECT * FROM t1 WHERE col_int IN (1, 2, 3);
+col_date	col_varchar_16	pk	col_int
+2001-04-06	c	13	2
+2001-06-05	u	53	2
+2001-07-15	then	176	1
+2001-09-14	s	126	3
+2001-11-08	NULL	22	2
+2002-06-05	NULL	95	1
+2002-07-17	q	76	2
+2002-08-27	j	168	1
+2002-10-13	it	38	2
+2002-12-15	i	173	2
+2003-05-14	r	161	1
+2003-11-18	NULL	1	3
+2004-06-18	z	125	3
+2004-06-25	NULL	147	3
+2004-09-14	j	124	3
+2004-10-05	of	167	3
+2005-02-25	the	137	1
+2005-04-03	y	193	3
+2006-02-12	v	149	1
+2006-03-17	l	180	3
+2006-04-15	w	83	2
+2006-04-17	x	159	2
+2006-07-26	h	59	1
+2007-03-08	t	60	1
+2007-06-20	r	156	2
+2008-01-13	NULL	117	3
+2008-06-27	NULL	91	1
+2008-08-15	o	82	3
+2008-08-25	u	17	2
+2009-02-02	n	157	3
+2009-02-22	n	37	2
+2009-04-26	c	195	3
+2009-08-14	NULL	78	3
+2009-09-26	n	39	3
+2009-11-05	z	172	2
+NULL	e	99	2
+NULL	now	86	1
+NULL	u	10	2
+NULL	u	106	2
+NULL	u	199	2
+NULL	w	120	2
+NULL	w	131	2
+[Note] Testcase: Operation log begin
+[Note] SequoiaDB: optimizer pushdown autocommit: 1
+[Note] SequoiaDB: Query message: condition[{ "col_int": { "$in": [ 1, 2, 3 ] } }], selector[{}], order_by[{}], hint[{ "": "col_int" }], limit[-1], offset[0], table[autocommit_pushdown_sequoiadb.t1]
+EXPLAIN SELECT * FROM t1 WHERE col_int BETWEEN 10 AND 11 OR col_int BETWEEN 77 AND 78;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	range	col_int	col_int	5	NULL	4	100.00	Using where with pushed condition ((`autocommit_pushdown_sequoiadb`.`t1`.`col_int` between 10 and 11) or (`autocommit_pushdown_sequoiadb`.`t1`.`col_int` between 77 and 78)); Using MRR
+SELECT * FROM t1 WHERE col_int BETWEEN 10 AND 11 OR col_int BETWEEN 77 AND 78;
+col_date	col_varchar_16	pk	col_int
+[Note] Testcase: Operation log begin
+[Note] SequoiaDB: optimizer pushdown autocommit: 1
+[Note] SequoiaDB: Query message: condition[{ "$or": [ { "$and": [ { "col_int": { "$gte": 10 } }, { "col_int": { "$lte": 11 } } ] }, { "$and": [ { "col_int": { "$gte": 77 } }, { "col_int": { "$lte": 78 } } ] } ] }], selector[{}], order_by[{}], hint[{ "$Range": { "IsAllEqual": false, "IndexValueIncluded": [ [ true, true ], [ true, true ] ], "PrefixNum": [ 1, 1 ], "IndexValue": [ [ { "1": 10 }, { "1": 11 } ], [ { "1": 77 }, { "1": 78 } ] ] }, "": "col_int" }], limit[-1], offset[0], table[autocommit_pushdown_sequoiadb.t1]
+/* Using MRR (desc) */
+EXPLAIN SELECT * FROM t1 WHERE col_int IN (1, 3) ORDER BY col_int DESC;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	range	col_int	col_int	5	NULL	4	100.00	Using where with pushed condition (`autocommit_pushdown_sequoiadb`.`t1`.`col_int` in (1,3))
+SELECT * FROM t1 WHERE col_int IN (1, 3) ORDER BY col_int DESC;
+col_date	col_varchar_16	pk	col_int
+2001-07-15	then	176	1
+2001-09-14	s	126	3
+2002-06-05	NULL	95	1
+2002-08-27	j	168	1
+2003-05-14	r	161	1
+2003-11-18	NULL	1	3
+2004-06-18	z	125	3
+2004-06-25	NULL	147	3
+2004-09-14	j	124	3
+2004-10-05	of	167	3
+2005-02-25	the	137	1
+2005-04-03	y	193	3
+2006-02-12	v	149	1
+2006-03-17	l	180	3
+2006-07-26	h	59	1
+2007-03-08	t	60	1
+2008-01-13	NULL	117	3
+2008-06-27	NULL	91	1
+2008-08-15	o	82	3
+2009-02-02	n	157	3
+2009-04-26	c	195	3
+2009-08-14	NULL	78	3
+2009-09-26	n	39	3
+NULL	now	86	1
+[Note] Testcase: Operation log begin
+[Note] SequoiaDB: Query message: condition[{ "$and": [ { "col_int": { "$in": [ 1, 3 ] } }, { "col_int": { "$et": 3 } } ] }], selector[{}], order_by[{ "col_int": 1 }], hint[{ "": "col_int" }], limit[-1], offset[0], table[autocommit_pushdown_sequoiadb.t1]
+[Note] SequoiaDB: Query message: condition[{ "$and": [ { "col_int": { "$in": [ 1, 3 ] } }, { "col_int": { "$et": 1 } } ] }], selector[{}], order_by[{ "col_int": 1 }], hint[{ "": "col_int" }], limit[-1], offset[0], table[autocommit_pushdown_sequoiadb.t1]
+/* Using index for group-by */
+EXPLAIN SELECT col_varchar_16, MIN(col_int) FROM t1 WHERE col_varchar_16 <= "I'll" GROUP BY col_varchar_16;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	range	col_varchar_16,multi_key	multi_key	72	NULL	7	100.00	Using where with pushed condition (`autocommit_pushdown_sequoiadb`.`t1`.`col_varchar_16` <= 'I\'ll'); Using index for group-by
+SELECT col_varchar_16, MIN(col_int) FROM t1 WHERE col_varchar_16 <= "I'll" GROUP BY col_varchar_16;
+col_varchar_16	MIN(col_int)
+I'll	6
+[Note] Testcase: Operation log begin
+[Note] SequoiaDB: Query message: condition[{ "col_varchar_16": { "$lte": "I'll" } }], selector[{}], order_by[{ "col_varchar_16": -1, "col_int": -1 }], hint[{ "": "multi_key" }], limit[-1], offset[0], table[autocommit_pushdown_sequoiadb.t1]
+[Note] SequoiaDB: Query message: condition[{ "col_varchar_16": { "$lte": "I'll" } }], selector[{}], order_by[{ "col_varchar_16": 1, "col_int": 1 }], hint[{ "": "multi_key" }], limit[-1], offset[0], table[autocommit_pushdown_sequoiadb.t1]
+[Note] SequoiaDB: start_index_cond[{ "col_varchar_16": { "$gt": "I'll" } }], last key value[{ "_id": { "$oid": "x" }, "col_varchar_16": "I'll", "pk": 139, "col_int": 6 }], hint position[1], table[autocommit_pushdown_sequoiadb.t1]
+[Note] SequoiaDB: Query message: condition[{ "col_varchar_16": { "$lte": "I'll" } }], selector[{}], order_by[{ "col_varchar_16": 1, "col_int": 1 }], hint[{ "$Position": { "IndexValue": { "col_varchar_16": "I'll" }, "Type": 2, "PrefixNum": 1 }, "": "multi_key" }], limit[-1], offset[0], table[autocommit_pushdown_sequoiadb.t1]
+/* Using intersect */
+EXPLAIN SELECT col_varchar_16, col_int FROM t1 FORCE INDEX(col_varchar_16, col_int) WHERE col_int = 1 AND col_varchar_16 = 'a';
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	index_merge	col_int,col_varchar_16	col_int,col_varchar_16	5,67	NULL	1	100.00	Using intersect(col_int,col_varchar_16); Using where with pushed condition ((`autocommit_pushdown_sequoiadb`.`t1`.`col_varchar_16` = 'a') and (`autocommit_pushdown_sequoiadb`.`t1`.`col_int` = 1)); Using index
+SELECT col_varchar_16, col_int FROM t1 FORCE INDEX(col_varchar_16, col_int) WHERE col_int = 1 AND col_varchar_16 = 'a';
+col_varchar_16	col_int
+[Note] Testcase: Operation log begin
+[Note] SequoiaDB: Query message: condition[{ "$and": [ { "col_varchar_16": { "$et": "a" } }, { "col_int": { "$et": 1 } } ] }], selector[{}], order_by[{ "col_int": 1, "_id": 1 }], hint[{ "": "col_int" }], limit[-1], offset[0], table[autocommit_pushdown_sequoiadb.t1]
+/* Using sdb_union */
+EXPLAIN SELECT * FROM t1 WHERE col_int BETWEEN 10 AND 11 OR col_varchar_16 BETWEEN 'a' AND 'b';
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	index_merge	col_int,col_varchar_16,multi_key	col_int,col_varchar_16	5,67	NULL	4	100.00	Using sdb_sort_union(col_int,col_varchar_16); Using where with pushed condition ((`autocommit_pushdown_sequoiadb`.`t1`.`col_int` between 10 and 11) or (`autocommit_pushdown_sequoiadb`.`t1`.`col_varchar_16` between 'a' and 'b'))
+SELECT * FROM t1 WHERE col_int BETWEEN 10 AND 11 OR col_varchar_16 BETWEEN 'a' AND 'b';
+col_date	col_varchar_16	pk	col_int
+2007-02-11	a	42	NULL
+NULL	a	130	-1399062528
+2000-12-21	about	191	8
+2000-11-03	as	153	NULL
+NULL	b	102	533135360
+[Note] Testcase: Operation log begin
+[Note] SequoiaDB: Query message: condition[{ "$and": [ { "col_int": { "$gte": 10 } }, { "col_int": { "$lte": 11 } } ] }], selector[{}], order_by[{}], hint[{ "": "col_int" }], limit[-1], offset[0], table[autocommit_pushdown_sequoiadb.t1]
+[Note] SequoiaDB: Query message: condition[{ "$and": [ { "col_varchar_16": { "$gte": "a" } }, { "col_varchar_16": { "$lte": "b" } } ] }], selector[{}], order_by[{}], hint[{ "": "col_varchar_16" }], limit[-1], offset[0], table[autocommit_pushdown_sequoiadb.t1]
+EXPLAIN SELECT * FROM t1 WHERE col_int = 1 OR col_varchar_16 = 'a';
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	index_merge	col_int,col_varchar_16,multi_key	col_int,col_varchar_16	5,67	NULL	4	100.00	Using sdb_union(col_int,col_varchar_16); Using where with pushed condition ((`autocommit_pushdown_sequoiadb`.`t1`.`col_int` = 1) or (`autocommit_pushdown_sequoiadb`.`t1`.`col_varchar_16` = 'a'))
+SELECT * FROM t1 WHERE col_int = 1 OR col_varchar_16 = 'a';
+col_date	col_varchar_16	pk	col_int
+2006-07-26	h	59	1
+2007-03-08	t	60	1
+NULL	now	86	1
+2008-06-27	NULL	91	1
+2002-06-05	NULL	95	1
+2005-02-25	the	137	1
+2006-02-12	v	149	1
+2003-05-14	r	161	1
+2002-08-27	j	168	1
+2001-07-15	then	176	1
+2007-02-11	a	42	NULL
+NULL	a	130	-1399062528
+[Note] Testcase: Operation log begin
+[Note] SequoiaDB: Query message: condition[{ "col_int": { "$et": 1 } }], selector[{}], order_by[{}], hint[{ "": "col_int" }], limit[-1], offset[0], table[autocommit_pushdown_sequoiadb.t1]
+[Note] SequoiaDB: Query message: condition[{ "col_varchar_16": { "$et": "a" } }], selector[{}], order_by[{}], hint[{ "": "col_varchar_16" }], limit[-1], offset[0], table[autocommit_pushdown_sequoiadb.t1]
+EXPLAIN SELECT * FROM t1 LIMIT 3;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	ALL	NULL	NULL	NULL	NULL	200	100.00	NULL
+SELECT * FROM t1 LIMIT 3;
+col_date	col_varchar_16	pk	col_int
+2003-11-18	NULL	1	3
+2005-01-14	n	2	NULL
+2005-02-05	p	3	-657588224
+[Note] Testcase: Operation log begin
+[Note] SequoiaDB: optimizer pushdown autocommit: 1
+[Note] SequoiaDB: Query message: condition[{}], selector[{}], order_by[{}], hint[{}], limit[3], offset[0], table[autocommit_pushdown_sequoiadb.t1]
+EXPLAIN SELECT * FROM t1 WHERE pk = 1;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	const	PRIMARY	PRIMARY	4	const	1	100.00	NULL
+SELECT * FROM t1 WHERE pk = 1;
+col_date	col_varchar_16	pk	col_int
+2003-11-18	NULL	1	3
+[Note] Testcase: Operation log begin
+[Note] SequoiaDB: optimizer pushdown autocommit: 1
+[Note] SequoiaDB: Query message: condition[{ "pk": { "$et": 1 } }], selector[{}], order_by[{}], hint[{ "": "PRIMARY" }], limit[-1], offset[0], table[autocommit_pushdown_sequoiadb.t1]
+/* Impossible WHERE */
+EXPLAIN SELECT * FROM t1 WHERE 1 = 0;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	NULL	NULL	NULL	NULL	NULL	NULL	NULL	NULL	NULL	Impossible WHERE
+SELECT * FROM t1 WHERE 1 = 0;
+col_date	col_varchar_16	pk	col_int
+[Note] Testcase: Operation log begin
+/* Impossible WHERE noticed after reading const tables  */
+EXPLAIN SELECT * FROM t1 WHERE t1.pk = 2 AND t1.col_int < 0;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	NULL	NULL	NULL	NULL	NULL	NULL	NULL	NULL	NULL	Impossible WHERE noticed after reading const tables
+SELECT * FROM t1 WHERE t1.pk = 2 AND t1.col_int < 0;
+col_date	col_varchar_16	pk	col_int
+[Note] Testcase: Operation log begin
+[Note] SequoiaDB: optimizer pushdown autocommit: 1
+[Note] SequoiaDB: Query message: condition[{ "pk": { "$et": 2 } }], selector[{}], order_by[{}], hint[{ "": "PRIMARY" }], limit[-1], offset[0], table[autocommit_pushdown_sequoiadb.t1]
+/* Impossible HAVING */
+EXPLAIN SELECT * FROM t1 HAVING 1 = 0;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	NULL	NULL	NULL	NULL	NULL	NULL	NULL	NULL	NULL	Impossible HAVING
+SELECT * FROM t1 HAVING 1 = 0;
+col_date	col_varchar_16	pk	col_int
+[Note] Testcase: Operation log begin
+/* Impossible HAVING noticed after reading const tables  */
+EXPLAIN SELECT * FROM t1 where t1.pk = 1 having t1.col_int < 0;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	NULL	NULL	NULL	NULL	NULL	NULL	NULL	NULL	NULL	Impossible HAVING noticed after reading const tables
+SELECT * FROM t1 where t1.pk = 1 having t1.col_int < 0;
+col_date	col_varchar_16	pk	col_int
+[Note] Testcase: Operation log begin
+[Note] SequoiaDB: optimizer pushdown autocommit: 1
+[Note] SequoiaDB: Query message: condition[{ "pk": { "$et": 1 } }], selector[{}], order_by[{}], hint[{ "": "PRIMARY" }], limit[-1], offset[0], table[autocommit_pushdown_sequoiadb.t1]
+/* No matching min/max row  */
+EXPLAIN SELECT MAX(pk) FROM t1 WHERE t1.pk < 0;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	NULL	NULL	NULL	NULL	NULL	NULL	NULL	NULL	NULL	No matching min/max row
+SELECT MAX(pk) FROM t1 WHERE t1.pk < 0;
+MAX(pk)
+NULL
+[Note] Testcase: Operation log begin
+[Note] SequoiaDB: Query message: condition[{ "pk": { "$lt": 0 } }], selector[{ "_id": null, "pk": null }], order_by[{ "pk": -1 }], hint[{ "": "PRIMARY" }], limit[-1], offset[0], table[autocommit_pushdown_sequoiadb.t1]
+/* No matching row in const table  */
+EXPLAIN SELECT * FROM t1 WHERE pk = 0;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	NULL	NULL	NULL	NULL	NULL	NULL	NULL	NULL	NULL	no matching row in const table
+SELECT * FROM t1 WHERE pk = 0;
+col_date	col_varchar_16	pk	col_int
+[Note] Testcase: Operation log begin
+[Note] SequoiaDB: optimizer pushdown autocommit: 1
+[Note] SequoiaDB: Query message: condition[{ "pk": { "$et": 0 } }], selector[{}], order_by[{}], hint[{ "": "PRIMARY" }], limit[-1], offset[0], table[autocommit_pushdown_sequoiadb.t1]
+/* Select tables optimized away  */
+EXPLAIN SELECT MIN(col_int) FROM t1;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	NULL	NULL	NULL	NULL	NULL	NULL	NULL	NULL	NULL	Select tables optimized away
+SELECT MIN(col_int) FROM t1;
+MIN(col_int)
+-2067595264
+[Note] Testcase: Operation log begin
+[Note] SequoiaDB: Query message: condition[{ "col_int": { "$isnull": 0 } }], selector[{ "_id": null, "col_int": null }], order_by[{ "col_int": 1 }], hint[{ "": "col_int" }], limit[-1], offset[0], table[autocommit_pushdown_sequoiadb.t1]
+EXPLAIN SELECT MIN(col_int), MAX(col_int) FROM t1;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	NULL	NULL	NULL	NULL	NULL	NULL	NULL	NULL	NULL	Select tables optimized away
+SELECT MIN(col_int), MAX(col_int) FROM t1;
+MIN(col_int)	MAX(col_int)
+-2067595264	2121400320
+[Note] Testcase: Operation log begin
+[Note] SequoiaDB: Query message: condition[{ "col_int": { "$isnull": 0 } }], selector[{ "_id": null, "col_int": null }], order_by[{ "col_int": 1 }], hint[{ "": "col_int" }], limit[-1], offset[0], table[autocommit_pushdown_sequoiadb.t1]
+[Note] SequoiaDB: Query message: condition[{}], selector[{ "_id": null, "col_int": null }], order_by[{ "col_int": -1 }], hint[{ "": "col_int" }], limit[-1], offset[0], table[autocommit_pushdown_sequoiadb.t1]
+/* No tables used */
+EXPLAIN SELECT 1;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	NULL	NULL	NULL	NULL	NULL	NULL	NULL	NULL	NULL	No tables used
+SELECT 1;
+1
+1
+[Note] Testcase: Operation log begin
+/* Zero limit  */
+EXPLAIN SELECT * FROM t1 LIMIT 0;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	NULL	NULL	NULL	NULL	NULL	NULL	NULL	NULL	NULL	Zero limit
+SELECT * FROM t1 LIMIT 0;
+col_date	col_varchar_16	pk	col_int
+[Note] Testcase: Operation log begin
+/* Using pushed sort  */
+SET SESSION optimizer_index_sort_prune = ON;
+EXPLAIN SELECT * FROM t1 WHERE pk BETWEEN 1 AND 8 ORDER BY col_int, col_varchar_16;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	range	PRIMARY	PRIMARY	4	NULL	2	100.00	Using where with pushed condition (`autocommit_pushdown_sequoiadb`.`t1`.`pk` between 1 and 8); Using pushed sort (`autocommit_pushdown_sequoiadb`.`t1`.`col_int`,`autocommit_pushdown_sequoiadb`.`t1`.`col_varchar_16`)
+SELECT * FROM t1 WHERE pk BETWEEN 1 AND 8 ORDER BY col_int, col_varchar_16;
+col_date	col_varchar_16	pk	col_int
+NULL	e	4	NULL
+2005-01-14	n	2	NULL
+2008-12-05	q	5	NULL
+2005-02-05	p	3	-657588224
+NULL	s	6	-361234432
+2003-11-18	NULL	1	3
+2000-07-20	here	7	5
+NULL	v	8	1103495168
+[Note] Testcase: Operation log begin
+[Note] SequoiaDB: optimizer pushdown autocommit: 1
+[Note] SequoiaDB: Query message: condition[{ "$and": [ { "pk": { "$gte": 1 } }, { "pk": { "$lte": 8 } } ] }], selector[{}], order_by[{ "col_int": 1, "col_varchar_16": 1 }], hint[{ "": "PRIMARY" }], limit[-1], offset[0], table[autocommit_pushdown_sequoiadb.t1]
+SET SESSION optimizer_index_sort_prune = OFF;
+/* Using pushed ORDER BY  */
+EXPLAIN SELECT pk FROM t1 WHERE col_int < 10 ORDER BY col_int LIMIT 5;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	NULL	col_int	NULL	NULL	NULL	200	33.33	Using where with pushed condition (`autocommit_pushdown_sequoiadb`.`t1`.`col_int` < 10); Using pushed ORDER BY; Storage engine handles access type
+SELECT pk FROM t1 WHERE col_int < 10 ORDER BY col_int LIMIT 5;
+pk
+47
+64
+177
+189
+148
+[Note] Testcase: Operation log begin
+[Note] SequoiaDB: optimizer pushdown autocommit: 1
+[Note] SequoiaDB: Query message: condition[{ "col_int": { "$lt": 10 } }], selector[{}], order_by[{ "col_int": 1 }], hint[{ "": "" }], limit[5], offset[0], table[autocommit_pushdown_sequoiadb.t1]
+/* Using pushed GROUP BY  */
+EXPLAIN SELECT col_int FROM t1 WHERE col_int < 10 GROUP BY col_int;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	index	col_int	col_int	5	NULL	200	33.33	Using where with pushed condition (`autocommit_pushdown_sequoiadb`.`t1`.`col_int` < 10); Using pushed GROUP BY; Using index
+SELECT col_int FROM t1 WHERE col_int < 10 GROUP BY col_int;
+col_int
+-2067595264
+-2044526592
+-1968373760
+-1744371712
+-1692270592
+-1583284224
+-1557659648
+-1553399808
+-1399062528
+-1187512320
+-1171193856
+-1014300672
+-932839424
+-905707520
+-672268288
+-657588224
+-549126144
+-533528576
+-511508480
+-429522944
+-403374080
+-361234432
+-325976064
+-277544960
+-241106944
+-224722944
+-154402816
+-51904512
+0
+1
+2
+3
+4
+5
+6
+7
+8
+9
+[Note] Testcase: Operation log begin
+[Note] SequoiaDB: optimizer pushdown autocommit: 1
+[Note] SequoiaDB: Query message: match[{ "$match": { "col_int": { "$lt": 10 } } }], group[{ "$group": { "col_int": { "$first": "$col_int" }, "_id": { "col_int": "$col_int" } } }], sort[{ "$sort": { "col_int": 1 } }], skip[{ "$skip": 0 }], limit[{ "$limit": -1 }]
+/* Using filesort  */
+/* Using addon fields  */
+EXPLAIN SELECT * FROM t1 WHERE pk BETWEEN 3 AND 8 ORDER BY col_int + 1;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	range	PRIMARY	PRIMARY	4	NULL	2	100.00	Using where with pushed condition (`autocommit_pushdown_sequoiadb`.`t1`.`pk` between 3 and 8); Using filesort
+SHOW STATUS LIKE 'Handler_read_rnd';
+Variable_name	Value
+Handler_read_rnd	0
+SELECT * FROM t1 WHERE pk BETWEEN 3 AND 8 ORDER BY col_int + 1;
+col_date	col_varchar_16	pk	col_int
+NULL	e	4	NULL
+2008-12-05	q	5	NULL
+2005-02-05	p	3	-657588224
+NULL	s	6	-361234432
+2000-07-20	here	7	5
+NULL	v	8	1103495168
+[Note] Testcase: Operation log begin
+[Note] SequoiaDB: optimizer pushdown autocommit: 1
+[Note] SequoiaDB: Query message: condition[{ "$and": [ { "pk": { "$gte": 3 } }, { "pk": { "$lte": 8 } } ] }], selector[{}], order_by[{ "pk": 1 }], hint[{ "": "PRIMARY" }], limit[-1], offset[0], table[autocommit_pushdown_sequoiadb.t1]
+SHOW STATUS LIKE 'Handler_read_rnd';
+Variable_name	Value
+Handler_read_rnd	0
+/* Using rowid  */
+ALTER TABLE t1 ADD COLUMN txt text;
+EXPLAIN SELECT * FROM t1 WHERE pk BETWEEN 2 AND 5 ORDER BY col_int + 1, txt;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	range	PRIMARY	PRIMARY	4	NULL	2	100.00	Using where with pushed condition (`autocommit_pushdown_sequoiadb`.`t1`.`pk` between 2 and 5); Using filesort
+SHOW STATUS LIKE 'Handler_read_rnd';
+Variable_name	Value
+Handler_read_rnd	0
+SELECT * FROM t1 WHERE pk BETWEEN 2 AND 5 ORDER BY col_int + 1, txt;
+col_date	col_varchar_16	pk	col_int	txt
+2005-01-14	n	2	NULL	NULL
+NULL	e	4	NULL	NULL
+2008-12-05	q	5	NULL	NULL
+2005-02-05	p	3	-657588224	NULL
+[Note] Testcase: Operation log begin
+[Note] SequoiaDB: Query message: condition[{ "$and": [ { "pk": { "$gte": 2 } }, { "pk": { "$lte": 5 } } ] }], selector[{}], order_by[{ "pk": 1 }], hint[{ "": "PRIMARY" }], limit[-1], offset[0], table[autocommit_pushdown_sequoiadb.t1]
+SHOW STATUS LIKE 'Handler_read_rnd';
+Variable_name	Value
+Handler_read_rnd	4
+ALTER TABLE t1 DROP COLUMN txt;
+/* Using temporary  */
+EXPLAIN SELECT col_int + 1 FROM t1 GROUP BY col_int + 1 ORDER BY col_int + 1;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	index	col_int,multi_key	col_int	5	NULL	200	100.00	Using index; Using temporary; Using filesort
+SHOW STATUS LIKE 'Handler_read_rnd';
+Variable_name	Value
+Handler_read_rnd	4
+SELECT col_int + 1 FROM t1 GROUP BY col_int + 1 ORDER BY col_int + 1;
+col_int + 1
+NULL
+-2067595263
+-2044526591
+-1968373759
+-1744371711
+-1692270591
+-1583284223
+-1557659647
+-1553399807
+-1399062527
+-1187512319
+-1171193855
+-1014300671
+-932839423
+-905707519
+-672268287
+-657588223
+-549126143
+-533528575
+-511508479
+-429522943
+-403374079
+-361234431
+-325976063
+-277544959
+-241106943
+-224722943
+-154402815
+-51904511
+1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+5767169
+109838337
+235667457
+253755393
+359530497
+533135361
+611450881
+818216961
+980746241
+1044905985
+1103495169
+1287127041
+1290993665
+1526530049
+1611137025
+1639907329
+1857486849
+2066415617
+2121400321
+[Note] Testcase: Operation log begin
+[Note] SequoiaDB: optimizer pushdown autocommit: 1
+[Note] SequoiaDB: Query message: condition[{}], selector[{ "_id": null, "col_int": null }], order_by[{ "col_int": 1 }], hint[{ "": "col_int" }], limit[-1], offset[0], table[autocommit_pushdown_sequoiadb.t1]
+SHOW STATUS LIKE 'Handler_read_rnd';
+Variable_name	Value
+Handler_read_rnd	62
+/* Using where  */
+EXPLAIN SELECT col_int FROM t1 WHERE (col_int + 1) > (col_int / 2) LIMIT 3;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	index	NULL	col_int	5	NULL	200	100.00	Using where; Using index
+SELECT col_int FROM t1 WHERE (col_int + 1) > (col_int / 2) LIMIT 3;
+col_int
+0
+0
+0
+[Note] Testcase: Operation log begin
+[Note] SequoiaDB: Condition can't be pushed down. db=[autocommit_pushdown_sequoiadb], table[t1], sql=[SELECT col_int FROM t1 WHERE (col_int + 1) > (col_int / 2) LIMIT 3]
+[Note] SequoiaDB: optimizer pushdown autocommit: 1
+[Note] SequoiaDB: Query message: condition[{}], selector[{ "col_int": null }], order_by[{ "col_int": 1 }], hint[{ "": "col_int" }], limit[-1], offset[0], table[autocommit_pushdown_sequoiadb.t1]
+/* Using where with pushed condition {{{ */
+/* covered by everywhere */
+/* }}} */
+/* Distinct  */
+EXPLAIN FORMAT = JSON SELECT DISTINCT MIN(col_varchar_16) FROM t1 GROUP BY col_int + 1;
+EXPLAIN
+{
+  "query_block": {
+    "select_id": 1,
+    "cost_info": {
+      "query_cost": "250.00"
+    },
+    "duplicates_removal": {
+      "using_temporary_table": true,
+      "using_filesort": false,
+      "grouping_operation": {
+        "using_temporary_table": true,
+        "using_filesort": true,
+        "cost_info": {
+          "sort_cost": "200.00"
+        },
+        "table": {
+          "table_name": "t1",
+          "access_type": "index",
+          "possible_keys": [
+            "col_int",
+            "multi_key"
+          ],
+          "key": "multi_key",
+          "used_key_parts": [
+            "col_varchar_16",
+            "col_int"
+          ],
+          "key_length": "72",
+          "rows_examined_per_scan": 200,
+          "rows_produced_per_join": 200,
+          "filtered": "100.00",
+          "using_index": true,
+          "cost_info": {
+            "read_cost": "10.00",
+            "eval_cost": "40.00",
+            "prefix_cost": "50.00",
+            "data_read_per_join": "15K"
+          },
+          "used_columns": [
+            "col_varchar_16",
+            "col_int"
+          ]
+        }
+      }
+    }
+  }
+}
+SHOW STATUS LIKE 'Handler_read_rnd';
+Variable_name	Value
+Handler_read_rnd	62
+SELECT DISTINCT MIN(col_varchar_16) FROM t1 GROUP BY col_int + 1;
+MIN(col_varchar_16)
+a
+q
+NULL
+u
+z
+her
+x
+I'm
+p
+f
+on
+with
+l
+the
+s
+v
+from
+m
+d
+be
+h
+c
+I'll
+because
+about
+e
+ok
+b
+why
+k
+i
+o
+go
+been
+[Note] Testcase: Operation log begin
+[Note] SequoiaDB: optimizer pushdown autocommit: 1
+[Note] SequoiaDB: Query message: condition[{}], selector[{}], order_by[{ "col_varchar_16": 1, "col_int": 1 }], hint[{ "": "multi_key" }], limit[-1], offset[0], table[autocommit_pushdown_sequoiadb.t1]
+SHOW STATUS LIKE 'Handler_read_rnd';
+Variable_name	Value
+Handler_read_rnd	96
+/* Using join buffer (Block Nested Loop)  */
+explain  select * from t1 join t2 on t1.col_date=t2.col_date where t1.pk < 2;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	ALL	PRIMARY	NULL	NULL	NULL	200	25.00	Using where with pushed condition (`autocommit_pushdown_sequoiadb`.`t1`.`pk` < 2)
+1	SIMPLE	t2	NULL	ALL	NULL	NULL	NULL	NULL	200	10.00	Using where; Using join buffer (Block Nested Loop)
+select * from t1 join t2 on t1.col_date=t2.col_date where t1.pk < 2;
+col_date	col_varchar_16	pk	col_int	col_date	col_varchar_16	pk	col_int
+2003-11-18	NULL	1	3	2003-11-18	NULL	1	3
+[Note] Testcase: Operation log begin
+[Note] SequoiaDB: Query message: condition[{ "pk": { "$lt": 2 } }], selector[{}], order_by[{}], hint[{}], limit[-1], offset[0], table[autocommit_pushdown_sequoiadb.t1]
+[Note] SequoiaDB: Query message: condition[{}], selector[{}], order_by[{}], hint[{}], limit[-1], offset[0], table[autocommit_pushdown_sequoiadb.t2]
+/* Using join buffer ()  */
+explain select * from t1 join t2 on t1.col_int=t2.col_int where t1.pk < 2;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	ALL	PRIMARY,col_int	NULL	NULL	NULL	200	25.00	Using where with pushed condition ((`autocommit_pushdown_sequoiadb`.`t1`.`pk` < 2) and (`autocommit_pushdown_sequoiadb`.`t1`.`col_int` is not null))
+1	SIMPLE	t2	NULL	ref	col_int	col_int	5	autocommit_pushdown_sequoiadb.t1.col_int	19	100.00	NULL
+select * from t1 join t2 on t1.col_int=t2.col_int where t1.pk < 2;
+col_date	col_varchar_16	pk	col_int	col_date	col_varchar_16	pk	col_int
+2003-11-18	NULL	1	3	2003-11-18	NULL	1	3
+2003-11-18	NULL	1	3	2009-09-26	n	39	3
+2003-11-18	NULL	1	3	2009-08-14	NULL	78	3
+2003-11-18	NULL	1	3	2008-08-15	o	82	3
+2003-11-18	NULL	1	3	2008-01-13	NULL	117	3
+2003-11-18	NULL	1	3	2004-09-14	j	124	3
+2003-11-18	NULL	1	3	2004-06-18	z	125	3
+2003-11-18	NULL	1	3	2001-09-14	s	126	3
+2003-11-18	NULL	1	3	2004-06-25	NULL	147	3
+2003-11-18	NULL	1	3	2009-02-02	n	157	3
+2003-11-18	NULL	1	3	2004-10-05	of	167	3
+2003-11-18	NULL	1	3	2006-03-17	l	180	3
+2003-11-18	NULL	1	3	2005-04-03	y	193	3
+2003-11-18	NULL	1	3	2009-04-26	c	195	3
+[Note] Testcase: Operation log begin
+[Note] SequoiaDB: Query message: condition[{ "$and": [ { "pk": { "$lt": 2 } }, { "col_int": { "$isnull": 0 } } ] }], selector[{}], order_by[{}], hint[{}], limit[-1], offset[0], table[autocommit_pushdown_sequoiadb.t1]
+[Note] SequoiaDB: Query message: condition[{ "col_int": { "$et": 3 } }], selector[{}], order_by[{ "col_int": 1 }], hint[{ "": "col_int" }], limit[-1], offset[0], table[autocommit_pushdown_sequoiadb.t2]
+SELECT COUNT(*) FROM t1;
+COUNT(*)
+200
+[Note] Testcase: Operation log begin
+[Note] SequoiaDB: optimizer count: 1, condition: [{}], table: autocommit_pushdown_sequoiadb.t1
+[Note] SequoiaDB: optimizer pushdown autocommit: 1
+[Note] SequoiaDB: Count message: condition[{}],hint[{ "": "PRIMARY" }] table[autocommit_pushdown_sequoiadb.t1]
+SELECT COUNT(*) FROM t1 WHERE col_int = 11;
+COUNT(*)
+0
+[Note] Testcase: Operation log begin
+[Note] SequoiaDB: optimizer count: 1, condition: [{ "col_int": { "$et": 11 } }], table: autocommit_pushdown_sequoiadb.t1
+[Note] SequoiaDB: optimizer pushdown autocommit: 1
+[Note] SequoiaDB: Count message: condition[{ "col_int": { "$et": 11 } }],hint[{ "": "col_int" }] table[autocommit_pushdown_sequoiadb.t1]
+select * from t1 where pk < 10 order by col_int;
+col_date	col_varchar_16	pk	col_int
+2005-01-14	n	2	NULL
+NULL	e	4	NULL
+2008-12-05	q	5	NULL
+NULL	l	9	NULL
+2005-02-05	p	3	-657588224
+NULL	s	6	-361234432
+2003-11-18	NULL	1	3
+2000-07-20	here	7	5
+NULL	v	8	1103495168
+[Note] Testcase: Operation log begin
+[Note] SequoiaDB: optimizer pushdown autocommit: 1
+[Note] SequoiaDB: Query message: condition[{ "pk": { "$lt": 10 } }], selector[{}], order_by[{ "col_int": 1 }], hint[{}], limit[-1], offset[0], table[autocommit_pushdown_sequoiadb.t1]
+select * from t1 where col_int = 1 or col_varchar_16 = 'a' order by col_int;
+col_date	col_varchar_16	pk	col_int
+2007-02-11	a	42	NULL
+NULL	a	130	-1399062528
+2006-07-26	h	59	1
+2007-03-08	t	60	1
+NULL	now	86	1
+2008-06-27	NULL	91	1
+2002-06-05	NULL	95	1
+2005-02-25	the	137	1
+2006-02-12	v	149	1
+2003-05-14	r	161	1
+2002-08-27	j	168	1
+2001-07-15	then	176	1
+[Note] Testcase: Operation log begin
+[Note] SequoiaDB: optimizer pushdown autocommit: 1
+[Note] SequoiaDB: Query message: condition[{ "$or": [ { "col_int": { "$et": 1 } }, { "col_varchar_16": { "$et": "a" } } ] }], selector[{}], order_by[{ "col_int": 1 }], hint[{}], limit[-1], offset[0], table[autocommit_pushdown_sequoiadb.t1]
+explain select * from t1 where pk = 1 limit 1;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	const	PRIMARY	PRIMARY	4	const	1	100.00	NULL
+select * from t1 where pk = 1 limit 1;
+col_date	col_varchar_16	pk	col_int
+2003-11-18	NULL	1	3
+[Note] Testcase: Operation log begin
+[Note] SequoiaDB: optimizer pushdown autocommit: 1
+[Note] SequoiaDB: Query message: condition[{ "pk": { "$et": 1 } }], selector[{}], order_by[{ "pk": 1 }], hint[{ "": "PRIMARY" }], limit[-1], offset[0], table[autocommit_pushdown_sequoiadb.t1]
+explain select * from t1 where col_int = 1 or col_varchar_16 = 'a' limit 1;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	index_merge	col_int,col_varchar_16,multi_key	col_int,col_varchar_16	5,67	NULL	4	100.00	Using sdb_union(col_int,col_varchar_16); Using where with pushed condition ((`autocommit_pushdown_sequoiadb`.`t1`.`col_int` = 1) or (`autocommit_pushdown_sequoiadb`.`t1`.`col_varchar_16` = 'a'))
+select * from t1 where col_int = 1 or col_varchar_16 = 'a' limit 1;
+col_date	col_varchar_16	pk	col_int
+2006-07-26	h	59	1
+[Note] Testcase: Operation log begin
+[Note] SequoiaDB: Query message: condition[{ "col_int": { "$et": 1 } }], selector[{}], order_by[{ "col_int": 1 }], hint[{ "": "col_int" }], limit[1], offset[0], table[autocommit_pushdown_sequoiadb.t1]
+UPDATE t1 SET col_int = ((col_int + 1) - 1) * 1 WHERE pk = 1;
+[Note] Testcase: Operation log begin
+[Note] SequoiaDB: optimizer update: 0, rule: [{}], condition: [{ "pk": { "$et": 1 } }], table: autocommit_pushdown_sequoiadb.t1
+[Note] SequoiaDB: Query message: condition[{ "pk": { "$et": 1 } }], selector[{}], order_by[{ "pk": 1 }], hint[{ "": "PRIMARY" }], limit[-1], offset[0], table[autocommit_pushdown_sequoiadb.t1]
+UPDATE t1, t2 SET t1.col_int = (t1.col_int + 1 - 1) WHERE t1.pk = t2.pk AND t2.pk = 2;
+[Note] Testcase: Operation log begin
+[Note] SequoiaDB: Query message: condition[{ "pk": { "$et": 2 } }], selector[{}], order_by[{ "pk": 1 }], hint[{ "": "PRIMARY" }], limit[-1], offset[0], table[autocommit_pushdown_sequoiadb.t1]
+[Note] SequoiaDB: Query message: condition[{ "pk": { "$et": 2 } }], selector[{}], order_by[{ "pk": 1 }], hint[{ "": "PRIMARY" }], limit[-1], offset[0], table[autocommit_pushdown_sequoiadb.t2]
+/* single request */
+UPDATE t1 SET col_int = 1 WHERE col_int = 1;
+[Note] Testcase: Operation log begin
+[Note] SequoiaDB: optimizer pushdown autocommit: 1
+[Note] SequoiaDB: optimizer update: 1, rule: [{ "$set": { "col_int": 1 } }], condition: [{ "col_int": { "$et": 1 } }], table: autocommit_pushdown_sequoiadb.t1
+/* multi request */
+explain UPDATE t1 SET col_int = 3 WHERE pk = 10000 OR col_varchar_16 = "matchs none";
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	UPDATE	t1	NULL	index_merge	PRIMARY,col_varchar_16,multi_key	PRIMARY,col_varchar_16	4,67	NULL	3	100.00	Using sdb_union(PRIMARY,col_varchar_16); Using where
+UPDATE t1 SET col_int = 3 WHERE pk = 10000 OR col_varchar_16 = "matchs none";
+[Note] Testcase: Operation log begin
+[Note] SequoiaDB: optimizer update: 1, rule: [{ "$set": { "col_int": 3 } }], condition: [{ "pk": { "$et": 10000 } }], table: autocommit_pushdown_sequoiadb.t1
+[Note] SequoiaDB: optimizer update: 1, rule: [{ "$set": { "col_int": 3 } }], condition: [{ "col_varchar_16": { "$et": "matchs none" } }], table: autocommit_pushdown_sequoiadb.t1
+SET SESSION optimizer_switch = 'mrr=off';
+explain UPDATE t1 SET col_int = 5 WHERE pk = 30000 OR pk = 50000;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	UPDATE	t1	NULL	range	PRIMARY	PRIMARY	4	const	2	100.00	Using where
+UPDATE t1 SET col_int = 5 WHERE pk = 30000 OR pk = 50000;
+[Note] Testcase: Operation log begin
+[Note] SequoiaDB: optimizer update: 1, rule: [{ "$set": { "col_int": 5 } }], condition: [{ "pk": { "$et": 30000 } }], table: autocommit_pushdown_sequoiadb.t1
+[Note] SequoiaDB: optimizer update: 1, rule: [{ "$set": { "col_int": 5 } }], condition: [{ "pk": { "$et": 50000 } }], table: autocommit_pushdown_sequoiadb.t1
+SET SESSION optimizer_switch = 'mrr=on';
+/* using mrr */
+explain UPDATE t1 SET col_int = 5 WHERE pk = 30000 OR pk = 50000;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	UPDATE	t1	NULL	range	PRIMARY	PRIMARY	4	const	2	100.00	Using where; Using MRR
+UPDATE t1 SET col_int = 5 WHERE pk = 30000 OR pk = 50000;
+[Note] Testcase: Operation log begin
+[Note] SequoiaDB: optimizer pushdown autocommit: 1
+[Note] SequoiaDB: optimizer update: 1, rule: [{ "$set": { "col_int": 5 } }], condition: [{ "$and": [ { "$or": [ { "pk": { "$et": 30000 } }, { "pk": { "$et": 50000 } } ] }, { "pk": { "$in": [ 30000, 50000 ] } } ] }], table: autocommit_pushdown_sequoiadb.t1
+DELETE FROM t1 WHERE col_int * col_int = 3;
+[Note] Testcase: Operation log begin
+[Note] SequoiaDB: Condition can't be pushed down. db=[autocommit_pushdown_sequoiadb], table[t1], sql=[DELETE FROM t1 WHERE col_int * col_int = 3]
+[Note] SequoiaDB: optimizer delete: 0, condition: [{}], table: autocommit_pushdown_sequoiadb.t1
+[Note] SequoiaDB: Query message: condition[{}], selector[{}], order_by[{}], hint[{}], limit[-1], offset[0], table[autocommit_pushdown_sequoiadb.t1]
+DELETE t1 FROM t1 INNER JOIN t2 WHERE t1.pk = t2.pk AND t2.pk < 0;
+[Note] Testcase: Operation log begin
+[Note] SequoiaDB: Query message: condition[{ "pk": { "$lt": 0 } }], selector[{}], order_by[{ "pk": 1 }], hint[{ "": "PRIMARY" }], limit[-1], offset[0], table[autocommit_pushdown_sequoiadb.t1]
+/* single request */
+DELETE FROM t1 WHERE pk = 20000;
+[Note] Testcase: Operation log begin
+[Note] SequoiaDB: optimizer pushdown autocommit: 1
+[Note] SequoiaDB: optimizer delete: 1, condition: [{ "pk": { "$et": 20000 } }], table: autocommit_pushdown_sequoiadb.t1
+/* multi request */
+explain DELETE FROM t1 WHERE pk = 70000 OR col_varchar_16 = "matchs nothing";
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	DELETE	t1	NULL	index_merge	PRIMARY,col_varchar_16,multi_key	PRIMARY,col_varchar_16	4,67	NULL	3	100.00	Using sdb_union(PRIMARY,col_varchar_16); Using where
+DELETE FROM t1 WHERE pk = 70000 OR col_varchar_16 = "matchs nothing";
+[Note] Testcase: Operation log begin
+[Note] SequoiaDB: optimizer delete: 1, condition: [{ "pk": { "$et": 70000 } }], table: autocommit_pushdown_sequoiadb.t1
+[Note] SequoiaDB: optimizer delete: 1, condition: [{ "col_varchar_16": { "$et": "matchs nothing" } }], table: autocommit_pushdown_sequoiadb.t1
+SET SESSION optimizer_switch = 'mrr=off';
+explain DELETE FROM t1 WHERE pk = 60000 OR pk = 80000;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	DELETE	t1	NULL	range	PRIMARY	PRIMARY	4	const	2	100.00	Using where
+DELETE FROM t1 WHERE pk = 60000 OR pk = 80000;
+[Note] Testcase: Operation log begin
+[Note] SequoiaDB: optimizer delete: 1, condition: [{ "pk": { "$et": 60000 } }], table: autocommit_pushdown_sequoiadb.t1
+[Note] SequoiaDB: optimizer delete: 1, condition: [{ "pk": { "$et": 80000 } }], table: autocommit_pushdown_sequoiadb.t1
+SET SESSION optimizer_switch = 'mrr=on';
+/* using mrr */
+explain DELETE FROM t1 WHERE pk = 60000 OR pk = 80000;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	DELETE	t1	NULL	range	PRIMARY	PRIMARY	4	const	2	100.00	Using where; Using MRR
+DELETE FROM t1 WHERE pk = 60000 OR pk = 80000;
+[Note] Testcase: Operation log begin
+[Note] SequoiaDB: optimizer pushdown autocommit: 1
+[Note] SequoiaDB: optimizer delete: 1, condition: [{ "$and": [ { "$or": [ { "pk": { "$et": 60000 } }, { "pk": { "$et": 80000 } } ] }, { "pk": { "$in": [ 60000, 80000 ] } } ] }], table: autocommit_pushdown_sequoiadb.t1
+INSERT LOW_PRIORITY INTO t1 VALUES("2000-01-01", "abc", null, 1);
+[Note] Testcase: Operation log begin
+[Note] SequoiaDB: optimizer pushdown autocommit: 1
+SELECT "Use this query to flush new log" FROM t1 LIMIT 1;
+Use this query to flush new log
+Use this query to flush new log
+INSERT LOW_PRIORITY INTO t1 VALUES("2000-01-01", "abc", null, 1),("2000-01-01", "abc", null, 1);
+[Note] Testcase: Operation log begin
+INSERT DELAYED INTO t1 VALUES("2000-01-01", "abc", null, 1);
+Warnings:
+Warning	3005	INSERT DELAYED is no longer supported. The statement was converted to INSERT.
+[Note] Testcase: Operation log begin
+[Note] SequoiaDB: optimizer pushdown autocommit: 1
+SELECT "Use this query to flush new log" FROM t1 LIMIT 1;
+Use this query to flush new log
+Use this query to flush new log
+INSERT DELAYED INTO t1 VALUES("2000-01-01", "abc", null, 1),("2000-01-01", "abc", null, 1);
+Warnings:
+Warning	3005	INSERT DELAYED is no longer supported. The statement was converted to INSERT.
+[Note] Testcase: Operation log begin
+INSERT HIGH_PRIORITY INTO t1 VALUES("2000-01-01", "abc", null, 1);
+[Note] Testcase: Operation log begin
+[Note] SequoiaDB: optimizer pushdown autocommit: 1
+SELECT "Use this query to flush new log" FROM t1 LIMIT 1;
+Use this query to flush new log
+Use this query to flush new log
+INSERT HIGH_PRIORITY INTO t1 VALUES("2000-01-01", "abc", null, 1),("2000-01-01", "abc", null, 1);
+[Note] Testcase: Operation log begin
+INSERT IGNORE INTO t1 VALUES("2000-01-01", "abc", null, 1);
+[Note] Testcase: Operation log begin
+[Note] SequoiaDB: optimizer pushdown autocommit: 1
+SELECT "Use this query to flush new log" FROM t1 LIMIT 1;
+Use this query to flush new log
+Use this query to flush new log
+INSERT IGNORE INTO t1 VALUES("2000-01-01", "abc", null, 1),("2000-01-01", "abc", null, 1);
+[Note] Testcase: Operation log begin
+INSERT INTO range_part_table partition (p0) VALUES(3,'a','2000-01-01 00:00:00',1);
+[Note] Testcase: Operation log begin
+[Note] SequoiaDB: optimizer pushdown autocommit: 1
+SELECT "Use this query to flush new log" FROM t1 LIMIT 1;
+Use this query to flush new log
+Use this query to flush new log
+INSERT INTO range_part_table partition (p1) VALUES(4,'a','2000-01-01 00:00:00',1),(5,'a','2000-01-01 00:00:00',1);
+[Note] Testcase: Operation log begin
+INSERT INTO t1(col_date,col_varchar_16,pk,col_int) VALUES("2000-01-01", "abc", null, 1);
+[Note] Testcase: Operation log begin
+[Note] SequoiaDB: optimizer pushdown autocommit: 1
+SELECT "Use this query to flush new log" FROM t1 LIMIT 1;
+Use this query to flush new log
+Use this query to flush new log
+INSERT INTO t1(col_date,col_varchar_16,pk,col_int) VALUES("2000-01-01", "abc", null, 1),("2000-01-01", "abc", null, 1);
+[Note] Testcase: Operation log begin
+/* single value */
+INSERT INTO t1 VALUES("2000-01-01", "abc", null, 1);
+[Note] Testcase: Operation log begin
+[Note] SequoiaDB: optimizer pushdown autocommit: 1
+REPLACE INTO t1 VALUES("2000-01-01", "abc", null, 1);
+[Note] Testcase: Operation log begin
+[Note] SequoiaDB: optimizer pushdown autocommit: 1
+/* multi value */
+SELECT "Use this query to flush new log" FROM t1 LIMIT 1;
+Use this query to flush new log
+Use this query to flush new log
+INSERT INTO t1 VALUES("2000-01-01", "abc", null, 1), ("2000-01-01", "abc", null, 1);
+[Note] Testcase: Operation log begin
+SELECT "Use this query to flush new log" FROM t1 LIMIT 1;
+Use this query to flush new log
+Use this query to flush new log
+REPLACE INTO t1 VALUES("2000-01-01", "abc", null, 1), ("2000-01-01", "abc", null, 1);
+[Note] Testcase: Operation log begin
+INSERT INTO t1 SET col_date = "2000-01-01", col_varchar_16 = "abc", col_int = 1;
+[Note] Testcase: Operation log begin
+[Note] SequoiaDB: optimizer pushdown autocommit: 1
+REPLACE INTO t1 SET col_date = "2000-01-01", col_varchar_16 = "abc", col_int = 1;
+[Note] Testcase: Operation log begin
+[Note] SequoiaDB: optimizer pushdown autocommit: 1
+SELECT "Use this query to flush new log" FROM t1 LIMIT 1;
+Use this query to flush new log
+Use this query to flush new log
+INSERT INTO t1 SELECT MAX(col_date), MAX(col_varchar_16), MAX(pk) + 1, MAX(col_int) FROM t1;
+[Note] Testcase: Operation log begin
+[Note] SequoiaDB: Query message: condition[{}], selector[{ "_id": null, "pk": null }], order_by[{ "pk": -1 }], hint[{ "": "PRIMARY" }], limit[-1], offset[0], table[autocommit_pushdown_sequoiadb.t1]
+[Note] SequoiaDB: Query message: condition[{}], selector[{ "_id": null, "col_varchar_16": null }], order_by[{ "col_varchar_16": -1 }], hint[{ "": "col_varchar_16" }], limit[-1], offset[0], table[autocommit_pushdown_sequoiadb.t1]
+[Note] SequoiaDB: Query message: condition[{}], selector[{ "_id": null, "col_int": null }], order_by[{ "col_int": -1 }], hint[{ "": "col_int" }], limit[-1], offset[0], table[autocommit_pushdown_sequoiadb.t1]
+[Note] SequoiaDB: Query message: condition[{}], selector[{}], order_by[{}], hint[{}], limit[-1], offset[0], table[autocommit_pushdown_sequoiadb.t1]
+REPLACE INTO t1 SELECT MAX(col_date), MAX(col_varchar_16), MAX(pk) + 1, MAX(col_int) FROM t1;
+[Note] Testcase: Operation log begin
+[Note] SequoiaDB: Query message: condition[{}], selector[{ "_id": null, "pk": null }], order_by[{ "pk": -1 }], hint[{ "": "PRIMARY" }], limit[-1], offset[0], table[autocommit_pushdown_sequoiadb.t1]
+[Note] SequoiaDB: Query message: condition[{}], selector[{ "_id": null, "col_varchar_16": null }], order_by[{ "col_varchar_16": -1 }], hint[{ "": "col_varchar_16" }], limit[-1], offset[0], table[autocommit_pushdown_sequoiadb.t1]
+[Note] SequoiaDB: Query message: condition[{}], selector[{ "_id": null, "col_int": null }], order_by[{ "col_int": -1 }], hint[{ "": "col_int" }], limit[-1], offset[0], table[autocommit_pushdown_sequoiadb.t1]
+[Note] SequoiaDB: Query message: condition[{}], selector[{}], order_by[{}], hint[{}], limit[-1], offset[0], table[autocommit_pushdown_sequoiadb.t1]
+/* normal */
+SELECT "Use this query to flush new log" FROM t1 LIMIT 1;
+Use this query to flush new log
+Use this query to flush new log
+INSERT INTO t1 VALUES("2000-02-02", "abc", 200, 10) ON DUPLICATE KEY UPDATE col_int = (col_int + 1) * 2;
+[Note] Testcase: Operation log begin
+[Note] SequoiaDB: insert dup update pushdown: 0, modifier: [{}], table: autocommit_pushdown_sequoiadb.t1
+/* pushed down */
+SELECT "Use this query to flush new log" FROM t1 LIMIT 1;
+Use this query to flush new log
+Use this query to flush new log
+INSERT INTO t1 VALUES("2000-02-02", "abc", 200, 10) ON DUPLICATE KEY UPDATE col_int = 18;
+[Note] Testcase: Operation log begin
+[Note] SequoiaDB: insert dup update pushdown: 1, modifier: [{ "$Modify": { "OP": "update", "Update": { "$set": { "col_int": 18 } } } }], table: autocommit_pushdown_sequoiadb.t1
+[Note] SequoiaDB: optimizer pushdown autocommit: 1
+SELECT "Use this query to flush new log" FROM t1 LIMIT 1;
+Use this query to flush new log
+Use this query to flush new log
+create procedure p1() 
+begin 
+select * from t1 where pk = 1;
+SELECT * FROM t1, t2 WHERE t1.pk = t2.pk AND t2.pk < 0;
+end ||
+call p1;
+col_date	col_varchar_16	pk	col_int
+2003-11-18	NULL	1	3
+col_date	col_varchar_16	pk	col_int	col_date	col_varchar_16	pk	col_int
+[Note] Testcase: Operation log begin
+[Note] SequoiaDB: Query message: condition[{ "pk": { "$et": 1 } }], selector[{}], order_by[{ "pk": 1 }], hint[{ "": "PRIMARY" }], limit[-1], offset[0], table[autocommit_pushdown_sequoiadb.t1]
+[Note] SequoiaDB: Query message: condition[{ "pk": { "$lt": 0 } }], selector[{}], order_by[{}], hint[{}], limit[-1], offset[0], table[autocommit_pushdown_sequoiadb.t2]
+drop procedure p1;
+SELECT "Use this query to flush new log" FROM t1 LIMIT 1;
+Use this query to flush new log
+Use this query to flush new log
+create procedure p1() 
+begin 
+UPDATE t1, t2 SET t1.col_int = (t1.col_int + 1 - 1) WHERE t1.pk = t2.pk AND t2.pk = 2;
+UPDATE t1 SET col_int = 1 WHERE col_int = 1;
+end ||
+call p1;
+[Note] Testcase: Operation log begin
+[Note] SequoiaDB: Query message: condition[{ "pk": { "$et": 2 } }], selector[{}], order_by[{ "pk": 1 }], hint[{ "": "PRIMARY" }], limit[-1], offset[0], table[autocommit_pushdown_sequoiadb.t1]
+[Note] SequoiaDB: Query message: condition[{ "pk": { "$et": 2 } }], selector[{}], order_by[{ "pk": 1 }], hint[{ "": "PRIMARY" }], limit[-1], offset[0], table[autocommit_pushdown_sequoiadb.t2]
+[Note] SequoiaDB: optimizer update: 1, rule: [{ "$set": { "col_int": 1 } }], condition: [{ "col_int": { "$et": 1 } }], table: autocommit_pushdown_sequoiadb.t1
+drop procedure p1;
+SELECT "Use this query to flush new log" FROM t1 LIMIT 1;
+Use this query to flush new log
+Use this query to flush new log
+create procedure p1() 
+begin 
+DELETE t1 FROM t1 INNER JOIN t2 WHERE t1.pk = t2.pk AND t2.pk < 0;
+DELETE FROM t1 WHERE pk = 20000;
+end ||
+call p1;
+[Note] Testcase: Operation log begin
+[Note] SequoiaDB: Query message: condition[{ "pk": { "$lt": 0 } }], selector[{}], order_by[{ "pk": 1 }], hint[{ "": "PRIMARY" }], limit[-1], offset[0], table[autocommit_pushdown_sequoiadb.t2]
+[Note] SequoiaDB: optimizer delete: 1, condition: [{ "pk": { "$et": 20000 } }], table: autocommit_pushdown_sequoiadb.t1
+drop procedure p1;
+SELECT "Use this query to flush new log" FROM t1 LIMIT 1;
+Use this query to flush new log
+Use this query to flush new log
+create procedure p1() 
+begin
+INSERT INTO t1 VALUES("2000-02-02", "abc", null, 10);
+INSERT INTO t1 VALUES("2000-02-02", "abc", null, 10),("2000-02-02", "abc", null, 10);
+end ||
+call p1;
+[Note] Testcase: Operation log begin
+drop procedure p1;
+SELECT "Use this query to flush new log" FROM t1 LIMIT 1;
+Use this query to flush new log
+Use this query to flush new log
+CREATE FUNCTION f1() RETURNS int RETURN (SELECT COUNT(*) FROM t1  WHERE pk < 2);
+CREATE FUNCTION f2() RETURNS int RETURN 1;
+select f1();
+f1()
+1
+[Note] Testcase: Operation log begin
+[Note] SequoiaDB: Query message: condition[{ "pk": { "$lt": 2 } }], selector[{}], order_by[{ "pk": 1 }], hint[{ "": "PRIMARY" }], limit[-1], offset[0], table[autocommit_pushdown_sequoiadb.t1]
+SELECT f1() AS f1, col_int FROM t1 WHERE pk < 4 LIMIT 1;
+f1	col_int
+1	3
+[Note] Testcase: Operation log begin
+[Note] SequoiaDB: Query message: condition[{ "pk": { "$lt": 4 } }], selector[{}], order_by[{ "pk": 1 }], hint[{ "": "PRIMARY" }], limit[1], offset[0], table[autocommit_pushdown_sequoiadb.t1]
+[Note] SequoiaDB: Query message: condition[{ "pk": { "$lt": 2 } }], selector[{}], order_by[{ "pk": 1 }], hint[{ "": "PRIMARY" }], limit[-1], offset[0], table[autocommit_pushdown_sequoiadb.t1]
+SELECT f2() AS f1, col_int FROM t1 WHERE pk < 4 LIMIT 1;
+f1	col_int
+1	3
+[Note] Testcase: Operation log begin
+[Note] SequoiaDB: Query message: condition[{ "pk": { "$lt": 4 } }], selector[{}], order_by[{ "pk": 1 }], hint[{ "": "PRIMARY" }], limit[1], offset[0], table[autocommit_pushdown_sequoiadb.t1]
+SELECT "Use this query to flush new log" FROM t1 LIMIT 1;
+Use this query to flush new log
+Use this query to flush new log
+SELECT * FROM t1 WHERE pk != f1() AND col_int < 3 LIMIT 1;
+col_date	col_varchar_16	pk	col_int
+2005-05-12	q	47	-2067595264
+[Note] Testcase: Operation log begin
+[Note] SequoiaDB: Query message: condition[{ "col_int": { "$lt": 3 } }], selector[{}], order_by[{ "col_int": 1 }], hint[{ "": "col_int" }], limit[-1], offset[0], table[autocommit_pushdown_sequoiadb.t1]
+[Note] SequoiaDB: Query message: condition[{ "pk": { "$lt": 2 } }], selector[{}], order_by[{ "pk": 1 }], hint[{ "": "PRIMARY" }], limit[-1], offset[0], table[autocommit_pushdown_sequoiadb.t1]
+SELECT * FROM t1 WHERE pk != f2() AND col_int < 3 LIMIT 1;
+col_date	col_varchar_16	pk	col_int
+2005-05-12	q	47	-2067595264
+[Note] Testcase: Operation log begin
+[Note] SequoiaDB: Query message: condition[{ "col_int": { "$lt": 3 } }], selector[{}], order_by[{ "col_int": 1 }], hint[{ "": "col_int" }], limit[-1], offset[0], table[autocommit_pushdown_sequoiadb.t1]
+DROP FUNCTION f1;
+DROP FUNCTION f2;
+CREATE TRIGGER t1_bi BEFORE INSERT ON t1 FOR EACH ROW
+SET NEW.pk = (SELECT COUNT(*) FROM t1) + 1;
+INSERT INTO t1(col_int) VALUES (1);
+[Note] Testcase: Operation log begin
+[Note] SequoiaDB: Query message: condition[{}], selector[{}], order_by[{ "pk": 1 }], hint[{ "": "PRIMARY" }], limit[-1], offset[0], table[autocommit_pushdown_sequoiadb.t1]
+select * from t1 where pk = 1;
+col_date	col_varchar_16	pk	col_int
+2003-11-18	NULL	1	3
+[Note] Testcase: Operation log begin
+[Note] SequoiaDB: Query message: condition[{ "pk": { "$et": 1 } }], selector[{}], order_by[{ "pk": 1 }], hint[{ "": "PRIMARY" }], limit[-1], offset[0], table[autocommit_pushdown_sequoiadb.t1]
+delete from t1 where pk = 10000;
+[Note] Testcase: Operation log begin
+[Note] SequoiaDB: optimizer delete: 1, condition: [{ "pk": { "$et": 10000 } }], table: autocommit_pushdown_sequoiadb.t1
+update t1 set col_int = 1 where col_int = 1;
+[Note] Testcase: Operation log begin
+[Note] SequoiaDB: optimizer update: 1, rule: [{ "$set": { "col_int": 1 } }], condition: [{ "col_int": { "$et": 1 } }], table: autocommit_pushdown_sequoiadb.t1
+DROP TRIGGER t1_bi;
+SELECT "Use this query to flush new log" FROM t1 LIMIT 1;
+Use this query to flush new log
+Use this query to flush new log
+create view v1 as select * from t1 where pk < 3;
+create view v2 as select t1.*  from t1 join t2 where t1.pk<2 and t2.pk<2;
+create view v3 as select max(col_int),col_varchar_16 from t1 where pk < 5 group by col_varchar_16;
+explain select * from v2;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t2	NULL	range	PRIMARY	PRIMARY	4	NULL	50	100.00	Using where with pushed condition (`autocommit_pushdown_sequoiadb`.`t2`.`pk` < 2); Using index
+1	SIMPLE	t1	NULL	ALL	PRIMARY	NULL	NULL	NULL	229	24.89	Using where with pushed condition (`autocommit_pushdown_sequoiadb`.`t1`.`pk` < 2); Using join buffer (Block Nested Loop)
+Warnings:
+Note	1003	/* select#1 */ select `autocommit_pushdown_sequoiadb`.`t1`.`col_date` AS `col_date`,`autocommit_pushdown_sequoiadb`.`t1`.`col_varchar_16` AS `col_varchar_16`,`autocommit_pushdown_sequoiadb`.`t1`.`pk` AS `pk`,`autocommit_pushdown_sequoiadb`.`t1`.`col_int` AS `col_int` from `autocommit_pushdown_sequoiadb`.`t1` join `autocommit_pushdown_sequoiadb`.`t2` where ((`autocommit_pushdown_sequoiadb`.`t1`.`pk` < 2) and (`autocommit_pushdown_sequoiadb`.`t2`.`pk` < 2))
+select * from v2;
+col_date	col_varchar_16	pk	col_int
+2003-11-18	NULL	1	3
+[Note] Testcase: Operation log begin
+[Note] SequoiaDB: Query message: condition[{ "pk": { "$lt": 2 } }], selector[{ "pk": null }], order_by[{ "pk": 1 }], hint[{ "": "PRIMARY" }], limit[-1], offset[0], table[autocommit_pushdown_sequoiadb.t2]
+[Note] SequoiaDB: Query message: condition[{ "pk": { "$lt": 2 } }], selector[{}], order_by[{}], hint[{}], limit[-1], offset[0], table[autocommit_pushdown_sequoiadb.t1]
+explain select * from v1;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	ALL	PRIMARY	NULL	NULL	NULL	229	24.89	Using where with pushed condition (`autocommit_pushdown_sequoiadb`.`t1`.`pk` < 3)
+Warnings:
+Note	1003	/* select#1 */ select `autocommit_pushdown_sequoiadb`.`t1`.`col_date` AS `col_date`,`autocommit_pushdown_sequoiadb`.`t1`.`col_varchar_16` AS `col_varchar_16`,`autocommit_pushdown_sequoiadb`.`t1`.`pk` AS `pk`,`autocommit_pushdown_sequoiadb`.`t1`.`col_int` AS `col_int` from `autocommit_pushdown_sequoiadb`.`t1` where (`autocommit_pushdown_sequoiadb`.`t1`.`pk` < 3)
+select * from v1;
+col_date	col_varchar_16	pk	col_int
+2003-11-18	NULL	1	3
+2005-01-14	n	2	NULL
+[Note] Testcase: Operation log begin
+[Note] SequoiaDB: optimizer pushdown autocommit: 1
+[Note] SequoiaDB: Query message: condition[{ "pk": { "$lt": 3 } }], selector[{}], order_by[{}], hint[{}], limit[-1], offset[0], table[autocommit_pushdown_sequoiadb.t1]
+explain select * from v3;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	PRIMARY	<derived2>	NULL	ALL	NULL	NULL	NULL	NULL	56	100.00	NULL
+2	DERIVED	t1	NULL	ALL	PRIMARY,col_varchar_16,multi_key	NULL	NULL	NULL	229	24.89	Using where with pushed condition (`autocommit_pushdown_sequoiadb`.`t1`.`pk` < 5); Using temporary; Using filesort
+Warnings:
+Note	1003	/* select#1 */ select `v3`.`max(col_int)` AS `max(col_int)`,`v3`.`col_varchar_16` AS `col_varchar_16` from `autocommit_pushdown_sequoiadb`.`v3`
+select * from v3;
+max(col_int)	col_varchar_16
+3	NULL
+NULL	e
+NULL	n
+-657588224	p
+[Note] Testcase: Operation log begin
+[Note] SequoiaDB: Query message: condition[{ "pk": { "$lt": 5 } }], selector[{}], order_by[{}], hint[{}], limit[-1], offset[0], table[autocommit_pushdown_sequoiadb.t1]
+drop view v1,v2,v3;
+SELECT "Use this query to flush new log" FROM t1 LIMIT 1;
+Use this query to flush new log
+Use this query to flush new log
+/* multi tables */
+SELECT * FROM t1, t2 WHERE t1.pk = t2.pk AND t2.pk < 0;
+col_date	col_varchar_16	pk	col_int	col_date	col_varchar_16	pk	col_int
+[Note] Testcase: Operation log begin
+[Note] SequoiaDB: Query message: condition[{ "pk": { "$lt": 0 } }], selector[{}], order_by[{}], hint[{}], limit[-1], offset[0], table[autocommit_pushdown_sequoiadb.t2]
+/* multi query blocks */
+(SELECT * FROM t1 where pk < 2) UNION (SELECT * FROM t2 where pk < 2);
+col_date	col_varchar_16	pk	col_int
+2003-11-18	NULL	1	3
+[Note] Testcase: Operation log begin
+[Note] SequoiaDB: Query message: condition[{ "pk": { "$lt": 2 } }], selector[{}], order_by[{}], hint[{}], limit[-1], offset[0], table[autocommit_pushdown_sequoiadb.t1]
+[Note] SequoiaDB: Query message: condition[{ "pk": { "$lt": 2 } }], selector[{}], order_by[{}], hint[{}], limit[-1], offset[0], table[autocommit_pushdown_sequoiadb.t2]
+DROP TABLE t1, t2,range_part_table;
+create table t1(a int, b int);
+insert into t1 values(1,1),(2,2),(3,3),(4,4),(NULL,5),(6,6),(7,NULL),(8,8),(9,NULL),(10,10);
+create table t2 as select * from t1;
+create view v1 as select * from t2 where a>4;
+explain select count(*) from v1 limit 3;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t2	NULL	ALL	NULL	NULL	NULL	NULL	10	33.33	Using where with pushed condition (`autocommit_pushdown_sequoiadb`.`t2`.`a` > 4)
+Warnings:
+Note	1003	/* select#1 */ select count(0) AS `count(*)` from `autocommit_pushdown_sequoiadb`.`t2` where (`autocommit_pushdown_sequoiadb`.`t2`.`a` > 4) limit 3
+select count(*) from v1 limit 3;
+count(*)
+5
+[Note] Testcase: Operation log begin
+[Note] SequoiaDB: optimizer count: 1, condition: [{ "a": { "$gt": 4 } }], table: autocommit_pushdown_sequoiadb.t2
+[Note] SequoiaDB: optimizer pushdown autocommit: 1
+[Note] SequoiaDB: Count message: condition[{ "a": { "$gt": 4 } }],hint[{}] table[autocommit_pushdown_sequoiadb.t2]
+explain select count(*) from (select * from t1 where a>2) t2;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	ALL	NULL	NULL	NULL	NULL	10	33.33	Using where with pushed condition (`autocommit_pushdown_sequoiadb`.`t1`.`a` > 2)
+Warnings:
+Note	1003	/* select#1 */ select count(0) AS `count(*)` from `autocommit_pushdown_sequoiadb`.`t1` where (`autocommit_pushdown_sequoiadb`.`t1`.`a` > 2)
+select count(*) from (select * from t1 where a>2) t2;
+count(*)
+7
+[Note] Testcase: Operation log begin
+[Note] SequoiaDB: optimizer count: 1, condition: [{ "a": { "$gt": 2 } }], table: autocommit_pushdown_sequoiadb.t1
+[Note] SequoiaDB: optimizer pushdown autocommit: 1
+[Note] SequoiaDB: Count message: condition[{ "a": { "$gt": 2 } }],hint[{}] table[autocommit_pushdown_sequoiadb.t1]
+explain select count(*) from (select * from t1 where a>2) t2 limit 3;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	ALL	NULL	NULL	NULL	NULL	10	33.33	Using where with pushed condition (`autocommit_pushdown_sequoiadb`.`t1`.`a` > 2)
+Warnings:
+Note	1003	/* select#1 */ select count(0) AS `count(*)` from `autocommit_pushdown_sequoiadb`.`t1` where (`autocommit_pushdown_sequoiadb`.`t1`.`a` > 2) limit 3
+select count(*) from (select * from t1 where a>2) t2 limit 3;
+count(*)
+7
+[Note] Testcase: Operation log begin
+[Note] SequoiaDB: optimizer count: 1, condition: [{ "a": { "$gt": 2 } }], table: autocommit_pushdown_sequoiadb.t1
+[Note] SequoiaDB: optimizer pushdown autocommit: 1
+[Note] SequoiaDB: Count message: condition[{ "a": { "$gt": 2 } }],hint[{}] table[autocommit_pushdown_sequoiadb.t1]
+explain select count(*) from (select * from t1 where a>2) t2 order by a;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	ALL	NULL	NULL	NULL	NULL	10	33.33	Using where with pushed condition (`autocommit_pushdown_sequoiadb`.`t1`.`a` > 2)
+Warnings:
+Note	1003	/* select#1 */ select count(0) AS `count(*)` from `autocommit_pushdown_sequoiadb`.`t1` where (`autocommit_pushdown_sequoiadb`.`t1`.`a` > 2)
+select count(*) from (select * from t1 where a>2) t2 order by a;
+count(*)
+7
+[Note] Testcase: Operation log begin
+[Note] SequoiaDB: optimizer count: 1, condition: [{ "a": { "$gt": 2 } }], table: autocommit_pushdown_sequoiadb.t1
+[Note] SequoiaDB: optimizer pushdown autocommit: 1
+[Note] SequoiaDB: Count message: condition[{ "a": { "$gt": 2 } }],hint[{}] table[autocommit_pushdown_sequoiadb.t1]
+explain select count(*) from (select * from t1 where a>2) t2 group by a;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	ALL	NULL	NULL	NULL	NULL	10	33.33	Using where with pushed condition (`autocommit_pushdown_sequoiadb`.`t1`.`a` > 2); Using temporary; Using filesort
+Warnings:
+Note	1003	/* select#1 */ select count(0) AS `count(*)` from `autocommit_pushdown_sequoiadb`.`t1` where (`autocommit_pushdown_sequoiadb`.`t1`.`a` > 2) group by `autocommit_pushdown_sequoiadb`.`t1`.`a`
+select count(*) from (select * from t1 where a>2) t2 group by a;
+count(*)
+1
+1
+1
+1
+1
+1
+1
+[Note] Testcase: Operation log begin
+[Note] SequoiaDB: optimizer pushdown autocommit: 1
+[Note] SequoiaDB: Query message: condition[{ "a": { "$gt": 2 } }], selector[{}], order_by[{}], hint[{}], limit[-1], offset[0], table[autocommit_pushdown_sequoiadb.t1]
+explain select count(*) from (select * from t1 where a>2) t2 group by a order by a limit 3;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	ALL	NULL	NULL	NULL	NULL	10	33.33	Using where with pushed condition (`autocommit_pushdown_sequoiadb`.`t1`.`a` > 2); Using temporary; Using filesort
+Warnings:
+Note	1003	/* select#1 */ select count(0) AS `count(*)` from `autocommit_pushdown_sequoiadb`.`t1` where (`autocommit_pushdown_sequoiadb`.`t1`.`a` > 2) group by `autocommit_pushdown_sequoiadb`.`t1`.`a` order by `autocommit_pushdown_sequoiadb`.`t1`.`a` limit 3
+select count(*) from (select * from t1 where a>2) t2 group by a order by a limit 3;
+count(*)
+1
+1
+1
+[Note] Testcase: Operation log begin
+[Note] SequoiaDB: optimizer pushdown autocommit: 1
+[Note] SequoiaDB: Query message: condition[{ "a": { "$gt": 2 } }], selector[{}], order_by[{}], hint[{}], limit[-1], offset[0], table[autocommit_pushdown_sequoiadb.t1]
+explain select count(*) from (select * from t1 where a>2 order by a DESC) t2;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	ALL	NULL	NULL	NULL	NULL	10	33.33	Using where with pushed condition (`autocommit_pushdown_sequoiadb`.`t1`.`a` > 2)
+Warnings:
+Note	1003	/* select#1 */ select count(0) AS `count(*)` from `autocommit_pushdown_sequoiadb`.`t1` where (`autocommit_pushdown_sequoiadb`.`t1`.`a` > 2)
+select count(*) from (select * from t1 where a>2 order by a DESC) t2;
+count(*)
+7
+[Note] Testcase: Operation log begin
+[Note] SequoiaDB: optimizer count: 1, condition: [{ "a": { "$gt": 2 } }], table: autocommit_pushdown_sequoiadb.t1
+[Note] SequoiaDB: optimizer pushdown autocommit: 1
+[Note] SequoiaDB: Count message: condition[{ "a": { "$gt": 2 } }],hint[{}] table[autocommit_pushdown_sequoiadb.t1]
+explain select * from (select * from t1 where a>2) t2 limit 3;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	ALL	NULL	NULL	NULL	NULL	10	33.33	Using where with pushed condition (`autocommit_pushdown_sequoiadb`.`t1`.`a` > 2)
+Warnings:
+Note	1003	/* select#1 */ select `autocommit_pushdown_sequoiadb`.`t1`.`a` AS `a`,`autocommit_pushdown_sequoiadb`.`t1`.`b` AS `b` from `autocommit_pushdown_sequoiadb`.`t1` where (`autocommit_pushdown_sequoiadb`.`t1`.`a` > 2) limit 3
+select * from (select * from t1 where a>2) t2 limit 3;
+a	b
+3	3
+4	4
+6	6
+[Note] Testcase: Operation log begin
+[Note] SequoiaDB: optimizer pushdown autocommit: 1
+[Note] SequoiaDB: Query message: condition[{ "a": { "$gt": 2 } }], selector[{}], order_by[{}], hint[{}], limit[3], offset[0], table[autocommit_pushdown_sequoiadb.t1]
+explain select * from v1 limit 3;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t2	NULL	ALL	NULL	NULL	NULL	NULL	10	33.33	Using where with pushed condition (`autocommit_pushdown_sequoiadb`.`t2`.`a` > 4)
+Warnings:
+Note	1003	/* select#1 */ select `autocommit_pushdown_sequoiadb`.`t2`.`a` AS `a`,`autocommit_pushdown_sequoiadb`.`t2`.`b` AS `b` from `autocommit_pushdown_sequoiadb`.`t2` where (`autocommit_pushdown_sequoiadb`.`t2`.`a` > 4) limit 3
+select * from v1 limit 3;
+a	b
+6	6
+7	NULL
+8	8
+[Note] Testcase: Operation log begin
+[Note] SequoiaDB: optimizer pushdown autocommit: 1
+[Note] SequoiaDB: Query message: condition[{ "a": { "$gt": 4 } }], selector[{}], order_by[{}], hint[{}], limit[3], offset[0], table[autocommit_pushdown_sequoiadb.t2]
+explain select * from (select * from t1 where a>2) t2 order by a;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	NULL	NULL	NULL	NULL	NULL	10	33.33	Using where with pushed condition (`autocommit_pushdown_sequoiadb`.`t1`.`a` > 2); Using pushed ORDER BY; Storage engine handles access type
+Warnings:
+Note	1003	/* select#1 */ select `autocommit_pushdown_sequoiadb`.`t1`.`a` AS `a`,`autocommit_pushdown_sequoiadb`.`t1`.`b` AS `b` from `autocommit_pushdown_sequoiadb`.`t1` where (`autocommit_pushdown_sequoiadb`.`t1`.`a` > 2) order by `autocommit_pushdown_sequoiadb`.`t1`.`a`
+select * from (select * from t1 where a>2) t2 order by a;
+a	b
+3	3
+4	4
+6	6
+7	NULL
+8	8
+9	NULL
+10	10
+[Note] Testcase: Operation log begin
+[Note] SequoiaDB: optimizer pushdown autocommit: 1
+[Note] SequoiaDB: Query message: condition[{ "a": { "$gt": 2 } }], selector[{}], order_by[{ "a": 1 }], hint[{}], limit[-1], offset[0], table[autocommit_pushdown_sequoiadb.t1]
+explain select * from (select * from t1 where a>2) t2 group by a;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	NULL	NULL	NULL	NULL	NULL	10	33.33	Using where with pushed condition (`autocommit_pushdown_sequoiadb`.`t1`.`a` > 2); Using pushed GROUP BY; Storage engine handles access type
+Warnings:
+Note	1003	/* select#1 */ select `autocommit_pushdown_sequoiadb`.`t1`.`a` AS `a`,`autocommit_pushdown_sequoiadb`.`t1`.`b` AS `b` from `autocommit_pushdown_sequoiadb`.`t1` where (`autocommit_pushdown_sequoiadb`.`t1`.`a` > 2) group by `autocommit_pushdown_sequoiadb`.`t1`.`a`
+select * from (select * from t1 where a>2) t2 group by a;
+a	b
+3	3
+4	4
+6	6
+7	NULL
+8	8
+9	NULL
+10	10
+[Note] Testcase: Operation log begin
+[Note] SequoiaDB: optimizer pushdown autocommit: 1
+[Note] SequoiaDB: Query message: match[{ "$match": { "a": { "$gt": 2 } } }], group[{ "$group": { "a": { "$first": "$a" }, "_id": { "a": "$a" }, "b": { "$first": "$b" } } }], sort[{ "$sort": { "a": 1 } }], skip[{ "$skip": 0 }], limit[{ "$limit": -1 }]
+explain select * from (select * from t1 where a>2) t2 group by a order by a limit 3;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	NULL	NULL	NULL	NULL	NULL	10	33.33	Using where with pushed condition (`autocommit_pushdown_sequoiadb`.`t1`.`a` > 2); Using pushed GROUP BY; Using pushed ORDER BY; Storage engine handles access type
+Warnings:
+Note	1003	/* select#1 */ select `autocommit_pushdown_sequoiadb`.`t1`.`a` AS `a`,`autocommit_pushdown_sequoiadb`.`t1`.`b` AS `b` from `autocommit_pushdown_sequoiadb`.`t1` where (`autocommit_pushdown_sequoiadb`.`t1`.`a` > 2) group by `autocommit_pushdown_sequoiadb`.`t1`.`a` order by `autocommit_pushdown_sequoiadb`.`t1`.`a` limit 3
+select * from (select * from t1 where a>2) t2 group by a order by a limit 3;
+a	b
+3	3
+4	4
+6	6
+[Note] Testcase: Operation log begin
+[Note] SequoiaDB: optimizer pushdown autocommit: 1
+[Note] SequoiaDB: Query message: match[{ "$match": { "a": { "$gt": 2 } } }], group[{ "$group": { "a": { "$first": "$a" }, "_id": { "a": "$a" }, "b": { "$first": "$b" } } }], sort[{ "$sort": { "a": 1 } }], skip[{ "$skip": 0 }], limit[{ "$limit": 3 }]
+explain select * from (select * from t1 where a>2 order by a DESC) t2;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	NULL	NULL	NULL	NULL	NULL	10	33.33	Using where with pushed condition (`autocommit_pushdown_sequoiadb`.`t1`.`a` > 2); Using pushed ORDER BY; Storage engine handles access type
+Warnings:
+Note	1003	/* select#1 */ select `autocommit_pushdown_sequoiadb`.`t1`.`a` AS `a`,`autocommit_pushdown_sequoiadb`.`t1`.`b` AS `b` from `autocommit_pushdown_sequoiadb`.`t1` where (`autocommit_pushdown_sequoiadb`.`t1`.`a` > 2) order by `autocommit_pushdown_sequoiadb`.`t1`.`a` desc
+select * from (select * from t1 where a>2 order by a DESC) t2;
+a	b
+10	10
+9	NULL
+8	8
+7	NULL
+6	6
+4	4
+3	3
+[Note] Testcase: Operation log begin
+[Note] SequoiaDB: optimizer pushdown autocommit: 1
+[Note] SequoiaDB: Query message: condition[{ "a": { "$gt": 2 } }], selector[{}], order_by[{ "a": -1 }], hint[{}], limit[-1], offset[0], table[autocommit_pushdown_sequoiadb.t1]
+explain select * from (select 1 from t1 where a>2 order by a) t2 limit 3;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	NULL	NULL	NULL	NULL	NULL	10	33.33	Using where with pushed condition (`autocommit_pushdown_sequoiadb`.`t1`.`a` > 2); Using pushed ORDER BY; Storage engine handles access type
+Warnings:
+Note	1003	/* select#1 */ select 1 AS `1` from `autocommit_pushdown_sequoiadb`.`t1` where (`autocommit_pushdown_sequoiadb`.`t1`.`a` > 2) order by `autocommit_pushdown_sequoiadb`.`t1`.`a` limit 3
+select * from (select 1 from t1 where a>2 order by a) t2 limit 3;
+1
+1
+1
+1
+[Note] Testcase: Operation log begin
+[Note] SequoiaDB: optimizer pushdown autocommit: 1
+[Note] SequoiaDB: Query message: condition[{ "a": { "$gt": 2 } }], selector[{}], order_by[{ "a": 1 }], hint[{ "": "" }], limit[3], offset[0], table[autocommit_pushdown_sequoiadb.t1]
+DROP DATABASE autocommit_pushdown_sequoiadb;

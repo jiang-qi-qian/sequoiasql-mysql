@@ -1,0 +1,80 @@
+# Testcase:seqDB-26691:单个复合分区表ref_or_null方式查询，表数据均匀，命中MCV
+
+#
+# clear residual data
+#
+CREATE DATABASE  IF NOT EXISTS index_statistics_mcv_sequoiadb_26691;
+DROP DATABASE IF EXISTS index_statistics_mcv_sequoiadb_26691;
+
+#
+# set env
+#
+--source include/have_sequoiadb.inc
+--source include/have_partition.inc
+
+CREATE DATABASE IF NOT EXISTS index_statistics_mcv_sequoiadb_26691;
+use index_statistics_mcv_sequoiadb_26691;
+
+#
+# testcase process
+#
+CREATE TABLE t1(
+    a INT NOT NULL,
+    b INT,
+    c INT NOT NULL,
+    INDEX idx_a(a),
+    UNIQUE INDEX idx_ba(b,a)
+)
+PARTITION BY RANGE COLUMNS (a)
+SUBPARTITION BY KEY (b)
+SUBPARTITIONS 2 (
+    PARTITION p0 VALUES LESS THAN (4),
+    PARTITION p1 VALUES LESS THAN (7),
+    PARTITION p2 VALUES LESS THAN (11)
+);
+
+
+CREATE TABLE t2(
+    a INT NOT NULL,
+    b INT,
+    c INT NOT NULL,
+    INDEX idx_a(a),
+    UNIQUE INDEX idx_b(b)
+);
+
+# insert 20 rows
+INSERT INTO t1 VALUES
+(4,1,9),(4,2,9),(1,3,9),(3,4,9),(1,5,9),(3,6,9),(1,7,9),(3,8,9),(1,9,9),(3,10,9),
+(4,11,9),(4,12,9),(2,13,9),(5,14,9),(2,15,9),(5,16,9),(2,17,9),(5,18,9),
+(2,19,9),(5,NULL,9);
+
+# insert 20 rows
+INSERT INTO t2 VALUES
+(4,1,9),(4,2,9),(1,3,9),(3,4,9),(1,5,9),(3,6,9),(1,7,9),(3,8,9),(1,9,9),(3,10,9),
+(4,11,9),(4,12,9),(2,13,9),(5,14,9),(2,15,9),(5,16,9),(2,17,9),(5,18,9),
+(2,19,9),(5,NULL,9);
+
+# t1
+--sorted_result
+SELECT * FROM t1 WHERE b=5 or b IS NULL;
+ANALYZE TABLE t1;
+EXPLAIN SELECT * FROM t1 WHERE b=5 or b IS NULL;
+
+# t2
+--sorted_result
+SELECT * FROM t2 WHERE b=5 or b IS NULL;
+ANALYZE TABLE t2;
+
+# set debug='d:i:t:o,/tmp/mysqld26691.trace:f,Sdb_match_cnt_estimator::eval_mcv';
+
+EXPLAIN SELECT * FROM t2 WHERE b=5 or b IS NULL;
+
+# set debug='';
+
+DROP TABLE t1,t2;
+
+#
+# clear env
+#
+DROP DATABASE index_statistics_mcv_sequoiadb_26691;
+--source include/uninstall_sequoiadb.inc

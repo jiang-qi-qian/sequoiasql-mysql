@@ -1,0 +1,63 @@
+--source include/restart_mysqld.inc
+--source include/have_sequoiadb.inc
+
+--disable_warnings
+drop database if exists statistics_trace_sequoiadb_33976;
+--enable_warnings
+create database statistics_trace_sequoiadb_33976;
+drop database statistics_trace_sequoiadb_33976;
+create database statistics_trace_sequoiadb_33976;
+use statistics_trace_sequoiadb_33976;
+
+set session sequoiadb_debug_log = on;
+set session sequoiadb_secure_log = off;
+set session sequoiadb_share_log_output = on;
+
+CREATE TABLE t1 (a int,b varchar(4),key (a)) ENGINE=SequoiaDB;
+INSERT INTO t1 values (1,"a"),(2,"b");
+create table t2 (a int);
+insert into t2 values (1),(2);
+
+# refresh
+--error 1295    #This command is not supported in the prepared statement protocol yet
+prepare stmt1 from 'refresh table t1,t2 stats';
+# flush
+prepare stmt2 from 'flush table t1,t2';
+# select
+prepare stmt3 from 'select * from t1 join t2 on t1.a = t2.a';
+# analyze
+prepare stmt4 from 'analyze table t1,t2';
+# DML
+prepare stmt5 from 'update t1 set a=1';
+# DDL
+prepare stmt6 from 'alter table t1 add index idx_ab(a,b)';
+
+show status like "sdb_share_deleted";
+show status like "sdb_share_updated";
+
+--echo execute prepare flush
+let $query = execute stmt2;
+--source include/query_without_sorted_and_get_mysqld_note_log_sequoiadb.inc
+show status like "sdb_share_deleted";
+
+--echo execute prepare select
+let $query = execute stmt3;
+--source include/query_without_sorted_and_get_mysqld_note_log_sequoiadb.inc
+show status like "sdb_share_updated";
+
+--echo execute prepare analyze
+let $query = execute stmt4;
+--source include/query_without_sorted_and_get_mysqld_note_log_sequoiadb.inc
+show status like "sdb_share_deleted";
+
+--echo execute prepare DML
+let $query = execute stmt5;
+--source include/query_without_sorted_and_get_mysqld_note_log_sequoiadb.inc
+show status like "sdb_share_updated";
+
+--echo execute prepare DDL
+let $query = execute stmt6;
+--source include/query_without_sorted_and_get_mysqld_note_log_sequoiadb.inc
+show status like "sdb_share_deleted";
+
+drop database statistics_trace_sequoiadb_33976;

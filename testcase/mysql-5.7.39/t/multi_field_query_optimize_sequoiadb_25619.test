@@ -1,0 +1,40 @@
+#seqDB-25619 单表多字段等值和范围复合查询
+--source include/have_sequoiadb.inc
+--disable_warnings
+drop database if exists multi_field_query_optimize_25619;
+--enable_warnings
+create database multi_field_query_optimize_25619;
+drop database multi_field_query_optimize_25619;
+create database multi_field_query_optimize_25619;
+
+use multi_field_query_optimize_25619;
+set session optimizer_switch='mrr=on,mrr_cost_based=off';
+set session sequoiadb_debug_log=on;
+create table t1(a int,b int,c int,key union_abc(a,b,c));
+insert into t1 values(1,1,1),(1,2,1),(1,2,5),(1,3,1),(2,1,1),(1,2,6),(1,5,1),(1,2,4);
+#c范围[1,5]
+explain select * from t1 where a = 1 and b in(1,2,3) and c>=1 and c<=5;
+--sorted_result
+select * from t1 where a = 1 and b in(1,2,3) and c>=1 and c<=5;
+--source include/query_pushdown_condition_sequoiadb.inc
+#c范围(1,5]
+explain select * from t1 where a = 1 and b in(1,2,3) and c>1 and c<=5;
+--sorted_result
+select * from t1 where a = 1 and b in(1,2,3) and c>1 and c<=5;
+--source include/query_pushdown_condition_sequoiadb.inc
+#c范围[1,5)
+explain select * from t1 where a = 1 and b in(1,2,3) and c>=1 and c<5;
+--sorted_result
+select * from t1 where a = 1 and b in(1,2,3) and c>=1 and c<5;
+--source include/query_pushdown_condition_sequoiadb.inc
+#c范围(1,5)
+explain select * from t1 where a = 1 and b in(1,2,3) and c>1 and c<5;
+--sorted_result
+select * from t1 where a = 1 and b in(1,2,3) and c>1 and c<5;
+--source include/query_pushdown_condition_sequoiadb.inc
+drop table t1;
+
+set session optimizer_switch=default;
+set session sequoiadb_debug_log=off;
+drop database multi_field_query_optimize_25619;
+--source include/uninstall_sequoiadb.inc

@@ -1,0 +1,113 @@
+drop database if exists order_by_limit_pushdown_optimize_sequoiadb_34284;
+create database order_by_limit_pushdown_optimize_sequoiadb_34284;
+drop database order_by_limit_pushdown_optimize_sequoiadb_34284;
+create database order_by_limit_pushdown_optimize_sequoiadb_34284;
+use order_by_limit_pushdown_optimize_sequoiadb_34284;
+set session sequoiadb_debug_log=on;
+CREATE TABLE `t1` (
+`col1` int(11) DEFAULT NULL,
+`col2` varchar(10) COLLATE utf8mb4_bin DEFAULT NULL,
+`col3` varchar(10) COLLATE utf8mb4_bin DEFAULT NULL,
+`col4` varchar(10) COLLATE utf8mb4_bin DEFAULT NULL,
+UNIQUE KEY `uniq_idx4` (`col4`),
+KEY `idx_col12` (`col1`,`col2`)
+) ENGINE=SequoiaDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin;
+insert into t1 values(6,'def','defg','abcdef');
+insert into t1 values(null,null,null,null);
+insert into t1 values(4,'abcdef','abde','abc');
+insert into t1 values(2,'defg','abd','efg');
+insert into t1 values(5,'xyz','abc','abd');
+insert into t1 values(3,'abde','xyz','def');
+insert into t1 values(0,'abc','abcdef','xyz');
+insert into t1 values(1,'abd','def','defg');
+CREATE TABLE `t2` (
+`a` int(11) DEFAULT NULL,
+`b` int(11) DEFAULT NULL,
+`c` int(11) DEFAULT NULL,
+`d` int(11) DEFAULT NULL,
+KEY `a` (`a`),
+KEY `b` (`b`,`c`),
+KEY `d` (`d`)
+) ENGINE=SequoiaDB;
+explain select * from t1 where (col1,col2) in ((1,"abd"),(2,"defg")) order by col3 limit 1;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	range	idx_col12	idx_col12	48	NULL	4	100.00	Using where; Using MRR; Using filesort
+Warnings:
+Note	1003	/* select#1 */ select `order_by_limit_pushdown_optimize_sequoiadb_34284`.`t1`.`col1` AS `col1`,`order_by_limit_pushdown_optimize_sequoiadb_34284`.`t1`.`col2` AS `col2`,`order_by_limit_pushdown_optimize_sequoiadb_34284`.`t1`.`col3` AS `col3`,`order_by_limit_pushdown_optimize_sequoiadb_34284`.`t1`.`col4` AS `col4` from `order_by_limit_pushdown_optimize_sequoiadb_34284`.`t1` where ((`order_by_limit_pushdown_optimize_sequoiadb_34284`.`t1`.`col1`,`order_by_limit_pushdown_optimize_sequoiadb_34284`.`t1`.`col2`) in (<cache>((1,'abd')),<cache>((2,'defg')))) order by `order_by_limit_pushdown_optimize_sequoiadb_34284`.`t1`.`col3` limit 1
+select * from t1 where (col1,col2) in ((1,"abd"),(2,"defg")) order by col3 limit 1;
+col1	col2	col3	col4
+2	defg	abd	efg
+[Note] Testcase: Operation log begin
+[Note] SequoiaDB: Condition can't be pushed down. db=[order_by_limit_pushdown_optimize_sequoiadb_34284], table[t1], sql=[select * from t1 where (col1,col2) in ((1,"abd"),(2,"defg")) order by col3 limit 1]
+[Note] SequoiaDB: optimizer pushdown autocommit: 1
+[Note] SequoiaDB: Query message: condition[{}], selector[{}], order_by[{}], hint[{ "$Range": { "IsAllEqual": true, "PrefixNum": 2, "IndexValue": [ { "1": 1, "2": "abd" }, { "1": 2, "2": "defg" } ] }, "": "idx_col12" }], limit[-1], offset[0], table[order_by_limit_pushdown_optimize_sequoiadb_34284.t1]
+explain select * from t1 where (col1,col2) in ((1,"abd"),(2,"defg")) order by col3 desc limit 1;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	range	idx_col12	idx_col12	48	NULL	4	100.00	Using where; Using MRR; Using filesort
+Warnings:
+Note	1003	/* select#1 */ select `order_by_limit_pushdown_optimize_sequoiadb_34284`.`t1`.`col1` AS `col1`,`order_by_limit_pushdown_optimize_sequoiadb_34284`.`t1`.`col2` AS `col2`,`order_by_limit_pushdown_optimize_sequoiadb_34284`.`t1`.`col3` AS `col3`,`order_by_limit_pushdown_optimize_sequoiadb_34284`.`t1`.`col4` AS `col4` from `order_by_limit_pushdown_optimize_sequoiadb_34284`.`t1` where ((`order_by_limit_pushdown_optimize_sequoiadb_34284`.`t1`.`col1`,`order_by_limit_pushdown_optimize_sequoiadb_34284`.`t1`.`col2`) in (<cache>((1,'abd')),<cache>((2,'defg')))) order by `order_by_limit_pushdown_optimize_sequoiadb_34284`.`t1`.`col3` desc limit 1
+select * from t1 where (col1,col2) in ((1,"abd"),(2,"defg")) order by col3 desc limit 1;
+col1	col2	col3	col4
+1	abd	def	defg
+[Note] Testcase: Operation log begin
+[Note] SequoiaDB: Condition can't be pushed down. db=[order_by_limit_pushdown_optimize_sequoiadb_34284], table[t1], sql=[select * from t1 where (col1,col2) in ((1,"abd"),(2,"defg")) order by col3 desc limit 1]
+[Note] SequoiaDB: optimizer pushdown autocommit: 1
+[Note] SequoiaDB: Query message: condition[{}], selector[{}], order_by[{}], hint[{ "$Range": { "IsAllEqual": true, "PrefixNum": 2, "IndexValue": [ { "1": 1, "2": "abd" }, { "1": 2, "2": "defg" } ] }, "": "idx_col12" }], limit[-1], offset[0], table[order_by_limit_pushdown_optimize_sequoiadb_34284.t1]
+alter table t1 add index idx_col1(col1);
+alter table t1 add index idx_col2(col2);
+explain select * from t1 where col1 = 1 or col2 = 'xyz' order by col1 limit 1;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	index	idx_col12,idx_col1,idx_col2	idx_col1	5	NULL	4	23.44	Using where with pushed condition ((`order_by_limit_pushdown_optimize_sequoiadb_34284`.`t1`.`col1` = 1) or (`order_by_limit_pushdown_optimize_sequoiadb_34284`.`t1`.`col2` = 'xyz'))
+Warnings:
+Note	1003	/* select#1 */ select `order_by_limit_pushdown_optimize_sequoiadb_34284`.`t1`.`col1` AS `col1`,`order_by_limit_pushdown_optimize_sequoiadb_34284`.`t1`.`col2` AS `col2`,`order_by_limit_pushdown_optimize_sequoiadb_34284`.`t1`.`col3` AS `col3`,`order_by_limit_pushdown_optimize_sequoiadb_34284`.`t1`.`col4` AS `col4` from `order_by_limit_pushdown_optimize_sequoiadb_34284`.`t1` where ((`order_by_limit_pushdown_optimize_sequoiadb_34284`.`t1`.`col1` = 1) or (`order_by_limit_pushdown_optimize_sequoiadb_34284`.`t1`.`col2` = 'xyz')) order by `order_by_limit_pushdown_optimize_sequoiadb_34284`.`t1`.`col1` limit 1
+select * from t1 where col1 = 1 or col2 = 'xyz' order by col1 limit 1;
+col1	col2	col3	col4
+1	abd	def	defg
+[Note] Testcase: Operation log begin
+[Note] SequoiaDB: optimizer pushdown autocommit: 1
+[Note] SequoiaDB: Query message: condition[{ "$or": [ { "col1": { "$et": 1 } }, { "col2": { "$et": "xyz" } } ] }], selector[{}], order_by[{ "col1": 1 }], hint[{ "": "idx_col1" }], limit[1], offset[0], table[order_by_limit_pushdown_optimize_sequoiadb_34284.t1]
+explain select * from t1 where col1 = 1 or col2 = 'xyz' order by col1 desc limit 1;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	index	idx_col12,idx_col1,idx_col2	idx_col1	5	NULL	4	23.44	Using where with pushed condition ((`order_by_limit_pushdown_optimize_sequoiadb_34284`.`t1`.`col1` = 1) or (`order_by_limit_pushdown_optimize_sequoiadb_34284`.`t1`.`col2` = 'xyz'))
+Warnings:
+Note	1003	/* select#1 */ select `order_by_limit_pushdown_optimize_sequoiadb_34284`.`t1`.`col1` AS `col1`,`order_by_limit_pushdown_optimize_sequoiadb_34284`.`t1`.`col2` AS `col2`,`order_by_limit_pushdown_optimize_sequoiadb_34284`.`t1`.`col3` AS `col3`,`order_by_limit_pushdown_optimize_sequoiadb_34284`.`t1`.`col4` AS `col4` from `order_by_limit_pushdown_optimize_sequoiadb_34284`.`t1` where ((`order_by_limit_pushdown_optimize_sequoiadb_34284`.`t1`.`col1` = 1) or (`order_by_limit_pushdown_optimize_sequoiadb_34284`.`t1`.`col2` = 'xyz')) order by `order_by_limit_pushdown_optimize_sequoiadb_34284`.`t1`.`col1` desc limit 1
+select * from t1 where col1 = 1 or col2 = 'xyz' order by col1 desc limit 1;
+col1	col2	col3	col4
+5	xyz	abc	abd
+[Note] Testcase: Operation log begin
+[Note] SequoiaDB: optimizer pushdown autocommit: 1
+[Note] SequoiaDB: Query message: condition[{ "$or": [ { "col1": { "$et": 1 } }, { "col2": { "$et": "xyz" } } ] }], selector[{}], order_by[{ "col1": -1 }], hint[{ "": "idx_col1" }], limit[1], offset[0], table[order_by_limit_pushdown_optimize_sequoiadb_34284.t1]
+explain select * from t1 where col1 = 1 or col2 = 'xyz' order by col3 limit 1;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	index_merge	idx_col12,idx_col1,idx_col2	idx_col1,idx_col2	5,43	NULL	4	100.00	Using sdb_union(idx_col1,idx_col2); Using where with pushed condition ((`order_by_limit_pushdown_optimize_sequoiadb_34284`.`t1`.`col1` = 1) or (`order_by_limit_pushdown_optimize_sequoiadb_34284`.`t1`.`col2` = 'xyz')); Using filesort
+Warnings:
+Note	1003	/* select#1 */ select `order_by_limit_pushdown_optimize_sequoiadb_34284`.`t1`.`col1` AS `col1`,`order_by_limit_pushdown_optimize_sequoiadb_34284`.`t1`.`col2` AS `col2`,`order_by_limit_pushdown_optimize_sequoiadb_34284`.`t1`.`col3` AS `col3`,`order_by_limit_pushdown_optimize_sequoiadb_34284`.`t1`.`col4` AS `col4` from `order_by_limit_pushdown_optimize_sequoiadb_34284`.`t1` where ((`order_by_limit_pushdown_optimize_sequoiadb_34284`.`t1`.`col1` = 1) or (`order_by_limit_pushdown_optimize_sequoiadb_34284`.`t1`.`col2` = 'xyz')) order by `order_by_limit_pushdown_optimize_sequoiadb_34284`.`t1`.`col3` limit 1
+select * from t1 where col1 = 1 or col2 = 'xyz' order by col3 limit 1;
+col1	col2	col3	col4
+5	xyz	abc	abd
+[Note] Testcase: Operation log begin
+[Note] SequoiaDB: Query message: condition[{ "col1": { "$et": 1 } }], selector[{}], order_by[{}], hint[{ "": "idx_col1" }], limit[-1], offset[0], table[order_by_limit_pushdown_optimize_sequoiadb_34284.t1]
+[Note] SequoiaDB: Query message: condition[{ "col2": { "$et": "xyz" } }], selector[{}], order_by[{}], hint[{ "": "idx_col2" }], limit[-1], offset[0], table[order_by_limit_pushdown_optimize_sequoiadb_34284.t1]
+explain select * from t1 where col1 = 1 or col2 = 'xyz' order by col3 desc limit 1;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	index_merge	idx_col12,idx_col1,idx_col2	idx_col1,idx_col2	5,43	NULL	4	100.00	Using sdb_union(idx_col1,idx_col2); Using where with pushed condition ((`order_by_limit_pushdown_optimize_sequoiadb_34284`.`t1`.`col1` = 1) or (`order_by_limit_pushdown_optimize_sequoiadb_34284`.`t1`.`col2` = 'xyz')); Using filesort
+Warnings:
+Note	1003	/* select#1 */ select `order_by_limit_pushdown_optimize_sequoiadb_34284`.`t1`.`col1` AS `col1`,`order_by_limit_pushdown_optimize_sequoiadb_34284`.`t1`.`col2` AS `col2`,`order_by_limit_pushdown_optimize_sequoiadb_34284`.`t1`.`col3` AS `col3`,`order_by_limit_pushdown_optimize_sequoiadb_34284`.`t1`.`col4` AS `col4` from `order_by_limit_pushdown_optimize_sequoiadb_34284`.`t1` where ((`order_by_limit_pushdown_optimize_sequoiadb_34284`.`t1`.`col1` = 1) or (`order_by_limit_pushdown_optimize_sequoiadb_34284`.`t1`.`col2` = 'xyz')) order by `order_by_limit_pushdown_optimize_sequoiadb_34284`.`t1`.`col3` desc limit 1
+select * from t1 where col1 = 1 or col2 = 'xyz' order by col3 desc limit 1;
+col1	col2	col3	col4
+1	abd	def	defg
+[Note] Testcase: Operation log begin
+[Note] SequoiaDB: Query message: condition[{ "col1": { "$et": 1 } }], selector[{}], order_by[{}], hint[{ "": "idx_col1" }], limit[-1], offset[0], table[order_by_limit_pushdown_optimize_sequoiadb_34284.t1]
+[Note] SequoiaDB: Query message: condition[{ "col2": { "$et": "xyz" } }], selector[{}], order_by[{}], hint[{ "": "idx_col2" }], limit[-1], offset[0], table[order_by_limit_pushdown_optimize_sequoiadb_34284.t1]
+explain select * from t2 where a = 1 and b = 2 and c = 3 and d > 5 and d < 6 order by d limit 3;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t2	NULL	ref	a,b,d	b	10	const,const	2	100.00	Using where with pushed condition ((`order_by_limit_pushdown_optimize_sequoiadb_34284`.`t2`.`a` = 1) and (`order_by_limit_pushdown_optimize_sequoiadb_34284`.`t2`.`d` > 5) and (`order_by_limit_pushdown_optimize_sequoiadb_34284`.`t2`.`d` < 6)); Using pushed sort (`order_by_limit_pushdown_optimize_sequoiadb_34284`.`t2`.`d`)
+Warnings:
+Note	1003	/* select#1 */ select `order_by_limit_pushdown_optimize_sequoiadb_34284`.`t2`.`a` AS `a`,`order_by_limit_pushdown_optimize_sequoiadb_34284`.`t2`.`b` AS `b`,`order_by_limit_pushdown_optimize_sequoiadb_34284`.`t2`.`c` AS `c`,`order_by_limit_pushdown_optimize_sequoiadb_34284`.`t2`.`d` AS `d` from `order_by_limit_pushdown_optimize_sequoiadb_34284`.`t2` where ((`order_by_limit_pushdown_optimize_sequoiadb_34284`.`t2`.`c` = 3) and (`order_by_limit_pushdown_optimize_sequoiadb_34284`.`t2`.`b` = 2) and (`order_by_limit_pushdown_optimize_sequoiadb_34284`.`t2`.`a` = 1) and (`order_by_limit_pushdown_optimize_sequoiadb_34284`.`t2`.`d` > 5) and (`order_by_limit_pushdown_optimize_sequoiadb_34284`.`t2`.`d` < 6)) order by `order_by_limit_pushdown_optimize_sequoiadb_34284`.`t2`.`d` limit 3
+select * from t2 where a = 1 and b = 2 and c = 3 and d > 5 and d < 6 order by d limit 3;
+a	b	c	d
+[Note] Testcase: Operation log begin
+[Note] SequoiaDB: optimizer pushdown autocommit: 1
+[Note] SequoiaDB: Query message: condition[{ "$and": [ { "$and": [ { "a": { "$et": 1 } }, { "d": { "$gt": 5 } }, { "d": { "$lt": 6 } } ] }, { "b": { "$et": 2 }, "c": { "$et": 3 } } ] }], selector[{}], order_by[{ "d": 1 }], hint[{ "": "b" }], limit[3], offset[0], table[order_by_limit_pushdown_optimize_sequoiadb_34284.t2]
+set session sequoiadb_debug_log=off;
+drop database order_by_limit_pushdown_optimize_sequoiadb_34284;

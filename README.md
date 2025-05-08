@@ -1,36 +1,48 @@
-# SequoiaSQL - MySQL Storage Engine
+# SequoiaSQL-MySQL Storage Engine
 
-SequoiaSQL - MySQL Storage Engine is a distributed MySQL storage engine.
+SequoiaSQL-MySQL Storage Engine is a distributed MySQL storage engine.
 
 It currently supports SequoiaDB 3.x as the backend database, and it will be extended to multiple databases such like MongoDB/Redis and etc...
 
-In order to take advantages of scalability and performance, SequoiaSQL - MySQL Storage Engine can be used to replace InnoDB and store user data/index/lob in the backend distributed database.
+In order to take advantages of scalability and performance, SequoiaSQL-MySQL Storage Engine can be used to replace InnoDB and store user data/index/lob in the backend distributed database.
 
+## Building.
+1. Get the source code of SequoiaSQL-MySQL from github.     
+```bash
+git clone https://github.com/SequoiaDB/sequoiasql-mysql.git sequoiasql-mysql
+```  
+2. Get the SequoiaDB C++ driver.
+3. Compile.
+```bash
+cd sequoiasql-mysql
+python3 build.py --sdbdriver </path/to/sequoiadb/cpp/driver> --commitsha <commit SHA> --mysqlsrcpkgdir </path/to/mysql/original/src/archive/package> -t mysql --buildir=<builddir_name> --connector=<connector_branch_name> -i  </path/to/install/mysql/>  --archivetest --dd -j 64
 
-## Building
+# eg:
+# build master branch
+python3 build.py --sdbdriver /data/temp/sequoiadb/client --commitsha 7f1105cbb78e415e5d59caf536aed50c4d6b0b67 --mysqlsrcpkgdir /data/temp/ -t mysql --builddir=mysql_debug_build -i  /data/temp/mysql --archivetest --dd -j 64
 
-1. Get boost-1.59.0, the source code of mysql-5.7.24 and SequoiaDB C++ driver 3.0.1.
-2. Clone the plugin code to the storage directory.
- ```bash
-cd mysql-5.7.24/storage
-git clone https://github.com/SequoiaDB/sequoiasql-mysql.git sequoiadb
- ```
-3. Build the plugin
- ```bash
-cd mysql-5.7.24
-cmake . -DWITH_BOOST=</path/to/boost_1_59_0/> -DCMAKE_INSTALL_PREFIX=/opt/mysql -DMYSQL_DATADIR=/opt/mysql/data -DWITH_SDB_DRIVER=</path/to/sequoiadb/driver> -DCMAKE_BUILD_TYPE=Release
-make install -j 4
- ```
+# build v3.4 branch
+python3 build.py --sdbdriver /data/temp/sequoiadb/client --commitsha 7f1105cbb78e415e5d59caf536aed50c4d6b0b67 --mysqlsrcpkgdir /data/temp/ -t mysql --builddir=mysql_v34_debug_build --connector="3.4" -i  /data/temp/mysql --archivetest --dd -j 64
 
-By default, the sequoiadb storage engine is built into MySQL. You can add `-DSDB_BUILT_IN=OFF` to build it as a dynamic library.
-
-Additional, we use two options to give plugin version and SequoiaDB C++ driver version:
-```
--DSDB_PLUGIN_VERSION=<git commit short hash>
--DSDB_DRIVER_VERSION=<driver version>
+# build v3.6 branch
+python3 build.py --sdbdriver /data/temp/sequoiadb/client --commitsha 7f1105cbb78e415e5d59caf536aed50c4d6b0b67 --mysqlsrcpkgdir /data/temp/ -t mysql --builddir=mysql_v36_debug_build --connector="3.6" -i  /data/temp/mysql --archivetest --dd -j 64
 ```
 
-For example: `-DSDB_PLUGIN_VERSION=4811624 -DSDB_DRIVER_VERSION=3.0.1`.
+## Testing the SequoiaSQL-MySQL server.
+> Prerequisites:  
+> - SequoiaSQL-MySQL server can acess a SequoiaDB Cluster.   
+> - transisolation: The transaction isolation of SequoiaDB should be RC.
+
+SequoiaSQL-MySQL using the MySQL testing framework defined in `mysql-test` folder. To run all tests:
+```
+cd mysql-test
+./mtr --suite=main,json --big-test --force --max-test-fail=0 --parallel=4
+```
+To run only one test:
+```
+cd mysql-test
+./mtr --suite=<main_or_json> <test_case_name>
+```
 
 ## Coding Guidelines
 

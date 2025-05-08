@@ -1,0 +1,88 @@
+connection group1_conn1;
+DROP DATABASE IF EXISTS same_inst_tmp_table;
+CREATE DATABASE same_inst_tmp_table;
+DROP DATABASE same_inst_tmp_table;
+CREATE DATABASE same_inst_tmp_table;
+USE same_inst_tmp_table;
+CREATE TEMPORARY TABLE tmp_table (id INT , name VARCHAR(20)) ENGINE=SequoiaDB;
+SHOW CREATE TABLE tmp_table;
+Table	Create Table
+tmp_table	CREATE TEMPORARY TABLE `tmp_table` (
+  `id` int(11) DEFAULT NULL,
+  `name` varchar(20) COLLATE utf8mb4_bin DEFAULT NULL
+) ENGINE=SequoiaDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin
+INSERT INTO tmp_table VALUES (1 , 'a');
+SELECT * FROM tmp_table;
+id	name
+1	a
+CREATE INDEX index1 ON tmp_table(id);
+INSERT INTO tmp_table VALUES (1 , 'a');
+SELECT * FROM tmp_table;
+id	name
+1	a
+1	a
+DROP INDEX index1 ON tmp_table;
+SHOW INDEX FROM tmp_table;
+Table	Non_unique	Key_name	Seq_in_index	Column_name	Collation	Cardinality	Sub_part	Packed	Null	Index_type	Comment	Index_comment
+SELECT * FROM tmp_table;
+id	name
+1	a
+1	a
+DROP TABLE tmp_table;
+SHOW CREATE TABLE tmp_table;
+ERROR 42S02: Table 'same_inst_tmp_table.tmp_table' doesn't exist
+CREATE TEMPORARY TABLE tmp_table (id INT , name VARCHAR(20)) ENGINE=SequoiaDB;
+SHOW CREATE TABLE tmp_table;
+Table	Create Table
+tmp_table	CREATE TEMPORARY TABLE `tmp_table` (
+  `id` int(11) DEFAULT NULL,
+  `name` varchar(20) COLLATE utf8mb4_bin DEFAULT NULL
+) ENGINE=SequoiaDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin
+INSERT INTO tmp_table VALUES (1 , 'a');
+SELECT * FROM tmp_table;
+id	name
+1	a
+connection group1_conn2;
+USE same_inst_tmp_table;
+CREATE TEMPORARY TABLE tmp_table (id INT , name VARCHAR(20)) ENGINE=SequoiaDB;
+SHOW CREATE TABLE tmp_table;
+Table	Create Table
+tmp_table	CREATE TEMPORARY TABLE `tmp_table` (
+  `id` int(11) DEFAULT NULL,
+  `name` varchar(20) COLLATE utf8mb4_bin DEFAULT NULL
+) ENGINE=SequoiaDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin
+INSERT INTO tmp_table VALUES (1 , 'a');
+SELECT * FROM tmp_table;
+id	name
+1	a
+CREATE INDEX index1 ON tmp_table(id);
+INSERT INTO tmp_table VALUES (1 , 'a');
+SELECT * FROM tmp_table;
+id	name
+1	a
+1	a
+DROP INDEX index1 ON tmp_table;
+SHOW INDEX FROM tmp_table;
+Table	Non_unique	Key_name	Seq_in_index	Column_name	Collation	Cardinality	Sub_part	Packed	Null	Index_type	Comment	Index_comment
+SELECT * FROM tmp_table;
+id	name
+1	a
+1	a
+DROP TABLE tmp_table;
+SHOW CREATE TABLE tmp_table;
+ERROR 42S02: Table 'same_inst_tmp_table.tmp_table' doesn't exist
+CREATE TEMPORARY TABLE tmp_table (id INT , name VARCHAR(20)) ENGINE=SequoiaDB;
+SHOW CREATE TABLE tmp_table;
+Table	Create Table
+tmp_table	CREATE TEMPORARY TABLE `tmp_table` (
+  `id` int(11) DEFAULT NULL,
+  `name` varchar(20) COLLATE utf8mb4_bin DEFAULT NULL
+) ENGINE=SequoiaDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin
+INSERT INTO tmp_table VALUES (1 , 'a');
+SELECT * FROM tmp_table;
+id	name
+1	a
+DROP TABLE tmp_table;
+connection group1_conn1;
+DROP TABLE tmp_table;
+DROP DATABASE same_inst_tmp_table;

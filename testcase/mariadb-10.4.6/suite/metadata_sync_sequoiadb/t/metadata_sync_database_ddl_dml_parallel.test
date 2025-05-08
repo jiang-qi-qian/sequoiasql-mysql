@@ -1,0 +1,85 @@
+--source include/have_sequoiadb.inc
+--source suite/metadata_sync_sequoiadb/inc/insts_connect_sequoiadb.inc
+
+#seqDB-23101
+#table
+connection conn1;
+--disable_warnings
+drop database if exists metadata_sync_database_ddl_dml_parallel;
+--enable_warnings
+
+create database metadata_sync_database_ddl_dml_parallel;
+
+connection conn2;
+use metadata_sync_database_ddl_dml_parallel;
+
+connection conn1;
+use metadata_sync_database_ddl_dml_parallel;
+create table t1(a int);
+
+connection conn2;
+select * from t1;
+
+connection conn1;
+drop database metadata_sync_database_ddl_dml_parallel;
+
+connection conn2;
+--error 1146
+insert into t1 values(1);
+
+#view
+connection conn1;
+create database metadata_sync_database_ddl_dml_parallel;
+use metadata_sync_database_ddl_dml_parallel;
+create table t1(a int auto_increment primary key,b int ,c int);
+insert into t1(b,c) values(1,1),(2,2),(3,3);
+
+create view v1 as select * from t1;
+drop database metadata_sync_database_ddl_dml_parallel;
+
+connection conn2;
+--error 1146
+select * from metadata_sync_database_ddl_dml_parallel.v1;
+
+#function
+connection conn1;
+create database metadata_sync_database_ddl_dml_parallel;
+use metadata_sync_database_ddl_dml_parallel;
+create table t1(id int,cname char(10));
+
+delimiter //;
+create function myselect() returns int 
+begin
+   declare c int;
+   insert into t1 values(1,'python'),(2,'java');
+   select id from t1 where cname ='python' into c;
+   delete from t1 where cname = 'python';
+   select id from t1 where cname ='python' into c;
+   return c;
+end//
+delimiter ;//
+drop database metadata_sync_database_ddl_dml_parallel;
+
+connection conn2;
+--error 1305
+select metadata_sync_database_ddl_dml_parallel.myselect();
+
+#procedure
+connection conn1;
+create database metadata_sync_database_ddl_dml_parallel;
+use metadata_sync_database_ddl_dml_parallel;
+create table t1 (
+        id   char(16) not null default '',
+        data int not null
+);
+
+create procedure metadata_sync_ddl_dml_parallel()
+  insert into t1 values ("foo", 42);
+drop database metadata_sync_database_ddl_dml_parallel;
+
+connection conn2;
+--error 1305
+call metadata_sync_database_ddl_dml_parallel.metadata_sync_ddl_dml_parallel();
+
+--source suite/metadata_sync_sequoiadb/inc/insts_disconnect_sequoiadb.inc
+--source include/uninstall_sequoiadb.inc

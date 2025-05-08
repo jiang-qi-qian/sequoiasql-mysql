@@ -1,0 +1,114 @@
+#case 18868 
+
+--source include/have_sequoiadb.inc
+--source suite/metadata_sync_sequoiadb/inc/insts_connect_sequoiadb.inc
+
+# connect to conn1, clear databases in the beginning
+connection conn1;
+--disable_warnings
+DROP DATABASE IF EXISTS metasync_function;
+--enable_warnings
+
+# connect to conn2, check databases are cleaned in the beginning
+connection conn2;
+--sleep $sleep
+--error ER_BAD_DB_ERROR 
+SHOW CREATE DATABASE metasync_function;
+
+# seqDB-18868
+# begin testing
+#
+# CREATE/ALTER/DROP FUNCTION
+#
+connection conn1;
+CREATE DATABASE metasync_function;
+USE metasync_function;
+# test function definer
+DELIMITER |;                                                      # 定义分隔符，必须要有，可以不是$$
+CREATE DEFINER=`fs`@`%` FUNCTION sp_definer (  s varchar(30) )    # 多个参数用,分割 参数的类型必须是mysql列存在的类型
+RETURNS VARCHAR(255)                                              # 指定返回值类型，如果你不确定返回文本长度，可以使用text
+BEGIN
+   DECLARE str VARCHAR(255) DEFAULT 'hello ';                     # 定义一个变量，可以指定默认值
+   SET str = CONCAT( str, s );                                       # 设置改边变量的值
+   RETURN str;                                                    # 返回值
+END|                                                              # 注意看清楚了，这个END后面有你在前面定义的分割符号
+# test characteristics
+CREATE FUNCTION sp_chistics () RETURNS INT
+    LANGUAGE SQL
+    DETERMINISTIC
+    SQL SECURITY INVOKER
+    COMMENT 'Characteristics function test'
+    BEGIN
+      DECLARE x INT(11);
+      SET x = -1;
+      RETURN x;
+END|
+# test case
+CREATE FUNCTION sp_case () RETURNS INT
+BEGIN
+  DECLARE x INT DEFAULT 0;
+
+  DECLARE CONTINUE HANDLER FOR SQLSTATE '42S02'
+  BEGIN
+    SET x:= x + 1000;
+  END;
+
+  CASE ( SELECT 1 FROM no_such_view LIMIT 1 )
+    WHEN 1 THEN SET x:= x + 1;
+    WHEN 2 THEN SET x:= x + 2;
+    ELSE SET x:= x + 100;
+  END CASE;
+  SET x:= x + 500;
+
+  RETURN x;
+END|
+DELIMITER ;|
+# check metadatas after create
+connection conn2;
+--sleep $sleep
+USE metasync_function;
+SHOW CREATE FUNCTION sp_definer;
+--replace_regex /DEFINER=`.*`@/DEFINER=`x`@/
+SHOW CREATE FUNCTION sp_chistics;
+--replace_regex /DEFINER=`.*`@/DEFINER=`x`@/
+SHOW CREATE FUNCTION sp_case;
+# alter function
+DELIMITER |;
+ALTER FUNCTION sp_chistics
+   NO SQL
+   COMMENT 'alter function test'|
+DELIMITER ;|
+# check metadatas after alter
+connection conn1;
+--sleep $sleep
+--replace_regex /DEFINER=`.*`@/DEFINER=`x`@/
+SHOW CREATE FUNCTION sp_chistics;
+# drop function
+DROP FUNCTION IF EXISTS sp_definer;
+DROP FUNCTION sp_chistics;
+DROP FUNCTION sp_case;
+DROP FUNCTION IF EXISTS sp_case;
+# check metadatas after drop
+connection conn2;
+--sleep $sleep
+--error ER_SP_DOES_NOT_EXIST
+SHOW CREATE FUNCTION sp_definer;
+--error ER_SP_DOES_NOT_EXIST
+SHOW CREATE FUNCTION sp_chistics;
+--error ER_SP_DOES_NOT_EXIST
+SHOW CREATE FUNCTION sp_case;
+
+# clear databases in the ending
+DROP DATABASE metasync_function;
+# check databases are cleaned in the ending
+connection conn2;
+--sleep $sleep
+--error ER_BAD_DB_ERROR 
+SHOW CREATE DATABASE metasync_function;
+
+#seqDB-23359
+--error 1305
+drop function p1;
+
+--source include/uninstall_sequoiadb.inc
+--source suite/metadata_sync_sequoiadb/inc/insts_disconnect_sequoiadb.inc

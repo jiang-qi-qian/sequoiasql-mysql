@@ -1,0 +1,143 @@
+connection conn1;
+DROP DATABASE IF EXISTS metasync_cs1;
+DROP DATABASE IF EXISTS metasync_cs2;
+DROP DATABASE IF EXISTS metasync_cs3;
+DROP DATABASE IF EXISTS metasync_cs31;
+DROP DATABASE IF EXISTS metasync_cs4;
+DROP DATABASE IF EXISTS metasync_cs5;
+DROP DATABASE IF EXISTS metasync_cs6;
+DROP SCHEMA IF EXISTS metasync_schem1;
+SET sql_mode='ANSI_QUOTES';
+SET character_set_client = utf8;
+SET character_set_connection = utf8;
+DROP DATABASE IF EXISTS "metasync_\tt1\nt2\\t3";
+DROP DATABASE IF EXISTS "metasync_丶﹗﹖﹔【】| 你好";
+SET sql_mode=default;
+connection conn2;
+SHOW CREATE DATABASE metasync_cs1;
+ERROR 42000: Unknown database 'metasync_cs1'
+SHOW CREATE DATABASE metasync_cs2;
+ERROR 42000: Unknown database 'metasync_cs2'
+SHOW CREATE DATABASE metasync_cs3;
+ERROR 42000: Unknown database 'metasync_cs3'
+SHOW CREATE DATABASE metasync_cs31;
+ERROR 42000: Unknown database 'metasync_cs31'
+SHOW CREATE DATABASE metasync_cs4;
+ERROR 42000: Unknown database 'metasync_cs4'
+SHOW CREATE DATABASE metasync_cs5;
+ERROR 42000: Unknown database 'metasync_cs5'
+SHOW CREATE DATABASE metasync_cs6;
+ERROR 42000: Unknown database 'metasync_cs6'
+SHOW CREATE SCHEMA metasync_schem1;
+ERROR 42000: Unknown database 'metasync_schem1'
+SET sql_mode='ANSI_QUOTES';
+SET character_set_client = utf8;
+SET character_set_connection = utf8;
+SHOW CREATE DATABASE "metasync_\tt1\nt2\\t3";
+ERROR 42000: Unknown database 'metasync_\tt1\nt2\\t3'
+SHOW CREATE DATABASE "metasync_丶﹗﹖﹔【】| 你好";
+ERROR 42000: Unknown database 'metasync_\4E36\FE57\FE56\FE54\3010\3011| \4F60\597D'
+SET sql_mode=default;
+connection conn1;
+CREATE DATABASE metasync_cs1;
+CREATE DATABASE metasync_cs2 CHARACTER SET utf8 COLLATE utf8_general_ci;
+CREATE DATABASE IF NOT EXISTS metasync_cs3 DEFAULT CHARACTER SET = utf16 DEFAULT COLLATE = utf16_general_ci;
+CREATE OR REPLACE DATABASE metasync_cs3 DEFAULT CHARACTER SET = utf32 DEFAULT COLLATE = utf32_general_ci;
+CREATE OR REPLACE DATABASE metasync_cs31 DEFAULT CHARACTER SET = big5 DEFAULT COLLATE = big5_chinese_ci;
+CREATE OR REPLACE SCHEMA metasync_schem1 DEFAULT CHARACTER SET = big5 DEFAULT COLLATE = big5_chinese_ci;
+CREATE DATABASE metasync_cs4;
+CREATE DATABASE metasync_cs5;
+USE metasync_cs4;
+DROP DATABASE metasync_cs4;
+DROP DATABASE metasync_cs5;
+CREATE   DATABASE   metasync_cs6;
+SET sql_mode='ANSI_QUOTES';
+CREATE DATABASE "metasync_\tt1\nt2\\t3";
+CREATE DATABASE "metasync_丶﹗﹖﹔【】| 你好";
+SET sql_mode=default;
+connection conn2;
+SHOW CREATE DATABASE metasync_cs1;
+Database	Create Database
+metasync_cs1	CREATE DATABASE `metasync_cs1` /*!40100 DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_bin */
+SHOW CREATE DATABASE metasync_cs2;
+Database	Create Database
+metasync_cs2	CREATE DATABASE `metasync_cs2` /*!40100 DEFAULT CHARACTER SET utf8 */
+SHOW CREATE DATABASE metasync_cs3;
+Database	Create Database
+metasync_cs3	CREATE DATABASE `metasync_cs3` /*!40100 DEFAULT CHARACTER SET utf32 */
+SHOW CREATE DATABASE metasync_cs31;
+Database	Create Database
+metasync_cs31	CREATE DATABASE `metasync_cs31` /*!40100 DEFAULT CHARACTER SET big5 */
+SHOW CREATE DATABASE metasync_cs4;
+ERROR 42000: Unknown database 'metasync_cs4'
+SHOW CREATE DATABASE metasync_cs5;
+ERROR 42000: Unknown database 'metasync_cs5'
+SHOW CREATE DATABASE metasync_cs6;
+Database	Create Database
+metasync_cs6	CREATE DATABASE `metasync_cs6` /*!40100 DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_bin */
+SHOW CREATE SCHEMA metasync_schem1;
+Database	Create Database
+metasync_schem1	CREATE DATABASE `metasync_schem1` /*!40100 DEFAULT CHARACTER SET big5 */
+SET sql_mode='ANSI_QUOTES';
+SHOW CREATE DATABASE "metasync_\tt1\nt2\\t3";
+Database	Create Database
+metasync_\tt1\nt2\\t3	CREATE DATABASE "metasync_\tt1\nt2\\t3" /*!40100 DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_bin */
+SHOW CREATE DATABASE "metasync_丶﹗﹖﹔【】| 你好";
+Database	Create Database
+metasync_??????| ??	CREATE DATABASE "metasync_??????| ??" /*!40100 DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_bin */
+SET sql_mode=default;
+ALTER DATABASE metasync_cs2 CHARACTER SET ucs2 COLLATE ucs2_general_ci;
+ALTER DATABASE metasync_cs3 DEFAULT CHARACTER SET = ucs2 DEFAULT COLLATE = ucs2_general_ci;
+ALTER DATABASE metasync_cs31 DEFAULT CHARACTER SET = ucs2 DEFAULT COLLATE = ucs2_general_ci;
+ALTER SCHEMA metasync_schem1 DEFAULT CHARACTER SET = ucs2 DEFAULT COLLATE = ucs2_general_ci;
+connection conn1;
+SHOW CREATE DATABASE metasync_cs2;
+Database	Create Database
+metasync_cs2	CREATE DATABASE `metasync_cs2` /*!40100 DEFAULT CHARACTER SET ucs2 */
+SHOW CREATE DATABASE metasync_cs3;
+Database	Create Database
+metasync_cs3	CREATE DATABASE `metasync_cs3` /*!40100 DEFAULT CHARACTER SET ucs2 */
+SHOW CREATE DATABASE metasync_cs31;
+Database	Create Database
+metasync_cs31	CREATE DATABASE `metasync_cs31` /*!40100 DEFAULT CHARACTER SET ucs2 */
+SHOW CREATE SCHEMA metasync_schem1;
+Database	Create Database
+metasync_schem1	CREATE DATABASE `metasync_schem1` /*!40100 DEFAULT CHARACTER SET ucs2 */
+DROP DATABASE IF EXISTS metasync_cs1;
+DROP DATABASE metasync_cs2;
+DROP DATABASE metasync_cs3;
+DROP DATABASE metasync_cs31;
+DROP DATABASE metasync_cs6;
+DROP SCHEMA metasync_schem1;
+DROP SCHEMA IF EXISTS metasync_schem1;
+Warnings:
+Note	1008	Can't drop database 'metasync_schem1'; database doesn't exist
+SET sql_mode='ANSI_QUOTES';
+DROP DATABASE "metasync_\tt1\nt2\\t3";
+DROP DATABASE "metasync_丶﹗﹖﹔【】| 你好";
+SET sql_mode=default;
+connection conn2;
+SHOW CREATE DATABASE metasync_cs1;
+ERROR 42000: Unknown database 'metasync_cs1'
+SHOW CREATE DATABASE metasync_cs2;
+ERROR 42000: Unknown database 'metasync_cs2'
+SHOW CREATE DATABASE metasync_cs3;
+ERROR 42000: Unknown database 'metasync_cs3'
+SHOW CREATE DATABASE metasync_cs31;
+ERROR 42000: Unknown database 'metasync_cs31'
+SHOW CREATE DATABASE metasync_cs4;
+ERROR 42000: Unknown database 'metasync_cs4'
+SHOW CREATE DATABASE metasync_cs5;
+ERROR 42000: Unknown database 'metasync_cs5'
+SHOW CREATE DATABASE metasync_cs6;
+ERROR 42000: Unknown database 'metasync_cs6'
+SHOW CREATE SCHEMA metasync_schem1;
+ERROR 42000: Unknown database 'metasync_schem1'
+SET sql_mode='ANSI_QUOTES';
+SHOW CREATE DATABASE "metasync_\tt1\nt2\\t3";
+ERROR 42000: Unknown database 'metasync_\tt1\nt2\\t3'
+SHOW CREATE DATABASE "metasync_丶﹗﹖﹔【】| 你好";
+ERROR 42000: Unknown database 'metasync_\4E36\FE57\FE56\FE54\3010\3011| \4F60\597D'
+SET sql_mode=default;
+SET character_set_client = default;
+SET character_set_connection = default;

@@ -1,0 +1,67 @@
+#seqDB-24562 相同实例创建临时表
+
+--source include/have_sequoiadb.inc
+--source suite/metadata_mapping_sequoiadb/inc/insts_connect_sequoiadb.inc
+
+connection group1_conn1;
+--disable_warnings
+DROP DATABASE IF EXISTS same_inst_tmp_table;
+--enable_warnings
+
+let $s_create_database = CREATE DATABASE same_inst_tmp_table;
+let $s_use_database = USE same_inst_tmp_table;
+let $s_create_table = CREATE TEMPORARY TABLE tmp_table (id INT , name VARCHAR(20)) ENGINE=SequoiaDB;
+let $s_create_index = CREATE INDEX index1 ON tmp_table(id);
+let $s_show_create_table = SHOW CREATE TABLE tmp_table;
+let $s_insert = INSERT INTO tmp_table VALUES (1 , 'a');
+let $s_drop_database = DROP DATABASE same_inst_tmp_table;
+
+eval $s_create_database;
+eval $s_drop_database;
+eval $s_create_database;
+eval $s_use_database;
+eval $s_create_table;
+eval $s_show_create_table;
+eval $s_insert;
+SELECT * FROM tmp_table;
+eval $s_create_index;
+eval $s_insert;
+SELECT * FROM tmp_table;
+DROP INDEX index1 ON tmp_table;
+SHOW INDEX FROM tmp_table;
+SELECT * FROM tmp_table;
+DROP TABLE tmp_table;
+--error 1146
+eval $s_show_create_table;
+eval $s_create_table;
+eval $s_show_create_table;
+eval $s_insert;
+SELECT * FROM tmp_table;
+
+connection group1_conn2;
+eval $s_use_database;
+eval $s_create_table;
+eval $s_show_create_table;
+eval $s_insert;
+SELECT * FROM tmp_table;
+eval $s_create_index;
+eval $s_insert;
+SELECT * FROM tmp_table;
+DROP INDEX index1 ON tmp_table;
+SHOW INDEX FROM tmp_table;
+SELECT * FROM tmp_table;
+DROP TABLE tmp_table;
+--error 1146
+eval $s_show_create_table;
+eval $s_create_table;
+eval $s_show_create_table;
+eval $s_insert;
+SELECT * FROM tmp_table;
+
+DROP TABLE tmp_table;
+connection group1_conn1;
+DROP TABLE tmp_table;
+eval $s_drop_database;
+
+--source include/uninstall_sequoiadb.inc
+--source suite/metadata_mapping_sequoiadb/inc/insts_disconnect_sequoiadb.inc

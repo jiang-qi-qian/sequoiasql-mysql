@@ -1,0 +1,31 @@
+--source include/restart_mysqld.inc
+--source include/have_sequoiadb.inc
+
+--disable_warnings
+drop database if exists statistics_trace_sequoiadb_33971;
+--enable_warnings
+create database statistics_trace_sequoiadb_33971;
+drop database statistics_trace_sequoiadb_33971;
+create database statistics_trace_sequoiadb_33971;
+use statistics_trace_sequoiadb_33971;
+
+set session sequoiadb_debug_log = on;
+set session sequoiadb_secure_log = off;
+set session sequoiadb_share_log_output = on;
+
+CREATE TABLE t1 (a int,b varchar(4),key (a)) ENGINE=SequoiaDB;
+INSERT INTO t1 values (1,"a"),(2,"b");
+CREATE TABLE t2 (a int);
+INSERT INTO t2 values (1),(2);
+CREATE TABLE t3 (a int);
+INSERT INTO t3 values (1),(2);
+
+# 清空统计信息缓存
+flush tables;
+
+show status like "sdb_share_deleted";
+let $query = flush tables;
+--source include/query_without_sorted_and_get_mysqld_note_log_sequoiadb.inc
+show status like "sdb_share_deleted";
+
+drop database statistics_trace_sequoiadb_33971;

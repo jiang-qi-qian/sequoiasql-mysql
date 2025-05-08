@@ -1,0 +1,115 @@
+#seqDB-26659 Mysql带有order by+limit的多表子查询混合关联时，核验查询结果正确性
+--source include/have_sequoiadb.inc
+--disable_warnings
+drop database if exists join_cache_limit_sequoiadb_26659;
+--enable_warnings
+create database join_cache_limit_sequoiadb_26659;
+drop database join_cache_limit_sequoiadb_26659;
+create database join_cache_limit_sequoiadb_26659;
+
+use join_cache_limit_sequoiadb_26659;
+set session optimizer_switch='mrr=on,mrr_cost_based=off,block_nested_loop=on,batched_key_access=on';
+set session sequoiadb_debug_log=on;
+#设置该参数为了看limit条件是否下压到debug日志
+set session join_buffer_size=128;
+--disable_warnings
+drop table if exists t1,t2,t3;
+--enable_warnings
+create table t1(col1 int,col2 int);
+create table t2(col1 int,col2 int,key(col1));
+create table t3(col1 int,col2 int,key(col1));
+#关联数据覆盖一对一
+insert into t1 values(1,2),(2,3),(3,4),(4,5),(5,6),(6,7),(7,8),(8,9),(9,10),(10,11),(11,12),(12,13),(13,14),(14,15),(15,16),(16,17),(17,18);
+insert into t2 values(1,2),(2,3),(3,4),(4,5),(5,6),(6,7),(7,8),(8,9),(9,10),(10,11),(11,12),(12,13),(13,14),(14,15),(15,16),(16,17),(17,18);
+insert into t3 values(1,2),(2,3),(3,4),(4,5),(5,6),(6,7),(7,8),(8,9),(9,10),(10,11),(11,12),(12,13),(13,14),(14,15),(15,16),(16,17),(17,18);
+#关联算法为BKA+BKA
+explain select * from t1 left join (select t2.col1,t3.col2 from t2 inner join t3 on t2.col1 = t3.col1) tmp on t1.col1 = tmp.col1 order by t1.col1 limit 10;
+select * from t1 left join (select t2.col1,t3.col2 from t2 inner join t3 on t2.col1 = t3.col1) tmp on t1.col1 = tmp.col1 order by t1.col1 limit 10;
+--source include/query_pushdown_condition_sequoiadb.inc
+#关联算法为BKA+BNL
+alter table t3 drop index col1;
+explain select * from t1 left join (select t2.col1,t3.col2 from t2 inner join t3 on t2.col1 = t3.col1) tmp on t1.col1 = tmp.col1 order by t1.col1 limit 10;
+select * from t1 left join (select t2.col1,t3.col2 from t2 inner join t3 on t2.col1 = t3.col1) tmp on t1.col1 = tmp.col1 order by t1.col1 limit 10;
+--source include/query_pushdown_condition_sequoiadb.inc
+#关联算法为BNL+BNL
+alter table t2 drop index col1;
+explain select * from t1 left join (select t2.col1,t3.col2 from t2 inner join t3 on t2.col1 = t3.col1) tmp on t1.col1 = tmp.col1 order by t1.col1 limit 10;
+select * from t1 left join (select t2.col1,t3.col2 from t2 inner join t3 on t2.col1 = t3.col1) tmp on t1.col1 = tmp.col1 order by t1.col1 limit 10;
+--source include/query_pushdown_condition_sequoiadb.inc
+truncate table t1;
+truncate table t2;
+truncate table t3;
+#关联数据覆盖一对多
+insert into t1 values(1,2),(2,3),(3,4),(4,5),(5,6),(6,7),(7,8),(8,9),(9,10);
+insert into t2 values(1,2),(1,3),(1,4),(2,1),(2,2),(2,3),(3,3),(3,4),(3,5),(4,3),(4,5),(5,4),(5,6),(6,5),(6,7),(7,7),(7,8),(8,8),(8,9),(9,8),(9,10);
+insert into t3 values(1,2),(1,3),(1,4),(2,1),(2,2),(2,3),(3,3),(3,4),(3,5),(4,3),(4,5),(5,4),(5,6),(6,5),(6,7),(7,7),(7,8),(8,8),(8,9),(9,8),(9,10);
+#关联算法为BKA+BKA
+alter table t2 add index col1(col1);
+alter table t3 add index col1(col1);
+explain select * from t1 left join (select t2.col1,t3.col2 from t2 inner join t3 on t2.col1 = t3.col1) tmp on t1.col1 = tmp.col1 order by t1.col1,tmp.col1,tmp.col2 limit 10;
+select * from t1 left join (select t2.col1,t3.col2 from t2 inner join t3 on t2.col1 = t3.col1) tmp on t1.col1 = tmp.col1 order by t1.col1,tmp.col1,tmp.col2 limit 10;
+--source include/query_pushdown_condition_sequoiadb.inc
+#关联算法为BKA+BNL
+alter table t3 drop index col1;
+explain select * from t1 left join (select t2.col1,t3.col2 from t2 inner join t3 on t2.col1 = t3.col1) tmp on t1.col1 = tmp.col1 order by t1.col1,tmp.col1,tmp.col2 limit 10;
+select * from t1 left join (select t2.col1,t3.col2 from t2 inner join t3 on t2.col1 = t3.col1) tmp on t1.col1 = tmp.col1 order by t1.col1,tmp.col1,tmp.col2 limit 10;
+--source include/query_pushdown_condition_sequoiadb.inc
+#关联算法为BNL+BNL
+alter table t2 drop index col1;
+explain select * from t1 left join (select t2.col1,t3.col2 from t2 inner join t3 on t2.col1 = t3.col1) tmp on t1.col1 = tmp.col1 order by t1.col1,tmp.col1,tmp.col2 limit 10;
+select * from t1 left join (select t2.col1,t3.col2 from t2 inner join t3 on t2.col1 = t3.col1) tmp on t1.col1 = tmp.col1 order by t1.col1,tmp.col1,tmp.col2 limit 10;
+--source include/query_pushdown_condition_sequoiadb.inc
+truncate table t1;
+truncate table t2;
+truncate table t3;
+#关联数据覆盖多对一
+insert into t1 values(1,2),(1,3),(1,4),(2,1),(2,2),(2,3),(3,3),(3,4),(3,5),(4,3),(4,5),(5,4),(5,6),(6,5),(6,7),(7,7),(7,8),(8,8),(8,9),(9,8),(9,10);
+insert into t2 values(1,2),(2,3),(3,4),(4,5),(5,6),(6,7),(7,8),(8,9),(9,10),(10,3),(11,5),(12,4),(13,6),(14,5),(15,7),(16,7),(17,8),(18,8),(19,9),(20,8),(21,10);
+insert into t3 values(1,2),(2,3),(3,4),(4,5),(5,6),(6,7),(7,8),(8,9),(9,10),(10,3),(11,5),(12,4),(13,6),(14,5),(15,7),(16,7),(17,8),(18,8),(19,9),(20,8),(21,10);
+#关联算法为BKA+BKA
+alter table t2 add index col1(col1);
+alter table t3 add index col1(col1);
+explain select * from t1 left join (select t2.col1,t3.col2 from t2 inner join t3 on t2.col1 = t3.col1) tmp on t1.col1 = tmp.col1 order by t1.col1,t1.col2 limit 10;
+select * from t1 left join (select t2.col1,t3.col2 from t2 inner join t3 on t2.col1 = t3.col1) tmp on t1.col1 = tmp.col1 order by t1.col1,t1.col2 limit 10;
+--source include/query_pushdown_condition_sequoiadb.inc
+#关联算法为BKA+BNL
+alter table t3 drop index col1;
+explain select * from t1 left join (select t2.col1,t3.col2 from t2 inner join t3 on t2.col1 = t3.col1) tmp on t1.col1 = tmp.col1 order by t1.col1,t1.col2 limit 10;
+select * from t1 left join (select t2.col1,t3.col2 from t2 inner join t3 on t2.col1 = t3.col1) tmp on t1.col1 = tmp.col1 order by t1.col1,t1.col2 limit 10;
+--source include/query_pushdown_condition_sequoiadb.inc
+#关联算法为BNL+BNL
+alter table t2 drop index col1;
+explain select * from t1 left join (select t2.col1,t3.col2 from t2 inner join t3 on t2.col1 = t3.col1) tmp on t1.col1 = tmp.col1 order by t1.col1,t1.col2 limit 10;
+select * from t1 left join (select t2.col1,t3.col2 from t2 inner join t3 on t2.col1 = t3.col1) tmp on t1.col1 = tmp.col1 order by t1.col1,t1.col2 limit 10;
+--source include/query_pushdown_condition_sequoiadb.inc
+truncate table t1;
+truncate table t2;
+truncate table t3;
+#关联数据覆盖多对多
+insert into t1 values(1,2),(1,3),(1,4),(2,1),(2,2),(2,3),(3,3),(3,4),(3,5),(4,3),(4,5),(5,4),(5,6),(6,5),(6,7),(7,7),(7,8),(8,8),(8,9),(9,8),(9,10);
+insert into t2 values(1,2),(1,3),(1,4),(2,1),(2,2),(2,3),(3,3),(3,4),(3,5),(4,3),(4,5),(5,4),(5,6),(6,5),(6,7),(7,7),(7,8),(8,8),(8,9),(9,8),(9,10);
+insert into t3 values(1,2),(1,3),(1,4),(2,1),(2,2),(2,3),(3,3),(3,4),(3,5),(4,3),(4,5),(5,4),(5,6),(6,5),(6,7),(7,7),(7,8),(8,8),(8,9),(9,8),(9,10);
+#关联算法为BKA+BKA
+alter table t2 add index col1(col1);
+alter table t3 add index col1(col1);
+explain select * from t1 left join (select t2.col1,t3.col2 from t2 inner join t3 on t2.col1 = t3.col1) tmp on t1.col1 = tmp.col1 order by t1.col1,t1.col2,tmp.col1,tmp.col2 limit 10;
+select * from t1 left join (select t2.col1,t3.col2 from t2 inner join t3 on t2.col1 = t3.col1) tmp on t1.col1 = tmp.col1 order by t1.col1,t1.col2,tmp.col1,tmp.col2 limit 10;
+--source include/query_pushdown_condition_sequoiadb.inc
+#关联算法为BKA+BNL
+alter table t3 drop index col1;
+explain select * from t1 left join (select t2.col1,t3.col2 from t2 inner join t3 on t2.col1 = t3.col1) tmp on t1.col1 = tmp.col1 order by t1.col1,t1.col2,tmp.col1,tmp.col2 limit 10;
+select * from t1 left join (select t2.col1,t3.col2 from t2 inner join t3 on t2.col1 = t3.col1) tmp on t1.col1 = tmp.col1 order by t1.col1,t1.col2,tmp.col1,tmp.col2 limit 10;
+--source include/query_pushdown_condition_sequoiadb.inc
+#关联算法为BNL+BNL
+alter table t2 drop index col1;
+explain select * from t1 left join (select t2.col1,t3.col2 from t2 inner join t3 on t2.col1 = t3.col1) tmp on t1.col1 = tmp.col1 order by t1.col1,t1.col2,tmp.col1,tmp.col2 limit 10;
+select * from t1 left join (select t2.col1,t3.col2 from t2 inner join t3 on t2.col1 = t3.col1) tmp on t1.col1 = tmp.col1 order by t1.col1,t1.col2,tmp.col1,tmp.col2 limit 10;
+--source include/query_pushdown_condition_sequoiadb.inc
+drop table t1,t2,t3;
+
+set session sequoiadb_debug_log=off;
+set session join_buffer_size=default;
+set session optimizer_switch=default;
+drop database join_cache_limit_sequoiadb_26659;
+--source include/uninstall_sequoiadb.inc
+

@@ -1,0 +1,2 @@
+--sequoiadb_stats_cache=OFF --sequoiadb_debug_log=ON --sequoiadb_auto_partition=ON
+

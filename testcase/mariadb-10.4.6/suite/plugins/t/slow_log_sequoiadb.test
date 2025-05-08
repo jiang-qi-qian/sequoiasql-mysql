@@ -1,0 +1,625 @@
+#case 29404~29415
+--source include/have_sequoiadb.inc
+
+let $log_output = `select @@log_output`;
+let $sequoiadb_error_level = `select @@sequoiadb_error_level`;
+let $server_id = `select @@server_id`;
+let $slow_query_log = `select @@slow_query_log`;
+let $general_log = `select @@general_log`;
+
+set global log_output = "TABLE";
+set session long_query_time = 0;
+set session sequoiadb_support_mode = '';
+
+set global slow_query_log = off;
+set global general_log = off; 
+
+--disable_warnings
+drop database if exists slow_log_sequoiadb;
+drop table if exists mysql.slow_log;
+drop table if exists mysql.general_log;
+--enable_warnings
+
+use mysql;
+CREATE TABLE `slow_log` (
+  `start_time` timestamp(6) NOT NULL DEFAULT current_timestamp(6) ON UPDATE current_timestamp(6),
+  `user_host` mediumtext NOT NULL,
+  `query_time` time(6) NOT NULL,
+  `lock_time` time(6) NOT NULL,
+  `rows_sent` int(11) NOT NULL,
+  `rows_examined` int(11) NOT NULL,
+  `db` varchar(512) NOT NULL,
+  `last_insert_id` int(11) NOT NULL,
+  `insert_id` int(11) NOT NULL,
+  `server_id` int(10) unsigned NOT NULL,
+  `sql_text` mediumtext NOT NULL,
+  `thread_id` bigint(21) unsigned NOT NULL,
+  `rows_affected` int(11) NOT NULL
+) ENGINE=SequoiaDB DEFAULT CHARSET=utf8 COMMENT='Slow log,sequoiadb:{table_options: {NoTrans:true}}';
+
+CREATE TABLE `general_log` (
+  `event_time` timestamp(6) NOT NULL DEFAULT current_timestamp(6) ON UPDATE current_timestamp(6),
+  `user_host` mediumtext NOT NULL,
+  `thread_id` bigint(21) unsigned NOT NULL,
+  `server_id` int(10) unsigned NOT NULL,
+  `command_type` varchar(64) NOT NULL,
+  `argument` mediumtext NOT NULL
+) ENGINE=SequoiaDB DEFAULT CHARSET=utf8 COMMENT='General log,sequoiadb:{table_options: {NoTrans:true}}';
+truncate table slow_log;
+truncate table general_log;
+
+create database slow_log_sequoiadb;
+use slow_log_sequoiadb;
+
+# case 29404:开启slow_log/general_log开关，执行慢查询操作
+set global slow_query_log = on;
+set global general_log = on;
+create table t1(id int);
+
+set global slow_query_log = off;
+set global general_log = off;
+create table t2(id int);
+
+set global slow_query_log = on;
+set global general_log = on;
+create table t3(id int);
+
+--replace_regex /test_parallel_[0-9]/x/
+--replace_column 1 TIMESTAMP 2 USER_HOST 3 QUERY_TIME 4 LOCK_TIME 12 THREAD_ID 13 ROWS_AFFECTED
+select * from mysql.slow_log;
+--replace_regex /test_parallel_[0-9]/x/
+--replace_column 1 TIMESTAMP 2 USER_HOST 3 THREAD_ID
+select * from mysql.general_log;
+
+# case 29405:修改表mysql.slow_log/mysql.general_log的引擎，执行慢查询操作
+set global slow_query_log = off;
+set global general_log =off;
+use mysql;
+drop table slow_log, general_log;
+CREATE TABLE `slow_log` (
+  `start_time` timestamp(6) NOT NULL DEFAULT current_timestamp(6) ON UPDATE current_timestamp(6),
+  `user_host` mediumtext NOT NULL,
+  `query_time` time(6) NOT NULL,
+  `lock_time` time(6) NOT NULL,
+  `rows_sent` int(11) NOT NULL,
+  `rows_examined` int(11) NOT NULL,
+  `db` varchar(512) NOT NULL,
+  `last_insert_id` int(11) NOT NULL,
+  `insert_id` int(11) NOT NULL,
+  `server_id` int(10) unsigned NOT NULL,
+  `sql_text` mediumtext NOT NULL,
+  `thread_id` bigint(21) unsigned NOT NULL,
+  `rows_affected` int(11) NOT NULL
+) ENGINE=CSV DEFAULT CHARSET=utf8 COMMENT='Slow log';
+
+CREATE TABLE `general_log` (
+  `event_time` timestamp(6) NOT NULL DEFAULT current_timestamp(6) ON UPDATE current_timestamp(6),
+  `user_host` mediumtext NOT NULL,
+  `thread_id` bigint(21) unsigned NOT NULL,
+  `server_id` int(10) unsigned NOT NULL,
+  `command_type` varchar(64) NOT NULL,
+  `argument` mediumtext NOT NULL
+) ENGINE=CSV DEFAULT CHARSET=utf8 COMMENT='General log';
+
+set global slow_query_log = on;
+set global general_log = on;
+use slow_log_sequoiadb;
+create table t4(id int);
+
+--replace_regex /test_parallel_[0-9]/x/
+--replace_column 1 TIMESTAMP 2 USER_HOST 3 QUERY_TIME 4 LOCK_TIME 12 THREAD_ID 13 ROWS_AFFECTED
+select * from mysql.slow_log;
+--replace_regex /test_parallel_[0-9]/x/
+--replace_column 1 TIMESTAMP 2 USER_HOST 3 THREAD_ID
+select * from mysql.general_log;
+
+set global slow_query_log = off;
+set global general_log = off;
+use mysql;
+drop table slow_log, general_log;
+CREATE TABLE `slow_log` (
+  `start_time` timestamp(6) NOT NULL DEFAULT current_timestamp(6) ON UPDATE current_timestamp(6),
+  `user_host` mediumtext NOT NULL,
+  `query_time` time(6) NOT NULL,
+  `lock_time` time(6) NOT NULL,
+  `rows_sent` int(11) NOT NULL,
+  `rows_examined` int(11) NOT NULL,
+  `db` varchar(512) NOT NULL,
+  `last_insert_id` int(11) NOT NULL,
+  `insert_id` int(11) NOT NULL,
+  `server_id` int(10) unsigned NOT NULL,
+  `sql_text` mediumtext NOT NULL,
+  `thread_id` bigint(21) unsigned NOT NULL,
+  `rows_affected` int(11) NOT NULL
+) ENGINE=SequoiaDB DEFAULT CHARSET=utf8 COMMENT='Slow log,sequoiadb:{table_options: {NoTrans:true}}';
+
+CREATE TABLE `general_log` (
+  `event_time` timestamp(6) NOT NULL DEFAULT current_timestamp(6) ON UPDATE current_timestamp(6),
+  `user_host` mediumtext NOT NULL,
+  `thread_id` bigint(21) unsigned NOT NULL,
+  `server_id` int(10) unsigned NOT NULL,
+  `command_type` varchar(64) NOT NULL,
+  `argument` mediumtext NOT NULL
+) ENGINE=SequoiaDB DEFAULT CHARSET=utf8 COMMENT='General log,sequoiadb:{table_options: {NoTrans:true}}';
+
+set global slow_query_log = on;
+set global general_log = on;
+use slow_log_sequoiadb;
+create table t5(id int);
+
+--replace_regex /test_parallel_[0-9]/x/
+--replace_column 1 TIMESTAMP 2 USER_HOST 3 QUERY_TIME 4 LOCK_TIME 12 THREAD_ID 13 ROWS_AFFECTED
+select * from mysql.slow_log;
+--replace_regex /test_parallel_[0-9]/x/
+--replace_column 1 TIMESTAMP 2 USER_HOST 3 THREAD_ID
+select * from mysql.general_log;
+
+set global slow_query_log = off;
+set global general_log = off;
+use mysql;
+drop table slow_log, general_log;
+CREATE TABLE `slow_log` (
+  `start_time` timestamp(6) NOT NULL DEFAULT current_timestamp(6) ON UPDATE current_timestamp(6),
+  `user_host` mediumtext NOT NULL,
+  `query_time` time(6) NOT NULL,
+  `lock_time` time(6) NOT NULL,
+  `rows_sent` int(11) NOT NULL,
+  `rows_examined` int(11) NOT NULL,
+  `db` varchar(512) NOT NULL,
+  `last_insert_id` int(11) NOT NULL,
+  `insert_id` int(11) NOT NULL,
+  `server_id` int(10) unsigned NOT NULL,
+  `sql_text` mediumtext NOT NULL,
+  `thread_id` bigint(21) unsigned NOT NULL,
+  `rows_affected` int(11) NOT NULL
+) ENGINE=CSV DEFAULT CHARSET=utf8 COMMENT='Slow log';
+
+CREATE TABLE `general_log` (
+  `event_time` timestamp(6) NOT NULL DEFAULT current_timestamp(6) ON UPDATE current_timestamp(6),
+  `user_host` mediumtext NOT NULL,
+  `thread_id` bigint(21) unsigned NOT NULL,
+  `server_id` int(10) unsigned NOT NULL,
+  `command_type` varchar(64) NOT NULL,
+  `argument` mediumtext NOT NULL
+) ENGINE=CSV DEFAULT CHARSET=utf8 COMMENT='General log';
+
+set global slow_query_log = on;
+set global general_log = on;
+use slow_log_sequoiadb;
+create table t6(id int);
+
+--replace_regex /test_parallel_[0-9]/x/
+--replace_column 1 TIMESTAMP 2 USER_HOST 3 QUERY_TIME 4 LOCK_TIME 12 THREAD_ID 13 ROWS_AFFECTED
+select * from mysql.slow_log;
+--replace_regex /test_parallel_[0-9]/x/
+--replace_column 1 TIMESTAMP 2 USER_HOST 3 THREAD_ID
+select * from mysql.general_log;
+
+# case 29406:设置变量server_id为非默认值,执行慢查询操作
+# case 29407:表mysql.slow_log/mysql.general_log的引擎为sdb，开启事务自动提交，执行慢查询操作
+set global server_id=10;
+set global slow_query_log = off;
+set global general_log = off;
+use mysql;
+drop table slow_log, general_log;
+CREATE TABLE `slow_log` (
+  `start_time` timestamp(6) NOT NULL DEFAULT current_timestamp(6) ON UPDATE current_timestamp(6),
+  `user_host` mediumtext NOT NULL,
+  `query_time` time(6) NOT NULL,
+  `lock_time` time(6) NOT NULL,
+  `rows_sent` int(11) NOT NULL,
+  `rows_examined` int(11) NOT NULL,
+  `db` varchar(512) NOT NULL,
+  `last_insert_id` int(11) NOT NULL,
+  `insert_id` int(11) NOT NULL,
+  `server_id` int(10) unsigned NOT NULL,
+  `sql_text` mediumtext NOT NULL,
+  `thread_id` bigint(21) unsigned NOT NULL,
+  `rows_affected` int(11) NOT NULL
+) ENGINE=SequoiaDB DEFAULT CHARSET=utf8 COMMENT='Slow log,sequoiadb:{table_options: {NoTrans:true}}';
+
+CREATE TABLE `general_log` (
+  `event_time` timestamp(6) NOT NULL DEFAULT current_timestamp(6) ON UPDATE current_timestamp(6),
+  `user_host` mediumtext NOT NULL,
+  `thread_id` bigint(21) unsigned NOT NULL,
+  `server_id` int(10) unsigned NOT NULL,
+  `command_type` varchar(64) NOT NULL,
+  `argument` mediumtext NOT NULL
+) ENGINE=SequoiaDB DEFAULT CHARSET=utf8 COMMENT='General log,sequoiadb:{table_options: {NoTrans:true}}';
+
+set global slow_query_log = on;
+set global general_log = on;
+use slow_log_sequoiadb;
+create table t7(id int);
+
+--replace_regex /test_parallel_[0-9]/x/
+--replace_column 1 TIMESTAMP 2 USER_HOST 3 QUERY_TIME 4 LOCK_TIME 12 THREAD_ID 13 ROWS_AFFECTED
+select * from mysql.slow_log;
+--replace_regex /test_parallel_[0-9]/x/
+--replace_column 1 TIMESTAMP 2 USER_HOST 3 THREAD_ID
+select * from mysql.general_log;
+
+# case 29408:表mysql.slow_log/mysql.general_log的引擎为sdb，事务提交后开启slow_log/general_log开关，进行慢查询操作
+set global slow_query_log = off;
+set global general_log = off;
+use mysql;
+drop table slow_log, general_log;
+CREATE TABLE `slow_log` (
+  `start_time` timestamp(6) NOT NULL DEFAULT current_timestamp(6) ON UPDATE current_timestamp(6),
+  `user_host` mediumtext NOT NULL,
+  `query_time` time(6) NOT NULL,
+  `lock_time` time(6) NOT NULL,
+  `rows_sent` int(11) NOT NULL,
+  `rows_examined` int(11) NOT NULL,
+  `db` varchar(512) NOT NULL,
+  `last_insert_id` int(11) NOT NULL,
+  `insert_id` int(11) NOT NULL,
+  `server_id` int(10) unsigned NOT NULL,
+  `sql_text` mediumtext NOT NULL,
+  `thread_id` bigint(21) unsigned NOT NULL,
+  `rows_affected` int(11) NOT NULL
+) ENGINE=SequoiaDB DEFAULT CHARSET=utf8 COMMENT='Slow log,sequoiadb:{table_options: {NoTrans:true}}';
+
+CREATE TABLE `general_log` (
+  `event_time` timestamp(6) NOT NULL DEFAULT current_timestamp(6) ON UPDATE current_timestamp(6),
+  `user_host` mediumtext NOT NULL,
+  `thread_id` bigint(21) unsigned NOT NULL,
+  `server_id` int(10) unsigned NOT NULL,
+  `command_type` varchar(64) NOT NULL,
+  `argument` mediumtext NOT NULL
+) ENGINE=SequoiaDB DEFAULT CHARSET=utf8 COMMENT='General log,sequoiadb:{table_options: {NoTrans:true}}';
+
+use slow_log_sequoiadb;
+create table t8(id int);
+begin;
+insert into t8(id) values(1);
+update t8 set id=2 where id=1;
+commit;
+set global slow_query_log = on;
+set global general_log = on;
+create table t9(id int);
+
+--replace_regex /test_parallel_[0-9]/x/
+--replace_column 1 TIMESTAMP 2 USER_HOST 3 QUERY_TIME 4 LOCK_TIME 12 THREAD_ID 13 ROWS_AFFECTED
+select * from mysql.slow_log;
+--replace_regex /test_parallel_[0-9]/x/
+--replace_column 1 TIMESTAMP 2 USER_HOST 3 THREAD_ID
+select * from mysql.general_log;
+
+# case 29409:表mysql.slow_log/mysql.general_log的引擎为sdb，事务提交前开启slow_log/general_log开关，进行慢查询操作
+set global slow_query_log = off;
+set global general_log = off;
+use mysql;
+drop table slow_log, general_log;
+CREATE TABLE `slow_log` (
+  `start_time` timestamp(6) NOT NULL DEFAULT current_timestamp(6) ON UPDATE current_timestamp(6),
+  `user_host` mediumtext NOT NULL,
+  `query_time` time(6) NOT NULL,
+  `lock_time` time(6) NOT NULL,
+  `rows_sent` int(11) NOT NULL,
+  `rows_examined` int(11) NOT NULL,
+  `db` varchar(512) NOT NULL,
+  `last_insert_id` int(11) NOT NULL,
+  `insert_id` int(11) NOT NULL,
+  `server_id` int(10) unsigned NOT NULL,
+  `sql_text` mediumtext NOT NULL,
+  `thread_id` bigint(21) unsigned NOT NULL,
+  `rows_affected` int(11) NOT NULL
+) ENGINE=SequoiaDB DEFAULT CHARSET=utf8 COMMENT='Slow log,sequoiadb:{table_options: {NoTrans:true}}';
+
+CREATE TABLE `general_log` (
+  `event_time` timestamp(6) NOT NULL DEFAULT current_timestamp(6) ON UPDATE current_timestamp(6),
+  `user_host` mediumtext NOT NULL,
+  `thread_id` bigint(21) unsigned NOT NULL,
+  `server_id` int(10) unsigned NOT NULL,
+  `command_type` varchar(64) NOT NULL,
+  `argument` mediumtext NOT NULL
+) ENGINE=SequoiaDB DEFAULT CHARSET=utf8 COMMENT='General log,sequoiadb:{table_options: {NoTrans:true}}';
+
+use slow_log_sequoiadb;
+create table t10(id int);
+begin;
+insert into t10(id) values(1);
+update t10 set id=2 where id=1;
+set global slow_query_log = on;
+set global general_log = on;
+commit;
+create table t11(id int);
+
+--replace_regex /test_parallel_[0-9]/x/
+--replace_column 1 TIMESTAMP 2 USER_HOST 3 QUERY_TIME 4 LOCK_TIME 12 THREAD_ID 13 ROWS_AFFECTED
+select * from mysql.slow_log;
+--replace_regex /test_parallel_[0-9]/x/
+--replace_column 1 TIMESTAMP 2 USER_HOST 3 THREAD_ID
+select * from mysql.general_log;
+
+# case 29410:mysql.slow_log/mysql.general_log的引擎为sdb，创建存储过程开启slow_log/general_log并执行慢查询操作和运行存储过程
+set global slow_query_log = off;
+set global general_log = off;
+use mysql;
+drop table slow_log, general_log;
+CREATE TABLE `slow_log` (
+  `start_time` timestamp(6) NOT NULL DEFAULT current_timestamp(6) ON UPDATE current_timestamp(6),
+  `user_host` mediumtext NOT NULL,
+  `query_time` time(6) NOT NULL,
+  `lock_time` time(6) NOT NULL,
+  `rows_sent` int(11) NOT NULL,
+  `rows_examined` int(11) NOT NULL,
+  `db` varchar(512) NOT NULL,
+  `last_insert_id` int(11) NOT NULL,
+  `insert_id` int(11) NOT NULL,
+  `server_id` int(10) unsigned NOT NULL,
+  `sql_text` mediumtext NOT NULL,
+  `thread_id` bigint(21) unsigned NOT NULL,
+  `rows_affected` int(11) NOT NULL
+) ENGINE=SequoiaDB DEFAULT CHARSET=utf8 COMMENT='Slow log,sequoiadb:{table_options: {NoTrans:true}}';
+
+CREATE TABLE `general_log` (
+  `event_time` timestamp(6) NOT NULL DEFAULT current_timestamp(6) ON UPDATE current_timestamp(6),
+  `user_host` mediumtext NOT NULL,
+  `thread_id` bigint(21) unsigned NOT NULL,
+  `server_id` int(10) unsigned NOT NULL,
+  `command_type` varchar(64) NOT NULL,
+  `argument` mediumtext NOT NULL
+) ENGINE=SequoiaDB DEFAULT CHARSET=utf8 COMMENT='General log,sequoiadb:{table_options: {NoTrans:true}}';
+
+use slow_log_sequoiadb;
+delimiter &&;
+create procedure select1()
+begin
+select count(*) from t10;
+end &&
+delimiter ;&&
+set global slow_query_log = on;
+set global general_log = on;
+create table t12(id int);
+--sorted_result
+call select1();
+
+--replace_regex /test_parallel_[0-9]/x/
+--replace_column 1 TIMESTAMP 2 USER_HOST 3 QUERY_TIME 4 LOCK_TIME 12 THREAD_ID 13 ROWS_AFFECTED
+select * from mysql.slow_log;
+--replace_regex /test_parallel_[0-9]/x/
+--replace_column 1 TIMESTAMP 2 USER_HOST 3 THREAD_ID
+select * from mysql.general_log;
+
+# case 29411:mysql.slow_log/mysql.general_log的引擎为sdb，开启slow_log/general_log创建存储过程执行慢查询操作并运行存储过程
+set global slow_query_log = off;
+set global general_log = off;
+use mysql;
+drop table slow_log, general_log;
+CREATE TABLE `slow_log` (
+  `start_time` timestamp(6) NOT NULL DEFAULT current_timestamp(6) ON UPDATE current_timestamp(6),
+  `user_host` mediumtext NOT NULL,
+  `query_time` time(6) NOT NULL,
+  `lock_time` time(6) NOT NULL,
+  `rows_sent` int(11) NOT NULL,
+  `rows_examined` int(11) NOT NULL,
+  `db` varchar(512) NOT NULL,
+  `last_insert_id` int(11) NOT NULL,
+  `insert_id` int(11) NOT NULL,
+  `server_id` int(10) unsigned NOT NULL,
+  `sql_text` mediumtext NOT NULL,
+  `thread_id` bigint(21) unsigned NOT NULL,
+  `rows_affected` int(11) NOT NULL
+) ENGINE=SequoiaDB DEFAULT CHARSET=utf8 COMMENT='Slow log,sequoiadb:{table_options: {NoTrans:true}}';
+
+CREATE TABLE `general_log` (
+  `event_time` timestamp(6) NOT NULL DEFAULT current_timestamp(6) ON UPDATE current_timestamp(6),
+  `user_host` mediumtext NOT NULL,
+  `thread_id` bigint(21) unsigned NOT NULL,
+  `server_id` int(10) unsigned NOT NULL,
+  `command_type` varchar(64) NOT NULL,
+  `argument` mediumtext NOT NULL
+) ENGINE=SequoiaDB DEFAULT CHARSET=utf8 COMMENT='General log,sequoiadb:{table_options: {NoTrans:true}}';
+
+use slow_log_sequoiadb;
+set global slow_query_log = on;
+set global general_log = on;
+delimiter &&;
+create procedure select2()
+begin
+  declare i int;
+  set i = 0;
+  while i < 5 do
+    set i = i + 1;
+    select count(*) from t10;
+  end while;
+end &&
+delimiter ;&&
+create table t13(id int);
+call select2();
+
+--replace_regex /test_parallel_[0-9]/x/
+--replace_column 1 TIMESTAMP 2 USER_HOST 3 QUERY_TIME 4 LOCK_TIME 12 THREAD_ID 13 ROWS_AFFECTED
+select * from mysql.slow_log;
+--replace_regex /test_parallel_[0-9]/x/
+--replace_column 1 TIMESTAMP 2 USER_HOST 3 THREAD_ID
+select * from mysql.general_log;
+
+# case 29412:mysql.slow_log/mysql.general_log的引擎为sdb，开启slow_log/general_log，在会话事务中执行循环进行慢查询操作的存储过程
+set global slow_query_log = off;
+set global general_log = off;
+use mysql;
+drop table slow_log, general_log;
+CREATE TABLE `slow_log` (
+  `start_time` timestamp(6) NOT NULL DEFAULT current_timestamp(6) ON UPDATE current_timestamp(6),
+  `user_host` mediumtext NOT NULL,
+  `query_time` time(6) NOT NULL,
+  `lock_time` time(6) NOT NULL,
+  `rows_sent` int(11) NOT NULL,
+  `rows_examined` int(11) NOT NULL,
+  `db` varchar(512) NOT NULL,
+  `last_insert_id` int(11) NOT NULL,
+  `insert_id` int(11) NOT NULL,
+  `server_id` int(10) unsigned NOT NULL,
+  `sql_text` mediumtext NOT NULL,
+  `thread_id` bigint(21) unsigned NOT NULL,
+  `rows_affected` int(11) NOT NULL
+) ENGINE=SequoiaDB DEFAULT CHARSET=utf8 COMMENT='Slow log,sequoiadb:{table_options: {NoTrans:true}}';
+
+CREATE TABLE `general_log` (
+  `event_time` timestamp(6) NOT NULL DEFAULT current_timestamp(6) ON UPDATE current_timestamp(6),
+  `user_host` mediumtext NOT NULL,
+  `thread_id` bigint(21) unsigned NOT NULL,
+  `server_id` int(10) unsigned NOT NULL,
+  `command_type` varchar(64) NOT NULL,
+  `argument` mediumtext NOT NULL
+) ENGINE=SequoiaDB DEFAULT CHARSET=utf8 COMMENT='General log,sequoiadb:{table_options: {NoTrans:true}}';
+
+use slow_log_sequoiadb;
+set global slow_query_log = on;
+set global general_log = on;
+create table t14(id int);
+delimiter &&;
+create procedure select3()
+begin
+  declare i int;
+  set i = 0;
+  while i < 5 do
+    set i = i + 1;
+    select count(*) from t14;
+  end while;
+end &&
+delimiter ;&&
+begin;
+insert into t14(id) values(1);
+update t14 set id=2 where id=1;
+call select3();
+commit;
+
+--replace_regex /test_parallel_[0-9]/x/
+--replace_column 1 TIMESTAMP 2 USER_HOST 3 QUERY_TIME 4 LOCK_TIME 12 THREAD_ID 13 ROWS_AFFECTED
+select * from mysql.slow_log;
+--replace_regex /test_parallel_[0-9]/x/
+--replace_column 1 TIMESTAMP 2 USER_HOST 3 THREAD_ID
+select * from mysql.general_log;
+
+begin;
+insert into t14(id) values(3);
+update t14 set id=4 where id=3;
+call select3();
+commit;
+
+--replace_regex /test_parallel_[0-9]/x/
+--replace_column 1 TIMESTAMP 2 USER_HOST 3 QUERY_TIME 4 LOCK_TIME 12 THREAD_ID 13 ROWS_AFFECTED
+select * from mysql.slow_log;
+--replace_regex /test_parallel_[0-9]/x/
+--replace_column 1 TIMESTAMP 2 USER_HOST 3 THREAD_ID
+select * from mysql.general_log;
+
+# case 29413:mysql.slow_log/mysql.general_log的引擎为sdb，未开启slow_log/general_log，向表mysql.slow_log/mysql.general_log执行操作
+set global slow_query_log = off;
+set global general_log = off;
+use mysql;
+--error 1556
+delete from slow_log;
+--error 1556
+delete from general_log;
+
+# case 29415:重建表mysql.slow_log/mysql.general_log，引擎为sdb，且不指定属性NoTrans，执行慢查询操作
+#set global slow_query_log = off;
+#set global general_log = off;
+#use mysql;
+#drop table slow_log, general_log;
+#CREATE TABLE `slow_log` (
+#  `start_time` timestamp(6) NOT NULL DEFAULT current_timestamp(6) ON UPDATE current_timestamp(6),
+#  `user_host` mediumtext NOT NULL,
+#  `query_time` time(6) NOT NULL,
+#  `lock_time` time(6) NOT NULL,
+#  `rows_sent` int(11) NOT NULL,
+#  `rows_examined` int(11) NOT NULL,
+#  `db` varchar(512) NOT NULL,
+#  `last_insert_id` int(11) NOT NULL,
+#  `insert_id` int(11) NOT NULL,
+#  `server_id` int(10) unsigned NOT NULL,
+#  `sql_text` mediumtext NOT NULL,
+#  `thread_id` bigint(21) unsigned NOT NULL,
+#  `rows_affected` int(11) NOT NULL
+#) ENGINE=SequoiaDB DEFAULT CHARSET=utf8 COMMENT='Slow log,sequoiadb:{table_options: {NoTrans:true}}';
+
+#CREATE TABLE `general_log` (
+#  `event_time` timestamp(6) NOT NULL DEFAULT current_timestamp(6) ON UPDATE current_timestamp(6),
+#  `user_host` mediumtext NOT NULL,
+#  `thread_id` bigint(21) unsigned NOT NULL,
+#  `server_id` int(10) unsigned NOT NULL,
+#  `command_type` varchar(64) NOT NULL,
+#  `argument` mediumtext NOT NULL
+#) ENGINE=SequoiaDB DEFAULT CHARSET=utf8 COMMENT='General log,sequoiadb:{table_options: {NoTrans:true}}';
+
+#--error 122
+#set global slow_query_log = on;
+#--error 122
+#set global general_log = on;
+
+# Case31495:查询慢查询，总查询日志表走direct_count优化
+set global slow_query_log = off;
+set global general_log = off;
+use mysql;
+drop table slow_log, general_log;
+CREATE TABLE `slow_log` (
+  `start_time` timestamp(6) NOT NULL DEFAULT current_timestamp(6) ON UPDATE current_timestamp(6),
+  `user_host` mediumtext NOT NULL,
+  `query_time` time(6) NOT NULL,
+  `lock_time` time(6) NOT NULL,
+  `rows_sent` int(11) NOT NULL,
+  `rows_examined` int(11) NOT NULL,
+  `db` varchar(512) NOT NULL,
+  `last_insert_id` int(11) NOT NULL,
+  `insert_id` int(11) NOT NULL,
+  `server_id` int(10) unsigned NOT NULL,
+  `sql_text` mediumtext NOT NULL,
+  `thread_id` bigint(21) unsigned NOT NULL,
+  `rows_affected` int(11) NOT NULL
+) ENGINE=SequoiaDB DEFAULT CHARSET=utf8 COMMENT='Slow log,sequoiadb:{table_options: {NoTrans:true}}';
+
+CREATE TABLE `general_log` (
+  `event_time` timestamp(6) NOT NULL DEFAULT current_timestamp(6) ON UPDATE current_timestamp(6),
+  `user_host` mediumtext NOT NULL,
+  `thread_id` bigint(21) unsigned NOT NULL,
+  `server_id` int(10) unsigned NOT NULL,
+  `command_type` varchar(64) NOT NULL,
+  `argument` mediumtext NOT NULL
+) ENGINE=SequoiaDB DEFAULT CHARSET=utf8 COMMENT='General log,sequoiadb:{table_options: {NoTrans:true}}';
+
+use slow_log_sequoiadb;
+create table t15(id int);
+insert into t15 values (1),(2);
+use mysql;
+set global slow_query_log = on;
+set global general_log = on;
+
+select * from slow_log_sequoiadb.t15;
+--replace_column 1 COUNT
+select count(*) from slow_log;
+--replace_column 1 COUNT
+select count(*) from general_log;
+
+--error 1556
+update slow_log set rows_sent = 1 where rows_examined = 1;
+--error 1556
+update general_log set thread_id = 1 where command_type = 'Query';
+--error 1556
+delete from slow_log where rows_examined = 1;
+--error 1556
+delete from general_log where command_type = 'Query';
+--error 1556
+insert into slow_log select * from slow_log;
+--error 1556
+insert into general_log select * from general_log;
+
+--replace_column 1 TIMESTAMP 2 USER_HOST 3 QUERY_TIME 4 LOCK_TIME 12 THREAD_ID 13 ROWS_AFFECTED
+select * from slow_log;
+--replace_column 1 TIMESTAMP 2 USER_HOST 3 THREAD_ID
+select * from general_log;
+
+truncate mysql.slow_log;
+truncate mysql.general_log;
+eval set global server_id = $server_id;
+eval set global log_output = '$log_output';
+eval set global sequoiadb_error_level = '$sequoiadb_error_level';
+eval set global slow_query_log = $slow_query_log;
+eval set global general_log = $general_log;
+drop database slow_log_sequoiadb;
+
+--source include/uninstall_sequoiadb.inc

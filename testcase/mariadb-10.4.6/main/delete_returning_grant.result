@@ -1,0 +1,86 @@
+set GLOBAL sql_mode="";
+set LOCAL sql_mode="";
+CREATE DATABASE test_delete_returning_grant;
+USE test_delete_returning_grant;
+CREATE TABLE t1 (a int(11), b varchar(32));
+INSERT INTO t1 VALUES (7,'ggggggg'),(1,'a'),(3,'ccc'),(4,'dddd'),(1,'A'),
+(2,'BB'),(4,'DDDD'),(5,'EEEEE'),(7,'GGGGGGG'),(2,'bb');
+CREATE VIEW v1 AS SELECT a, UPPER(b) FROM t1;
+connect  root,localhost,root,,test_delete_returning_grant;
+connection root;
+CREATE DATABASE mysqltest_delete_returning_grant;
+CREATE TABLE mysqltest_delete_returning_grant.t1 SELECT * FROM t1;
+GRANT DELETE ON mysqltest_delete_returning_grant.* TO mysqltest_1_delete_returning_grant@localhost;
+GRANT SELECT(b) ON mysqltest_delete_returning_grant.t1 TO mysqltest_1_delete_returning_grant@localhost;
+connect  user1,localhost,mysqltest_1_delete_returning_grant,,test_delete_returning_grant;
+connection user1;
+DELETE FROM mysqltest_delete_returning_grant.t1 WHERE a=2 RETURNING b;
+ERROR 42000: SELECT command denied to user 'mysqltest_1_delete_returning_grant'@'localhost' for column 'a' in table 't1'
+DELETE FROM  mysqltest_delete_returning_grant.t1 RETURNING b;
+b
+ggggggg
+a
+ccc
+dddd
+A
+BB
+DDDD
+EEEEE
+GGGGGGG
+bb
+connection root;
+SELECT * FROM mysqltest_delete_returning_grant.t1;
+a	b
+INSERT INTO mysqltest_delete_returning_grant.t1 SELECT * FROM t1;
+GRANT SELECT(a) ON mysqltest_delete_returning_grant.t1 TO mysqltest_1_delete_returning_grant@localhost;
+DELETE FROM mysqltest_delete_returning_grant.t1 WHERE a=2 RETURNING b;
+b
+BB
+bb
+SELECT * FROM mysqltest_delete_returning_grant.t1;
+a	b
+1	A
+1	a
+3	ccc
+4	DDDD
+4	dddd
+5	EEEEE
+7	GGGGGGG
+7	ggggggg
+INSERT INTO mysqltest_delete_returning_grant.t1 SELECT * FROM t1;
+connection root;
+CREATE VIEW mysqltest_delete_returning_grant.v1(a) AS SELECT a FROM mysqltest_delete_returning_grant.t1;
+GRANT SELECT, INSERT ON mysqltest_delete_returning_grant.t1 TO mysqltest_1_delete_returning_grant@localhost;
+connection user1;
+DELETE FROM mysqltest_delete_returning_grant.v1;
+SELECT * FROM mysqltest_delete_returning_grant.t1;
+a	b
+INSERT INTO mysqltest_delete_returning_grant.t1 SELECT * FROM t1;
+DELETE FROM mysqltest_delete_returning_grant.v1 RETURNING a;
+ERROR 42000: SELECT command denied to user 'mysqltest_1_delete_returning_grant'@'localhost' for column 'a' in table 'v1'
+connection root;
+GRANT SELECT ON mysqltest_delete_returning_grant.* TO mysqltest_1_delete_returning_grant@localhost;
+connection user1;
+DELETE FROM mysqltest_delete_returning_grant.v1 RETURNING a;
+a
+7
+1
+3
+4
+1
+2
+4
+5
+7
+2
+SELECT * FROM mysqltest_delete_returning_grant.t1;
+a	b
+INSERT INTO mysqltest_delete_returning_grant.t1 SELECT * FROM t1;
+connection root;
+DROP DATABASE mysqltest_delete_returning_grant;
+disconnect user1;
+DROP USER mysqltest_1_delete_returning_grant@localhost;
+DROP VIEW v1;
+DROP TABLE t1;
+DROP DATABASE test_delete_returning_grant;
+set GLOBAL sql_mode=default;

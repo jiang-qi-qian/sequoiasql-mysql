@@ -1,0 +1,2 @@
+--sequoiadb_auto_partition=ON
+--sequoiadb_bulk_insert_size=2

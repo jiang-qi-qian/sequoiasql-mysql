@@ -1,0 +1,21 @@
+drop database if exists update_subquery_like_sequoiadb_34082;
+create database update_subquery_like_sequoiadb_34082;
+drop database if exists update_subquery_like_sequoiadb_34082;
+create database update_subquery_like_sequoiadb_34082;
+use update_subquery_like_sequoiadb_34082;
+CREATE TABLE `test_a` (
+`a` varchar(255) COLLATE utf8mb4_bin DEFAULT NULL,
+`b` varchar(32) COLLATE utf8mb4_bin DEFAULT NULL
+) ENGINE=SequoiaDB;
+CREATE TABLE `test_b` (
+`a` varchar(1) COLLATE utf8mb4_bin DEFAULT NULL,
+`b` varchar(32) COLLATE utf8mb4_bin NOT NULL,
+PRIMARY KEY (`b`)
+)ENGINE=SequoiaDB;
+insert into test_b values(1,"abcd"),(2,"abcdfg");
+insert into test_a values("123","123"),("123","123");
+analyze table test_b;
+Table	Op	Msg_type	Msg_text
+update_subquery_like_sequoiadb_34082.test_b	analyze	status	OK
+update test_a set b="llll" where a in (select b from test_b where b like 'abcas%');
+drop database update_subquery_like_sequoiadb_34082;

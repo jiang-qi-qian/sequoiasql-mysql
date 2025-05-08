@@ -1,0 +1,97 @@
+CREATE DATABASE test_explain_sequoiadb;
+USE test_explain_sequoiadb;
+
+#seqDB-21804
+CREATE TABLE `acct_business_account` (
+  `serialno` int(11) NOT NULL,
+  `objectno` int(11) NOT NULL,
+  `accountno` int(11) NOT NULL,
+  `accountname` varchar(20) DEFAULT NULL,
+  `objecttype` int(11) NOT NULL,
+  `accounttype` int(11) NOT NULL,
+  `accountindicator` int(11) NOT NULL,
+  PRIMARY KEY (`serialno`),
+  KEY `idx_business_account1` (`objectno`),
+  KEY `idx_business_account2` (`accountno`,`accountname`)
+);
+
+CREATE TABLE `acct_loan` (
+  `contractserialno` int(11) NOT NULL,
+  `customerid` int(11) NOT NULL,
+  `customername` varchar(20) DEFAULT NULL,
+  `accountno` int(11) NOT NULL,
+  `hoderprojectono` int(11) NOT NULL,
+  `creditorproject` int(11) NOT NULL,
+  `lockflag` int(11) NOT NULL,
+  `loanstatus` tinyint(1) NOT NULL,
+  `serialno` int(11) NOT NULL,
+  KEY `idx_loan_1` (`contractserialno`),
+  KEY `idx_loan_2` (`customerid`),
+  KEY `idx_loan_3` (`customername`),
+  KEY `idx_loan_4` (`accountno`),
+  KEY `idx_loan_holderprojectno` (`hoderprojectono`),
+  KEY `idx_loan_creditorproject` (`creditorproject`)
+);
+
+CREATE TABLE `acct_payment_schedule` (
+  `serialno` int(11) NOT NULL,
+  `objectno` int(11) NOT NULL,
+  `relativeobjectno` int(11) NOT NULL,
+  `relativeobjecttype` int(11) NOT NULL,
+  `paydate` date DEFAULT NULL,
+  `pstype` int(11) NOT NULL,
+  `finishdate` date DEFAULT NULL,
+  `objecttype` varchar(20) DEFAULT NULL,
+  PRIMARY KEY (`serialno`),
+  KEY `idx_payment_schedule_1` (`objectno`),
+  KEY `idx_payment_schedule_2` (`relativeobjectno`,`relativeobjecttype`),
+  KEY `idx_payment_schedule_3` (`paydate`,`pstype`)
+);
+
+# $in, index query
+--sorted_result
+explain
+select ACL.lockflag from acct_loan ACL where ACL.loanstatus in('0','1') 
+       and (ACL.lockflag='2' or ACL.lockflag='' or ACL.lockflag is null)
+       and serialno in(
+           select objectno from acct_payment_schedule APS where 
+           APS.objecttype = 'jbo.acct.acct_loan'
+           and ( APS.finishdate is null or APS.finishdate='')
+           and APS.paydate<='2019/05/25'
+           and APS.pstype='1'
+       )
+       and serialno in(
+           select objectno from acct_business_account ABA where 
+           ABA.objecttype='jbo.acct.acct_loan'
+           and ABA.accounttype='5'
+           and ABA.accountindicator='01'
+       );
+
+# $exist, index query
+--sorted_result
+explain select ACL.lockflag from acct_loan ACL where ACL.loanstatus in('0','1') 
+       and (ACL.lockflag='2' or ACL.lockflag='' or ACL.lockflag is null)
+       and exists(
+           select 1 from acct_payment_schedule APS where ACL.serialno=APS.objectno 
+           and APS.objecttype = 'jbo.acct.acct_loan'
+           and ( APS.finishdate is null or APS.finishdate='')
+           and APS.paydate<='2019/05/25'
+           and APS.pstype='1'
+       )
+       and exists(
+           select 1 from acct_business_account ABA where ABA.objectno=ACL.serialno
+           and ABA.objecttype='jbo.acct.acct_loan'
+           and ABA.accounttype='5'
+           and ABA.accountindicator='01'
+       );
+
+DROP TABLE acct_business_account, acct_loan, acct_payment_schedule; 
+
+#seqDB-22106
+CREATE TABLE t1 ( id INT , c CHAR(16), INDEX(id,c) ) ;
+INSERT INTO t1 VALUES (5,'oe'),(9,'st'),(1,'tr'),(-1,'uoos'),(-9,'12'),(12,'hl'),(8,'ie'),(10,'now'),(1,'p7'),(18,'oe'),(-1,'tr'),(0,'tx');
+EXPLAIN SELECT * FROM t1 ORDER BY id DESC, c DESC;
+SELECT * FROM t1 ORDER BY id DESC, c DESC;
+DROP TABLE t1;
+
+DROP DATABASE test_explain_sequoiadb;

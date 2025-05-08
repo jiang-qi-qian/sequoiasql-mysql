@@ -1,0 +1,46 @@
+# seqDB-30363 、seqDB-30364 、seqDB-30365 、seqDB-30366 、seqDB-30367 、seqDB-30368 、seqDB-30369 、seqDB-30386
+--source include/have_sequoiadb.inc
+
+CREATE DATABASE const_cond_sequoiadb;
+use const_cond_sequoiadb;
+
+CREATE TABLE const_table(pk int primary key, c1 int, c2 int, c3 TEXT);
+CREATE TABLE normal_table(c1 int, c2 int, c3 TEXT);
+CREATE TABLE sys_user (
+  id bigint not null,
+  company_id varchar(64) collate utf8mb4_bin not null,
+  office_id varchar(64) collate utf8mb4_bin not null,
+  login_name varchar(100) collate utf8mb4_bin not null,
+  password varchar(100) collate utf8mb4_bin not null,
+  no varchar(100) collate utf8mb4_bin default null,
+  del_flag char(1) collate utf8mb4_bin not null default '0',
+  primary key(id),
+  key office_id(office_id),
+  key del_flag(del_flag)
+);
+CREATE TABLE sys_office(
+  id bigint not null,
+  parent_ids varchar(2000) collate utf8mb4_bin not null,
+  code varchar(100) collate utf8mb4_bin default null,
+  del_flag char(1) collate utf8mb4_bin not null default '0',
+  primary key(id),
+  key del_flag(del_flag)
+);
+
+INSERT INTO const_table VALUES( 1, 1, 1, '1' ), ( 2, 2, 2, '2' );
+INSERT INTO normal_table VALUES( 1, 1, '1' ), ( 2, 2, '2' );
+INSERT INTO sys_user values(13189, '12', '13189', 'aaa', 'bbb', '123', '0');
+INSERT INTO sys_office values(13189, '0,1,abc', 'abc', '0');
+
+set session sequoiadb_debug_log = ON;
+
+set session sequoiadb_support_cond_const_bool = OFF;
+--source include/const_table_cond_sequoiadb.inc
+
+set session sequoiadb_support_cond_const_bool = ON;
+--source include/const_table_cond_sequoiadb.inc
+  
+set session sequoiadb_debug_log = default;
+set session sequoiadb_support_cond_const_bool = default;
+
+DROP DATABASE const_cond_sequoiadb;

@@ -1,0 +1,35 @@
+#case 28736
+
+--source include/have_sequoiadb.inc
+--source suite/metadata_sync_sequoiadb/inc/insts_connect_sequoiadb.inc
+
+# connect to conn1, clear users in the beginning
+connection conn1;
+--disable_warnings
+DROP USER IF EXISTS "metasync_user28736"@"%";
+--enable_warnings
+
+#
+# seqDB-28736:create user后退出连接并使用新用户重新连接，连接后alter user
+#
+# create user
+connection conn1;
+create user 'metasync_user28736'@'%' identified by 'metasync_passwd28736_1';
+
+# 使用新用户创建连接
+connect ( conn3, $mysql_host1, 'metasync_user28736', 'metasync_passwd28736_1', $mysql_db, $mysql_port1 );
+alter user user() identified by 'metasync_passwd28736_2';
+disconnect conn3;
+
+# 使用新用户和新密码再次创建连接
+connect ( conn4, $mysql_host1, 'metasync_user28736', 'metasync_passwd28736_2', $mysql_db, $mysql_port1 );
+alter user user() identified by 'metasync_passwd28736_3';
+disconnect conn4;
+
+connection conn1;
+select user FROM mysql.user where user = 'metasync_user28736';
+drop user 'metasync_user28736'@'%';
+select user FROM mysql.user where user = 'metasync_user28736';
+
+--source include/uninstall_sequoiadb.inc
+--source suite/metadata_sync_sequoiadb/inc/insts_disconnect_sequoiadb.inc

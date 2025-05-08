@@ -1,0 +1,158 @@
+drop database if exists explain_direct_sort_28511;
+create database explain_direct_sort_28511;
+drop database explain_direct_sort_28511;
+create database explain_direct_sort_28511;
+use explain_direct_sort_28511;
+set session sequoiadb_debug_log=on;
+set session optimizer_switch='mrr=on';
+drop table if exists t1;
+create table t1(
+col1 int,
+col2 varchar(10),
+col3 varchar(10),
+col4 varchar(10),
+key idx_col1(col1),
+key idx_col2(col2),
+key idx_col12(col1,col2),
+unique key uniq_idx4(col4)
+);
+insert into t1 values(6,'abcdef','abde','abc');
+insert into t1 values(1,'def','defg','abcdef');
+insert into t1 values(4,'abc','abcdef','xyz');
+insert into t1 values(0,'abde','xyz','def');
+insert into t1 values(5,'xyz','abc','efg');
+insert into t1 values(2,'defg','abd','abd');
+insert into t1 values(3,'abd','def','defg');
+insert into t1 values(null,null,null,null);
+select * from t1 order by col1;
+col1	col2	col3	col4
+NULL	NULL	NULL	NULL
+0	abde	xyz	def
+1	def	defg	abcdef
+2	defg	abd	abd
+3	abd	def	defg
+4	abc	abcdef	xyz
+5	xyz	abc	efg
+6	abcdef	abde	abc
+select * from t1 order by col2;
+col1	col2	col3	col4
+NULL	NULL	NULL	NULL
+4	abc	abcdef	xyz
+6	abcdef	abde	abc
+3	abd	def	defg
+0	abde	xyz	def
+1	def	defg	abcdef
+2	defg	abd	abd
+5	xyz	abc	efg
+select * from t1 order by col3;
+col1	col2	col3	col4
+NULL	NULL	NULL	NULL
+5	xyz	abc	efg
+4	abc	abcdef	xyz
+2	defg	abd	abd
+6	abcdef	abde	abc
+3	abd	def	defg
+1	def	defg	abcdef
+0	abde	xyz	def
+select * from t1 order by col4;
+col1	col2	col3	col4
+NULL	NULL	NULL	NULL
+6	abcdef	abde	abc
+1	def	defg	abcdef
+2	defg	abd	abd
+0	abde	xyz	def
+3	abd	def	defg
+5	xyz	abc	efg
+4	abc	abcdef	xyz
+explain select * from t1 where col1 > 1 and col1 < 3 or col1 = 5 order by col4;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	range	idx_col1,idx_col12	idx_col1	5	NULL	4	100.00	Using where with pushed condition (((`explain_direct_sort_28511`.`t1`.`col1` > 1) and (`explain_direct_sort_28511`.`t1`.`col1` < 3)) or (`explain_direct_sort_28511`.`t1`.`col1` = 5)); Using MRR; Using filesort
+Warnings:
+Note	1003	/* select#1 */ select `explain_direct_sort_28511`.`t1`.`col1` AS `col1`,`explain_direct_sort_28511`.`t1`.`col2` AS `col2`,`explain_direct_sort_28511`.`t1`.`col3` AS `col3`,`explain_direct_sort_28511`.`t1`.`col4` AS `col4` from `explain_direct_sort_28511`.`t1` where (((`explain_direct_sort_28511`.`t1`.`col1` > 1) and (`explain_direct_sort_28511`.`t1`.`col1` < 3)) or (`explain_direct_sort_28511`.`t1`.`col1` = 5)) order by `explain_direct_sort_28511`.`t1`.`col4`
+select * from t1 where col1 > 1 and col1 < 3 or col1 = 5 order by col4;
+col1	col2	col3	col4
+2	defg	abd	abd
+5	xyz	abc	efg
+explain format = json select * from t1 where col1 > 1 and col1 < 3 or col1 = 5 order by col4;
+EXPLAIN
+{
+  "query_block": {
+    "select_id": 1,
+    "cost_info": {
+      "query_cost": "11.61"
+    },
+    "ordering_operation": {
+      "using_filesort": true,
+      "cost_info": {
+        "sort_cost": "4.00"
+      },
+      "table": {
+        "table_name": "t1",
+        "access_type": "range",
+        "possible_keys": [
+          "idx_col1",
+          "idx_col12"
+        ],
+        "key": "idx_col1",
+        "used_key_parts": [
+          "col1"
+        ],
+        "key_length": "5",
+        "rows_examined_per_scan": 4,
+        "rows_produced_per_join": 4,
+        "filtered": "100.00",
+        "pushed_condition": "(((`explain_direct_sort_28511`.`t1`.`col1` > 1) and (`explain_direct_sort_28511`.`t1`.`col1` < 3)) or (`explain_direct_sort_28511`.`t1`.`col1` = 5))",
+        "using_MRR": true,
+        "cost_info": {
+          "read_cost": "6.81",
+          "eval_cost": "0.80",
+          "prefix_cost": "7.61",
+          "data_read_per_join": "160"
+        },
+        "used_columns": [
+          "col1",
+          "col2",
+          "col3",
+          "col4"
+        ]
+      }
+    }
+  }
+}
+Warnings:
+Note	1003	/* select#1 */ select `explain_direct_sort_28511`.`t1`.`col1` AS `col1`,`explain_direct_sort_28511`.`t1`.`col2` AS `col2`,`explain_direct_sort_28511`.`t1`.`col3` AS `col3`,`explain_direct_sort_28511`.`t1`.`col4` AS `col4` from `explain_direct_sort_28511`.`t1` where (((`explain_direct_sort_28511`.`t1`.`col1` > 1) and (`explain_direct_sort_28511`.`t1`.`col1` < 3)) or (`explain_direct_sort_28511`.`t1`.`col1` = 5)) order by `explain_direct_sort_28511`.`t1`.`col4`
+analyze table t1;
+Table	Op	Msg_type	Msg_text
+explain_direct_sort_28511.t1	analyze	status	OK
+select * from t1 where col1 > 1 and col1 < 3 or col1 = 5 order by col4;
+col1	col2	col3	col4
+2	defg	abd	abd
+5	xyz	abc	efg
+set session optimizer_switch='optimizer_sort_pushdown=off';
+explain select * from t1 where col1 > 1 and col1 < 3 or col1 = 5 order by col4;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	NULL	idx_col1,idx_col12	NULL	NULL	NULL	#	22.22	Using where with pushed condition (((`explain_direct_sort_28511`.`t1`.`col1` > 1) and (`explain_direct_sort_28511`.`t1`.`col1` < 3)) or (`explain_direct_sort_28511`.`t1`.`col1` = 5)); Using pushed ORDER BY; Storage engine handles access type
+Warnings:
+Note	1003	/* select#1 */ select `explain_direct_sort_28511`.`t1`.`col1` AS `col1`,`explain_direct_sort_28511`.`t1`.`col2` AS `col2`,`explain_direct_sort_28511`.`t1`.`col3` AS `col3`,`explain_direct_sort_28511`.`t1`.`col4` AS `col4` from `explain_direct_sort_28511`.`t1` where (((`explain_direct_sort_28511`.`t1`.`col1` > 1) and (`explain_direct_sort_28511`.`t1`.`col1` < 3)) or (`explain_direct_sort_28511`.`t1`.`col1` = 5)) order by `explain_direct_sort_28511`.`t1`.`col4`
+select * from t1 where col1 > 1 and col1 < 3 or col1 = 5 order by col4;
+col1	col2	col3	col4
+2	defg	abd	abd
+5	xyz	abc	efg
+create procedure p1()
+begin
+select * from t1 where col1 > 1 and col1 < 3 or col1 = 5 order by col4;
+end $
+call p1();
+col1	col2	col3	col4
+2	defg	abd	abd
+5	xyz	abc	efg
+[Note] SequoiaDB: Query message: condition[{ "$or": [ { "$and": [ { "col1": { "$gt": 1 } }, { "col1": { "$lt": 3 } } ] }, { "col1": { "$et": 5 } } ] }], selector[{}], order_by[{ "col4": 1 }], hint[{}], limit[-1], offset[0], table[explain_direct_sort_28511.t1]
+drop procedure p1;
+alter table t1 engine = memory;
+explain select * from t1 where col1 > 1 and col1 < 3 or col1 = 5 order by col4;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	ALL	idx_col1,idx_col12	NULL	NULL	NULL	8	33.33	Using where; Using filesort
+Warnings:
+Note	1003	/* select#1 */ select `explain_direct_sort_28511`.`t1`.`col1` AS `col1`,`explain_direct_sort_28511`.`t1`.`col2` AS `col2`,`explain_direct_sort_28511`.`t1`.`col3` AS `col3`,`explain_direct_sort_28511`.`t1`.`col4` AS `col4` from `explain_direct_sort_28511`.`t1` where (((`explain_direct_sort_28511`.`t1`.`col1` > 1) and (`explain_direct_sort_28511`.`t1`.`col1` < 3)) or (`explain_direct_sort_28511`.`t1`.`col1` = 5)) order by `explain_direct_sort_28511`.`t1`.`col4`
+drop table t1;
+drop database explain_direct_sort_28511;

@@ -1,0 +1,65 @@
+#case 18859
+
+--source include/have_sequoiadb.inc
+--source suite/metadata_sync_sequoiadb/inc/insts_connect_sequoiadb.inc
+
+# connect to conn1, clear databases in the beginning
+connection conn1;
+--disable_warnings
+DROP DATABASE IF EXISTS metasync_index;
+--enable_warnings
+
+# connect to conn2, check databases are cleaned in the beginning
+connection conn2;
+--sleep $sleep
+--error ER_BAD_DB_ERROR 
+SHOW CREATE DATABASE metasync_index;
+
+# seqDB-18859
+# begin testing
+#
+# CREATE/DROP INDEX 
+#
+connection conn1;
+CREATE DATABASE metasync_index;
+USE metasync_index;
+CREATE TABLE t1 ( a INT, b INT, c INT );
+CREATE TABLE t2 ( a INT, b INT, INDEX(b) );
+CREATE TABLE t3 ( a INT, b INT, c INT, INDEX(a), INDEX(b) );
+CREATE INDEX a USING HASH ON t1(a);
+CREATE UNIQUE INDEX b USING HASH ON t1(b) KEY_BLOCK_SIZE = 1024 COMMENT "create index";
+CREATE OR REPLACE INDEX c ON t1(c) WAIT 1;
+CREATE INDEX IF NOT EXISTS a ON t2(a) NOWAIT ALGORITHM = NOCOPY; 
+DROP INDEX a ON t3; 
+DROP INDEX b ON t3;
+# check metadatas after create
+connection conn2;
+--sleep $sleep
+USE metasync_index;
+SHOW CREATE TABLE t1;
+SHOW CREATE TABLE t2;
+SHOW CREATE TABLE t3;
+# clear tables
+connection conn1;
+DROP TABLE t1,t2,t3;
+# check tables cleared
+connection conn2;
+--sleep $sleep
+--error ER_NO_SUCH_TABLE
+SHOW CREATE TABLE t1;
+--error ER_NO_SUCH_TABLE
+SHOW CREATE TABLE t2;
+--error ER_NO_SUCH_TABLE
+SHOW CREATE TABLE t3;
+
+# clear databases in the ending
+connection conn1;
+DROP DATABASE metasync_index;
+# check databases are cleaned in the ending
+connection conn2;
+--sleep $sleep
+--error ER_BAD_DB_ERROR 
+SHOW CREATE DATABASE metasync_index;
+
+--source include/uninstall_sequoiadb.inc
+--source suite/metadata_sync_sequoiadb/inc/insts_disconnect_sequoiadb.inc

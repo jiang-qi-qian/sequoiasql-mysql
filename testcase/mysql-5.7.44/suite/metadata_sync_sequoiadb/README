@@ -1,0 +1,68 @@
+本地或 CI 执行元数据同步测试用例
+
+一、准备环境
+1、初始化实例组
+示例：初始化 sql_group1 实例组，实例组名 和 key 可自定义，--host 默认为 localhost:11810（根据实际情况配置）
+bin/ha_inst_group_init sql_group1 --verbose --key test
+
+2、创建多个实例，多个实例可以在相同或者不同主机
+示例：创建实例 myinst1、myinst2，端口分别为 6101、6102
+bin/sdb_sql_ctl addinst myinst1 -p 6101 -D database/6101
+bin/sdb_sql_ctl addinst myinst2 -p 6102 -D database/6102
+
+3、添加实例到实例组
+示例：添加 myinst1、myinst2 到实例组 sql_group1
+bin/sdb_sql_ctl join myinst1 -g sql_group1 -k test
+bin/sdb_sql_ctl join myinst2 -g sql_group1 -k test
+
+join 成功后实例会被自动重启，重启后实例组配置生效。
+
+4、查看所有实例元数据已同步（查看 SQLID 相同）
+> db.HAInstanceGroup_sql_group1.HAInstanceState.find()
+{
+  "InstanceID": 1,
+  "JoinID": 1,
+  "SQLID": 8,
+  ....
+}
+{
+  "InstanceID": 2,
+  "JoinID": 2,
+  "SQLID": 8,
+  ....
+}
+Return 2 row(s).
+
+5、登录mysql，添加用户并授权
+(用户名/密码以 sdbadmin / sdbadmin 为例)
+示例：
+1）实例1，添加用户并授权
+CREATE USER 'sdbadmin'@'%' IDENTIFIED BY 'sdbadmin';
+GRANT all on *.* TO 'sdbadmin'@'%' with grant option;
+SELECT user,host FROM mysql.user WHERE user = 'sdbadmin';
+
+2）实例2，查看用户元数据已同步
+SELECT user,host FROM mysql.user WHERE user = 'sdbadmin';
++----------+------+
+| user     | host |
++----------+------+
+| sdbadmin | %    |
++----------+------+
+1 row in set (0.00 sec)
+
+
+二、执行用例
+安装目录/mysql-test目录下执行用例
+示例：
+./mysql-test-run.pl --suite=metadata_sync_sequoiadb --meta-sync-addr=sdbserver1:6101,sdbserver2:6102 --meta-user=sdbadmin --meta-passwd=sdbadmin --retry=1 --retry-failure=1 --force --parallel=2
+
+说明：
+  测试套：metadata_sync_sequoiadb
+  实例地址：sdbserver1:6101,sdbserver2:6102
+  用户名/密码：sdbadmin / sdbadmin （同上述准备环境中步骤5）
+  --retry=1 --retry-failure=1，重试1次，失败重试1次
+  --force，失败不退出继续执行
+  --parallel=2，两个线程并发
+
+注意：
+实例地址主机名不能是 localhost，如localhost:6101，否则会连接失败报：failed: 1045: Access denied for user 'sdbadmin'@'localhost' (using password: YES)

@@ -1,0 +1,227 @@
+drop database if exists metadata_sync_routine_ddl_dml_parallel;
+create database metadata_sync_routine_ddl_dml_parallel;
+use metadata_sync_routine_ddl_dml_parallel;
+create function hello (s char(20)) returns char(50) deterministic return concat('Hello,' , s , '!');
+use metadata_sync_routine_ddl_dml_parallel;
+select hello('world');
+hello('world')
+Hello,world!
+drop function hello;
+select hello('world');
+ERROR 42000: FUNCTION metadata_sync_routine_ddl_dml_parallel.hello does not exist
+create function myselect() returns int 
+begin
+declare c int;
+insert into t1 values(1,'python'),(2,'java');
+select id from t1 where cname ='python' into c;
+delete from t1 where cname = 'python';
+select id from t1 where cname ='python' into c;
+return c;
+end//
+select myselect();
+ERROR 42S02: Table 'metadata_sync_routine_ddl_dml_parallel.t1' doesn't exist
+create table t1(id int,cname char(10));
+select myselect();
+myselect()
+1
+drop table t1;
+select myselect();
+ERROR 42S02: Table 'metadata_sync_routine_ddl_dml_parallel.t1' doesn't exist
+create table t1(id int,cname char(10));
+select myselect();
+myselect()
+1
+drop function myselect;
+select myselect();
+ERROR 42000: FUNCTION metadata_sync_routine_ddl_dml_parallel.myselect does not exist
+drop table t1;
+create table t1(id int,cname char(10));
+create function myselect() returns int 
+begin
+declare c int;
+insert into v1 values(1,'python'),(2,'java');
+select id from v1 where cname ='python' into c;
+delete from v1 where cname = 'python';
+select id from v1 where cname ='python' into c;
+return c;
+end//
+create view v1 as select * from t1;
+select myselect();
+myselect()
+1
+drop view v1;
+select myselect();
+ERROR 42S02: Table 'metadata_sync_routine_ddl_dml_parallel.v1' doesn't exist
+create view v1 as select * from t1;
+select myselect();
+myselect()
+1
+drop function myselect;
+drop view v1;
+select myselect();
+ERROR 42000: FUNCTION metadata_sync_routine_ddl_dml_parallel.myselect does not exist
+drop table t1;
+drop database if exists metadata_sync_ddl_dml_parallel_23097;
+create database metadata_sync_ddl_dml_parallel_23097;
+create table metadata_sync_ddl_dml_parallel_23097.t1(id int,cname char(10));
+create function myselect() returns int 
+begin
+declare c int;
+insert into metadata_sync_ddl_dml_parallel_23097.t1 values(1,'python'),(2,'java');
+select id from metadata_sync_ddl_dml_parallel_23097.t1 where cname ='python' into c;
+delete from metadata_sync_ddl_dml_parallel_23097.t1 where cname = 'python';
+select id from metadata_sync_ddl_dml_parallel_23097.t1 where cname ='python' into c;
+return c;
+end//
+select myselect();
+myselect()
+1
+drop database metadata_sync_ddl_dml_parallel_23097;
+select myselect();
+ERROR 42S02: Table 'metadata_sync_ddl_dml_parallel_23097.t1' doesn't exist
+drop function myselect;
+select myselect();
+ERROR 42000: FUNCTION metadata_sync_routine_ddl_dml_parallel.myselect does not exist
+create database metadata_sync_ddl_dml_parallel_23097;
+create table t1(id int,cname char(10));
+create function metadata_sync_ddl_dml_parallel_23097.myselect() returns int 
+begin
+declare c int;
+insert into metadata_sync_routine_ddl_dml_parallel.t1 values(1,'python'),(2,'java');
+select id from metadata_sync_routine_ddl_dml_parallel.t1 where cname ='python' into c;
+delete from metadata_sync_routine_ddl_dml_parallel.t1 where cname = 'python';
+select id from metadata_sync_routine_ddl_dml_parallel.t1 where cname ='python' into c;
+return c;
+end//
+select metadata_sync_ddl_dml_parallel_23097.myselect();
+metadata_sync_ddl_dml_parallel_23097.myselect()
+1
+drop table t1;
+select metadata_sync_ddl_dml_parallel_23097.myselect();
+ERROR 42S02: Table 'metadata_sync_routine_ddl_dml_parallel.t1' doesn't exist
+drop function metadata_sync_ddl_dml_parallel_23097.myselect;
+select myselect();
+ERROR 42000: FUNCTION metadata_sync_routine_ddl_dml_parallel.myselect does not exist
+drop user if exists metedata_sync_user_23097;
+create user metedata_sync_user_23097;
+GRANT execute ON metadata_sync_routine_ddl_dml_parallel.* TO metedata_sync_user_23097@'%' IDENTIFIED BY 'metedata_sync_user_23097' WITH GRANT OPTION;
+Warnings:
+Warning	1287	Using GRANT statement to modify existing user's properties other than privileges is deprecated and will be removed in future release. Use ALTER USER statement for this operation.
+flush privileges;
+create definer = metedata_sync_user_23097 function hello (s char(20)) returns char(50) deterministic return concat('Hello,' , s , '!');
+select metadata_sync_routine_ddl_dml_parallel.hello('world');
+metadata_sync_routine_ddl_dml_parallel.hello('world')
+Hello,world!
+drop user if exists metedata_sync_user_23097_alter;
+create user metedata_sync_user_23097_alter;
+GRANT execute ON metadata_sync_routine_ddl_dml_parallel.* TO metedata_sync_user_23097_alter@'%' IDENTIFIED BY 'metedata_sync_user_23097_alter' WITH GRANT OPTION;
+Warnings:
+Warning	1287	Using GRANT statement to modify existing user's properties other than privileges is deprecated and will be removed in future release. Use ALTER USER statement for this operation.
+update mysql.proc set definer='metedata_sync_user_23097_alter@%' where name='hello';
+flush privileges;
+select metadata_sync_routine_ddl_dml_parallel.hello('world');
+metadata_sync_routine_ddl_dml_parallel.hello('world')
+Hello,world!
+drop function hello;
+select hello('world');
+ERROR 42000: FUNCTION metadata_sync_routine_ddl_dml_parallel.hello does not exist
+create table t1 (
+id   char(16) not null default '',
+data int not null
+);
+create procedure metadata_sync_ddl_dml_parallel()
+insert into t1 values ("foo", 42);
+call metadata_sync_ddl_dml_parallel();
+select * from t1;
+id	data
+foo	42
+drop table t1;
+drop procedure metadata_sync_ddl_dml_parallel;
+create procedure metadata_sync_ddl_dml_parallel()
+begin
+create table t1 (id char(16) not null default '', data int not null, a int auto_increment key);
+insert into t1(id, data) values ("foo", 42);
+end//
+call metadata_sync_ddl_dml_parallel();
+drop procedure metadata_sync_ddl_dml_parallel;
+create view v1 as select * from t1 where id = 'foo';
+create procedure p1 ()
+update v1 set data = 10;
+call p1();
+select * from v1;
+id	data	a
+foo	10	1
+drop table t1;
+drop view v1;
+drop procedure p1;
+drop user if exists metedata_sync_user_23099;
+create user metedata_sync_user_23099;
+GRANT all ON metadata_sync_routine_ddl_dml_parallel.* TO metedata_sync_user_23099@'%' IDENTIFIED BY 'metedata_sync_user_23099' WITH GRANT OPTION;
+Warnings:
+Warning	1287	Using GRANT statement to modify existing user's properties other than privileges is deprecated and will be removed in future release. Use ALTER USER statement for this operation.
+create table t1 (
+id   char(16) not null default '',
+data int not null
+);
+drop procedure if exists metadata_sync_routine_ddl_dml_parallel;
+create definer =  metedata_sync_user_23099 procedure metadata_sync_routine_ddl_dml_parallel()
+insert into metadata_sync_routine_ddl_dml_parallel.t1 values ("foo", 42);
+call metadata_sync_routine_ddl_dml_parallel.metadata_sync_routine_ddl_dml_parallel();
+select * from metadata_sync_routine_ddl_dml_parallel.t1;
+id	data
+foo	42
+drop user if exists metedata_sync_user_23099_alter;
+create user metedata_sync_user_23099_alter;
+GRANT all ON metadata_sync_routine_ddl_dml_parallel.* TO metedata_sync_user_23099_alter@'%' IDENTIFIED BY 'metedata_sync_user_23099_alter' WITH GRANT OPTION;
+Warnings:
+Warning	1287	Using GRANT statement to modify existing user's properties other than privileges is deprecated and will be removed in future release. Use ALTER USER statement for this operation.
+update mysql.proc set definer='metedata_sync_user_23099_alter@%' where name='metadata_sync_routine_ddl_dml_parallel';
+call metadata_sync_routine_ddl_dml_parallel.metadata_sync_routine_ddl_dml_parallel();
+select * from metadata_sync_routine_ddl_dml_parallel.t1;
+id	data
+foo	42
+foo	42
+drop procedure metadata_sync_routine_ddl_dml_parallel;
+call metadata_sync_routine_ddl_dml_parallel();
+ERROR 42000: PROCEDURE metadata_sync_routine_ddl_dml_parallel.metadata_sync_routine_ddl_dml_parallel does not exist
+drop table t1;
+drop procedure if exists zap;
+create procedure zap(x int, out y int)
+begin
+declare z int;
+set z = x+1, y = z;
+end//
+drop procedure if exists bar//
+create procedure bar(x char(16), y int) comment "111111111111" sql security invoker insert into t1 values (x, y)//
+create table t1 (
+id   char(16) not null default '',
+data int not null
+);
+drop procedure if exists zip;
+create procedure zip(x char(16), y int)
+begin
+declare z int;
+call zap(y, z);
+call bar(x, z);
+end//
+call zip('test',17);
+drop procedure zap;
+call zip('test1',18);
+ERROR 42000: PROCEDURE metadata_sync_routine_ddl_dml_parallel.zap does not exist
+drop procedure bar;
+drop procedure zip;
+drop table t1;
+drop trigger if exists t1_bi;
+CREATE TABLE t1(a INT NOT NULL, b INT, c INT);
+CREATE TRIGGER t1_bi BEFORE INSERT ON t1 FOR EACH ROW SET NEW.a = 1;
+INSERT INTO t1(b, c) VALUES (200, 300);
+select * from t1 order by c;
+a	b	c
+1	200	300
+set server_ha_wait_sync_timeout = 10;
+drop trigger t1_bi;
+set server_ha_wait_sync_timeout = 0;
+INSERT INTO t1(b, c) VALUES (200, 300);
+ERROR HY000: Field 'a' doesn't have a default value
+drop table t1;
+drop database metadata_sync_routine_ddl_dml_parallel;

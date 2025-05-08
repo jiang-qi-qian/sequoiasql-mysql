@@ -1,0 +1,34 @@
+--source include/restart_mysqld.inc
+--source include/have_sequoiadb.inc
+
+--disable_warnings
+drop database if exists statistics_trace_sequoiadb_33968;
+--enable_warnings
+create database statistics_trace_sequoiadb_33968;
+drop database statistics_trace_sequoiadb_33968;
+create database statistics_trace_sequoiadb_33968;
+use statistics_trace_sequoiadb_33968;
+
+set session sequoiadb_debug_log = on;
+set session sequoiadb_secure_log = off;
+set session sequoiadb_share_log_output = on;
+
+CREATE TABLE t1 (a int,b varchar(4),key (a)) ENGINE=SequoiaDB;
+
+flush tables;
+show status like "sdb_share_updated";
+let $query = INSERT INTO t1 values (1,"a"),(2,"b"),(3,"c");
+--source include/query_without_sorted_and_get_mysqld_note_log_sequoiadb.inc
+show status like "sdb_share_updated";
+
+flush tables;
+let $query = update t1 set b = "d" where a = 1;
+--source include/query_without_sorted_and_get_mysqld_note_log_sequoiadb.inc
+show status like "sdb_share_updated";
+
+flush tables;
+let $query = delete from t1 where a = 1;
+--source include/query_without_sorted_and_get_mysqld_note_log_sequoiadb.inc
+show status like "sdb_share_updated";
+
+drop database statistics_trace_sequoiadb_33968;

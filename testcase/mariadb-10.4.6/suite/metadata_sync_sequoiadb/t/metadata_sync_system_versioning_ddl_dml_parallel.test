@@ -1,0 +1,212 @@
+#case 23502
+
+--source include/have_sequoiadb.inc
+--source suite/metadata_sync_sequoiadb/inc/insts_connect_sequoiadb.inc
+
+# connect to conn1, clear databases in the beginning
+connection conn1;
+--disable_warnings
+DROP DATABASE IF EXISTS metasync_23502;
+--enable_warnings
+
+# connect to conn2, check databases are cleaned in the beginning
+connection conn2;
+--error ER_BAD_DB_ERROR
+SHOW CREATE DATABASE metasync_23502;
+
+# seqDB-23502
+# begin testing
+#
+# create/alter/drop system-versioning table
+connection conn1;
+CREATE DATABASE metasync_23502;
+USE metasync_23502;
+# create system-versioning table1
+CREATE TABLE sys_version1 (
+   id int primary key,
+   name varchar(16),
+   start_timestamp TIMESTAMP(6) GENERATED ALWAYS as ROW START INVISIBLE,
+   end_timestamp TIMESTAMP(6) GENERATED ALWAYS as ROW END INVISIBLE,
+   PERIOD FOR SYSTEM_TIME (start_timestamp, end_timestamp)
+) WITH SYSTEM VERSIONING;
+# insert
+connection conn2;
+INSERT INTO metasync_23502.sys_version1(id,name) VALUES (1,'Joe'),(2,'Bob'),(3,'Mary');
+USE metasync_23502;
+# create system-versioning table2
+connection conn1;
+CREATE OR REPLACE TABLE sys_version2 (
+   x int primary key,
+   y int
+) WITH SYSTEM VERSIONING;
+INSERT INTO sys_version2(x,y) VALUES (1,1);
+# update
+connection conn2;
+UPDATE sys_version2 SET y = y + 1;
+# create system-versioning table3
+connection conn1;
+CREATE TABLE sys_version3 SELECT * FROM sys_version2;
+# select
+connection conn2;
+SELECT * FROM sys_version3;
+# create application-time periods table1
+connection conn1;
+CREATE TABLE period_tab1 (
+   id int auto_increment primary key, 
+   start_time datetime,
+   end_time datetime,
+   PERIOD FOR ts_period(start_time, end_time));
+# insert
+connection conn2;
+INSERT INTO period_tab1(start_time,end_time) VALUES ('2020-12-12 00:00:00', '2021-01-01 00:00:00');
+# create application-time periods table2
+connection conn1;
+CREATE TABLE period_tab2 (
+   id int auto_increment primary key,
+   start date,
+   end date,
+   PERIOD FOR dt_period(start, end));
+INSERT INTO period_tab2(start,end) VALUES ('2020-12-12', '2021-01-01');
+# select
+connection conn2;
+SELECT * FROM period_tab2;
+# create bitemporal table
+connection conn1;
+CREATE TABLE bitemporal_tab (
+   id int auto_increment primary key,
+   name varchar(32),
+   date_1 date,
+   date_2 date,
+   row_start timestamp(6) AS ROW START INVISIBLE,
+   row_end timestamp(6) AS ROW END INVISIBLE,
+   PERIOD FOR application_time(date_1, date_2),
+   PERIOD FOR system_time(row_start, row_end)) WITH SYSTEM VERSIONING;
+# DML
+connection conn2;
+INSERT INTO bitemporal_tab(name,date_1,date_2) VALUES ('Joe', '1997-01-01', '2001-01-01');
+INSERT INTO bitemporal_tab(name,date_1,date_2) VALUES ('Bob', '2008-08-08', '2018-10-10');
+UPDATE bitemporal_tab
+FOR PORTION OF application_time
+    FROM '1997-01-01' TO '2001-01-01' SET name = CONCAT('first update: ', name);
+DELETE FROM bitemporal_tab
+FOR PORTION OF application_time FROM '2008-01-01' TO '2018-01-01';
+SELECT * FROM bitemporal_tab ORDER BY id;
+#BUG #SEQUOIASQLMAINSTREAM-939
+# alter system-versioning table1
+connection conn1;
+SET system_versioning_alter_history = KEEP;
+ALTER TABLE sys_version1 MODIFY name varchar(127) WITHOUT SYSTEM VERSIONING, ADD COLUMN age int, algorithm=copy;
+SET system_versioning_alter_history = DEFAULT;
+# insert
+connection conn2;
+INSERT INTO sys_version1(id,name,age) VALUES (1005,'Tom',1005);
+SELECT * FROM sys_version1 ORDER BY id;
+# alter system-versioning table2
+connection conn1;
+SET system_versioning_alter_history = KEEP;
+ALTER TABLE sys_version2 ADD COLUMN z int DEFAULT -1;
+SET system_versioning_alter_history = DEFAULT;
+# update
+connection conn2;
+UPDATE sys_version2 SET y = y * 2;
+SELECT * FROM sys_version2 FOR SYSTEM_TIME ALL ORDER BY x,y;
+# alter system-versioning table3
+connection conn1;
+SET system_versioning_alter_history = KEEP;
+SET server_ha_wait_sync_timeout = 10; 
+ALTER TABLE sys_version3 DROP COLUMN y;
+SET system_versioning_alter_history = DEFAULT;
+SET server_ha_wait_sync_timeout = 0;
+#BUG #SEQUOIASQLMAINSTREAM-949
+# select
+connection conn2;
+SELECT * FROM sys_version3 ORDER BY x;
+# alter application-time periods table1
+connection conn1;
+ALTER TABLE period_tab1 ADD COLUMN name varchar(64);
+# insert
+connection conn2;
+INSERT INTO period_tab1(name,start_time,end_time) VALUES ('David', '2021-02-02 00:00:00', '2021-03-03 00:00:00');
+SELECT * FROM period_tab1 ORDER BY id,name;
+# alter application-time periods table2
+connection conn1;
+ALTER TABLE period_tab2 DROP PERIOD FOR dt_period;
+# select
+connection conn2;
+SELECT * FROM period_tab2 ORDER BY id;
+# alter bitemporal table
+connection conn1;
+SET system_versioning_alter_history = KEEP;
+ALTER TABLE bitemporal_tab ADD COLUMN age int, CHANGE name name varchar(127);
+SET system_versioning_alter_history = DEFAULT; 
+# DML
+connection conn2;
+DELETE FROM bitemporal_tab
+FOR PORTION OF application_time FROM '2008-01-01' TO '2010-10-10';
+INSERT INTO bitemporal_tab(name,age,date_1,date_2) VALUES ('TOM', 20, '2020-01-01', '2021-01-01');
+SELECT * FROM bitemporal_tab ORDER BY id;
+SELECT * FROM bitemporal_tab FOR SYSTEM_TIME ALL ORDER BY id,name;
+connection conn1;
+SET system_versioning_alter_history = KEEP;
+ALTER TABLE bitemporal_tab DROP PERIOD FOR application_time;
+SET system_versioning_alter_history = DEFAULT; 
+# DML
+connection conn2;
+SELECT * FROM bitemporal_tab FOR SYSTEM_TIME ALL ORDER BY id,name;
+UPDATE bitemporal_tab SET name = 'update after drop period' WHERE id > 2;
+SELECT * FROM bitemporal_tab FOR SYSTEM_TIME ALL ORDER BY id,name;
+# drop system-versioning table1
+connection conn1;
+DROP TABLE sys_version1;
+# insert 
+connection conn2;
+--error ER_NO_SUCH_TABLE
+INSERT INTO sys_version1(id,name,age) VALUES (2001,'John',2001);
+# drop system-versioning table2
+connection conn1;
+DROP TABLE sys_version2; 
+# delete
+connection conn2;
+--error ER_NO_SUCH_TABLE
+DELETE FROM sys_version2;
+# drop system-versioning table3
+connection conn1;
+DROP TABLE sys_version3;
+# select
+connection conn2;
+--error ER_NO_SUCH_TABLE
+SELECT * FROM sys_version3;
+# drop application-time periods table1
+connection conn1;
+DROP TABLE period_tab1;
+# insert
+connection conn2;
+--error ER_NO_SUCH_TABLE
+INSERT INTO period_tab1(name,start_time,end_time) VALUES ('Jerry', '2021-04-04 00:00:00', '2021-05-05 00:00:00');
+# drop application-time periods table2
+connection conn1;
+DROP TABLE period_tab2;
+# select
+connection conn2;
+--error ER_NO_SUCH_TABLE
+SELECT * FROM period_tab2;
+# drop bitemporal table
+connection conn1;
+DROP TABLE bitemporal_tab;
+# DML
+connection conn2;
+--error ER_NO_SUCH_TABLE
+UPDATE bitemporal_tab SET name = 'update last time';
+--error ER_NO_SUCH_TABLE
+SELECT * FROM bitemporal_tab;
+
+# clear databases in the ending
+connection conn1;
+DROP DATABASE metasync_23502;
+# check databases are cleaned in the ending
+connection conn2;
+--error ER_BAD_DB_ERROR
+SHOW CREATE DATABASE metasync_23502;
+
+--source include/uninstall_sequoiadb.inc
+--source suite/metadata_sync_sequoiadb/inc/insts_disconnect_sequoiadb.inc

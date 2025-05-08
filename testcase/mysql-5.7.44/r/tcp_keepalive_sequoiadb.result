@@ -1,0 +1,147 @@
+show variables like '%tcp%';
+Variable_name	Value
+tcp_keepalive_interval	0
+tcp_keepalive_probes	0
+tcp_keepalive_time	0
+set global tcp_keepalive_probes=1;
+set global tcp_keepalive_time=1;
+set global tcp_keepalive_interval=1;
+show variables like '%tcp%';
+Variable_name	Value
+tcp_keepalive_interval	1
+tcp_keepalive_probes	1
+tcp_keepalive_time	1
+set global tcp_keepalive_probes=0;
+set global tcp_keepalive_time=0;
+set global tcp_keepalive_interval=0;
+show variables like '%tcp%';
+Variable_name	Value
+tcp_keepalive_interval	0
+tcp_keepalive_probes	0
+tcp_keepalive_time	0
+set global tcp_keepalive_probes=1000;
+set global tcp_keepalive_time=1000;
+set global tcp_keepalive_interval=1000;
+show variables like '%tcp%';
+Variable_name	Value
+tcp_keepalive_interval	1000
+tcp_keepalive_probes	1000
+tcp_keepalive_time	1000
+set global tcp_keepalive_probes=2147483;
+set global tcp_keepalive_time=2147483;
+set global tcp_keepalive_interval=2147483;
+show variables like '%tcp%';
+Variable_name	Value
+tcp_keepalive_interval	2147483
+tcp_keepalive_probes	2147483
+tcp_keepalive_time	2147483
+set global tcp_keepalive_probes=-1;
+Warnings:
+Warning	1292	Truncated incorrect tcp_keepalive_probes value: '-1'
+set global tcp_keepalive_time=-1;
+Warnings:
+Warning	1292	Truncated incorrect tcp_keepalive_time value: '-1'
+set global tcp_keepalive_interval=-1;
+Warnings:
+Warning	1292	Truncated incorrect tcp_keepalive_interval value: '-1'
+show variables like '%tcp%';
+Variable_name	Value
+tcp_keepalive_interval	0
+tcp_keepalive_probes	0
+tcp_keepalive_time	0
+set global tcp_keepalive_probes=2147484;
+Warnings:
+Warning	1292	Truncated incorrect tcp_keepalive_probes value: '2147484'
+set global tcp_keepalive_time=2147484;
+Warnings:
+Warning	1292	Truncated incorrect tcp_keepalive_time value: '2147484'
+set global tcp_keepalive_interval=2147484;
+Warnings:
+Warning	1292	Truncated incorrect tcp_keepalive_interval value: '2147484'
+show variables like '%tcp%';
+Variable_name	Value
+tcp_keepalive_interval	2147483
+tcp_keepalive_probes	2147483
+tcp_keepalive_time	2147483
+set global tcp_keepalive_probes=null;
+ERROR 42000: Incorrect argument type to variable 'tcp_keepalive_probes'
+set global tcp_keepalive_time=nill;
+ERROR 42000: Incorrect argument type to variable 'tcp_keepalive_time'
+set global tcp_keepalive_interval=nill;
+ERROR 42000: Incorrect argument type to variable 'tcp_keepalive_interval'
+show variables like '%tcp%';
+Variable_name	Value
+tcp_keepalive_interval	2147483
+tcp_keepalive_probes	2147483
+tcp_keepalive_time	2147483
+set global tcp_keepalive_probes="";
+ERROR 42000: Incorrect argument type to variable 'tcp_keepalive_probes'
+set global tcp_keepalive_time="";
+ERROR 42000: Incorrect argument type to variable 'tcp_keepalive_time'
+set global tcp_keepalive_interval="";
+ERROR 42000: Incorrect argument type to variable 'tcp_keepalive_interval'
+show variables like '%tcp%';
+Variable_name	Value
+tcp_keepalive_interval	2147483
+tcp_keepalive_probes	2147483
+tcp_keepalive_time	2147483
+set global tcp_keepalive_probes=$%;
+ERROR 42000: You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near '' at line 1
+set global tcp_keepalive_time=$%;
+ERROR 42000: You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near '' at line 1
+set global tcp_keepalive_interval=$%;
+ERROR 42000: You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near '' at line 1
+show variables like '%tcp%';
+Variable_name	Value
+tcp_keepalive_interval	2147483
+tcp_keepalive_probes	2147483
+tcp_keepalive_time	2147483
+set global tcp_keepalive_probes=default;
+set global tcp_keepalive_time=default;
+set global tcp_keepalive_interval=default;
+show variables like '%tcp%';
+Variable_name	Value
+tcp_keepalive_interval	0
+tcp_keepalive_probes	0
+tcp_keepalive_time	0
+set tcp_keepalive_probes=1000;
+ERROR HY000: Variable 'tcp_keepalive_probes' is a GLOBAL variable and should be set with SET GLOBAL
+set tcp_keepalive_time=1000;
+ERROR HY000: Variable 'tcp_keepalive_time' is a GLOBAL variable and should be set with SET GLOBAL
+set tcp_keepalive_interval=1000;
+ERROR HY000: Variable 'tcp_keepalive_interval' is a GLOBAL variable and should be set with SET GLOBAL
+show variables like '%tcp%';
+Variable_name	Value
+tcp_keepalive_interval	0
+tcp_keepalive_probes	0
+tcp_keepalive_time	0
+set session tcp_keepalive_probes=1000;
+ERROR HY000: Variable 'tcp_keepalive_probes' is a GLOBAL variable and should be set with SET GLOBAL
+set session tcp_keepalive_time=1000;
+ERROR HY000: Variable 'tcp_keepalive_time' is a GLOBAL variable and should be set with SET GLOBAL
+set session tcp_keepalive_interval=1000;
+ERROR HY000: Variable 'tcp_keepalive_interval' is a GLOBAL variable and should be set with SET GLOBAL
+show variables like '%tcp%';
+Variable_name	Value
+tcp_keepalive_interval	0
+tcp_keepalive_probes	0
+tcp_keepalive_time	0
+set $% tcp_keepalive_probes=1000;
+ERROR 42000: You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near '% tcp_keepalive_probes=1000' at line 1
+set $% tcp_keepalive_time=1000;
+ERROR 42000: You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near '% tcp_keepalive_time=1000' at line 1
+set $% tcp_keepalive_interval=1000;
+ERROR 42000: You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near '% tcp_keepalive_interval=1000' at line 1
+show variables like '%tcp%';
+Variable_name	Value
+tcp_keepalive_interval	0
+tcp_keepalive_probes	0
+tcp_keepalive_time	0
+set global tcp_keepalive_probes=default;
+set global tcp_keepalive_time=default;
+set global tcp_keepalive_interval=default;
+show variables like '%tcp%';
+Variable_name	Value
+tcp_keepalive_interval	0
+tcp_keepalive_probes	0
+tcp_keepalive_time	0

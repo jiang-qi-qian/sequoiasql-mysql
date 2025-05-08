@@ -1,0 +1,55 @@
+drop database if exists mysqlpump_sequoiadb;
+CREATE DATABASE mysqlpump_sequoiadb;
+use mysqlpump_sequoiadb;
+create TABLE t1(id int);
+"socket wrong"
+mysqlpump: Got error: 2002: Can't connect to local MySQL server through error.socket' (2) while connecting to the MySQL server
+mysqlpump: [ERROR] (11) 
+Dump process encountered error and will not continue.
+mysqlpump: Got error: 2002: Can't connect to local MySQL server through error.socket' (2) while connecting to the MySQL server
+mysqlpump: [ERROR] (11) 
+Dump process encountered error and will not continue.
+"socket success"
+"host&port wrong"
+mysqlpump: Got error: 2003: Can't connect to MySQL server on '123' (22) while connecting to the MySQL server
+mysqlpump: [ERROR] (11) 
+Dump process encountered error and will not continue.
+mysqlpump: Got error: 2003: Can't connect to MySQL server on '123' (22) while connecting to the MySQL server
+mysqlpump: [ERROR] (11) 
+Dump process encountered error and will not continue.
+"host&port success"
+"user wrong"
+mysqlpump: Got error: 1045: Access denied for user 'error'@'localhost' (using password: NO) while connecting to the MySQL server
+mysqlpump: [ERROR] (11) 
+Dump process encountered error and will not continue.
+mysqlpump: Got error: 1045: Access denied for user 'error'@'localhost' (using password: NO) while connecting to the MySQL server
+mysqlpump: [ERROR] (11) 
+Dump process encountered error and will not continue.
+create user mysqlpump_sequoiadb@'%' IDENTIFIED BY 'pump';
+grant all privileges on *.* to mysqlpump_sequoiadb@'%' with grant option;
+flush privileges;
+"password wrong"
+mysqlpump: [Warning] Using a password on the command line interface can be insecure.
+mysqlpump: Got error: 1045: Access denied for user 'mysqlpump_sequoiadb'@'localhost' (using password: YES) while connecting to the MySQL server
+mysqlpump: [ERROR] (11) 
+Dump process encountered error and will not continue.
+mysqlpump: [Warning] Using a password on the command line interface can be insecure.
+mysqlpump: Got error: 1045: Access denied for user 'mysqlpump_sequoiadb'@'localhost' (using password: YES) while connecting to the MySQL server
+mysqlpump: [ERROR] (11) 
+Dump process encountered error and will not continue.
+"password success"
+drop user 'mysqlpump_sequoiadb';
+drop database mysqlpump_sequoiadb;
+"before mysqlpump"
+show databases like 'mysqlpump_sequoiadb';
+Database (mysqlpump_sequoiadb)
+"after mysqlpump"
+show databases like 'mysqlpump_sequoiadb';
+Database (mysqlpump_sequoiadb)
+mysqlpump_sequoiadb
+use mysqlpump_sequoiadb;
+desc t1;
+Field	Type	Null	Key	Default	Extra
+id	int(11)	YES		NULL	
+drop database mysqlpump_sequoiadb;
+# End

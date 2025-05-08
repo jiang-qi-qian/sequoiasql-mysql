@@ -1,0 +1,142 @@
+#case 18857#case 18915#case 19224
+
+--source include/have_sequoiadb.inc
+--source suite/metadata_sync_sequoiadb/inc/insts_connect_sequoiadb.inc
+
+# connect to conn1, clear databases in the beginning
+connection conn1;
+--disable_warnings
+DROP DATABASE IF EXISTS metasync_cs1;
+DROP DATABASE IF EXISTS metasync_cs2;
+DROP DATABASE IF EXISTS metasync_cs3;
+DROP DATABASE IF EXISTS metasync_cs4;
+DROP DATABASE IF EXISTS metasync_cs5;
+DROP DATABASE IF EXISTS metasync_cs6;
+DROP SCHEMA IF EXISTS metasync_schem1;
+SET sql_mode='ANSI_QUOTES';
+SET character_set_client = utf8;
+SET character_set_connection = utf8;
+DROP DATABASE IF EXISTS "metasync_\tt1\nt2\\t3";
+DROP DATABASE IF EXISTS "metasync_丶﹗﹖﹔【】| 你好";
+SET sql_mode=default;
+--enable_warnings
+
+# connect to conn2, check databases are cleaned in the beginning
+connection conn2;
+--sleep $sleep
+--error ER_BAD_DB_ERROR
+SHOW CREATE DATABASE metasync_cs1;
+--error ER_BAD_DB_ERROR
+SHOW CREATE DATABASE metasync_cs2;
+--error ER_BAD_DB_ERROR
+SHOW CREATE DATABASE metasync_cs3;
+--error ER_BAD_DB_ERROR
+SHOW CREATE DATABASE metasync_cs4;
+--error ER_BAD_DB_ERROR
+SHOW CREATE DATABASE metasync_cs5;
+--error ER_BAD_DB_ERROR
+SHOW CREATE DATABASE metasync_cs6;
+--error ER_BAD_DB_ERROR
+SHOW CREATE SCHEMA metasync_schem1;
+SET sql_mode='ANSI_QUOTES';
+SET character_set_client = utf8;
+SET character_set_connection = utf8;
+--error ER_BAD_DB_ERROR
+SHOW CREATE DATABASE "metasync_\tt1\nt2\\t3";
+--error ER_BAD_DB_ERROR
+SHOW CREATE DATABASE "metasync_丶﹗﹖﹔【】| 你好";
+SET sql_mode=default;
+
+# seqDB-18857
+# begin testing
+# CREATE DATABASE
+connection conn1;
+CREATE DATABASE metasync_cs1;
+CREATE DATABASE metasync_cs2 CHARACTER SET utf8 COLLATE utf8_general_ci;
+CREATE DATABASE IF NOT EXISTS metasync_cs3 default CHARACTER SET = gb18030 default COLLATE = gb18030_chinese_ci;
+CREATE SCHEMA metasync_schem1 DEFAULT CHARACTER SET = big5 DEFAULT COLLATE = big5_chinese_ci;
+
+# seqDB-18915
+# SEQUOIASQLMAINSTREAM-350
+CREATE DATABASE metasync_cs4;
+CREATE DATABASE metasync_cs5;
+USE metasync_cs4;
+DROP DATABASE metasync_cs4;
+DROP DATABASE metasync_cs5;
+CREATE   DATABASE   metasync_cs6;
+# seqDB-19224
+# SEQUOIASQLMAINSTREAM-364
+SET sql_mode='ANSI_QUOTES';
+CREATE DATABASE "metasync_\tt1\nt2\\t3";
+CREATE DATABASE "metasync_丶﹗﹖﹔【】| 你好";
+SET sql_mode=default;
+
+# check metadatas after create
+connection conn2;
+--sleep $sleep
+SHOW CREATE DATABASE metasync_cs1;
+SHOW CREATE DATABASE metasync_cs2;
+SHOW CREATE DATABASE metasync_cs3;
+--error ER_BAD_DB_ERROR
+SHOW CREATE DATABASE metasync_cs4;
+--error ER_BAD_DB_ERROR
+SHOW CREATE DATABASE metasync_cs5;
+SHOW CREATE DATABASE metasync_cs6;
+SHOW CREATE SCHEMA metasync_schem1;
+SET sql_mode='ANSI_QUOTES';
+SHOW CREATE DATABASE "metasync_\tt1\nt2\\t3";
+SHOW CREATE DATABASE "metasync_丶﹗﹖﹔【】| 你好";
+SET sql_mode=default;
+
+# ALTER DATABASE
+ALTER DATABASE metasync_cs2 CHARACTER SET ucs2 COLLATE ucs2_general_ci;
+ALTER DATABASE metasync_cs3 DEFAULT CHARACTER SET = ucs2 DEFAULT COLLATE = ucs2_general_ci;
+ALTER SCHEMA metasync_schem1 DEFAULT CHARACTER SET = ucs2 DEFAULT COLLATE = ucs2_general_ci;
+
+# check metadatas after alter
+connection conn1;
+--sleep $sleep
+SHOW CREATE DATABASE metasync_cs2;
+SHOW CREATE DATABASE metasync_cs3;
+SHOW CREATE SCHEMA metasync_schem1;
+
+# DROP DATABASE
+DROP DATABASE IF EXISTS metasync_cs1;
+DROP DATABASE metasync_cs2;
+DROP DATABASE metasync_cs3;
+DROP DATABASE metasync_cs6;
+DROP SCHEMA metasync_schem1;
+DROP SCHEMA IF EXISTS metasync_schem1;
+SET sql_mode='ANSI_QUOTES';
+DROP DATABASE "metasync_\tt1\nt2\\t3";
+DROP DATABASE "metasync_丶﹗﹖﹔【】| 你好";
+SET sql_mode=default;
+
+# check metadatas after drop
+connection conn2;
+--sleep $sleep
+--error ER_BAD_DB_ERROR
+SHOW CREATE DATABASE metasync_cs1;
+--error ER_BAD_DB_ERROR
+SHOW CREATE DATABASE metasync_cs2;
+--error ER_BAD_DB_ERROR
+SHOW CREATE DATABASE metasync_cs3;
+--error ER_BAD_DB_ERROR
+SHOW CREATE DATABASE metasync_cs4;
+--error ER_BAD_DB_ERROR
+SHOW CREATE DATABASE metasync_cs5;
+--error ER_BAD_DB_ERROR
+SHOW CREATE DATABASE metasync_cs6;
+--error ER_BAD_DB_ERROR
+SHOW CREATE SCHEMA metasync_schem1;
+SET sql_mode='ANSI_QUOTES';
+--error ER_BAD_DB_ERROR
+SHOW CREATE DATABASE "metasync_\tt1\nt2\\t3";
+--error ER_BAD_DB_ERROR
+SHOW CREATE DATABASE "metasync_丶﹗﹖﹔【】| 你好";
+SET sql_mode=default;
+SET character_set_client = default;
+SET character_set_connection = default;
+
+--source include/uninstall_sequoiadb.inc
+--source suite/metadata_sync_sequoiadb/inc/insts_disconnect_sequoiadb.inc

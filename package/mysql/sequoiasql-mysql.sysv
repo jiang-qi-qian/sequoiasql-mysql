@@ -1,0 +1,174 @@
+#!/bin/bash
+### BEGIN INIT INFO
+# Provides:          ProvidesName
+# Required-Start:    $remote_fs $syslog
+# Required-Stop:     $remote_fs $syslog
+# Default-Start:     2 3 4 5
+# Default-Stop:      0 1 6
+# Short-Description: SequoiaSQL-MySQL Daemon
+### END INIT INFO
+# 
+# description: sequoiasql-mysql
+#
+# This file will be placed at /etc/init.d/sequoiasql-mysql[i] automatically when 
+# you install sequoiasql-mysql.
+#
+# Original author: Siqin Chen <chensiqin@sequoiadb.com>
+#
+
+# Installation prefix
+PREFIX=XXXXX
+
+# Who to run the postmaster as, usually "sdbadmin".  (NOT "root")
+SQLUSER=XXXXX
+
+# What to use to start up the instances, what to use to shut down the instances
+DAEMON_NAME="sequoiasql-mysql-daemon"
+DAEMON_EXE="$PREFIX/bin/$DAEMON_NAME"
+
+# Where to keep a log file for deamon
+DAEMON_LOG="$PREFIX/conf/log/sequoiasql-mysql-daemon.log"
+
+# Find the name of the service
+NAME=`basename $0`
+
+# Set lock file
+LOCK_FILE_DIR=/var/lock/subsys
+LOCK_FILE="$LOCK_FILE_DIR/${NAME}"
+
+function check_root_user()
+{
+   local cur_user=`whoami`
+   if [ "$cur_user" != "root" ]
+   then
+      echo "ERROR: Service operation requires root permission." >&2
+      exit 77
+   fi
+}
+
+
+function exec_cmd()
+{
+   local cmd="$1"
+   CMD_RESULT=`su - $SQLUSER -c "export LD_LIBRARY_PATH=$PREFIX/lib; $cmd"`
+   local ret=$?
+   return $ret
+}
+
+function start_svc()
+{
+   
+   # Return
+   #   0 if start service succeed (will set global variable $PROCESSID)
+   #   1 if service has been already running (will set global variable $PROCESSID)
+   #   other if a failure occurred
+   
+   test x"$OOM_SCORE_ADJ" != x && echo "$OOM_SCORE_ADJ" > /proc/self/oom_score_adj
+   test x"$OOM_ADJ" != x && echo "$OOM_ADJ" > /proc/self/oom_adj
+   
+   status_svc
+   local ret=$?  #expect return 1
+   test $ret -eq 0 && return 1
+   test $ret -ne 1 -a $ret -ne 0 && return 2
+   
+   exec_cmd "setsid $DAEMON_EXE >> $DAEMON_LOG 2>&1 &" || return $?
+   status_svc #to set global variable $PROCESSID
+   
+   mkdir -p $LOCK_FILE_DIR
+   touch $LOCK_FILE
+   
+   return 0
+}
+
+function status_svc()
+{
+   # Return
+   #   0 if service is running (will set global variable $PROCESSID)
+   #   1 if service is not running
+   #   other if a failure occurred
+
+   exec_cmd "$DAEMON_EXE --status"
+   local ret=$?
+   test $ret -eq 0 && \
+      PROCESSID=`echo "$CMD_RESULT" | awk -F "PID: " '{print $2}' | awk -F ")" '{print $1}'` 
+   return $ret
+}
+
+function stop_svc()
+{
+   # Return
+   #   0 if stop service succeed (will set global variable $PROCESSID)
+   #   1 if service is not running
+   #   other if a failure occurred
+   
+   local stop_inst=$1
+   test "" == "$stop_inst" && stop_inst=true
+   local ret=0
+   
+   status_svc || return $?
+
+   if [ false == $stop_inst ]; then
+      exec_cmd "$DAEMON_EXE --stop >> $DAEMON_LOG 2>&1" || return 2
+   else
+      exec_cmd "$DAEMON_EXE --stop --with-inst >> $DAEMON_LOG 2>&1" || return 2
+   fi
+   
+   return 0
+}
+
+################## main entry ###################
+check_root_user
+exec_cmd "mkdir -p \"$PREFIX/conf/log\""
+
+case "$1" in
+start)
+   echo "Starting service $NAME ..."
+   start_svc
+   case "$?" in
+      0) echo "ok. (PID: $PROCESSID)" ; exit 0 ;;
+      1) echo "Service (PID: $PROCESSID) is already running." ; exit 0 ;;
+      *) echo "Fail to start service." ; exit 1 ;;
+   esac
+   ;;  
+stop)
+   echo "Stoping service $NAME ..."
+   stop_svc
+   case "$?" in
+      0) echo "ok." ; exit 0 ;;
+      1) echo "Service is not running." ; exit 0 ;;
+      *) echo "Fail to stop service." ; exit 1 ;;
+   esac
+   ;;  
+restart)
+   echo "Restarting service $NAME ..."
+   stop_svc false
+   case "$?" in
+   0|1)
+      start_svc
+      case "$?" in
+         0) echo "ok. (PID: $PROCESSID)" ; exit 0 ;;
+         1) echo "Failed. Old process (PID: $PROCESSID) is still running." ; exit 1 ;;
+         *) echo "Fail to start service." ; exit 1 ;;
+      esac
+      ;;
+   *)
+      echo "Fail to stop service."
+      exit 1
+      ;;
+   esac
+   ;;
+status)
+   echo "Status of service $NAME: "
+   status_svc
+   case "$?" in
+      0) echo "running. (PID: $PROCESSID)" ; exit 0 ;;
+      1) echo "not running." ; exit 3 ;;
+   esac
+   ;;
+*)
+   echo "Usage: $0 {start|stop||restart|status}" >&2
+   exit 1
+   ;;
+esac
+
+exit 0

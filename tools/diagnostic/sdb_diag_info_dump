@@ -1,0 +1,1962 @@
+#!/bin/bash
+
+#   error code list:
+#   1     parameter invalid
+#   2     fail to connect mysql/mariadb
+#   3     fail to connect sequoiadb
+#   4     file does not exist
+#   5     fail to tar gz package
+#   6     no parameter
+#   7     file already exist
+#   8     command execution error
+#   9     permission denied
+
+ME=$(basename "$0")
+
+#config
+THREAD_COUNT=5
+
+#input_para
+HOST=""
+PORT=""
+SOCKET=""
+USER=""
+PASSWORD=""
+INSTANCE=""
+DATABASE=""
+TABLE_ARRAY=()
+ROUTINE_ARRAY=()
+QUERY=""
+OUTPUT=""
+FIELD_SEPARATOR=","
+
+#parse_para
+SQL_INSTALL_PATH=""
+IS_MAPPING="0"
+MAPPING_DATABASE_TABLE_ARRAY=()                #db1 t1 cs1 cl1 db1 t2 cs2 cl1
+MAPPING_DATABASE_TABLE_PARTITION_ARRAY=()      #db1 t1 p0 t1#P#p0 db1 t1 p1 t1#P#p1
+DATABASE_TABLE_PARTITION_ARRAY=()              #db1 t1 p0 t1#P#p0 db1 t1 p1 t1#P#p1
+DATABASE_ARRAY=()                              #db1 db2 db3
+DATABASE_ROUTINE_ARRAY=()                      #db1 f1 db1 f2 db2 p1
+DATABASE_TABLE_ARRAY=()                        #db1 t1 db1 t2 db2 t1
+DATABASE_ROUTINE_NAME_TYPE_ARRAY=()            #db1 f1 function db1 f1 produce
+DATABASE_VIEW_ARRAY=()                         #db1 v1 db2 v2
+ALL_TABLES_IN_DATABASE_ARRAY=()                #tb1 tb2 v1 v2
+MYSQL_EXEC_CMD=""                              #with -D db
+MYSQL_EXEC_CMD_WITHOUT_DB=""                   #without -D db
+REMOVE_PASSWORD_WARNING=""
+
+#sdb
+IS_SDB_CONNECTED=1
+SDB_SHELL=""
+INST_GROUP_NAME=""
+SDB_USER=""
+SDB_PASSWD=""
+SDB_TOKEN=""
+SDB_CIPHERFILE=""
+SDB_HAVE_GETINDEXSTAT=0
+
+#package pathname
+PACKAGE_PATHNAME="diaginfo"
+
+#query
+QUERY_PATHNAME="query"
+EXPLAIN_FILENAME="${QUERY_PATHNAME}/explain.result"
+OPTIMIZER_TRACE_FILENAME="${QUERY_PATHNAME}/optimizer_trace.json"
+
+#catalog
+CATALOG_PATHNAME="catalog"
+DATABASE_CATALOG_SQL_FILENAME="database_catalog.sql"
+TABLE_CATALOG_SQL_FILENAME="table_catalog.sql"
+TABLE_CATALOG_JSON_FILENAME="table_catalog.json"
+TABLE_STATISTICS_RESULT_FILENAME="table_statistics.result"
+TABLE_STATISTICS_JSON_FILENAME="table_statistics.json"
+INDEX_STATISTICS_PATHNAME="index_statistics"
+JSON=".json"
+
+#routine
+ROUTINE_PATHNAME="routine"
+ROUTINES_FILENAME="routine_catalog.sql"
+
+#environment
+ENVIRONMENT_PATHNAME="environment"
+VARIABLES_FILENAME="${ENVIRONMENT_PATHNAME}/variables.result"
+STATUS_FILENAME="${ENVIRONMENT_PATHNAME}/status.result"
+GROUP_FILENAME="${ENVIRONMENT_PATHNAME}/group_list.json"
+ENGINE_FILENAME="${ENVIRONMENT_PATHNAME}/engine.txt"
+VERSION_FILENAME="${ENVIRONMENT_PATHNAME}/version.txt"
+
+#sdb -f tmp_pathname
+SDB_JS_FILENAME="sdb.js"
+NEW_SDB_STRING=""
+
+function mkdir_path()
+{
+   local path="${1}"
+   local file_name="${2}"
+   local rc=0
+   if [ ! -d "${path}" ]; then
+      mkdir -p "${path}"
+      rc=$?
+   fi
+   test $rc -ne 0 && echo "ERROR: Fail to mkdir path \"${path}\""
+   return $rc
+}
+
+function exec_sql_with_print()
+{
+   local sql="${1}"
+   local filename="${2}"
+   local without_db="${3}"
+   local rc=0
+
+   if [ "${without_db}" == "" ]; then
+      eval "${MYSQL_EXEC_CMD} -s -e \"${sql}\"" "2>&1" "${REMOVE_PASSWORD_WARNING}" > "${filename}"
+   else
+      eval "${MYSQL_EXEC_CMD_WITHOUT_DB} -s -e \"${sql}\"" "2>&1" "${REMOVE_PASSWORD_WARNING}" > "${filename}"
+   fi
+   rc=$?
+   local error=`tail -n 1 "${filename}" | grep "^ERROR "`
+   if [[ $rc -ne 0 || "${error}" != "" ]]; then
+      echo -e "${sql}\n${error}" > "${filename}"
+      rc=8
+   fi
+   return $rc
+}
+
+#mysql -> sdb cl name, \ -> \\ and " -> \"
+#sdb cs name can not include '\', '"' and '.'
+# t\"1 -> t\\\"1
+function convert_backslash_doublequote()
+{
+   echo "${1}" | sed -e 's/\\/&&/g' -e 's/"/\\&/g'
+}
+
+#mysql use in where xxx = "name" , \ -> \\\\ and " -> \\\"
+# t\1 -> t\\\\1   t"1 -> t\\\"1   t\"1 -> t\\\\\\\"1 
+function convert_backslash_doublequote_double()
+{
+   echo "${1}" | sed -e 's/\\/&&&&/g' -e 's/"/\\\\\\&/g'
+}
+
+#mysql db or tb name ` -> ``
+# t`1 -> t``1
+function convert_backquote_double()
+{
+   echo "${1}" | sed 's/`/&&/g'
+}
+
+#mysql db or tb name ` -> \`\`
+# t`1 -> t\`\`1
+function convert_backquote_backslash_double()
+{
+   echo "${1}" | sed 's/`/\\&\\&/g'
+}
+
+#mysql db name ` -> \`
+# t`1 -> t\`1
+function convert_backquote_backslash()
+{
+   echo "${1}" | sed 's/`/\\&/g'
+}
+
+# sdb cl name -> mysql name, \\ -> \ and \" -> \
+# t\\1 -> t\1   t\"1 -> t"1   t\\\"1 -> t\"1
+function recover_backslash_doublequote()
+{
+   echo "${1}" | sed -e 's/\\\\/\\/g' -e 's/\\"/"/g'
+}
+
+# path name can not include `/`
+# sdb cl,cs name con not include '.', but mysql routine name can
+# convert '/' -> '.', '.' -> '\.'
+# t/1 -> t.1
+function convert_path_slash_point()
+{
+   echo "${1}" | sed -e 's/\./\\./g' -e 's/\//./g'
+}
+
+# usage: convert_special_character "str" "mode"
+# mode: xxxxxxx, x=0/1
+# 1xxxxxx: \ -> \\ and " -> \"
+# x1xxxxx: \ -> \\\\ and " -> \\\"
+# xx1xxxx: ` -> ``
+# xxx1xxx: ` -> \`\`
+# xxxx1xx: ` -> \`
+# xxxxx1x: \\ -> \ and \" -> \
+# xxxxxx1: '/' -> '.' and '.' -> '\.'
+# if you need to add conversion rules, pay attention to the conversion order
+function convert_special_character()
+{
+   local output="${1}"
+   # x=0/1 mode=xxxxxxx
+   local mode="${2}"
+
+   # mysql -> sdb cl name, \ -> \\ and " -> \"
+   # sdb cs name can not include '\', '"' and '.'
+   # t\"1 -> t\\\"1
+   if [ "${mode:0:1}" == "1" ]; then
+      output=`convert_backslash_doublequote "${output}"`
+   fi
+
+   # mysql use in where xxx = "name" , \ -> \\\\ and " -> \\\"
+   # t\1 -> t\\\\1   t"1 -> t\\\"1   t\"1 -> t\\\\\\\"1 
+   if [ "${mode:1:1}" == "1" ]; then
+      output=`convert_backslash_doublequote_double "${output}"`
+   fi
+
+   # mysql db or tb name ` -> ``
+   # t`1 -> t``1
+   if [ "${mode:2:1}" == "1" ]; then
+      output=`convert_backquote_double "${output}"`
+   fi
+
+   # mysql db or tb name ` -> \`\`
+   # t`1 -> t\`\`1
+   if [ "${mode:3:1}" == "1" ]; then
+      output=`convert_backquote_backslash_double "${output}"`
+   fi
+
+   # mysql db name ` -> \`
+   # t`1 -> t\`1
+   if [ "${mode:4:1}" == "1" ]; then
+      output=`convert_backquote_backslash "${output}"`
+   fi
+
+   # sdb cl name -> mysql name, \\ -> \ and \" -> \
+   # t\\1 -> t\1   t\"1 -> t"1   t\\\"1 -> t\"1
+   if [ "${mode:5:1}" == "1" ]; then
+      output=`recover_backslash_doublequote "${output}"`
+   fi
+
+   # path name can not include `/`
+   # sdb cl,cs name con not include '.', but mysql routine name can
+   # convert '/' -> '.', '.' -> '\.'
+   # t/1 -> t.1
+   if [ "${mode:6:1}" == "1" ]; then
+      output=`convert_path_slash_point "${output}"`
+   fi
+   echo "${output}"
+}
+
+function exec_sdb_cmd()
+{
+   local sdb_js="${1}"
+
+   # append var db = new Sdb() string
+   echo "${NEW_SDB_STRING}" > "${SDB_JS_FILENAME}"
+   echo "${sdb_js}" >>"${SDB_JS_FILENAME}"
+
+   "${SDB_SHELL}" -f "${SDB_JS_FILENAME}"
+}
+
+function parse_tables_or_routines() 
+{
+   local is_unique_db="TURE"
+   local unknown_para_array=()
+   local input_array="${1}"
+   local output_array="${2}"
+   OLD_IFS="${IFS}"
+
+   local full_name_array=()
+   IFS="${FIELD_SEPARATOR}"
+   full_name_array=(`echo "${input_array}" \
+      | awk -F"${FIELD_SEPARATOR}" -v fs="${FIELD_SEPARATOR}" \
+      'END{for(i=1;i<NF;i++){printf("\"%s\"%s"),$i,fs};printf("\"%s\"",$NF)}'`)
+
+   IFS="${OLD_IFS}"
+
+   if [ "${DATABASE}" != "" ]; then
+      DATABASE_ARRAY[0]="${DATABASE}"
+   fi
+
+   #change -D db1 -T "t1,t2,db2.t2" to array(db1 t1 db1 t2 db2 t2)
+   #change -T "db1.t1,t2,db1.t3" to array(db1 t1 db1 t2 db1 t3)
+   #get database db1 from -T "db1.t1,db1.t2"
+   #routine as table
+   local idx=0
+   for name in "${full_name_array[@]}"
+   do
+      IFS="."
+      local full_name=(`echo "${name}" | sed 's/^"\(.*\)"$/\1/' \
+         | awk -F"." '{printf("\"%s\"."),$1;if($2 != "") \
+         {printf("\"%s\""),$2};if($3 != ""){printf(".\"%s\""),$3}}'`)
+
+      IFS="${OLD_IFS}"
+
+      for ((i=0;i<${#full_name[*]};i++))
+      do
+         # "name" -> name
+         full_name[$i]="`echo "${full_name[i]}" | sed 's/^"\(.*\)"$/\1/'`"
+      done
+
+      #db1.f.1 -> db1 f.1
+      if [[ ${#full_name[@]} -ge 3 ]]; then
+         is_unique_db="TRUE"
+         for db in "${DATABASE_ARRAY[@]}" 
+         do
+            if [ "${db}" == "${full_name[0]}" ]; then
+               is_unique_db="FALSE"
+               break
+            fi
+         done
+
+         if [ "${is_unique_db}" == "TRUE" ]; then
+            DATABASE_ARRAY[${#DATABASE_ARRAY[@]}]="${full_name[0]}"
+         fi
+
+         eval ${output_array}[$((idx++))]="${full_name[0]}"
+         local tmp_point_name="${full_name[1]}"
+         for ((i=2;i<${#full_name[@]};i++))
+         do
+            tmp_point_name="${tmp_point_name}.${full_name[i]}"
+         done
+         eval ${output_array}[$((idx++))]="${tmp_point_name}"
+         continue
+      fi
+
+      # db1.t1 -> db1 t1
+      if [[ ${#full_name[@]} -eq 2 ]]; then
+         is_unique_db="TRUE"
+         for db in "${DATABASE_ARRAY[@]}" 
+         do
+            if [ "${db}" == "${full_name[0]}" ]; then
+               is_unique_db="FALSE"
+               break
+            fi
+         done
+
+         if [ "${is_unique_db}" == "TRUE" ]; then
+            DATABASE_ARRAY[${#DATABASE_ARRAY[@]}]="${full_name[0]}"
+         fi
+
+         eval ${output_array}[$((idx++))]="${full_name[0]}"
+         eval ${output_array}[$((idx++))]="${full_name[1]}"
+      else
+         #t1 -> db1 t1
+         if [ "${DATABASE}" != "" ]; then
+            eval ${output_array}[$((idx++))]="${DATABASE}"
+            eval ${output_array}[$((idx++))]="${full_name[0]}"
+         else
+            unknown_para_array[${#unknown_para_array[@]}]="${full_name[0]}"
+         fi
+      fi
+   done
+
+   # -T "db1.t1,t2,t3" -> unknown_para_array=(t2 t3) -> db1 t2 db1 t3
+   if [[ ${#unknown_para_array[*]} -ne 0 && "${DATABASE}" == "" 
+         && ${#DATABASE_ARRAY[@]} -ne 1 ]]; then
+      echo "ERROR: Unknown database of parameters \"${unknown_para_array[*]}\""
+      exit 1
+   else
+      for name in "${unknown_para_array[@]}"
+      do
+         eval ${output_array}[$((idx++))]="${DATABASE_ARRAY[0]}"
+         eval ${output_array}[$((idx++))]="${name}"  
+      done
+   fi
+}
+
+function remove_duplicate_in_array()
+{
+   local output_array="${1}"
+   local count=0
+   local elem_1=""
+   eval "count=\${#${output_array}[@]}"
+
+   # db1 t1 db1 t1
+   for ((i=0; i<$count; i+=2))
+   do
+      for ((j=i+2; j<$count; j+=2))
+      do
+         # database_name
+         eval "test \"\${${output_array}[i]}\" == \"\${${output_array}[j]}\""
+         if [[ $? -eq 0 ]]; then
+            # table_name
+            eval "test \"\${${output_array}[i+1]}\" == \"\${${output_array}[j+1]}\""
+            if [[ $? -eq 0 ]]; then
+               eval "unset ${output_array}[$j]"
+               eval "unset ${output_array}[$((j+1))]"
+            fi
+         fi
+      done
+   done
+}
+
+function check_para()
+{
+   if [ "${OUTPUT}" == "" ]; then
+      echo "ERROR: Output path is empty"
+      exit 6
+   fi
+
+   if [ "${USER}" == "" ]; then
+      echo "ERROR: User is empty"
+      exit 6
+   fi
+
+   if [ "${INSTANCE}" == "" ]; then
+      echo "ERROR: Instance is empty"
+      exit 6
+   fi
+
+   if [[ "${DATABASE}" == "" 
+         && ${#TABLE_ARRAY[@]} -eq 0 
+         && ${#ROUTINE_ARRAY[@]} -eq 0 
+         && "${QUERY}" == "" ]]; then
+      echo "ERROR: Parameters DATABASE, TABLES, ROUTINES and QUERY are empty"
+      echo "INFO: Do nothing"
+      exit 6
+   fi
+}
+
+function prepare_output_dir()
+{
+   if [[ "${OUTPUT##*/}" == "${PACKAGE_PATHNAME}" ]]; then
+      OUTPUT="${OUTPUT%/*}"
+   fi
+
+   if [ ! -d "${OUTPUT}/${PACKAGE_PATHNAME}" ]; then
+      mkdir_path "${OUTPUT}/${PACKAGE_PATHNAME}"
+      test $? -ne 0 && exit 9
+   elif [[ `ls -A "${OUTPUT}/${PACKAGE_PATHNAME}" | wc -l` != "0" ]]; then
+      echo "ERROR: The path \"${OUTPUT}/${PACKAGE_PATHNAME}\" already exists"
+      exit 7
+   fi
+   OUTPUT="${OUTPUT}/${PACKAGE_PATHNAME}"
+   mkdir_path "${OUTPUT}/${ENVIRONMENT_PATHNAME}"
+
+   if [ "${QUERY}" != "" ]; then
+      mkdir_path "${OUTPUT}/${QUERY_PATHNAME}"
+      touch "${OUTPUT}/${QUERY_PATHNAME}/query.sql" || echo "ERROR: Fail to touch file"
+   fi
+
+   if [[ ${#DATABASE_ARRAY[@]} -gt 0 ]]; then
+      mkdir_path "${OUTPUT}/${CATALOG_PATHNAME}"
+   fi
+
+   # can avoid some character escaping, like *
+   # ls -> 1 2 3, str=(* 4 5) -> str=(1 2 3 4 5)
+   # ls -> null, str=(* 4 5) -> str=(* 4 5)
+   mkdir "${OUTPUT}/empty_dir/"
+   cd "${OUTPUT}/empty_dir/"
+}
+
+function parse_para()
+{   
+   if [ "${QUERY}" != "" ]; then
+      QUERY=`echo "${QUERY}" | sed 's/^[ ]*explain[ ]*//I' | sed '/^$/d'`
+      local query_type=`echo "${QUERY}" | awk 'NR==1{print $1}' | tr -t "[A-Z]" "[a-z]"`
+
+      if [[ "${query_type}" != "select" && "${query_type}" != "update" 
+            && "${query_type}" != "insert" && "${query_type}" != "delete" ]]; then
+         echo "ERROR: Only CRUD query can be accepted" && exit 1
+      fi
+   fi
+
+   #database and table
+   if [[ ${#TABLE_ARRAY[@]} -gt 0 ]]; then
+      parse_tables_or_routines "${TABLE_ARRAY[*]}" "DATABASE_TABLE_ARRAY"
+      remove_duplicate_in_array "DATABASE_TABLE_ARRAY"
+      # because use unset, (1 1 2 3) -> (1 "" 2 3), array[1]=""
+      # (1 "" 2 3) -> (1 2 3), 
+      DATABASE_TABLE_ARRAY=(`echo "${DATABASE_TABLE_ARRAY[*]}"`)
+   fi
+
+   #database and routine
+   if [[ ${#ROUTINE_ARRAY[@]} -gt 0 ]]; then
+      parse_tables_or_routines "${ROUTINE_ARRAY[*]}" "DATABASE_ROUTINE_ARRAY"
+      remove_duplicate_in_array "DATABASE_ROUTINE_ARRAY"
+      # because use unset, (1 1 2 3) -> (1 "" 2 3), array[1]=""
+      # (1 "" 2 3) -> (1 2 3), 
+      DATABASE_ROUTINE_ARRAY=(`echo "${DATABASE_ROUTINE_ARRAY[*]}"`)
+   fi
+
+   if [[ ${#DATABASE_ARRAY[@]} -eq 1 && "${DATABASE}" == "" ]]; then
+      DATABASE="${DATABASE_ARRAY[*]}"   
+   elif [[ ${#DATABASE_ARRAY[@]} -eq 0 && "${DATABASE}" != "" ]]; then
+      DATABASE_ARRAY[0]="${DATABASE}"
+   fi
+}
+
+function get_path()
+{
+   local cur_path=`pwd`
+   local dir_name=`dirname "${OUTPUT}"`
+
+   # find OUTPUT path
+   mkdir_path "${OUTPUT}"
+   test $? -ne 0 && exit 9
+   if [[ "${dir_name:0:1}" != "/" ]]; then
+      cd "$(pwd)/${OUTPUT}" && OUTPUT=`pwd`             # relative path
+   else
+      cd "${OUTPUT}" && OUTPUT=`pwd`                    # absolute path 
+   fi
+   cd "${cur_path}" >> /dev/null >&1
+
+   # find mysql/mariadb install path
+   dir_name=`dirname "${1}"`
+   if [[ "${dir_name:0:1}" != "/" ]]; then
+      cd "$(pwd)/${dir_name}/../../" && SQL_INSTALL_PATH=`pwd` # relative path
+   else
+      cd "${dir_name}/../../" && SQL_INSTALL_PATH=`pwd`        # absolute path
+   fi
+   cd "${cur_path}" >> /dev/null >&1
+
+   # find SOCKET path
+   dir_name=`dirname "${SOCKET}"`
+   if [[ "${dir_name:0:1}" != "/" ]]; then
+      SOCKET="${cur_path}/${SOCKET}"                    # relative path
+   fi
+   cd "${cur_path}" >> /dev/null >&1
+
+   SDB_JS_FILENAME="${OUTPUT}"/"${SDB_JS_FILENAME}"
+}
+
+function get_autocnf_para_from_my_print_defaults()
+{
+   local result=`"${SQL_INSTALL_PATH}/bin/my_print_defaults" -c "${SQLDATA}/auto.cnf" mysqld | grep -E "^--sequoiadb|^--server_ha_inst_group_name"`
+
+   SDB_CONN_ADDRS=`echo "${result}" | grep '^--sequoiadb_conn_addr' \
+      | tail -n 1 | sed 's/^--sequoiadb_conn_addr=//'`
+   INST_GROUP_NAME=`echo "${result}" | grep '^--server_ha_inst_group_name' \
+      | tail -n 1 | sed 's/^--server_ha_inst_group_name=//'`
+   SDB_USER=`echo "${result}" | grep '^--sequoiadb_user' \
+      | tail -n 1 | sed 's/^--sequoiadb_user=//'`
+   SDB_PASSWD=`echo "${result}" | grep '^--sequoiadb_password' \
+      | tail -n 1 | sed 's/^--sequoiadb_password=//'`
+   SDB_TOKEN=`echo "${result}" | grep '^--sequoiadb_token' \
+      | tail -n 1 | sed 's/^--sequoiadb_token=//'`
+   SDB_CIPHERFILE=`echo "${result}" | grep '^--sequoiadb_cipherfile' \
+      | tail -n 1 | sed 's/^--sequoiadb_cipherfile=//'`
+}
+
+function get_autocnf_para_to_conf()
+{
+   # tail -1 : if there are multiple identical configurations, the last one takes effect
+   touch "${OUTPUT}/sdb.conf" || echo "ERROR: Fail to touch file"
+   cat "${SQLDATA}/auto.cnf" | grep "^\s*sequoiadb_conn_addr" | tail -1 >> "${OUTPUT}/sdb.conf"
+   cat "${SQLDATA}/auto.cnf" | grep "^\s*server_ha_inst_group_name" | tail -1 >> "${OUTPUT}/sdb.conf"
+   cat "${SQLDATA}/auto.cnf" | grep "^\s*sequoiadb_user" | tail -1 >> "${OUTPUT}/sdb.conf"
+   cat "${SQLDATA}/auto.cnf" | grep "^\s*sequoiadb_password" | tail -1 >> "${OUTPUT}/sdb.conf"
+   cat "${SQLDATA}/auto.cnf" | grep "^\s*sequoiadb_token" | tail -1 >> "${OUTPUT}/sdb.conf"
+   cat "${SQLDATA}/auto.cnf" | grep "^\s*sequoiadb_cipherfile" | tail -1 >> "${OUTPUT}/sdb.conf"
+}
+
+function get_sdb_shell()
+{
+   if [ ! -f /etc/default/sequoiadb ]; then
+      echo "ERROR: '/etc/default/sequoiadb' does not exists"
+      return 1
+   fi
+
+   # initialize sdb command path
+   # read sdb INSTALL_DIR
+   . /etc/default/sequoiadb
+
+   if [ ! -x "${INSTALL_DIR}/bin/sdb" ]; then
+      echo "ERROR: '${INSTALL_DIR}/bin/sdb' \
+does not exists or dose not have execute permission"
+      return 1
+   fi
+   SDB_SHELL="${INSTALL_DIR}/bin/sdb"
+
+   # init $SQLDATA
+   local conf_inst_path="${SQL_INSTALL_PATH}/conf/instance"
+   if [ "${INSTANCE}" == "" ]; then
+      echo "ERROR: Instance name is not set"
+      return 1
+   fi
+
+   if [ ! -f "${conf_inst_path}/${INSTANCE}.conf" ]; then
+      echo "ERROR: Instance \"${INSTANCE}\" does not exist"
+      return 1
+   fi
+   . "${conf_inst_path}/${INSTANCE}.conf"
+
+   if [ -x "${SQL_INSTALL_PATH}/bin/my_print_defaults" ]; then
+      get_autocnf_para_from_my_print_defaults
+   else
+      # get sequoiadb auth parameters
+      get_autocnf_para_to_conf
+      # read conf file
+      . "${OUTPUT}/sdb.conf"
+      SDB_CONN_ADDRS="${sequoiadb_conn_addr}"
+      INST_GROUP_NAME="${server_ha_inst_group_name}"
+      SDB_USER="${sequoiadb_user}"
+      SDB_PASSWD="${sequoiadb_password}"
+      SDB_TOKEN="${sequoiadb_token}"
+      SDB_CIPHERFILE="${sequoiadb_cipherfile}"
+   fi
+
+   # '\' -> '\\', '"' -> '\"', the same below
+   if [ "" != "${SDB_USER}" ]; then
+      SDB_USER=`convert_special_character "${SDB_USER}" "1000000"`
+   fi
+
+   if [ "" != "${SDB_PASSWD}" ]; then
+      SDB_PASSWD=`convert_special_character "${SDB_PASSWD}" "1000000"`
+   fi
+
+   if [ "" != "${SDB_TOKEN}" ]; then
+      SDB_TOKEN=`convert_special_character "${SDB_TOKEN}" "1000000"`
+   fi
+
+   if [ "" != "${SDB_CIPHERFILE}" ]; then
+      SDB_CIPHERFILE=`convert_special_character "${SDB_CIPHERFILE}" "1000000"`
+   fi
+   
+   if [ "" == "${INST_GROUP_NAME}" ]; then
+      INST_GROUP_NAME="DEF_INST_GROUP"
+   else
+      INST_GROUP_NAME=`convert_special_character "${INST_GROUP_NAME}" "1000000"`
+   fi
+
+   if [ "" == "${SDB_CONN_ADDRS}" ]; then
+      # set default connection address
+      SDB_CONN_ADDRS="localhost:11810"
+   else
+      SDB_CONN_ADDRS=`convert_special_character "${SDB_CONN_ADDRS}" "1000000"`
+   fi
+
+   # cipher relative path to absolute path
+   if [[ ${SDB_CIPHERFILE:0:1} == "~" ]]; then
+      SDB_CIPHERFILE="${HOME}/${SDB_CIPHERFILE:1}"
+   fi
+   return 0
+}
+
+function init_sequoiadb_conn()
+{
+   OLD_IFS="${IFS}"
+   IFS=":,"
+   #convert localhost1:11810,localhost2:11810 to localhost1 11810 localhost2 11810
+   local host_port_array=(${SDB_CONN_ADDRS[*]})
+   IFS="${OLD_IFS}"
+   
+   local i=0
+   local count=${#host_port_array[@]}
+   local msg=""
+   for ((i; i<$count; i+=2))
+   do
+      # this db is available in the process
+      if [[ "${SDB_PASSWD}" == "" && "${SDB_USER}" != "" ]]; then
+         NEW_SDB_STRING="var db = new Sdb(\"${host_port_array[i]}\", \
+\"${host_port_array[i+1]}\", \
+CipherUser(\"${SDB_USER}\").token(\"${SDB_TOKEN}\").cipherFile(\"${SDB_CIPHERFILE}\"))"
+         echo "${NEW_SDB_STRING}" > "${SDB_JS_FILENAME}"
+         msg=`${SDB_SHELL} -f "${SDB_JS_FILENAME}"`
+      else
+         NEW_SDB_STRING="var db = new Sdb(\"${host_port_array[i]}\", \
+\"${host_port_array[i+1]}\", \"${SDB_USER}\", \"${SDB_PASSWD}\")"
+         echo "${NEW_SDB_STRING}" > "${SDB_JS_FILENAME}"
+         msg=`${SDB_SHELL} -f "${SDB_JS_FILENAME}"`
+      fi
+
+      if [[ "${msg}" == "" ]]; then
+         return 0
+      fi
+   done
+
+   echo "${msg}"
+   return 3
+}
+
+function split_mapping_table_partition()
+{
+   local i=1
+   local count=${#MAPPING_DATABASE_TABLE_ARRAY[@]}
+   #db1 t1 cs1 cl1
+   for ((i; i<$count; i+=4))
+   do
+      #table_name
+      if [[ `echo "${MAPPING_DATABASE_TABLE_ARRAY[i]}" | grep '#P#'` != "" ]]; then    
+         #db tb#P#p0 cs cl
+         MAPPING_DATABASE_TABLE_PARTITION_ARRAY[${#MAPPING_DATABASE_TABLE_PARTITION_ARRAY[@]}]="${MAPPING_DATABASE_TABLE_ARRAY[i-1]}"
+         MAPPING_DATABASE_TABLE_PARTITION_ARRAY[${#MAPPING_DATABASE_TABLE_PARTITION_ARRAY[@]}]="${MAPPING_DATABASE_TABLE_ARRAY[i]}"
+         MAPPING_DATABASE_TABLE_PARTITION_ARRAY[${#MAPPING_DATABASE_TABLE_PARTITION_ARRAY[@]}]="${MAPPING_DATABASE_TABLE_ARRAY[i+1]}"
+         MAPPING_DATABASE_TABLE_PARTITION_ARRAY[${#MAPPING_DATABASE_TABLE_PARTITION_ARRAY[@]}]="${MAPPING_DATABASE_TABLE_ARRAY[i+2]}"
+         unset MAPPING_DATABASE_TABLE_ARRAY[$((i-1))]
+         unset MAPPING_DATABASE_TABLE_ARRAY[$i]
+         unset MAPPING_DATABASE_TABLE_ARRAY[$((i+1))]
+         unset MAPPING_DATABASE_TABLE_ARRAY[$((i+2))]
+      fi
+   done
+   MAPPING_DATABASE_TABLE_ARRAY=(`echo "${MAPPING_DATABASE_TABLE_ARRAY[*]}"`)
+}
+
+function sdb_get_all_mapping_table_js()
+{
+cat << EOF
+db.getCS("${1}").getCL("TABLE_MAPPING").find({DBName:"${2}",IsSpecifiedMapping:1},{DBName:null,TableName:null,CSName:null,CLName:null})
+EOF
+}
+
+function sdb_get_all_mapping_table()
+{
+   local upper_inst_group_name=`echo "${INST_GROUP_NAME}" | tr -t "[:lower:]" "[:upper:]"`
+   local mapping_cs_name="SQL_NAME_MAPPING_${upper_inst_group_name}"
+   local mapping_tmp_result=""
+   local sdb_js=""
+   sdb_js=`sdb_get_all_mapping_table_js "${mapping_cs_name}" "${DATABASE}"`
+   local mapping_tmp_result=`exec_sdb_cmd "${sdb_js}"`
+   mapping_tmp_result=`echo "${mapping_tmp_result}" | awk \
+      'BEGIN{i=0}
+      $1=="\"TableName\":"{tb[i]=$2} $1=="\"DBName\":"{db[i]=$2}
+      $1=="\"CSName\":"{cs[i]=$2} $1=="\"CLName\":"{cl[i]=$2} $1=="}"{i++}
+      END{for(j=0;j<i;j++){print db[j], tb[j], cs[j], cl[j]}}'`
+   MAPPING_DATABASE_TABLE_ARRAY=(`echo "${mapping_tmp_result}"`)
+}
+
+function sdb_get_mapping_table_js()
+{
+cat << EOF
+db.getCS("${1}").getCL("TABLE_MAPPING").find({DBName:"${2}",\$or:[{TableName:{\$regex:"${3}#P#.*"}},{TableName:"${4}"}],IsSpecifiedMapping:1},{DBName:null,TableName:null,CSName:null,CLName:null})
+EOF
+}
+
+function sdb_get_mapping_table()
+{
+   local upper_inst_group_name=`echo "${INST_GROUP_NAME}" | tr -t "[:lower:]" "[:upper:]"`
+   local mapping_cs_name="SQL_NAME_MAPPING_${upper_inst_group_name}"
+   local mapping_tmp_result=""
+   local sdb_js=""
+   local tb_name=""
+   local tb_convert_name=""
+   local count=${#DATABASE_TABLE_ARRAY[@]}
+   for ((i=0; i<count; i+=2))
+   do
+      tb_name=`convert_special_character "${DATABASE_TABLE_ARRAY[i+1]}" "1000000"`
+      tb_convert_name=`echo "${tb_name}" | sed 's/*/\\\\*/g'`
+      sdb_js=`sdb_get_mapping_table_js "${mapping_cs_name}" \
+         "${DATABASE_TABLE_ARRAY[i]}" "${tb_convert_name}" "${tb_convert_name}"`
+      mapping_tmp_result=`exec_sdb_cmd "${sdb_js}"`
+      mapping_tmp_result=`echo "${mapping_tmp_result}" | awk \
+         'BEGIN{i=0}
+         $1=="\"TableName\":"{tb[i]=$2} $1=="\"DBName\":"{db[i]=$2}
+         $1=="\"CSName\":"{cs[i]=$2} $1=="\"CLName\":"{cl[i]=$2} $1=="}"{i++}
+         END{for(j=0;j<i;j++){print db[j], tb[j], cs[j], cl[j]}}'`
+      MAPPING_DATABASE_TABLE_ARRAY=(`echo "${MAPPING_DATABASE_TABLE_ARRAY[*]}"` `echo "${mapping_tmp_result}"`)
+   done
+}
+
+function find_mapping_table()
+{
+   #find enable mapping
+   IS_MAPPING=`eval "${MYSQL_EXEC_CMD_WITHOUT_DB} -s -e \"select @@sequoiadb_enable_mapping\"" \
+       "2>&1" "${REMOVE_PASSWORD_WARNING}" | sed 's/^@@sequoiadb_enable_mapping//'`
+   if [[ "${IS_MAPPING}" != "0" && "${IS_MAPPING}" != "1" ]]; then
+      echo "ERROR: Fail to check sequoiadb_enable_mapping" >&2
+   fi
+
+   if [ "${IS_MAPPING}" == "1" ]; then
+      echo "INFO: Looking for all mapping tables"
+      if [[ "${DATABASE}" != "" && ${#DATABASE_TABLE_ARRAY[@]} -eq 0 ]]; then
+         #get $DATABASE all mapping table
+         sdb_get_all_mapping_table
+      else
+         #get $DATABASE all mapping table
+         sdb_get_mapping_table
+      fi
+      #format array element "xxx"[,] -> xxx
+      for ((i=0;i<${#MAPPING_DATABASE_TABLE_ARRAY[*]};i++))
+      do
+         MAPPING_DATABASE_TABLE_ARRAY[$i]=`echo "${MAPPING_DATABASE_TABLE_ARRAY[i]}" | sed 's/^"\(.*\)",\?$/\1/'`
+      done
+      #split table and partition
+      split_mapping_table_partition
+   fi
+}
+
+function sdb_check_partition_table()
+{
+   local sdb_js="db.getCollections()"
+   local pt_name_array=()
+   local database_table_partition=""
+   local count=${#DATABASE_TABLE_ARRAY[@]}
+
+   for ((i=0;i<count;i+=2))
+   do
+      #db1.t1#P#p0
+      #${DATABASE_TABLE_ARRAY[i]} -> database name
+      #${DATABASE_TABLE_ARRAY[i]} -> table name
+      database_table_partition=`exec_sdb_cmd "${sdb_js}" \
+         | grep "^[ ]*\"Name\": \"${DATABASE_TABLE_ARRAY[i]}.${DATABASE_TABLE_ARRAY[i]}#P#.*\"" \
+         | awk '{$1="\b";print $0}'`
+      pt_name_array=(`echo "${database_table_partition}" \
+         | sed "s/^[ ]*\"Name\": \"${DATABASE_TABLE_ARRAY[i]}.${DATABASE_TABLE_ARRAY[i]}#P#//g"`)
+      #db1 tb1 3 p0 p1 p2 db1 tb2 2 p0 p1
+      DATABASE_TABLE_COUNT_PARTITION_ARRAY=(`echo "${DATABASE_TABLE_COUNT_PARTITION_ARRAY[*]}"` \
+         `echo "${database_table_partition}"`)
+   done
+}
+
+function try_connect()
+{
+   echo "INFO: Connecting to the SQL instance"
+   #try to connect mysql/mariadb
+   if [[ "${HOST}" != "" && "${PORT}" != "" ]]; then
+      MYSQL_EXEC_CMD_WITHOUT_DB="${SQL_INSTALL_PATH}/bin/mysql -u \"${USER}\" -h \"${HOST}\" -P \"${PORT}\""
+   elif [ "${SOCKET}" != "" ]; then
+      MYSQL_EXEC_CMD_WITHOUT_DB="${SQL_INSTALL_PATH}/bin/mysql -u \"${USER}\" -S \"${SOCKET}\""
+   else
+      echo "ERROR: Unable to connect due to lack of critical arguments"
+      exit 6
+   fi
+
+   if [ "${PASSWORD}" != "" ]; then
+      # ignore 'mysql: [Warning] Using a password on the command line interface can be insecure.'
+      MYSQL_EXEC_CMD_WITHOUT_DB="${MYSQL_EXEC_CMD_WITHOUT_DB} -p\"${PASSWORD}\""
+      REMOVE_PASSWORD_WARNING='| grep -v "mysql: \[Warning\] Using a password on the command line interface can be insecure"'
+   fi
+
+   eval "${MYSQL_EXEC_CMD_WITHOUT_DB}" "-s" "-e" \""select version();"\" "2>&1" > "/dev/null"
+   test $? -ne 0 && { echo "ERROR: Fail to connect the instance" && exit 2; }
+
+   if [ "${DATABASE}" != "" ]; then
+      local conv_db_name=`convert_special_character "${DATABASE}" "0000100"`
+      MYSQL_EXEC_CMD="${MYSQL_EXEC_CMD_WITHOUT_DB}"" -D \"${conv_db_name}\""
+   else
+      MYSQL_EXEC_CMD="${MYSQL_EXEC_CMD_WITHOUT_DB}"
+   fi
+
+   #find sdb shell path
+   echo "INFO: Connecting to the SequoiaDB"
+   get_sdb_shell
+   if [ $? -ne 0 ]; then
+      echo "ERROR: Fail to get SequoiaDB shell"
+   else
+      #try to connect sdb
+      init_sequoiadb_conn
+      if [ $? -ne 0 ]; then
+         echo "ERROR: Failed to connect SequoiaDB"
+         IS_SDB_CONNECTED=1
+      else
+         IS_SDB_CONNECTED=0
+      fi
+   fi
+   if [ "${IS_SDB_CONNECTED}" == "1" ]; then
+      echo "ERROR: Information on the SequoiaDB side will not be collected"
+   else
+      #touch sdb.js file
+      touch "${SDB_JS_FILENAME}" || { echo "ERROR: Fail to touch sdb.js file" && exit 4;}
+   fi
+   #remove empty file sdbbp.log
+   rm -f "${OUTPUT}/empty_dir/sdbbp.log"
+}
+
+function build_check_table_type_sql()
+{
+cat << EOF
+select TABLE_TYPE from information_schema.tables where TABLE_SCHEMA=\"${db_name}\" and TABLE_NAME=\"${tb_name}\"\G
+EOF
+
+}
+
+function handle_sql_file_if_is_view()
+{
+   #'`' -> '\`\`'
+   local db_name=`convert_special_character "${1}" "0001000"`
+   #'\' -> '\\\\' -> '"' -> '\\\"'
+   local tb_name=`convert_special_character "${2}" "0101000"`
+   #'/' -> '.', '.' -> '\.'
+   local db_path=`convert_special_character "${1}" "0000001"`
+   local tb_path=`convert_special_character "${2}" "0000001"`
+   local file_path="${OUTPUT}/${CATALOG_PATHNAME}/${db_path}/${tb_path}"
+
+   local sql=`build_check_table_type_sql "${db_name}" "${tb_name}"`
+   local table_type=`eval "${MYSQL_EXEC_CMD} -e \"${sql}\"" "2>&1" "${REMOVE_PASSWORD_WARNING}" | sed '1d'`
+   if [ "${table_type}" == "TABLE_TYPE: VIEW" ]; then
+      #handler view .sql file
+      local tmp_sql=`cat "${file_path}/${TABLE_CATALOG_SQL_FILENAME}" \
+      | grep '^[ ]*Create View' | sed -e 's/^[ ]*Create View: //'`
+      echo "${tmp_sql}" > "${file_path}/${TABLE_CATALOG_SQL_FILENAME}"
+      return 0
+   else
+      return 1
+   fi
+}
+
+function handle_all_sql_file_if_is_view()
+{
+   local i=0
+   local count=${#ALL_TABLES_IN_DATABASE_ARRAY[@]}
+   for ((i; i<$count; i++))
+   do
+      handle_sql_file_if_is_view "${DATABASE}" "${ALL_TABLES_IN_DATABASE_ARRAY[i]}"
+      if [[ $? -eq 0 ]]; then
+         unset ALL_TABLES_IN_DATABASE_ARRAY[$i]
+      fi
+   done
+}
+
+function get_diaginfo()
+{ 
+   # -D db1 -R f1 or -R db1.f1, without -t
+   if [[ ${#DATABASE_TABLE_ARRAY[@]} -gt 0 ]]; then
+      find_mapping_table
+   elif [[ "${DATABASE}" != "" && ${#ROUTINE_ARRAY[@]} -eq 0 && "${QUERY}" == "" ]]; then
+      find_mapping_table
+   fi
+
+   #query
+   if [ "${QUERY}" != "" ]; then
+      echo "INFO: Getting query explain and optimizer trace information"
+      get_explain
+      get_optimizer_trace
+   fi
+
+   if [[ "${#DATABASE_ARRAY[@]}" -gt 0 ]]; then
+      get_create_database
+   fi
+
+   #database and tables
+   if [[ "${DATABASE}" != "" && ${#TABLE_ARRAY[@]} -eq 0 
+         && ${#ROUTINE_ARRAY[@]} -eq 0 && "${QUERY}" == "" ]]; then
+      get_all_table_in_database
+      get_all_create_routine
+      if [[ ${#ALL_TABLES_IN_DATABASE_ARRAY[@]} -gt 0 ]]; then
+         get_all_create_table
+         get_all_table_statistics
+         handle_all_sql_file_if_is_view
+         if [ "${IS_SDB_CONNECTED}" == "0" ]; then
+            get_sdb_all_table_information
+            get_sdb_all_table_index_information
+         fi
+      fi
+   else
+      if [[ "${#DATABASE_ROUTINE_ARRAY[@]}" -gt 0 ]]; then
+         local thread_batch=`expr $THREAD_COUNT \* 2`
+         local count=`expr ${#DATABASE_ROUTINE_ARRAY[@]} / $thread_batch + 1`
+         local j=0
+         for ((i=0; i<$count; i++))
+         do
+            for ((j; j<$thread_batch*(i+1) && j<${#DATABASE_ROUTINE_ARRAY[@]}; j+=2))
+            do
+            {
+               #${DATABASE_ROUTINE_ARRAY[j]} -> database_name
+               #${DATABASE_ROUTINE_ARRAY[j+1]} -> routine_name
+               echo "INFO: Getting routine \
+\"${DATABASE_ROUTINE_ARRAY[j]}.${DATABASE_ROUTINE_ARRAY[j+1]}\" \
+structure information from SQL"
+               get_create_routine "${DATABASE_ROUTINE_ARRAY[j]}" "${DATABASE_ROUTINE_ARRAY[j+1]}"
+            } &
+            done
+            wait
+         done
+      fi
+      if [[ "${#DATABASE_TABLE_ARRAY[@]}" -gt 0 ]]; then
+         local thread_batch=`expr $THREAD_COUNT \* 2`
+         local count=`expr ${#DATABASE_TABLE_ARRAY[@]} / $thread_batch + 1`
+         local j=0
+         local is_view=""
+         for ((i=0; i<$count; i++))
+         do
+            for ((j; j<$thread_batch*(i+1) && j<${#DATABASE_TABLE_ARRAY[@]}; j+=2))
+            do
+               {
+                  #${DATABASE_TABLE_ARRAY[j]} -> database_name
+                  #${DATABASE_TABLE_ARRAY[j+1]} -> table_name
+                  echo "INFO: Getting table \
+\"${DATABASE_TABLE_ARRAY[j]}.${DATABASE_TABLE_ARRAY[j+1]}\" \
+structure and index information from SQL side"
+
+                  get_create_table "${DATABASE_TABLE_ARRAY[j]}" \
+                     "${DATABASE_TABLE_ARRAY[j+1]}"
+                  get_table_statistics "${DATABASE_TABLE_ARRAY[j]}" \
+                     "${DATABASE_TABLE_ARRAY[j+1]}"
+               } &
+            done
+            wait
+         done
+
+         for ((j=0;j<${#DATABASE_TABLE_ARRAY[@]};j+=2))
+         do
+            handle_sql_file_if_is_view "${DATABASE_TABLE_ARRAY[j]}" "${DATABASE_TABLE_ARRAY[j+1]}"
+            if [[ $? -ne 0 && "${IS_SDB_CONNECTED}" == "0" ]]; then
+               echo "INFO: Getting table \
+\"${DATABASE_TABLE_ARRAY[j]}.${DATABASE_TABLE_ARRAY[j+1]}\" \
+structure and index information from SequoiaDB side"
+
+               get_sdb_table_information "${DATABASE_TABLE_ARRAY[j]}" \
+               "${DATABASE_TABLE_ARRAY[j+1]}"
+               get_sdb_table_index_information "${DATABASE_TABLE_ARRAY[j]}" \
+               "${DATABASE_TABLE_ARRAY[j+1]}"
+            fi
+         done
+      fi
+   fi
+
+   if [[ ${#DATABASE_TABLE_PARTITION_ARRAY[@]} -gt 0 && "${IS_SDB_CONNECTED}" == "0" ]]; then
+      local count=${#DATABASE_TABLE_PARTITION_ARRAY[@]}
+      echo "INFO: Getting table partition from SequoiaDB"
+      for ((i=0;i<$count;i+=3))
+      do
+         #db1 t1 p0 db1 t1 p1
+         get_sdb_table_partition_information "${DATABASE_TABLE_PARTITION_ARRAY[i]}" \
+         "${DATABASE_TABLE_PARTITION_ARRAY[i+1]}" "${DATABASE_TABLE_PARTITION_ARRAY[i+2]}"
+         get_sdb_table_index_information "${DATABASE_TABLE_PARTITION_ARRAY[i]}" \
+         "${DATABASE_TABLE_PARTITION_ARRAY[i+1]}" "${DATABASE_TABLE_PARTITION_ARRAY[i+2]}"
+      done
+   fi
+
+   if [[ "${IS_MAPPING}" == "1" 
+         && ${#MAPPING_DATABASE_TABLE_PARTITION_ARRAY[@]} -gt 0 
+         && "${IS_SDB_CONNECTED}" == "0" ]]; then
+      echo "INFO: Getting mapping table information from SequoiaDB"
+      local count=${#MAPPING_DATABASE_TABLE_PARTITION_ARRAY[@]}
+      for ((i=1; i<$count; i+=4))
+      do
+         local database_name="${MAPPING_DATABASE_TABLE_PARTITION_ARRAY[i-1]}"
+         local table_partition_name="${MAPPING_DATABASE_TABLE_PARTITION_ARRAY[i]}"
+         local table_name=`echo "${MAPPING_DATABASE_TABLE_PARTITION_ARRAY[i]}" \
+            | sed "s/\(.*\)#P#.*/\1/"`
+         local partition_name=`echo "${MAPPING_DATABASE_TABLE_PARTITION_ARRAY[i]}" \
+            | sed "s/.*#P#//"`
+         local cs_name="${MAPPING_DATABASE_TABLE_PARTITION_ARRAY[i+1]}"
+         local cl_name="${MAPPING_DATABASE_TABLE_PARTITION_ARRAY[i+2]}"
+
+         get_sdb_table_partition_information "${cs_name}" "${cl_name}" \
+            "${database_name}/${table_name}/${partition_name}" "mapping"
+         get_sdb_table_index_information "${cs_name}" "${cl_name}" \
+            "${database_name}/${table_name}/${partition_name}" "mapping"
+      done
+   fi
+
+   #environment
+   echo "INFO: Getting environment properties"
+if [ "${IS_SDB_CONNECTED}" == "0" ]; then
+   get_sdb_list_groups
+   get_sdb_remote_version
+fi
+   get_variables
+   get_status
+   get_engine
+}
+
+function get_all_table_in_database()
+{
+   #table name cannot include '.', repalce the ' ' with '.', easy for AWK processing
+   local tmp_table="`eval \"${MYSQL_EXEC_CMD} -e \\\"show tables\\G\\\"\" \
+     "2>&1" "${REMOVE_PASSWORD_WARNING}" | grep -v '^*' | sed -e 's/^Tables_in_.*: //g' -e 's/ /./g'`"
+   # ERROR xxx will be convert to ERROR.
+   if [[ `echo "${tmp_table}" | tail -n 1 | grep "^ERROR."` != ""  ]]; then
+      echo "ERROR: Fail to get all tables in the \"${DATABASE}\"" && return;
+   fi
+
+   if [ "${tmp_table}" == "" ]; then
+      echo "INFO: There are no tables in database \"${DATABASE}\""
+      return
+   fi
+
+   tmp_table_array=(`echo "${tmp_table}" | awk \
+      'BEGIN{i=0} {tb[i]=$0;i++} END{for(j=0;j<i;j++){printf("\"%s\"\n"),tb[j]}}'`)
+   for table in "${tmp_table_array[@]}"
+   do
+      #("a" "b" "c") -> (a b c)
+      ALL_TABLES_IN_DATABASE_ARRAY[${#ALL_TABLES_IN_DATABASE_ARRAY[@]}]="`echo "${table}" \
+         | sed -e 's/^\"//' -e 's/\"$//' -e 's/\./ /g'`"
+   done
+   printf "INFO: Table count in \"${DATABASE}\": %s\n" ${#ALL_TABLES_IN_DATABASE_ARRAY[@]}
+}
+
+function build_get_create_table_sql()
+{
+cat << EOF
+show create table \\\`${1}\\\`.\\\`${2}\\\`\G
+EOF
+}
+
+function get_create_table()
+{
+   local get_create_table_sql=""
+   local db_name="${1}"
+   local tb_name="${2}"
+
+   #'/' -> '.', '.' -> '\.'
+   local db_path=`convert_special_character "${db_name}" "0000001"`
+   local tb_path=`convert_special_character "${tb_name}" "0000001"`
+   local file_path="${OUTPUT}/${CATALOG_PATHNAME}/${db_path}/${tb_path}"
+
+   #'`' -> '\`\`'
+   local db_tmp_name=`convert_special_character "${db_name}" "0001000"`
+   #'\' -> '\\', '"' -> '\"'
+   #'`' -> '\`\`'
+   local tb_tmp_name=`convert_special_character "${tb_name}" "1001000"`
+
+   mkdir_path "${file_path}"
+   get_create_table_sql=`build_get_create_table_sql "${db_tmp_name}" "${tb_tmp_name}"`
+   exec_sql_with_print "${get_create_table_sql}" "${file_path}/${TABLE_CATALOG_SQL_FILENAME}"
+   test $? -ne 0 && echo "ERROR: Fail to get create table \"${db_name}.${tb_name}\"." \
+      && tail -n +2 "${file_path}/${TABLE_CATALOG_SQL_FILENAME}" \
+      && return 1
+   sed -i -e 's/^.*[ ]*\(CREATE TABLE `.*\)/\1/' -e '1,2d' "${file_path}/${TABLE_CATALOG_SQL_FILENAME}"
+   local check_file=`head -n 1 "${file_path}/${TABLE_CATALOG_SQL_FILENAME}"`
+   if [ "`echo "${check_file}" | grep "^\s*Table: "`" != ""  ]; then
+      sed -i -e '1d' "${file_path}/${TABLE_CATALOG_SQL_FILENAME}"
+   fi
+}
+
+function get_all_create_table()
+{
+   echo "INFO: Getting creation information for all tables"
+   local count=`expr ${#ALL_TABLES_IN_DATABASE_ARRAY[@]} / $THREAD_COUNT + 1`
+   local j=0
+   for ((i=0; i<$count; i++))
+   do
+      for ((j; j<$THREAD_COUNT*(i+1) && j<${#ALL_TABLES_IN_DATABASE_ARRAY[@]}; j++))
+      do
+      {
+         get_create_table "${DATABASE}" "${ALL_TABLES_IN_DATABASE_ARRAY[j]}"
+      } &
+      done
+      wait
+   done
+}
+
+function build_get_table_statistics_sql()
+{
+cat << EOF
+select * from information_schema.tables where TABLE_SCHEMA=\"${1}\" and TABLE_NAME=\"${2}\"\G
+EOF
+}
+
+function get_table_statistics()
+{
+   local get_table_statistics_sql=""
+   local db_name="${1}"
+   local tb_name="${2}"
+
+   #'/' -> '.'
+   local db_path=`convert_special_character "${db_name}" "0000001"`
+   local tb_path=`convert_special_character "${tb_name}" "0000001"`
+   local file_path="${OUTPUT}/${CATALOG_PATHNAME}/${db_path}/${tb_path}"
+
+   #'\' -> '\\\\', '"' -> '\\\"'
+   #'`' -> '\`'
+   local tb_tmp_name=`convert_special_character "${tb_name}" "0100100"`
+   #'`' -> '\`'
+   local db_tmp_name=`convert_special_character "${db_name}" "0000100"`
+   local sql=`build_get_table_statistics_sql "${db_tmp_name}" "${tb_tmp_name}"`
+
+   get_table_statistics_sql="${sql}"
+   exec_sql_with_print "${get_table_statistics_sql}" "${file_path}/${TABLE_STATISTICS_RESULT_FILENAME}"
+
+   if [ $? -ne 0 ]; then
+      if [ `tail -n 1 "${file_path}/${TABLE_STATISTICS_RESULT_FILENAME}" | grep -v "^ *$" | wc -l` == "0" ]; then
+         echo "ERROR: Fail to get table \"${db_name}.${tb_name}\" statistics, this table does not exist"
+         return 1
+      else
+         echo "ERROR: Fail to get table \"${db_name}.${tb_name}\" statistics." \
+            && tail -n 1 "${file_path}/${TABLE_STATISTICS_RESULT_FILENAME}" \
+            && return 1
+      fi
+   else
+      if [ `cat "${file_path}/${TABLE_STATISTICS_RESULT_FILENAME}" | wc -l` == "0" ]; then
+         echo "ERROR: Fail to get table \"${db_name}.${tb_name}\" statistics, this table does not exist"
+         return 1
+      fi
+   fi
+
+   sed -i '1,2d' "${file_path}/${TABLE_STATISTICS_RESULT_FILENAME}"
+}
+
+function get_all_table_statistics()
+{
+   echo "INFO: Getting statistical information for all tables"
+   local count=`expr ${#ALL_TABLES_IN_DATABASE_ARRAY[@]} / $THREAD_COUNT + 1`
+   local j=0
+   for ((i=0; i<$count; i++))
+   do
+      for ((j; j<$THREAD_COUNT*(i+1) && j<${#ALL_TABLES_IN_DATABASE_ARRAY[@]}; j++))
+      do
+      {
+         get_table_statistics "${DATABASE}" "${ALL_TABLES_IN_DATABASE_ARRAY[j]}"
+      } &
+      done
+      wait
+   done
+}
+
+function build_get_create_database_sql()
+{
+cat << EOF
+show create database \\\`${1}\\\`\G
+EOF
+}
+
+function get_create_database()
+{
+   local get_create_database_sql=""
+   local sql=""
+   local db_tmp_name=""
+   local file_path="${OUTPUT}/${CATALOG_PATHNAME}"
+   local check_file=""
+
+   for dbname in "${DATABASE_ARRAY[@]}"
+   do
+      db_tmp_name=`convert_special_character "${dbname}" "0001000"`
+      db_path=`convert_special_character "${dbname}" "0000001"`
+      sql=`build_get_create_database_sql "${db_tmp_name}"`
+      mkdir_path "${OUTPUT}/${CATALOG_PATHNAME}/${db_path}"
+      get_create_database_sql="${sql}"
+      exec_sql_with_print "${get_create_database_sql}" \
+         "${file_path}/${db_path}/${DATABASE_CATALOG_SQL_FILENAME}" "without_db"
+      test $? -ne 0 && echo "ERROR: Fail to get create database \"${dbname}\"." \
+         && cat "${file_path}/${db_path}/${DATABASE_CATALOG_SQL_FILENAME}" | grep "^ERROR " \
+         && continue
+      sed -i -e 's/^Create Database: //' -e '1,2d' \
+         "${file_path}/${db_path}/${DATABASE_CATALOG_SQL_FILENAME}"
+      check_file=`head -n 1 "${file_path}/${db_path}/${DATABASE_CATALOG_SQL_FILENAME}"`
+      if [ "`echo "${check_file}" | grep "^\s*Database: "`" != ""  ]; then
+         sed -i -e '1d' "${file_path}/${db_path}/${DATABASE_CATALOG_SQL_FILENAME}"
+      fi
+   done
+}
+
+function check_mapping_table()
+{
+   local db_name="${1}"
+   local tb_name="${2}"
+   local count=${#MAPPING_DATABASE_TABLE_ARRAY[@]}
+   for ((i=1;i<$count;i+=4))
+   do
+      if [ "${MAPPING_DATABASE_TABLE_ARRAY[i]}" == "${tb_name}" ]; then
+         if [ "${MAPPING_DATABASE_TABLE_ARRAY[i-1]}" == "${db_name}" ]; then
+            echo "${MAPPING_DATABASE_TABLE_ARRAY[i+1]}.${MAPPING_DATABASE_TABLE_ARRAY[i+2]}"
+            break
+         fi
+      fi
+   done
+}
+
+function get_sdb_table_catalog_js()
+{
+cat << EOF
+db.snapshot(SDB_SNAP_CATALOG,{Name:"${1}.${2}"})
+EOF
+}
+
+function get_sdb_table_detail_js()
+{
+cat << EOF
+db.getCS("${1}").getCL("${2}").getDetail();
+EOF
+}
+
+function get_sdb_table_partition_information()
+{
+   local db_name="${1}"
+   local tb_name="${2}"
+   local partition_name="${3}"
+   local cl_full_name=""
+   local file_path=""
+   local tb_path=`convert_special_character "${tb_name}" "0000001"`
+   local rc=0
+
+   if [ "${4}" != "mapping" ]; then
+      cl_full_name="${tb_name}#P#${partition_name}"
+      file_path="${OUTPUT}/${CATALOG_PATHNAME}/${db_name}/${tb_path}/${partition_name}"
+   else
+      cl_full_name="${tb_name}"
+      file_path="${OUTPUT}/${CATALOG_PATHNAME}/${partition_name}"
+   fi
+
+   local sdb_js=`get_sdb_table_catalog_js "${db_name}" "${cl_full_name}"`
+   local sdb_table_catalog=`exec_sdb_cmd "${sdb_js}"`
+   rc=$?
+   mkdir_path "${file_path}"
+
+   if [ "${sdb_table_catalog}" != "" ]; then
+      #remove 'Return x row(s).'
+      echo "${sdb_table_catalog}" | sed '$d' > "${file_path}/${TABLE_CATALOG_JSON_FILENAME}" 2>&1
+      test $rc -ne 0 && echo "ERROR: Fail to get partiton \"${db_name}.${cl_full_name}\" catalog from SequoiaDB." \
+      && cat "${file_path}/${TABLE_CATALOG_JSON_FILENAME}"
+   else
+      echo "ERROR: Fail to get partiton \"${db_name}.${cl_full_name}\" catalog from SequoiaDB."
+   fi
+
+   sdb_js=`get_sdb_table_detail_js "${db_name}" "${cl_full_name}"`
+   local sdb_table_detail=`exec_sdb_cmd "${sdb_js}"`
+   
+   if [[ `echo "${sdb_table_detail}" | head -n 1 | grep "^shell:1 uncaught exception:"` != "" ]]; then
+      echo "ERROR: Fail to get partition \"${db_name}.${cl_full_name}\" detail from SequoiaDB."
+   fi
+
+   mkdir_path "${file_path}"
+   echo "${sdb_table_detail}" | sed '$d' > "${file_path}/${TABLE_STATISTICS_JSON_FILENAME}" 2>&1
+}
+
+function get_sdb_table_information()
+{
+   local db_name="${1}"
+   local tb_name="${2}"
+   local full_table_name=""
+
+   #'/' -> '.'
+   local db_path=`convert_special_character "${db_name}" "0000001"`
+   local tb_path=`convert_special_character "${tb_name}" "0000001"`
+   local file_path="${OUTPUT}/${CATALOG_PATHNAME}/${db_path}/${tb_path}"
+
+   #sql: " -> sdb: \"
+   #sql: \ -> sdb: \\
+   tb_tmp_name=`convert_special_character "${tb_name}" "1000000"`
+   local sdb_js=`get_sdb_table_catalog_js "${db_name}" "${tb_tmp_name}"`
+   local sdb_table_catalog=`exec_sdb_cmd "${sdb_js}"`
+   if [[ `echo "${sdb_table_catalog}" | grep "Return 0 row(s)."` != "" 
+         && "${IS_MAPPING}" == "1" ]]; then
+      full_table_name=`check_mapping_table "${db_name}" "${tb_tmp_name}"`
+      if [[ "${full_table_name}" != "" ]]; then
+         db_name="${full_table_name%.*}"
+         tb_name="${full_table_name#*.}"
+         tb_tmp_name="${tb_name}"
+         sdb_js=`get_sdb_table_catalog_js "${db_name}" "${tb_name}"`
+         sdb_table_catalog=`exec_sdb_cmd "${sdb_js}"`
+      else
+         mkdir_path "${file_path}"
+      fi
+   fi
+
+   if [ "${sdb_table_catalog}" != "" ]; then
+      # remove 'Return x row(s).'
+      echo "${sdb_table_catalog}" | sed '$d'  > "${file_path}/${TABLE_CATALOG_JSON_FILENAME}" 2>&1
+      if [[ `echo "${sdb_table_catalog}" | head -n 1 | grep "^shell:1 uncaught exception:"` != "" ]]; then
+         echo "ERROR: Fail to get table \"${db_name}.${tb_name}\" catalog from SequoiaDB." \
+            && cat "${file_path}/${TABLE_CATALOG_JSON_FILENAME}"
+      fi
+   else
+      echo "ERROR: Fail to get table \"${db_name}.${tb_name}\" catalog from SequoiaDB."
+   fi
+
+   # not mapping table
+   if [ "${full_table_name}" == "" ]; then
+      # get table partition
+      # "SubCLName": "dbx.list#P#id1", -> "dbx.list#P#id1"
+      local partition_array=`cat "${file_path}/${TABLE_CATALOG_JSON_FILENAME}" \
+         | grep '^[ ]*"SubCLName": ' \
+         | sed -e 's/^[ ]*"SubCLName": //g' -e 's/\(.*\),$/\1/' -e 's/ /./g'`
+
+      if [ "${partition_array}" != "" ]; then
+         partition_array=(`echo "${partition_array}" | awk '{printf("%s "),$0}'`)
+         for partition in "${partition_array[@]}"
+         do
+            #db1 t1 p0 db1 t1 p1
+            DATABASE_TABLE_PARTITION_ARRAY[${#DATABASE_TABLE_PARTITION_ARRAY[@]}]="${db_name}"
+            DATABASE_TABLE_PARTITION_ARRAY[${#DATABASE_TABLE_PARTITION_ARRAY[@]}]="${tb_name}"
+            DATABASE_TABLE_PARTITION_ARRAY[${#DATABASE_TABLE_PARTITION_ARRAY[@]}]=`echo "${partition}" \
+               | sed -e 's/\./ /g' -e "s/^\"${db_name} ${tb_tmp_name}#P#\(.*\)\"$/\1/"`
+         done
+      fi
+   fi
+
+   sdb_js=`get_sdb_table_detail_js "${db_name}" "${tb_tmp_name}"`
+   sdb_js="jsonFormat(false)
+${sdb_js}"
+   local sdb_table_detail=`exec_sdb_cmd "${sdb_js}"`
+
+   if [[ `echo "${sdb_table_detail}" | head -n 1 | grep "^shell:1 uncaught exception:"` != "" ]]; then
+      echo "${sdb_table_detail}" > "${file_path}/${TABLE_STATISTICS_JSON_FILENAME}"
+      echo "ERROR: Fail to get create table \"${db_name}.${tb_name}\" detail from SequoiaDB."
+      echo "${sdb_table_detail}"
+   else
+      # remove Return x rows
+      echo "${sdb_table_detail}" \
+         | sed '$d' > "${file_path}/${TABLE_STATISTICS_JSON_FILENAME}"
+   fi
+}
+
+function get_sdb_all_table_information()
+{
+   echo "INFO: Getting catalog and detail information for all tables from SequoiaDB"
+   for table in "${ALL_TABLES_IN_DATABASE_ARRAY[@]}"
+   do
+      get_sdb_table_information "${DATABASE}" "${table}"
+   done
+}
+
+function get_sdb_table_index_list_js()
+{
+cat << EOF
+db.getCS("${1}").getCL("${2}").listIndexes()
+EOF
+}
+
+function get_sdb_table_index_js()
+{
+cat << EOF
+db.getCS("${1}").getCL("${2}").getIndexStat("${3}",true)
+EOF
+}
+
+function get_sdb_table_index_information()
+{
+   local db_name="${1}"
+   local tb_name="${2}"
+   local cl_name="${3}"
+   local mapping_name="${4}"
+   local rc=0
+   local file_path=""
+   local sdb_js=""
+   local cl_real_name=""
+
+   if [ "${SDB_HAVE_GETINDEXSTAT}" == "1" ]; then
+      return 8
+   fi
+
+   if [ "${cl_name}" == "" ] ; then
+      #normal table
+      cl_real_name=`convert_special_character "${tb_name}" "0000001"`
+      file_path="${OUTPUT}/${CATALOG_PATHNAME}/${db_name}/${cl_real_name}/${INDEX_STATISTICS_PATHNAME}"
+      cl_real_name=`convert_special_character "${tb_name}" "1000000"`
+      sdb_js=`get_sdb_table_index_list_js "${db_name}" "${cl_real_name}"`
+   elif [ "${mapping_name}" == "" ]; then
+      #table partition
+      cl_real_name=`convert_special_character "${tb_name}#P#${cl_name}" "0000001"`
+      file_path="${OUTPUT}/${CATALOG_PATHNAME}/${db_name}/${tb_name}/${cl_name}/${INDEX_STATISTICS_PATHNAME}"
+      cl_real_name="${tb_name}#P#${cl_name}"
+      sdb_js=`get_sdb_table_index_list_js "${db_name}" "${cl_real_name}"`
+   else
+      #mapping table partition
+      file_path="${OUTPUT}/${CATALOG_PATHNAME}/${cl_name}/${INDEX_STATISTICS_PATHNAME}"
+      cl_real_name="${tb_name}"
+      sdb_js=`get_sdb_table_index_list_js "${db_name}" "${tb_name}"`
+   fi
+
+   local sdb_table_index_list=`exec_sdb_cmd "${sdb_js}"`
+   local full_table_name=""
+   if [[ "${mapping_name}" == "" 
+         && `echo "${sdb_table_index_list}" \
+            | grep -E "Collection does not exist|Collection space does not exist"` != "" 
+         && "${IS_MAPPING}" == "1" ]]; then
+      full_table_name=`check_mapping_table "${db_name}" "${tb_name}"`
+      if [[ "${full_table_name}" != "" ]]; then
+         db_name="${full_table_name%.*}"
+         tb_name="${full_table_name#*.}"
+         cl_real_name="${tb_name}"
+         sdb_js=`get_sdb_table_index_list_js "${db_name}" "${tb_name}"`
+         sdb_table_index_list=`exec_sdb_cmd "${sdb_js}"`
+      else
+         mkdir_path "${file_path}"
+      fi
+   fi
+
+   if [[ `echo "${sdb_table_index_list}" | head -n 1 | grep "^shell:1 uncaught exception:"` != "" ]]; then
+      echo "ERROR: Fail to get \"${db_name}.${tb_name}\" index list from SequoiaDB"
+      echo "${sdb_table_index_list}"
+      return 8
+   fi
+
+   local sdb_table_index_array=(`echo "${sdb_table_index_list[*]}" \
+      | grep '^[ ]*"name": "' | grep -v ' "$id",$' | sed 's/^[ ]*"name": \(.*\),$/\1/g'`)
+   if [ ${#sdb_table_index_array[@]} -eq 0 ]; then
+      return
+   fi
+
+   mkdir_path "${file_path}"
+   local index_real_name=""
+   local index_tmp_name=""
+   local sdb_table_index=""
+   local error=""
+   rc=0
+
+   for index in "${sdb_table_index_array[@]}"
+   do
+      index_tmp_name=`echo "${index}" | sed 's/^"\(.*\)"$/\1/'`
+      index_real_name=`convert_special_character "${index_tmp_name}" "0000010"`
+
+      if [ "${SDB_HAVE_GETINDEXSTAT}" == "0" ]; then
+         sdb_js=`get_sdb_table_index_js "${db_name}" "${cl_real_name}" "${index_tmp_name}"`
+         `exec_sdb_cmd "${sdb_js}" > "${file_path}/${index_real_name}${JSON}" 2>&1`
+         rc=$?
+         error=`cat "${file_path}/${index_real_name}${JSON}" | head -n 10`
+         if [[ `echo "${error}" | grep "^shell:1 uncaught exception:"` != "" ]]; then
+            echo "${error}"
+            if [[ `echo "${error}" | grep "getIndexStat is not a function"` != "" ]]; then
+               # skip this get index function
+               SDB_HAVE_GETINDEXSTAT=1
+               echo "ERROR: Index information on the SequoiaDB side will not be collected"
+               return 8
+            elif [[ `echo "${error}" | grep "Index statistics do not exist"` != "" ]]; then
+               # skip this loop
+               SDB_HAVE_GETINDEXSTAT=1
+               if [[ "${mapping_name}" == "" && "${cl_name}" != "" ]]; then
+                  # partiton table
+                  echo "WARNING: Table \"${db_name}.${cl_real_name}\" index statistics do not exist. \
+Suggest doing 'ANALYZE TABLE ${db_name}.${tb_name};' and dump again"
+               else
+                  # normal table
+                  echo "WARNING: Table \"${db_name}.${tb_name}\" index statistics do not exist. \
+Suggest doing 'ANALYZE TABLE ${db_name}.${tb_name};' and dump again"
+               fi
+            fi
+            cat /dev/null > "${file_path}/${index_real_name}${JSON}"
+         fi
+      else
+         cat /dev/null > "${file_path}/${index_real_name}${JSON}"
+      fi
+   done
+   SDB_HAVE_GETINDEXSTAT=0
+   if [[ "${mapping_name}" == "" && "${cl_name}" != "" ]]; then
+      # partiton table
+      test $rc -ne 0 && echo "ERROR: Fail to get \"${db_name}.${cl_real_name}\" index information from SequoiaDB."
+   else
+      # normal table
+      test $rc -ne 0 && echo "ERROR: Fail to get \"${db_name}.${tb_name}\" index information from SequoiaDB."
+   fi
+}
+
+function get_sdb_all_table_index_information()
+{
+   echo "INFO: Getting all indexes information for all tables from SequoiaDB"
+   for table in "${ALL_TABLES_IN_DATABASE_ARRAY[@]}"
+   do
+      get_sdb_table_index_information "${DATABASE}" "${table}"
+   done
+}
+
+function build_get_create_routine_sql()
+{
+cat << EOF
+use \\\`${1}\\\`;
+show create ${2} \\\`${3}\\\`\G
+EOF
+}
+
+function get_create_routine()
+{
+   local is_func=""
+   local is_proc=""
+   local sql=""
+   local error=""
+   local rows=0
+   local get_create_routine_sql=""
+   local db_name="${1}"
+
+   # '/' -> '.', '.' -> '\.'
+   local db_path=`convert_special_character "${db_name}" "0000001"`
+   # '`' -> '\`\`'
+   local db_tmp_name=`convert_special_character "${db_name}" "0001000"`
+   local routine_name="${2}"
+   # '\' -> '\\', '"' -> '\"'
+   # '`' -> '\`\`'
+   local routine_tmp_name=`convert_special_character "${routine_name}" "1001000"`
+   local routine_path=`convert_special_character "${routine_name}" "0000001"`
+
+   local file_path="${OUTPUT}/${ROUTINE_PATHNAME}/${db_path}/${routine_path}"
+   mkdir_path "${file_path}"
+
+   local type="${3}"
+   if [ "${type}" != "" ]; then
+      sql=`build_get_create_routine_sql "${db_tmp_name}" "${type}" "${routine_tmp_name}"`
+      get_create_routine_sql="${MYSQL_EXEC_CMD_WITHOUT_DB} -e \"${sql}\""
+      type=`echo "${type}" | tr -t "[A-Z]" "[a-z]"`
+      eval "${get_create_routine_sql}" "2>&1" "${REMOVE_PASSWORD_WARNING}" > "${file_path}/${type}_${ROUTINES_FILENAME}"
+      error=`tail -n 1 "${file_path}/${type}_${ROUTINES_FILENAME}"`
+      if [ "${error%% *}" == "ERROR" ]; then
+         echo "ERROR: Fail to get create ${type} \"${routine_name}\"."
+         tail -n 1 "${file_path}/${type}_${ROUTINES_FILENAME}"
+      else
+         rows=`cat "${file_path}/${type}_${ROUTINES_FILENAME}" | wc -l`
+         # delete the first,second and last three lines
+         sed -i "$(($rows-2)),\$d" "${file_path}/${type}_${ROUTINES_FILENAME}"
+         if [[ `head -n 1 "${file_path}/${type}_${ROUTINES_FILENAME}" | grep "^*"` != "" ]]; then
+            sed -i '1,2d' "${file_path}/${type}_${ROUTINES_FILENAME}"
+         fi
+         # append 'delimiter $$$' at the start of file
+         # set sql_mode="xxxxx"$$$
+         # end $$$
+         sed -i -e'1idelimiter $$$' -e's/^[ ]*//g' -e's/^sql_mode.*$/&\"$$$/' \
+            -e's/^sql_mode: /set sql_mode=\"/' -e's/Create Function: //' \
+            -e's/^Create Procedure: //' "${file_path}/${type}_${ROUTINES_FILENAME}"
+         # append at the end of file
+         echo -e '$$$'"\n"'delimiter ;' >> "${file_path}/${type}_${ROUTINES_FILENAME}"
+      fi
+   else
+      # function
+      sql=`build_get_create_routine_sql "${db_tmp_name}" "function" "${routine_tmp_name}"`
+      get_create_routine_sql="${MYSQL_EXEC_CMD_WITHOUT_DB} -e \"${sql}\""
+      eval "${get_create_routine_sql}" "2>&1" "${REMOVE_PASSWORD_WARNING}" > "${file_path}/function_${ROUTINES_FILENAME}"
+      error=`tail -n 1 "${file_path}/function_${ROUTINES_FILENAME}"`
+      if [ "${error%% *}" == "ERROR" ]; then
+         if [ "${error}" == "ERROR 1305 (42000) at line 2: FUNCTION ${routine_name} does not exist" ]; then
+            is_func="FALSE"
+         else
+            echo "ERROR: Fail to get create function \"${routine_name}\"."
+            tail -n 1 "${file_path}/function_${ROUTINES_FILENAME}"
+         fi
+      else
+         sed -i '1,2d' "${file_path}/function_${ROUTINES_FILENAME}"
+         is_func="TRUE"
+      fi
+
+      # procedure
+      sql=`build_get_create_routine_sql "${db_tmp_name}" "procedure" "${routine_tmp_name}"`
+      get_create_routine_sql="${MYSQL_EXEC_CMD_WITHOUT_DB} -e \"${sql}\""
+      eval "${get_create_routine_sql}" "2>&1" "${REMOVE_PASSWORD_WARNING}" > "${file_path}/procedure_${ROUTINES_FILENAME}"
+      error=`tail -n 1 "${file_path}/procedure_${ROUTINES_FILENAME}"`
+      if [ "${error%% *}" == "ERROR" ]; then
+         if [ "${error}" == "ERROR 1305 (42000) at line 2: PROCEDURE ${routine_name} does not exist" ]; then
+            is_proc="FALSE"
+         else
+            echo "ERROR: Fail to get create procedure \"${routine_name}\"."
+            tail -n 1 "${file_path}/procedure_${ROUTINES_FILENAME}"
+         fi
+      else
+         sed -i '1,2d' "${file_path}/procedure_${ROUTINES_FILENAME}"
+         is_proc="TRUE"
+      fi
+
+      if [[ $is_proc == "TRUE" || $is_func == "TRUE" ]]; then
+         if [ "$is_func" == "TRUE" ]; then
+            # delete the first,second and last three lines
+            local rows=`cat "${file_path}/function_${ROUTINES_FILENAME}" | wc -l`
+            sed -i "$(($rows-2)),\$d" "${file_path}/function_${ROUTINES_FILENAME}"
+            if [[ `head -n 1 "${file_path}/function_${ROUTINES_FILENAME}" | grep "^*"` != "" ]]; then
+               sed -i '1,2d' "${file_path}/function_${ROUTINES_FILENAME}"
+            fi
+            # append 'delimiter $$$' at the start of file
+            # set sql_mode="xxxxx"$$$
+            # end $$$
+            sed -i -e'1idelimiter $$$' -e's/^[ ]*//g' -e's/^sql_mode.*$/&\"$$$/' \
+               -e's/^sql_mode: /set sql_mode=\"/' -e's/^Create Function: //' \
+               "${file_path}/function_${ROUTINES_FILENAME}"
+            # append at the end of file
+            echo -e '$$$'"\n"'delimiter ;' >> "${file_path}/function_${ROUTINES_FILENAME}"
+         else
+            rm -f "${file_path}/function_${ROUTINES_FILENAME}"
+         fi
+
+         if [ $is_proc == "TRUE" ]; then
+            local rows=`cat "${file_path}/procedure_${ROUTINES_FILENAME}" | wc -l`
+            # delete the first,second and last three lines
+            sed -i "$(($rows-2)),\$d" "${file_path}/procedure_${ROUTINES_FILENAME}"
+            if [[ `head -n 1 "${file_path}/procedure_${ROUTINES_FILENAME}" | grep "^*"` != "" ]]; then
+               sed -i '1,2d' "${file_path}/procedure_${ROUTINES_FILENAME}"
+            fi
+            # append 'delimiter $$$' at the start of file
+            # set sql_mode="xxxxx"$$$
+            # end $$$
+            sed -i -e'1idelimiter $$$' -e's/^[ ]*//g' -e's/^sql_mode.*$/&\"$$$/' \
+               -e's/^sql_mode: /set sql_mode=\"/' -e's/^Create Procedure: //' \
+               "${file_path}/procedure_${ROUTINES_FILENAME}"
+            # append at the end of file
+            echo -e '$$$'"\n"'delimiter ;' >> "${file_path}/procedure_${ROUTINES_FILENAME}"
+         else
+            rm -f "${file_path}/procedure_${ROUTINES_FILENAME}"
+         fi
+      elif [[ $is_proc == "FALSE" && $is_func == "FALSE" ]]; then
+         rm -f "${file_path}/function_${ROUTINES_FILENAME}"
+         rm -f "${file_path}/procedure_${ROUTINES_FILENAME}"
+         echo "ERROR: Fail to get information of routine \"${routine_name}\", \
+this routine does not exist in the database \"${db_name}\""
+      fi
+   fi
+}
+
+function build_get_all_create_routine_sql()
+{
+cat << EOF
+select ROUTINE_NAME,ROUTINE_TYPE from information_schema.ROUTINES where ROUTINE_SCHEMA=\"${1}\"\G
+EOF
+}
+
+function get_all_create_routine()
+{
+   #'\' -> '\\\\', '"' -> '\\\"'
+   #'`' -> '\`'
+   local db_tmp_name=`convert_special_character "${DATABASE}" "0100100"`
+   
+   local sql=`build_get_all_create_routine_sql "${db_tmp_name}"`
+   local tmp_routine=`eval "${MYSQL_EXEC_CMD} -e \"${sql}\"" "2>&1" "${REMOVE_PASSWORD_WARNING}" | grep -v '^*'`
+   if [[ `echo "${tmp_routine}" | tail -n 1 | grep "^ERROR "` != ""  ]]; then
+      echo "ERROR: Fail to get all routines in the \"${DATABASE}\"" && return;
+   fi
+
+   if [ "${tmp_routine}" == "" ]; then
+      echo "INFO: There are no routines in database \"${DATABASE}\""
+      return
+   fi
+   echo "INFO: Getting creation information for all routines from database \"${DATABASE}\""
+
+   local tmp_routine_array=(`echo "${tmp_routine}" | awk \
+      'BEGIN{i=0} {tb[i]=$2;i++} END{for(j=0;j<i;j++){printf("\"%s\"\n"),tb[j]}}'`)
+   local count=${#tmp_routine_array[@]}
+   local routine_name_type_array=()
+   for ((i=0;i<$count;i+=2))
+   do
+      routine_name_type_array[$i]=`echo "${tmp_routine_array[i]}" \
+         | sed -e 's/^\"//' -e 's/\"$//'`
+      routine_name_type_array[$((i+1))]=`echo "${tmp_routine_array[i+1]}" \
+         | sed -e 's/^\"//' -e 's/\"$//'`
+   done
+   
+   if [[ "${#routine_name_type_array[@]}" -gt 0 ]]; then
+      local thread_batch=`expr $THREAD_COUNT \* 2`
+      local count=`expr ${#routine_name_type_array[@]} / $thread_batch + 1`
+      local j=0
+      for ((i=0; i<$count; i++))
+      do
+         for ((j; j<$thread_batch*(i+1) && j<${#routine_name_type_array[@]}; j+=2))
+         do
+         {
+            #database routine_name routine_type
+            get_create_routine "${DATABASE}" "${routine_name_type_array[j]}" "${routine_name_type_array[j+1]}"
+         } &
+         done
+         wait
+      done
+   fi
+}
+
+function get_explain()
+{
+   local count=`echo "${QUERY}" | sed -z 's/\n/ /g' \
+      | sed 's/\(.*\);[ ]*$/\1/' | awk -F";" '{print NF}'`
+   local sql_path="${OUTPUT}/${QUERY_PATHNAME}/query.sql"
+   local tmp_sql=""
+   local real_sql=""
+   local result=""
+   for ((i=1;i<=$count;i++))
+   do
+      tmp_sql="`echo "${QUERY}" | sed -z 's/\n/ /g' | awk -F";" -v fs="$i" '{printf(\"%s;\",$fs)}'`"
+      real_sql="${real_sql}""${tmp_sql}"
+      echo "${real_sql}" > "${sql_path}"
+      result=`eval "cat \"${sql_path}\" | ${MYSQL_EXEC_CMD} -s" "2>&1" "${REMOVE_PASSWORD_WARNING}"`
+      if [ "`echo "${result}" | grep "You have an error in your SQL syntax;"`" == "" ]; then
+         REAL_QUERY="${real_sql:0:-1}"
+         if [[ $i -ne $count ]]; then
+            echo "ERROR: There are multiple queries in QUERY"
+            exit 1
+         fi
+         break
+      fi
+   done
+   local get_explain_sql="explain ${REAL_QUERY}\\G"
+   echo "${get_explain_sql}" > "${sql_path}"
+   eval "cat \"${sql_path}\" | ${MYSQL_EXEC_CMD} -s" "2>&1" "${REMOVE_PASSWORD_WARNING}" > "${OUTPUT}/${EXPLAIN_FILENAME}"
+   local rc=$? 
+   local error=`tail -n 1 "${OUTPUT}/${EXPLAIN_FILENAME}" | grep "^ERROR "`
+   if [[ $rc -ne 0 || "${error}" != "" ]]; then
+      echo "ERROR: Fail to get explain SQL information."
+      cat "${OUTPUT}/${EXPLAIN_FILENAME}"
+   fi
+}
+
+function build_get_optimizer_trace_sql()
+{
+cat << EOF
+set session optimizer_trace="enabled=on";
+set session optimizer_trace_max_mem_size=163840;
+explain ${REAL_QUERY};
+select * from information_schema.optimizer_trace\G
+EOF
+}
+
+function get_optimizer_trace()
+{
+   local get_optimizer_trace_sql="`build_get_optimizer_trace_sql`"
+   local sql_path="${OUTPUT}/${QUERY_PATHNAME}/query.sql"
+   echo "${get_optimizer_trace_sql}" > "${sql_path}"
+   eval "cat \"${sql_path}\" | ${MYSQL_EXEC_CMD} -s" "2>&1" "${REMOVE_PASSWORD_WARNING}" > "${OUTPUT}/${OPTIMIZER_TRACE_FILENAME}"
+   local rc=$? 
+   local error=`head -n 5 "${OUTPUT}/${OPTIMIZER_TRACE_FILENAME}" | grep "^ERROR "`
+   if [[ $rc -ne 0 || "${error}" != "" ]]; then
+      echo "ERROR: Fail to get optimizer trace information."
+      cat "${OUTPUT}/${OPTIMIZER_TRACE_FILENAME}"
+   fi
+}
+
+function get_variables()
+{
+   local get_variables_sql="show variables"
+   exec_sql_with_print "${get_variables_sql}" "${OUTPUT}/${VARIABLES_FILENAME}" "without_db"
+   test $? -ne 0 && echo "ERROR: Fail to get variables." \
+   && cat "${OUTPUT}/${VARIABLES_FILENAME}" | grep "^ERROR "
+}
+
+function get_status()
+{
+   local get_status_sql="show status\\G"
+   exec_sql_with_print "${get_status_sql}" "${OUTPUT}/${STATUS_FILENAME}" "without_db"
+   test $? -ne 0 && echo "ERROR: Fail to get status." \
+   && cat "${OUTPUT}/${STATUS_FILENAME}" | grep "^ERROR "
+}
+
+function get_engine()
+{
+   local get_engine_sql="show engines\\G"
+   exec_sql_with_print "${get_engine_sql}" "${OUTPUT}/${ENGINE_FILENAME}" "without_db"
+   test $? -ne 0 && echo "ERROR: Fail to get engine." \
+   && cat "${OUTPUT}/${ENGINE_FILENAME}" | grep "^ERROR " && return 1
+   local result=`cat "${OUTPUT}/${ENGINE_FILENAME}" \
+     | grep "SequoiaDB storage engine" \
+     | sed 's/^[ ]*Comment: //'` 
+   echo "${result}" > "${OUTPUT}/${ENGINE_FILENAME}"
+}
+
+function get_sdb_remote_version()
+{
+   local sdb_version=""
+   sdb_version=`"${SDB_SHELL}" --version 2>&1`
+   local rc=$?
+   echo "${sdb_version}" > "${OUTPUT}/${VERSION_FILENAME}" 2>&1
+   test $rc -ne 0 && echo "ERROR: Fail to get version." \
+   && cat "${OUTPUT}/${VERSION_FILENAME}"
+}
+
+function get_sdb_list_groups()
+{
+   local sdb_list_groups=""
+   sdb_list_groups=`exec_sdb_cmd "db.list(SDB_LIST_GROUPS)"`
+   echo "${sdb_list_groups}" > "${OUTPUT}/${GROUP_FILENAME}" 2>&1
+   if [[ `echo "${sdb_list_groups}" | head -n 1 | grep "^shell:1 uncaught exception:"` != "" ]]; then
+      echo "ERROR: Fail to get SequoiaDB groups." && cat "${OUTPUT}/${GROUP_FILENAME}" && return 8
+   fi
+   #remove 'Return x row(s).'
+   sed -i '$d' "${OUTPUT}/${GROUP_FILENAME}"
+}
+
+function compress_tar_gz()
+{
+   echo "INFO: Compress the diaginfo.tar.gz package in the directory \"${OUTPUT%*/$PACKAGE_PATHNAME}\""
+   #remove tmp dir and file
+   rm -rf "${OUTPUT}/sdb.conf" "${OUTPUT}/empty_dir/" "${OUTPUT}/${QUERY_PATHNAME}/query.sql" "${SDB_JS_FILENAME}"
+   test -d "${OUTPUT}" || { echo "ERROR: \"${OUTPUT}\" does not exit" >&2 && exit 4; }
+   cd "${OUTPUT}/.."
+   tar -zcf "${PACKAGE_PATHNAME}.tar.gz" "${PACKAGE_PATHNAME}" >&2
+   test $? -ne 0 && { echo "ERROR: Fail to create \"${PACKAGE_PATHNAME}.tar.gz\"" >&2 && exit 5; }
+   rm -rf "${PACKAGE_PATHNAME}"
+}
+
+function show_help()
+{
+   echo "${ME} is a diagnosis information collection tool for SequoiaSQL-MySQL server."
+   echo ""
+   echo "Usage:"
+   echo "  ${ME} <-h HOST> <-P PORT> <-u USER> <-i INSTANCE> <-o OUTPUTPATH> [-p [PASSWORD]] [-D DATABASE] [-t TABLES] [-R ROUTINES] [-q QUERY] [-F SEPARATOR]"
+   echo "  ${ME} <-S SOCKETFILE> <-u USER> <-i INSTANCE> <-o OUTPUTPATH> [-p [PASSWORD]] [-D DATABASE] [-T TABLES] [-R ROUTINES] [-q QUERY] [-F SEPARATOR]"
+   echo ""
+   echo "Options:"
+   echo "  -h, --host <HOST>                       MySQL host address"
+   echo "  -P, --port <PORT>                       port number to listen on"
+   echo "  -S, --socket <SOCKETFILE>               location of the pid file"
+   echo "  -u, --user <USER>                       user of administrator for login in MySQL"
+   echo "  -p, --password <PASSWORD>               a password for user, default: empty password"
+   echo "  -i, --instance <INSTANCE>               instance of login"
+   echo "  -F, --field-separator <FS>              specify a field separator for TABLES and ROUTINES, default: ,"
+   echo "  -D, --database <DATABASE>               database name"
+   echo "  -t, --tables <TABLES>                   tables name array like \"db1.t1, db2.t2\""
+   echo "  -R, --routines <routines>               routines name array like \"db1.f1, db1.p1\""
+   echo "  -q, --query <QUERY>                     query statements that will be got explain and optimizer trace"
+   echo "  -o, --output <OUTPUTPATH>               output files path"
+}
+
+##################################
+#    main entry
+##################################
+
+#parse command line parameters
+test $# -eq 0 && { show_help && exit 6; }
+
+ARGS=`getopt -o h:P:S:u:p::i:F:D:t:R:q:o: --long help,host:,port:,socket:,user:,password:,instance:,field-separator:,database:,tables:,routines:,query:,output: -n "${ME}" -- "$@"`
+ret=$?
+test $ret -ne 0 && exit 1
+
+eval set -- "${ARGS}"
+
+while true
+do
+   case "${1}" in
+      --help )                                        show_help
+                                                      exit 0
+                                                      ;;
+      -h | --host )                                   HOST="${2}"
+                                                      shift 2
+                                                      ;;
+      -P | --port )                                   PORT="${2}"
+                                                      shift 2
+                                                      ;;
+      -S | --socket )                                 SOCKET="${2}"
+                                                      shift 2
+                                                      ;;
+      -u | --user )                                   USER="${2}"
+                                                      shift 2
+                                                      ;;
+      -p | --password )                                 
+         case "${2}" in
+            "")                                       # for `read` keep the spaces before and after the string
+                                                      OLD_IFS="${IFS}"
+                                                      IFS=''
+                                                      read -s -p "Enter your password:" PASSWORD
+                                                      IFS="${OLD_IFS}"
+                                                      echo ""
+                                                      shift 2
+                                                      ;;
+            *)                                        PASSWORD="${2}"
+                                                      shift 2
+                                                      ;;
+         esac 
+         ;;
+      -i | --instance )                               INSTANCE="${2}"
+                                                      shift 2
+                                                      ;;
+      -F | --field-separator )                        FIELD_SEPARATOR="${2}"
+                                                      shift 2
+                                                      ;;
+      -D | --database )                               DATABASE="${2}"
+                                                      shift 2
+                                                      ;;
+      -t | --tables )                                 TABLE_ARRAY=("${2}")
+                                                      shift 2
+                                                      ;;
+      -R | --routines )                               ROUTINE_ARRAY=("${2}")
+                                                      shift 2
+                                                      ;;
+      -q | --query )                                  QUERY="${2}"
+                                                      shift 2
+                                                      ;;
+      -o | --output )                                 OUTPUT="${2}"
+                                                      shift 2
+                                                      ;;
+      -- )                                            shift
+                                                      break
+                                                      ;;
+      * )                                             echo "parameter error!"
+                                                      exit 1
+                                                      ;;
+   esac
+done
+
+if [ "$*" != "" ]; then
+   echo "${ME}: too many arguments: $*" >&2
+   echo "Try '${ME} --help' for more information."
+   exit 1
+fi
+
+START_TIME=`date +%s`
+
+#check parameter
+check_para
+
+#get install path
+get_path "${0}"
+
+#mkdir dir
+prepare_output_dir
+
+#parse parameter
+parse_para
+
+#try mysql and sdb 
+try_connect
+
+#get diaginfo
+get_diaginfo
+
+#make diaginfo.tar.gz
+compress_tar_gz
+
+END_TIME=`date +%s`
+echo "OK"
+echo "Spend "`expr $END_TIME - $START_TIME`" sec"
+exit 0

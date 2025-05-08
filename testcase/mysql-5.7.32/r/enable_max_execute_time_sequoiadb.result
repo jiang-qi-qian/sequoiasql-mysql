@@ -1,0 +1,7 @@
+create table t1 ( a int, b char(127) );
+LOAD DATA INFILE '../../std_data/loaddata_5w_sequoiadb.dat' INTO TABLE t1(a,b);
+set max_execution_time = 10;
+select * from t1;
+ERROR HY000: Query execution was interrupted, maximum statement execution time exceeded
+set max_execution_time = default;
+drop table t1;

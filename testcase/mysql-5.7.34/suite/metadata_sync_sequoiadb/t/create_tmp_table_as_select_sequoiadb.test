@@ -1,0 +1,26 @@
+#seqDB-24711 用create...as select创建临时表
+
+--source include/have_sequoiadb.inc
+--source suite/metadata_sync_sequoiadb/inc/insts_connect_sequoiadb.inc
+
+connection conn1;
+--disable_warnings
+DROP DATABASE IF EXISTS create_tmp_table_as_select;
+--enable_warnings
+
+CREATE DATABASE create_tmp_table_as_select;
+DROP DATABASE create_tmp_table_as_select;
+CREATE DATABASE create_tmp_table_as_select;
+USE create_tmp_table_as_select;
+CREATE TABLE t1 (id INT);
+INSERT INTO t1 VALUES (1);
+SELECT * FROM t1;
+CREATE TEMPORARY TABLE t2 AS SELECT * FROM t1;
+SELECT * FROM t2;
+
+DROP TABLE t1;
+DROP TABLE t2;
+DROP DATABASE create_tmp_table_as_select;
+
+--source include/uninstall_sequoiadb.inc
+--source suite/metadata_sync_sequoiadb/inc/insts_disconnect_sequoiadb.inc

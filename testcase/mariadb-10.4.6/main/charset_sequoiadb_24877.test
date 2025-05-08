@@ -1,0 +1,19 @@
+#Case 24877
+--source include/have_sequoiadb.inc
+
+#use a different character set,
+#specify the character set when creating the table,
+#The matching conditon of select speccify the character set.
+
+set names utf8;
+--disable_warnings
+DROP TABLE IF EXISTS charset_sequoiadb_24877;
+--enable_warnings
+CREATE TABLE charset_sequoiadb_24877 (a char(10) character set utf8 not null);
+INSERT into charset_sequoiadb_24877 values ('bbbb'),(_koi8r'ÃÃÃÃ'),(_latin1'ÄÄÄÄ');
+SELECT a from charset_sequoiadb_24877 where a in ('bbbb',_koi8r'ÃÃÃÃ',_latin1'ÄÄÄÄ') order by a;
+
+set names default;
+DROP TABLE charset_sequoiadb_24877;
+
+--source include/uninstall_sequoiadb.inc

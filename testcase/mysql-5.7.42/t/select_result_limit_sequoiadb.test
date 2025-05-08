@@ -1,0 +1,226 @@
+#seqDB-30074 seqDB-30075 seqDB-30077 seqDB-30088 seqDB-30090
+--source include/have_sequoiadb.inc
+--disable_warnings
+drop database if exists select_result_limit_sequoiadb;
+--enable_warnings
+
+create database select_result_limit_sequoiadb;
+drop database select_result_limit_sequoiadb;
+create database select_result_limit_sequoiadb;
+use select_result_limit_sequoiadb;
+
+create table tb_normal(a int,b varchar(28),key a(a))engine=innodb;
+create temporary table tb_tmp(a int,b varchar(28),key a(a),key b(b));
+create table tb_part(
+	col1 int,
+	col2 varchar(128),
+	col3 datetime,
+	col4 int,
+	key idx_col1(col1),
+	key idx_col2(col2),
+	key idx_col1_2(col1,col2)
+	)
+	partition by range columns (col1)
+	subpartition by key (col4)
+	subpartitions 2 (
+    	partition p0 values less than (4),
+    	partition p1 values less than (7),
+    	partition p2 values less than (11));
+
+delimiter $$;
+create procedure insert_data()
+begin
+declare i int;
+declare j int;
+set i=0,j=1;
+while i < 500 do
+insert into tb_normal values(i+1,concat("str",i+1));
+insert into tb_tmp values(i+1,concat("str",i+1));
+set i = i+1;
+end while;
+repeat 
+insert into tb_part values (3,'str3','2023-02-03 15:15:15',33),(6,null,null,88),(8,null,null,66),(7,'str7','2023-02-07 15:35:35',77),(1,'str1','2023-02-01 15:05:05',11),(9,'str3','2023-02-09 15:45:45',99),(4,'str4','2023-02-04 15:20:20',44),(2,'str2','2023-02-02 15:10:10',22),(5,'str5','2023-02-05 15:25:25',55),(6,'str6','2023-02-06 15:30:15',66),(8,'str8','2023-02-08 15:40:40',88);
+set j = j+1;
+until j>50 end repeat;
+end$$
+delimiter ;$$
+call insert_data;
+create view v1 as select * from tb_normal;
+
+
+--echo
+--echo #seqDB-30074 
+set session sql_select_result_limit=100;
+--echo #结果集限制默认等级
+set session sql_select_result_limit_exceed_handling=0;
+--source include/select_result_limit_sequoiadb.inc
+--echo #结果集限制警告等级
+set session sql_select_result_limit_exceed_handling=1;
+--source include/select_result_limit_sequoiadb.inc
+--echo #结果集限制报错等级
+set session sql_select_result_limit_exceed_handling=2;
+--echo ----------------------------------------------------------------------------
+--echo #结果集小于限制
+select * from tb_part partition (p0) where col1<2 order by col1;
+select a,count(b) from tb_tmp group by a having a<=10 order by a;
+select a,b from v1 where a not in (select a from tb_normal where a>10) order by a;
+select a,b from (select * from tb_normal where a<=10) as tb_derived order by a; 
+select distinct col1,col2,col3,(select b from tb_normal where tb_part.col1=tb_normal.a) as b from tb_part left join tb_normal on tb_part.col1=tb_normal.a order by col1,col2;
+select * from tb_normal left join tb_tmp on tb_normal.a=tb_tmp.a where tb_normal.a<=10 order by tb_normal.a;
+(select a,b from tb_normal where a<=10 order by a) union (select * from tb_normal where a<=10 order by a) union (select * from tb_tmp where a<=10 order by a);
+--sorted_result
+select 1 union select 2 union select 3;
+select * from tb_part order by col1,col2 limit 10,10;
+--echo #结果集等于限制
+set session sequoiadb_optimizer_options='direct_count,direct_delete,direct_update,direct_sort';
+--error 1226
+select * from tb_part order by col1 limit 10,100;
+set session sequoiadb_optimizer_options='direct_count,direct_delete,direct_update,direct_sort,direct_limit';
+--error 1226
+select * from tb_part order by col1 limit 10,100;
+--error 1226
+select a,count(b) from tb_tmp group by a having a<=100 order by a;
+--error 1226
+select a,b from v1 where a in (select a from tb_normal where a<=100);
+--error 1226
+select a,b from (select * from tb_normal where a<=100) as tb_derived;
+--error 1226
+select col1,col2,col3,(select b from tb_normal where tb_part.col1=tb_normal.a) as b from tb_part left join tb_normal on tb_part.col1=tb_normal.a limit 100;
+--error 1226
+select a,b from tb_normal where a<=30 union all (select * from tb_normal where a<=30) union all (select * from tb_tmp where a<=40);
+set session sql_select_result_limit=3;
+--error 1226
+select 1 union select 2 union select 3;
+set session sql_select_result_limit=100;
+--echo #结果集大于限制
+set session sequoiadb_optimizer_options='direct_count,direct_delete,direct_update,direct_sort';
+--error 1226
+select * from tb_part order by col1 limit 120;
+set session sequoiadb_optimizer_options='direct_count,direct_delete,direct_update,direct_sort,direct_limit';
+--error 1226
+select * from tb_part order by col1 limit 10,120;
+--error 1226
+select a,count(b) from tb_tmp group by a having a<=120 order by a;
+--error 1226
+select a,b from v1 where a in (select a from tb_normal where a<=120);
+--error 1226
+select a,b from (select * from tb_normal where a<=120) as tb_derived;
+--error 1226
+select col1,col2,col3,(select b from tb_normal where tb_part.col1=tb_normal.a) as b from tb_part left join tb_normal on tb_part.col1=tb_normal.a limit 120;
+--error 1226
+select a,b from tb_normal where a<=40 union all (select * from tb_normal where a<=40) union all (select * from tb_tmp where a<=40);
+set session sql_select_result_limit=2;
+--error 1226
+select 1 union select 2 union select 3;
+set session sql_select_result_limit=100;
+
+--echo
+--echo #seqDB 30075
+set session sql_select_result_limit=default;
+let $i=2;
+while($i>=0){
+eval set session sql_select_result_limit_exceed_handling=$i;
+select * from tb_part partition (p0) where col1<2 order by col1;
+select a,count(b) from tb_tmp group by a having a<=10 order by a;
+select a,b from v1 where a not in (select a from tb_normal where a>10) order by a;
+select a,b from (select * from tb_normal where a<=10) as tb_derived order by a;
+select distinct col1,col2,col3,(select b from tb_normal where tb_part.col1=tb_normal.a) as b from tb_part left join tb_normal on tb_part.col1=tb_normal.a order by col1,col2;
+select * from tb_normal left join tb_tmp on tb_normal.a=tb_tmp.a where tb_normal.a<=10 order by tb_normal.a;
+(select a,b from tb_normal where a<=10 order by a) union (select * from tb_normal where a<=10 order by a) union (select * from tb_tmp where a<=10 order by a);
+--sorted_result
+select 1 union select 2 union select 3;
+select * from tb_part order by col1,col2 limit 10,10;
+dec $i;
+}
+
+--echo
+--echo #seqDB 30077
+--error 1231
+set session sql_select_result_limit_exceed_handling=null;
+--error 1232
+set session sql_select_result_limit_exceed_handling=2.0;
+--error 1231
+set session sql_select_result_limit_exceed_handling=hello;
+--error 1231
+set session sql_select_result_limit_exceed_handling=-2;
+--error 1064
+set session sql_select_result_limit_exceed_handling=@!!#$%*;
+
+set session sql_select_result_limit_exceed_handling=none;
+set session sql_select_result_limit_exceed_handling=error;
+set session sql_select_result_limit_exceed_handling=warning;
+
+#参数默认作用域测试
+connect(conn1,localhost,root,,select_result_limit_sequoiadb);
+set sql_select_result_limit_exceed_handling=warning;
+connect(conn2,localhost,root,,select_result_limit_sequoiadb);
+select @@sql_select_result_limit_exceed_handling;
+disconnect conn2;
+
+connection conn1;
+set session sql_select_result_limit_exceed_handling=warning;
+connect(conn2,localhost,root,,select_result_limit_sequoiadb);
+select @@sql_select_result_limit_exceed_handling;
+disconnect conn2;
+
+connection conn1;
+set global sql_select_result_limit_exceed_handling=warning;
+connect(conn2,localhost,root,,select_result_limit_sequoiadb);
+select @@sql_select_result_limit_exceed_handling;
+disconnect conn2;
+
+--echo
+--echo #seqDB 30088
+connection conn1;
+--error 1232
+set session sql_select_result_limit=null;
+--error 1232
+set session sql_select_result_limit=hello;
+--error 1232
+set session sql_select_result_limit=2.0;
+--error 1064 
+set session sql_select_result_limit=%$^&&*;
+--error 1232 
+set session sql_select_result_limit=18446744073709551618;
+
+set session sql_select_result_limit=0;
+set session sql_select_result_limit=18446744073709551615;
+
+connection conn1;
+set sql_select_result_limit=100;
+connect(conn2,localhost,root,,select_result_limit_sequoiadb);
+select @@sql_select_result_limit;
+disconnect conn2;
+
+connection conn1;
+set session sql_select_result_limit=100;
+connect(conn2,localhost,root,,select_result_limit_sequoiadb);
+select @@sql_select_result_limit;
+disconnect conn2;
+
+connection conn1;
+set global sql_select_result_limit=100;
+connect(conn2,localhost,root,,select_result_limit_sequoiadb);
+select @@sql_select_result_limit;
+disconnect conn2;
+
+--echo
+--echo #seqDB 30090
+connection conn1;
+set session sql_select_result_limit=10;
+set session sql_select_result_limit_exceed_handling=1;
+create table t1 as select * from tb_normal limit 15;
+select count(*) from t1;
+insert into t1 select * from tb_normal limit 15;
+select count(*) from t1;
+set session sql_select_result_limit_exceed_handling=2;
+create table t2 as select * from tb_normal limit 10,15;
+select count(*) from t2;
+insert into t2 select * from tb_normal limit 15;
+select count(*) from t2;
+
+set global sql_select_result_limit=default;
+set global sql_select_result_limit_exceed_handling=default;
+drop database select_result_limit_sequoiadb;
+
+--source include/uninstall_sequoiadb.inc

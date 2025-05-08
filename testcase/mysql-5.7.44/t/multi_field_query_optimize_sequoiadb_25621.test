@@ -1,0 +1,37 @@
+#seqDB-25621 多表多字段关联查询,同时带有等值in查询 
+--source include/have_sequoiadb.inc
+--disable_warnings
+drop database if exists multi_field_query_optimize_25621;
+--enable_warnings
+create database multi_field_query_optimize_25621;
+drop database multi_field_query_optimize_25621;
+create database multi_field_query_optimize_25621;
+
+use multi_field_query_optimize_25621;
+set session optimizer_switch='mrr=on,mrr_cost_based=on,block_nested_loop=on,batched_key_access=on';
+set session sequoiadb_debug_log=on;
+create table t1(a int,b int);
+create table t2(a int,b int,key union_ab4(a,b));
+insert into t1 values(1,1),(2,2),(3,3),(1,2),(2,3);
+insert into t2 values(1,1),(2,2),(3,3),(1,2),(2,3);
+#满足(a=1 and b=2) or (a=2 and b=3)
+explain select * from t1,t2 where t1.a = t2.a and t1.b = t2.b and (t1.a,t1.b) in ((1,2),(2,3));
+--sorted_result
+let $query = select * from t1,t2 where t1.a = t2.a and t1.b = t2.b and (t1.a,t1.b) in ((1,2),(2,3));
+--source include/query_with_sorted_and_get_mysqld_note_log_sequoiadb.inc
+#满足(a=1 or a=2) and (b=2 or b=3)
+explain select * from t1,t2 where t1.a = t2.a and t1.b = t2.b and t1.a in(1,2) and t1.b in(2,3);
+--sorted_result
+let $query = select * from t1,t2 where t1.a = t2.a and t1.b = t2.b and t1.a in(1,2) and t1.b in(2,3);
+--source include/query_with_sorted_and_get_mysqld_note_log_sequoiadb.inc
+#满足(a=1 or a=2) or (b=2 or b=3)
+explain select * from t1,t2 where t1.a = t2.a and t1.b = t2.b and (t1.a in(1,2) or t1.b in(2,3));
+--sorted_result
+let $query = select * from t1,t2 where t1.a = t2.a and t1.b = t2.b and (t1.a in(1,2) or t1.b in(2,3));
+--source include/query_with_sorted_and_get_mysqld_note_log_sequoiadb.inc
+drop table t1,t2;
+
+set session optimizer_switch=default;
+set session sequoiadb_debug_log=off;
+drop database multi_field_query_optimize_25621;
+--source include/uninstall_sequoiadb.inc

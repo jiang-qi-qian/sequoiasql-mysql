@@ -1,0 +1,124 @@
+#seqDB-27690 两表关联查询
+--source include/have_sequoiadb.inc
+--disable_warnings
+drop database if exists explain_direct_sort_27690;
+--enable_warnings
+create database explain_direct_sort_27690;
+drop database explain_direct_sort_27690;
+create database explain_direct_sort_27690;
+
+use explain_direct_sort_27690;
+set session optimizer_switch='mrr=on,mrr_cost_based=off';
+set session sequoiadb_debug_log=on;
+
+--disable_warnings
+drop table if exists t1,t2;
+--enable_warnings
+create table t1(
+col1 int,
+col2 varchar(10),
+col3 varchar(10),
+col4 varchar(10),
+key idx_col1(col1),
+key idx_col2(col2),
+key idx_col12(col1,col2),
+unique key uniq_idx4(col4)
+);
+insert into t1 values(2,'defg','abd','abd');
+insert into t1 values(4,'abc','abcdef','xyz');
+insert into t1 values(null,null,null,null);
+insert into t1 values(3,'abd','def','defg');
+insert into t1 values(0,'abde','xyz','def');
+insert into t1 values(5,'xyz','abc','efg');
+insert into t1 values(6,'abcdef','abde','abc');
+insert into t1 values(1,'def','defg','abcdef');
+
+select * from t1 order by col1;
+select * from t1 order by col2;
+select * from t1 order by col3;
+select * from t1 order by col4;
+
+create table t2 like t1;
+insert into t2 select * from t1;
+
+#关联算法为BKA
+#关联和排序为单个字段，分升序和降序
+explain select * from t1 left join t2 on t1.col1 = t2.col1 order by t1.col1;
+select * from t1 left join t2 on t1.col1 = t2.col1 order by t1.col1;
+--source include/query_pushdown_condition_sequoiadb_3.inc
+explain select * from t1 left join t2 on t1.col1 = t2.col1 order by t1.col1 desc;
+select * from t1 left join t2 on t1.col1 = t2.col1 order by t1.col1 desc;
+--source include/query_pushdown_condition_sequoiadb_3.inc
+explain select * from t1 left join t2 on t1.col1 = t2.col1 where t1.col1 between 1 and 3;
+select * from t1 left join t2 on t1.col1 = t2.col1 where t1.col1 between 1 and 3;
+--source include/query_pushdown_condition_sequoiadb_3.inc
+explain select * from t1 left join t2 on t1.col1 = t2.col1 where t1.col1 between 1 and 3 order by t1.col1;
+select * from t1 left join t2 on t1.col1 = t2.col1 where t1.col1 between 1 and 3 order by t1.col1;
+--source include/query_pushdown_condition_sequoiadb_3.inc
+
+#关联和排序为多个字段，分升序和降序
+explain select * from t1 left join t2 on t1.col1 = t2.col1 and t1.col2 = t2.col2 order by t1.col1,t2.col2;
+select * from t1 left join t2 on t1.col1 = t2.col1 and t1.col2 = t2.col2 order by t1.col1,t2.col2;
+--source include/query_pushdown_condition_sequoiadb_3.inc
+explain select * from t1 left join t2 on t1.col1 = t2.col1 and t1.col2 = t2.col2 order by t1.col1 desc ,t2.col2 desc;
+select * from t1 left join t2 on t1.col1 = t2.col1 and t1.col2 = t2.col2 order by t1.col1 desc ,t2.col2 desc;
+--source include/query_pushdown_condition_sequoiadb_3.inc
+
+#order by非索引字段
+explain select * from t1 left join t2 on t1.col1 = t2.col1 order by t1.col3;
+select * from t1 left join t2 on t1.col1 = t2.col1 order by t1.col3;
+--source include/query_pushdown_condition_sequoiadb_3.inc
+
+#关联算法为BNL
+#关联和排序为单个字段，分升序和降序
+explain select * from t1 left join t2 ignore index(idx_col1, idx_col12) on t1.col1 = t2.col1 order by t1.col1;
+select * from t1 left join t2 ignore index(idx_col1) on t1.col1 = t2.col1 order by t1.col1;
+--source include/query_pushdown_condition_sequoiadb_3.inc
+explain select * from t1 left join t2 ignore index(idx_col1, idx_col12) on t1.col1 = t2.col1 order by t1.col1 desc;
+select * from t1 left join t2 ignore index(idx_col1) on t1.col1 = t2.col1 order by t1.col1 desc;
+--source include/query_pushdown_condition_sequoiadb_3.inc
+
+#关联和排序为多个字段，分升序和降序
+explain select * from t1 left join t2 ignore index(idx_col1, idx_col2) on t1.col1 = t2.col1 and t1.col2 = t2.col2 order by t1.col1,t2.col2;
+select * from t1 left join t2 ignore index(idx_col1, idx_col2) on t1.col1 = t2.col1 and t1.col2 = t2.col2 order by t1.col1,t2.col2;
+--source include/query_pushdown_condition_sequoiadb_3.inc
+explain select * from t1 left join t2 ignore index(idx_col1, idx_col2) on t1.col1 = t2.col1 and t1.col2 = t2.col2 order by t1.col1 desc ,t2.col2 desc;
+select * from t1 left join t2 ignore index(idx_col1, idx_col2) on t1.col1 = t2.col1 and t1.col2 = t2.col2 order by t1.col1 desc ,t2.col2 desc;
+--source include/query_pushdown_condition_sequoiadb_3.inc
+
+#关联算法为BKA，并带有limit子句
+explain select * from t1 left join t2 on t1.col1 = t2.col1 order by t1.col1 limit 2;
+select * from t1 left join t2 on t1.col1 = t2.col1 order by t1.col1 limit 2;
+--source include/query_pushdown_condition_sequoiadb_3.inc
+explain select * from t1 left join t2 on t1.col1 = t2.col1 order by t1.col1 desc limit 1,2;
+select * from t1 left join t2 on t1.col1 = t2.col1 order by t1.col1 desc limit 1,2;
+--source include/query_pushdown_condition_sequoiadb_3.inc
+set session optimizer_limit_pushdown_threshold=1;
+explain select * from t1 left join t2 on t1.col1 = t2.col1 and t1.col2 = t2.col2 order by t1.col1,t2.col2 limit 2;
+select * from t1 left join t2 on t1.col1 = t2.col1 and t1.col2 = t2.col2 order by t1.col1,t2.col2 limit 2;
+--source include/query_pushdown_condition_sequoiadb_3.inc
+explain select * from t1 left join t2 on t1.col1 = t2.col1 and t1.col2 = t2.col2 where t1.col1 < 3 order by t1.col1 desc ,t2.col2 desc limit 1,2;
+select * from t1 left join t2 on t1.col1 = t2.col1 and t1.col2 = t2.col2 where t1.col1 < 3 order by t1.col1 desc ,t2.col2 desc limit 1,2;
+--source include/query_pushdown_condition_sequoiadb_3.inc
+
+#关联算法为NL
+explain select * from t1 join t2 on t1.col1 = t2.col1;
+--sorted_result
+select * from t1 join t2 on t1.col1 = t2.col1;
+--source include/query_pushdown_condition_sequoiadb.inc
+explain select * from t1 join t2 on t1.col1 = t2.col1 order by t1.col1;
+select * from t1 join t2 on t1.col1 = t2.col1 order by t1.col1;
+--source include/query_pushdown_condition_sequoiadb.inc
+explain select * from t1 join t2 on t1.col1 = t2.col1 order by t1.col1 desc;
+select * from t1 join t2 on t1.col1 = t2.col1 order by t1.col1 desc;
+--source include/query_pushdown_condition_sequoiadb.inc
+explain select * from t1 join t2 on t1.col1 = t2.col1 order by t1.col2;
+select * from t1 join t2 on t1.col1 = t2.col1 order by t1.col2;
+--source include/query_pushdown_condition_sequoiadb.inc
+drop table t1,t2;
+
+set session optimizer_switch=default;
+set session sequoiadb_debug_log=off;
+set session optimizer_limit_pushdown_threshold=default;
+drop database explain_direct_sort_27690;
+--source include/uninstall_sequoiadb.inc

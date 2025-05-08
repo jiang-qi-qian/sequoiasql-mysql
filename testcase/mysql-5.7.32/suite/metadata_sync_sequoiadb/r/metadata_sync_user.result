@@ -1,0 +1,77 @@
+DROP USER IF EXISTS "metasync_user1"@"localhost";
+DROP USER IF EXISTS "metasync_user2"@"localhost";
+DROP USER IF EXISTS "metasync_user3"@"localhost";
+DROP USER IF EXISTS "metasync_user1_new"@"localhost";
+DROP USER IF EXISTS "metasync_user2_new"@"localhost";
+FLUSH PRIVILEGES;
+SHOW GRANTS FOR 'metasync_user1'@'localhost';
+ERROR 42000: There is no such grant defined for user 'metasync_user1' on host 'localhost'
+SHOW GRANTS FOR 'metasync_user2'@'localhost';
+ERROR 42000: There is no such grant defined for user 'metasync_user2' on host 'localhost'
+SHOW GRANTS FOR 'metasync_user3'@'localhost';
+ERROR 42000: There is no such grant defined for user 'metasync_user3' on host 'localhost'
+SHOW GRANTS FOR 'metasync_user1_new'@'localhost';
+ERROR 42000: There is no such grant defined for user 'metasync_user1_new' on host 'localhost'
+SHOW GRANTS FOR 'metasync_user2_new'@'localhost';
+ERROR 42000: There is no such grant defined for user 'metasync_user2_new' on host 'localhost'
+CREATE USER 'metasync_user1'@'localhost', 'metasync_user2'@'localhost' 
+IDENTIFIED WITH sha256_password BY '123' REQUIRE X509 WITH MAX_USER_CONNECTIONS 60 PASSWORD EXPIRE INTERVAL 180 DAY;
+CREATE USER IF NOT EXISTS 'metasync_user3'@'localhost' IDENTIFIED BY '123' ACCOUNT LOCK;
+GRANT INSERT, DELETE, UPDATE ON *.*  TO 'metasync_user1'@'localhost' IDENTIFIED BY '123';
+Warnings:
+Warning	1287	Using GRANT statement to modify existing user's properties other than privileges is deprecated and will be removed in future release. Use ALTER USER statement for this operation.
+FLUSH PRIVILEGES;
+SHOW GRANTS FOR 'metasync_user1'@'localhost';
+Grants for metasync_user1@localhost
+GRANT INSERT, UPDATE, DELETE ON *.* TO 'metasync_user1'@'localhost'
+SHOW GRANTS FOR 'metasync_user2'@'localhost';
+Grants for metasync_user2@localhost
+GRANT USAGE ON *.* TO 'metasync_user2'@'localhost'
+SHOW GRANTS FOR 'metasync_user3'@'localhost';
+Grants for metasync_user3@localhost
+GRANT USAGE ON *.* TO 'metasync_user3'@'localhost'
+SELECT user, host, password_expired, max_user_connections, ssl_type, plugin FROM mysql.user WHERE user = 'metasync_user1';
+user	host	password_expired	max_user_connections	ssl_type	plugin
+metasync_user1	localhost	N	60	X509	mysql_native_password
+SELECT user, host, password_expired, max_user_connections, ssl_type, plugin FROM mysql.user WHERE user = 'metasync_user2';
+user	host	password_expired	max_user_connections	ssl_type	plugin
+metasync_user2	localhost	N	60	X509	sha256_password
+SELECT user, host, password_expired, max_user_connections, ssl_type, plugin FROM mysql.user WHERE user = 'metasync_user3';
+user	host	password_expired	max_user_connections	ssl_type	plugin
+metasync_user3	localhost	N	0		mysql_native_password
+RENAME USER 'metasync_user1'@'localhost' TO 'metasync_user1_new'@'localhost', 'metasync_user2'@'localhost' TO 'metasync_user2_new'@'localhost';
+ALTER USER IF EXISTS 'metasync_user1_new'@'localhost' PASSWORD EXPIRE;
+REVOKE DELETE ON *.* FROM 'metasync_user1_new'@'localhost';
+FLUSH PRIVILEGES;
+SHOW GRANTS FOR 'metasync_user1_new'@'localhost';
+Grants for metasync_user1_new@localhost
+GRANT INSERT, UPDATE ON *.* TO 'metasync_user1_new'@'localhost'
+SHOW GRANTS FOR 'metasync_user3'@'localhost';
+Grants for metasync_user3@localhost
+GRANT USAGE ON *.* TO 'metasync_user3'@'localhost'
+SELECT user, host, password_expired, max_user_connections, ssl_type, plugin FROM mysql.user WHERE user = 'metasync_user1';
+user	host	password_expired	max_user_connections	ssl_type	plugin
+SELECT user, host, password_expired, max_user_connections, ssl_type, plugin FROM mysql.user WHERE user = 'metasync_user2';
+user	host	password_expired	max_user_connections	ssl_type	plugin
+SELECT user, host, password_expired, max_user_connections, ssl_type, plugin FROM mysql.user WHERE user = 'metasync_user1_new';
+user	host	password_expired	max_user_connections	ssl_type	plugin
+metasync_user1_new	localhost	Y	60	X509	mysql_native_password
+SELECT user, host, password_expired, max_user_connections, ssl_type, plugin FROM mysql.user WHERE user = 'metasync_user2_new';
+user	host	password_expired	max_user_connections	ssl_type	plugin
+metasync_user2_new	localhost	N	60	X509	sha256_password
+DROP USER IF EXISTS 'metasync_user1_new'@'localhost';
+DROP USER 'metasync_user2_new'@'localhost';
+DROP USER 'metasync_user3'@'localhost';
+FLUSH PRIVILEGES;
+SHOW GRANTS FOR 'metasync_user1_new'@'localhost';
+ERROR 42000: There is no such grant defined for user 'metasync_user1_new' on host 'localhost'
+SHOW GRANTS FOR 'metasync_user2_new'@'localhost';
+ERROR 42000: There is no such grant defined for user 'metasync_user2_new' on host 'localhost'
+SHOW GRANTS FOR 'metasync_user3'@'localhost';
+ERROR 42000: There is no such grant defined for user 'metasync_user3' on host 'localhost'
+SELECT user, host, password_expired FROM mysql.user WHERE user = 'metasync_user1_new';
+user	host	password_expired
+SELECT user, host, password_expired FROM mysql.user WHERE user = 'metasync_user2_new';
+user	host	password_expired
+SELECT user, host, password_expired FROM mysql.user WHERE user = 'metasync_user3';
+user	host	password_expired

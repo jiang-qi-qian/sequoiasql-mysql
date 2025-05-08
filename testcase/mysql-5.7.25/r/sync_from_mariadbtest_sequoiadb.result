@@ -1,0 +1,55 @@
+CREATE TABLE t1 (t TIMESTAMP NOT NULL);
+INSERT INTO t1 VALUES ('2001-01-01 00:00:00');
+SELECT * FROM t1 WHERE t < '2013-11-15 00:41:28' - INTERVAL 7 DAY;
+t
+2001-01-01 00:00:00
+SELECT * FROM t1 WHERE t = '2001-01-08 00:00:00' - INTERVAL 7 DAY;
+t
+2001-01-01 00:00:00
+SELECT * FROM t1 WHERE t < CONCAT('2013-11-15 00:41:28',LEFT(RAND(),0)) - INTERVAL 7 DAY;
+t
+2001-01-01 00:00:00
+SELECT * FROM t1 WHERE t = CONCAT('2001-01-08 00:00:00',LEFT(RAND(),0)) - INTERVAL 7 DAY;
+t
+2001-01-01 00:00:00
+SELECT * FROM t1 WHERE t < TIMESTAMP'2013-11-15 00:41:28' - INTERVAL 7 DAY;
+t
+2001-01-01 00:00:00
+SELECT * FROM t1 WHERE t = TIMESTAMP'2001-01-08 00:00:00' - INTERVAL 7 DAY;
+t
+2001-01-01 00:00:00
+DROP TABLE t1;
+CREATE TABLE t1 (tm TIME);
+INSERT INTO t1 VALUES ('0000-00-00 10:20:30'),('0000-00-00 10:20:31');
+INSERT INTO t1 VALUES ('0000-00-01 10:20:30'),('0000-00-01 10:20:31');
+Warnings:
+Note	1292	Incorrect time value: '0000-00-01 10:20:30' for column 'tm' at row 1
+Note	1292	Incorrect time value: '0000-00-01 10:20:31' for column 'tm' at row 2
+INSERT INTO t1 VALUES ('31 10:20:30'),('32 10:20:30'),('33 10:20:30'),('34 10:20:30');
+SET sql_mode = '';
+Warnings:
+Warning	3090	Changing sql mode 'NO_AUTO_CREATE_USER' is deprecated. It will be removed in a future release.
+SELECT * FROM t1 WHERE tm = TIMESTAMP'0000-00-01 10:20:30';
+tm
+34:20:30
+DROP TABLE t1;
+SET sql_mode = default;
+create table t1 (
+pk    integer not null auto_increment primary key,
+key1  integer,
+key2  integer not null,
+filler char  (200),
+index (key1),
+index (key2)
+);
+show warnings;
+Level	Code	Message
+select pk from t1 where key2 = 1 and key1 = 1;
+pk
+26
+27
+select pk from t1 ignore index(key1,key2) where key2 = 1 and key1 = 1;
+pk
+26
+27
+drop table t1;

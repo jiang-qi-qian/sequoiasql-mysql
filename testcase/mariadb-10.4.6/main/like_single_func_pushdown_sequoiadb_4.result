@@ -1,0 +1,338 @@
+drop database if exists like_single_func_pushdown_sequoiadb_4;
+create database like_single_func_pushdown_sequoiadb_4;
+drop database like_single_func_pushdown_sequoiadb_4;
+create database like_single_func_pushdown_sequoiadb_4;
+use like_single_func_pushdown_sequoiadb_4;
+set session sequoiadb_debug_log=on;
+set session sequoiadb_support_mode='';
+drop table if exists t1, t2, t3, t4, t5;
+create table t1(
+a varchar(514) charset utf8mb4 collate utf8mb4_bin
+);
+create table t2(
+a varchar(20) charset utf8mb4 collate utf8mb4_bin
+);
+create table t3(
+a set('a1','b2','c3') charset utf8mb4 collate utf8mb4_bin
+);
+create table t4(
+a int
+);
+create table t5(
+a varchar(20) charset utf8mb4 collate utf8mb4_unicode_ci
+);
+select json_array(1,'abc');
+json_array(1,'abc')
+[1, "abc"]
+insert into t1 values(json_array(1,'abc'));
+select * from t1 where a like json_array(1,'abc') order by a;
+a
+[1, "abc"]
+[Note] SequoiaDB: Query message: condition[{ "a": { "$regex": "^\\[1, \"abc\"\\]$", "$options": "s" } }], selector[{}], order_by[{ "a": 1 }], hint[{}], limit[-1], offset[0], table[like_single_func_pushdown_sequoiadb_4.t1]
+select * from t2 where a like json_array((a),'abc');
+a
+[Note] SequoiaDB: Query message: condition[{}], selector[{}], order_by[{}], hint[{}], limit[-1], offset[0], table[like_single_func_pushdown_sequoiadb_4.t2]
+select * from t3 where a like json_array(1,'abc');
+a
+[Note] SequoiaDB: Query message: condition[{}], selector[{}], order_by[{}], hint[{}], limit[-1], offset[0], table[like_single_func_pushdown_sequoiadb_4.t3]
+select * from t4 where a like json_array(1,'abc');
+a
+[Note] SequoiaDB: Query message: condition[{}], selector[{}], order_by[{}], hint[{}], limit[-1], offset[0], table[like_single_func_pushdown_sequoiadb_4.t4]
+select * from t5 where a like json_array(1,'abc');
+a
+[Note] SequoiaDB: Query message: condition[{}], selector[{}], order_by[{}], hint[{}], limit[-1], offset[0], table[like_single_func_pushdown_sequoiadb_4.t5]
+select json_array_append('["a","b"]','$[0]',1);
+json_array_append('["a","b"]','$[0]',1)
+[["a", 1], "b"]
+insert into t1 values(json_array_append('["a","b"]','$[0]',1));
+select * from t1 where a like json_array_append('["a","b"]','$[0]',1) order by a;
+a
+[["a", 1], "b"]
+[Note] SequoiaDB: Query message: condition[{ "a": { "$regex": "^\\[\\[\"a\", 1\\], \"b\"\\]$", "$options": "s" } }], selector[{}], order_by[{ "a": 1 }], hint[{}], limit[-1], offset[0], table[like_single_func_pushdown_sequoiadb_4.t1]
+select json_array_insert('["a","b"]','$[0]',1);
+json_array_insert('["a","b"]','$[0]',1)
+[1, "a", "b"]
+insert into t1 values(json_array_insert('["a","b"]','$[0]',1));
+select * from t1 where a like json_array_insert('["a","b"]','$[0]',1) order by a;
+a
+[1, "a", "b"]
+[Note] SequoiaDB: Query message: condition[{ "a": { "$regex": "^\\[1, \"a\", \"b\"\\]$", "$options": "s" } }], selector[{}], order_by[{ "a": 1 }], hint[{}], limit[-1], offset[0], table[like_single_func_pushdown_sequoiadb_4.t1]
+select json_compact('{"A":1,"B":[2,3]}');
+json_compact('{"A":1,"B":[2,3]}')
+{"A":1,"B":[2,3]}
+insert into t1 values(json_compact('{"A":1,"B":[2,3]}'));
+select * from t1 where a like json_compact('{"A":1,"B":[2,3]}') order by a;
+a
+{"A":1,"B":[2,3]}
+[Note] SequoiaDB: Query message: condition[{ "a": { "$regex": "^\\{\"A\":1,\"B\":\\[2,3\\]\\}$", "$options": "s" } }], selector[{}], order_by[{ "a": 1 }], hint[{}], limit[-1], offset[0], table[like_single_func_pushdown_sequoiadb_4.t1]
+select json_contains('{"a":1,"b":2}','1','$.a');
+json_contains('{"a":1,"b":2}','1','$.a')
+1
+insert into t1 values(json_contains('{"a":1,"b":2}','1','$.a'));
+select * from t1 where a like json_contains('{"a":1,"b":2}','1','$.a') order by a;
+a
+1
+[Note] SequoiaDB: Query message: condition[{ "a": { "$regex": "^1$", "$options": "s" } }], selector[{}], order_by[{ "a": 1 }], hint[{}], limit[-1], offset[0], table[like_single_func_pushdown_sequoiadb_4.t1]
+select * from t2 where a like json_contains((a),'1','$.a');
+a
+[Note] SequoiaDB: Query message: condition[{}], selector[{}], order_by[{}], hint[{}], limit[-1], offset[0], table[like_single_func_pushdown_sequoiadb_4.t2]
+select * from t2 where a like json_contains(null,'1','$.a');
+a
+[Note] SequoiaDB: Query message: condition[{}], selector[{}], order_by[{}], hint[{}], limit[-1], offset[0], table[like_single_func_pushdown_sequoiadb_4.t2]
+select * from t3 where a like json_contains('{"a":1,"b":2}','1','$.a');
+a
+[Note] SequoiaDB: Query message: condition[{}], selector[{}], order_by[{}], hint[{}], limit[-1], offset[0], table[like_single_func_pushdown_sequoiadb_4.t3]
+select * from t4 where a like json_contains('{"a":1,"b":2}','1','$.a');
+a
+[Note] SequoiaDB: Query message: condition[{}], selector[{}], order_by[{}], hint[{}], limit[-1], offset[0], table[like_single_func_pushdown_sequoiadb_4.t4]
+select * from t5 where a like json_contains('{"a":1,"b":2}','1','$.a');
+a
+[Note] SequoiaDB: Query message: condition[{}], selector[{}], order_by[{}], hint[{}], limit[-1], offset[0], table[like_single_func_pushdown_sequoiadb_4.t5]
+select json_contains_path('{"a":1,"b":2}','one','$.a','$.c');
+json_contains_path('{"a":1,"b":2}','one','$.a','$.c')
+1
+insert into t1 values(json_contains_path('{"a":1,"b":2}','one','$.a','$.c'));
+select * from t1 where a like json_contains_path('{"a":1,"b":2}','one','$.a','$.c') order by a;
+a
+1
+1
+[Note] SequoiaDB: Query message: condition[{ "a": { "$regex": "^1$", "$options": "s" } }], selector[{}], order_by[{ "a": 1 }], hint[{}], limit[-1], offset[0], table[like_single_func_pushdown_sequoiadb_4.t1]
+select json_depth('[1,[2,[3,4],5],6]');
+json_depth('[1,[2,[3,4],5],6]')
+4
+insert into t1 values(json_depth('[1,[2,[3,4],5],6]'));
+select * from t1 where a like json_depth('[1,[2,[3,4],5],6]') order by a;
+a
+4
+[Note] SequoiaDB: Query message: condition[{ "a": { "$regex": "^4$", "$options": "s" } }], selector[{}], order_by[{ "a": 1 }], hint[{}], limit[-1], offset[0], table[like_single_func_pushdown_sequoiadb_4.t1]
+select json_detailed('{"A":1,"B":[2,3]}');
+json_detailed('{"A":1,"B":[2,3]}')
+{
+    "A": 1,
+    "B": 
+    [
+        2,
+        3
+    ]
+}
+insert into t1 values(json_detailed('{"A":1,"B":[2,3]}'));
+select * from t1 where a like json_detailed('{"A":1,"B":[2,3]}') order by a;
+a
+{
+    "A": 1,
+    "B": 
+    [
+        2,
+        3
+    ]
+}
+[Note] SequoiaDB: Query message: condition[{ "a": { "$regex": "^\\{\n    \"A\": 1,\n    \"B\": \n    \\[\n        2,\n        3\n    \\]\n\\}$", "$options": "s" } }], selector[{}], order_by[{ "a": 1 }], hint[{}], limit[-1], offset[0], table[like_single_func_pushdown_sequoiadb_4.t1]
+select json_exists('{"key1":"xxxx","key2":[1,2,3]}','$.key2');
+json_exists('{"key1":"xxxx","key2":[1,2,3]}','$.key2')
+1
+insert into t1 values(json_exists('{"key1":"xxxx","key2":[1,2,3]}','$.key2'));
+select * from t1 where a like json_exists('{"key1":"xxxx","key2":[1,2,3]}','$.key2') order by a;
+a
+1
+1
+1
+[Note] SequoiaDB: Query message: condition[{ "a": { "$regex": "^1$", "$options": "s" } }], selector[{}], order_by[{ "a": 1 }], hint[{}], limit[-1], offset[0], table[like_single_func_pushdown_sequoiadb_4.t1]
+select json_extract('[10,20]','$[1]');
+json_extract('[10,20]','$[1]')
+20
+insert into t1 values(json_extract('[10,20]','$[1]'));
+select * from t1 where a like json_extract('[10,20]','$[1]') order by a;
+a
+20
+[Note] SequoiaDB: Query message: condition[{ "a": { "$regex": "^20$", "$options": "s" } }], selector[{}], order_by[{ "a": 1 }], hint[{}], limit[-1], offset[0], table[like_single_func_pushdown_sequoiadb_4.t1]
+select json_insert('{"a":1,"b":2}','$.c','3'),json_insert('{"a":1,"b":2}','$.c',4);
+json_insert('{"a":1,"b":2}','$.c','3')	json_insert('{"a":1,"b":2}','$.c',4)
+{"a": 1, "b": 2, "c": "3"}	{"a": 1, "b": 2, "c": 4}
+insert into t1 values(json_insert('{"a":1,"b":2}','$.c','3')),(json_insert('{"a":1,"b":2}','$.c',4));
+select * from t1 where a like json_insert('{"a":1,"b":2}','$.c','3') order by a;
+a
+{"a": 1, "b": 2, "c": "3"}
+[Note] SequoiaDB: Query message: condition[{ "a": { "$regex": "^\\{\"a\": 1, \"b\": 2, \"c\": \"3\"\\}$", "$options": "s" } }], selector[{}], order_by[{ "a": 1 }], hint[{}], limit[-1], offset[0], table[like_single_func_pushdown_sequoiadb_4.t1]
+select * from t1 where a like json_insert('{"a":1,"b":2}','$.c',4) order by a;
+a
+{"a": 1, "b": 2, "c": 4}
+[Note] SequoiaDB: Query message: condition[{ "a": { "$regex": "^\\{\"a\": 1, \"b\": 2, \"c\": 4\\}$", "$options": "s" } }], selector[{}], order_by[{ "a": 1 }], hint[{}], limit[-1], offset[0], table[like_single_func_pushdown_sequoiadb_4.t1]
+select * from t2 where a like json_insert((a),'$.c','3');
+a
+[Note] SequoiaDB: Query message: condition[{}], selector[{}], order_by[{}], hint[{}], limit[-1], offset[0], table[like_single_func_pushdown_sequoiadb_4.t2]
+select * from t3 where a like json_insert('{"a":1,"b":2}','$.c','3');
+a
+[Note] SequoiaDB: Query message: condition[{}], selector[{}], order_by[{}], hint[{}], limit[-1], offset[0], table[like_single_func_pushdown_sequoiadb_4.t3]
+select * from t4 where a like json_insert('{"a":1,"b":2}','$.c','3');
+a
+[Note] SequoiaDB: Query message: condition[{}], selector[{}], order_by[{}], hint[{}], limit[-1], offset[0], table[like_single_func_pushdown_sequoiadb_4.t4]
+select * from t5 where a like json_insert('{"a":1,"b":2}','$.c','3');
+a
+[Note] SequoiaDB: Query message: condition[{}], selector[{}], order_by[{}], hint[{}], limit[-1], offset[0], table[like_single_func_pushdown_sequoiadb_4.t5]
+select json_keys('{"a":1,"b":2}');
+json_keys('{"a":1,"b":2}')
+["a", "b"]
+insert into t1 values(json_keys('{"a":1,"b":2}'));
+select * from t1 where a like json_keys('{"a":1,"b":2}') order by a;
+a
+["a", "b"]
+[Note] SequoiaDB: Query message: condition[{ "a": { "$regex": "^\\[\"a\", \"b\"\\]$", "$options": "s" } }], selector[{}], order_by[{ "a": 1 }], hint[{}], limit[-1], offset[0], table[like_single_func_pushdown_sequoiadb_4.t1]
+select json_length('{"a":1,"b":2}');
+json_length('{"a":1,"b":2}')
+2
+insert into t1 values(json_length('{"a":1,"b":2}'));
+select * from t1 where a like json_length('{"a":1,"b":2}') order by a;
+a
+2
+[Note] SequoiaDB: Query message: condition[{ "a": { "$regex": "^2$", "$options": "s" } }], selector[{}], order_by[{ "a": 1 }], hint[{}], limit[-1], offset[0], table[like_single_func_pushdown_sequoiadb_4.t1]
+select json_loose('{"A":1,"B":[2,3]}');
+json_loose('{"A":1,"B":[2,3]}')
+{"A": 1, "B": [2, 3]}
+insert into t1 values(json_loose('{"A":1,"B":[2,3]}'));
+select * from t1 where a like json_loose('{"A":1,"B":[2,3]}') order by a;
+a
+{"A": 1, "B": [2, 3]}
+[Note] SequoiaDB: Query message: condition[{ "a": { "$regex": "^\\{\"A\": 1, \"B\": \\[2, 3\\]\\}$", "$options": "s" } }], selector[{}], order_by[{ "a": 1 }], hint[{}], limit[-1], offset[0], table[like_single_func_pushdown_sequoiadb_4.t1]
+select json_merge('{"a":1,"b":2}','{"c":3,"d":4}');
+json_merge('{"a":1,"b":2}','{"c":3,"d":4}')
+{"a": 1, "b": 2, "c": 3, "d": 4}
+insert into t1 values(json_merge('{"a":1,"b":2}','{"c":3,"d":4}'));
+select * from t1 where a like json_merge('{"a":1,"b":2}','{"c":3,"d":4}') order by a;
+a
+{"a": 1, "b": 2, "c": 3, "d": 4}
+[Note] SequoiaDB: Query message: condition[{ "a": { "$regex": "^\\{\"a\": 1, \"b\": 2, \"c\": 3, \"d\": 4\\}$", "$options": "s" } }], selector[{}], order_by[{ "a": 1 }], hint[{}], limit[-1], offset[0], table[like_single_func_pushdown_sequoiadb_4.t1]
+select json_merge_patch('1','true');
+json_merge_patch('1','true')
+true
+insert into t1 values(json_merge_patch('1','true'));
+select * from t1 where a like json_merge_patch('1','true') order by a;
+a
+true
+[Note] SequoiaDB: Query message: condition[{ "a": { "$regex": "^true$", "$options": "s" } }], selector[{}], order_by[{ "a": 1 }], hint[{}], limit[-1], offset[0], table[like_single_func_pushdown_sequoiadb_4.t1]
+select json_merge_preserve('[1]','[true]');
+json_merge_preserve('[1]','[true]')
+[1, true]
+insert into t1 values(json_merge_preserve('[1]','[true]'));
+select * from t1 where a like json_merge_preserve('[1]','[true]') order by a;
+a
+[1, true]
+[Note] SequoiaDB: Query message: condition[{ "a": { "$regex": "^\\[1, true\\]$", "$options": "s" } }], selector[{}], order_by[{ "a": 1 }], hint[{}], limit[-1], offset[0], table[like_single_func_pushdown_sequoiadb_4.t1]
+select json_object('id','1');
+json_object('id','1')
+{"id": "1"}
+insert into t1 values(json_object('id','1'));
+select * from t1 where a like json_object('id','1') order by a;
+a
+{"id": "1"}
+[Note] SequoiaDB: Query message: condition[{ "a": { "$regex": "^\\{\"id\": \"1\"\\}$", "$options": "s" } }], selector[{}], order_by[{ "a": 1 }], hint[{}], limit[-1], offset[0], table[like_single_func_pushdown_sequoiadb_4.t1]
+select json_query('{"x":[0,1],"y":"[0,1]","z":"Monty"}','$');
+json_query('{"x":[0,1],"y":"[0,1]","z":"Monty"}','$')
+{"x":[0,1],"y":"[0,1]","z":"Monty"}
+insert into t1 values(json_query('{"x":[0,1],"y":"[0,1]","z":"Monty"}','$'));
+select * from t1 where a like json_query('{"x":[0,1],"y":"[0,1]","z":"Monty"}','$') order by a;
+a
+{"x":[0,1],"y":"[0,1]","z":"Monty"}
+[Note] SequoiaDB: Query message: condition[{ "a": { "$regex": "^\\{\"x\":\\[0,1\\],\"y\":\"\\[0,1\\]\",\"z\":\"Monty\"\\}$", "$options": "s" } }], selector[{}], order_by[{ "a": 1 }], hint[{}], limit[-1], offset[0], table[like_single_func_pushdown_sequoiadb_4.t1]
+select json_quote('[1,3,5]');
+json_quote('[1,3,5]')
+"[1,3,5]"
+insert into t1 values(json_quote('[1,3,5]'));
+select * from t1 where a like json_quote('[1,3,5]') order by a;
+a
+"[1,3,5]"
+[Note] SequoiaDB: Query message: condition[{ "a": { "$regex": "^\"\\[1,3,5\\]\"$", "$options": "s" } }], selector[{}], order_by[{ "a": 1 }], hint[{}], limit[-1], offset[0], table[like_single_func_pushdown_sequoiadb_4.t1]
+select json_remove('["a","b","c"]','$[1]');
+json_remove('["a","b","c"]','$[1]')
+["a", "c"]
+insert into t1 values(json_remove('["a","b","c"]','$[1]'));
+select * from t1 where a like json_remove('["a","b","c"]','$[1]') order by a;
+a
+["a", "c"]
+[Note] SequoiaDB: Query message: condition[{ "a": { "$regex": "^\\[\"a\", \"c\"\\]$", "$options": "s" } }], selector[{}], order_by[{ "a": 1 }], hint[{}], limit[-1], offset[0], table[like_single_func_pushdown_sequoiadb_4.t1]
+select json_replace('{"a":1,"b":2}','$.a',10);
+json_replace('{"a":1,"b":2}','$.a',10)
+{"a": 10, "b": 2}
+insert into t1 values(json_replace('{"a":1,"b":2}','$.a',10));
+select * from t1 where a like json_replace('{"a":1,"b":2}','$.a',10) order by a;
+a
+{"a": 10, "b": 2}
+[Note] SequoiaDB: Query message: condition[{ "a": { "$regex": "^\\{\"a\": 10, \"b\": 2\\}$", "$options": "s" } }], selector[{}], order_by[{ "a": 1 }], hint[{}], limit[-1], offset[0], table[like_single_func_pushdown_sequoiadb_4.t1]
+select json_search('["a","b"]','one','a');
+json_search('["a","b"]','one','a')
+"$[0]"
+insert into t1 values(json_search('["a","b"]','one','a'));
+select * from t1 where a like json_search('["a","b"]','one','a') order by a;
+a
+"$[0]"
+[Note] SequoiaDB: Query message: condition[{ "a": { "$regex": "^\"\\$\\[0\\]\"$", "$options": "s" } }], selector[{}], order_by[{ "a": 1 }], hint[{}], limit[-1], offset[0], table[like_single_func_pushdown_sequoiadb_4.t1]
+select json_set('{"a":1,"b":2}','$.a',10,'$.c',3);
+json_set('{"a":1,"b":2}','$.a',10,'$.c',3)
+{"a": 10, "b": 2, "c": 3}
+insert into t1 values(json_set('{"a":1,"b":2}','$.a',10,'$.c',3));
+select * from t1 where a like json_set('{"a":1,"b":2}','$.a',10,'$.c',3) order by a;
+a
+{"a": 10, "b": 2, "c": 3}
+[Note] SequoiaDB: Query message: condition[{ "a": { "$regex": "^\\{\"a\": 10, \"b\": 2, \"c\": 3\\}$", "$options": "s" } }], selector[{}], order_by[{ "a": 1 }], hint[{}], limit[-1], offset[0], table[like_single_func_pushdown_sequoiadb_4.t1]
+select json_type('["a","b"]');
+json_type('["a","b"]')
+ARRAY
+insert into t1 values(json_type('["a","b"]'));
+select * from t1 where a like json_type('["a","b"]') order by a;
+a
+ARRAY
+[Note] SequoiaDB: Query message: condition[{ "a": { "$regex": "^ARRAY$", "$options": "s" } }], selector[{}], order_by[{ "a": 1 }], hint[{}], limit[-1], offset[0], table[like_single_func_pushdown_sequoiadb_4.t1]
+select json_unquote('"abc"');
+json_unquote('"abc"')
+abc
+insert into t1 values(json_unquote('"abc"'));
+select * from t1 where a like json_unquote('"abc"') order by a;
+a
+abc
+[Note] SequoiaDB: Query message: condition[{ "a": { "$regex": "^abc$", "$options": "s" } }], selector[{}], order_by[{ "a": 1 }], hint[{}], limit[-1], offset[0], table[like_single_func_pushdown_sequoiadb_4.t1]
+select json_valid('["a","b"]');
+json_valid('["a","b"]')
+1
+insert into t1 values(json_valid('["a","b"]'));
+select * from t1 where a like json_valid('["a","b"]') order by a;
+a
+1
+1
+1
+1
+[Note] SequoiaDB: Query message: condition[{ "a": { "$regex": "^1$", "$options": "s" } }], selector[{}], order_by[{ "a": 1 }], hint[{}], limit[-1], offset[0], table[like_single_func_pushdown_sequoiadb_4.t1]
+select json_value('{"x":[0,1],"y":"[0,1]","z":"Monty"}','$.z');
+json_value('{"x":[0,1],"y":"[0,1]","z":"Monty"}','$.z')
+Monty
+insert into t1 values(json_value('{"x":[0,1],"y":"[0,1]","z":"Monty"}','$.z'));
+select * from t1 where a like json_value('{"x":[0,1],"y":"[0,1]","z":"Monty"}','$.z') order by a;
+a
+Monty
+[Note] SequoiaDB: Query message: condition[{ "a": { "$regex": "^Monty$", "$options": "s" } }], selector[{}], order_by[{ "a": 1 }], hint[{}], limit[-1], offset[0], table[like_single_func_pushdown_sequoiadb_4.t1]
+select * from t2 where a like column_add('',(a),'abc') order by a;
+a
+[Note] SequoiaDB: Query message: condition[{}], selector[{}], order_by[{}], hint[{}], limit[-1], offset[0], table[like_single_func_pushdown_sequoiadb_4.t2]
+select * from t2 where a like column_check((a)) order by a;
+a
+[Note] SequoiaDB: Query message: condition[{}], selector[{}], order_by[{}], hint[{}], limit[-1], offset[0], table[like_single_func_pushdown_sequoiadb_4.t2]
+select * from t2 where a like column_create((a),'b') order by a;
+a
+[Note] SequoiaDB: Query message: condition[{}], selector[{}], order_by[{}], hint[{}], limit[-1], offset[0], table[like_single_func_pushdown_sequoiadb_4.t2]
+select * from t2 where a like column_delete('',(a),'b') order by a;
+a
+[Note] SequoiaDB: Query message: condition[{}], selector[{}], order_by[{}], hint[{}], limit[-1], offset[0], table[like_single_func_pushdown_sequoiadb_4.t2]
+select * from t2 where a like column_exists('',(a)) order by a;
+a
+[Note] SequoiaDB: Query message: condition[{}], selector[{}], order_by[{}], hint[{}], limit[-1], offset[0], table[like_single_func_pushdown_sequoiadb_4.t2]
+select * from t2 where a like column_get('',a as char) order by a;
+a
+[Note] SequoiaDB: Query message: condition[{}], selector[{}], order_by[{}], hint[{}], limit[-1], offset[0], table[like_single_func_pushdown_sequoiadb_4.t2]
+select * from t1 where a like column_json('') order by a;
+a
+[Note] SequoiaDB: Query message: condition[{ "a": "" }], selector[{}], order_by[{ "a": 1 }], hint[{}], limit[-1], offset[0], table[like_single_func_pushdown_sequoiadb_4.t1]
+select * from t1 where a like column_list('') order by a;
+a
+[Note] SequoiaDB: Query message: condition[{ "a": "" }], selector[{}], order_by[{ "a": 1 }], hint[{}], limit[-1], offset[0], table[like_single_func_pushdown_sequoiadb_4.t1]
+set session sequoiadb_debug_log=default;
+set session sequoiadb_support_mode=default;
+drop table t1, t2, t3, t4, t5;
+drop database like_single_func_pushdown_sequoiadb_4;

@@ -1,0 +1,161 @@
+# Testcase: seqDB-22802:字段类型为无符号整型，范围查询的索引选择
+
+--source include/big_test.inc
+--source include/have_sequoiadb.inc
+
+set session sequoiadb_stats_cache_level=1;
+
+CREATE DATABASE index_select_sequoiadb_22802;
+use index_select_sequoiadb_22802;
+
+#tinyint
+CREATE TABLE t1 (
+  a TINYINT UNSIGNED,
+  b TINYINT UNSIGNED
+);
+INSERT INTO t1 VALUES (1,1),(2,2),(3,3),(4,4),(5,5),(6,6),(7,7),(8,8),(9,9),(10,10),(11,11),(12,12),(13,13),(14,14),(15,15),(16,16),(17,17),(18,18),(19,19),(20,20);
+alter table t1 add PRIMARY KEY(a);
+alter table t1 add index b(b);
+alter table t1 add index ab(a,b);
+alter table t1 add index ba(b,a);
+SHOW CREATE TABLE t1;
+--replace_column 10 #
+EXPLAIN SELECT * FROM t1 WHERE a>19;
+SELECT * FROM t1 WHERE a>19;
+--source include/query_pushdown_condition_sequoiadb.inc
+--replace_column 10 #
+EXPLAIN SELECT * FROM t1 WHERE b<2;
+SELECT * FROM t1 WHERE b<2;
+--source include/query_pushdown_condition_sequoiadb.inc
+ANALYZE TABLE t1;
+--replace_column 10 #
+EXPLAIN SELECT * FROM t1 WHERE a>19;
+SELECT * FROM t1 WHERE a>19;
+--source include/query_pushdown_condition_sequoiadb.inc
+--replace_column 10 #
+EXPLAIN SELECT * FROM t1 WHERE b<2;
+SELECT * FROM t1 WHERE b<2;
+--source include/query_pushdown_condition_sequoiadb.inc
+DROP TABLE t1;
+
+#smallint
+CREATE TABLE t1 (
+  a SMALLINT UNSIGNED,
+  b SMALLINT UNSIGNED
+);
+LOAD DATA INFILE '../../std_data/index_select_sequoiadb_3.dat' INTO TABLE t1 FIELDS TERMINATED BY ';';
+alter table t1 add PRIMARY KEY(a);
+alter table t1 add index b(b);
+alter table t1 add index ab(a,b);
+alter table t1 add index ba(b,a);
+SHOW CREATE TABLE t1;
+--replace_column 10 #
+EXPLAIN SELECT * FROM t1 WHERE a>65533 AND b<3;
+--sorted_result
+SELECT * FROM t1 WHERE a>65533 AND b<3;
+--source include/query_pushdown_condition_sequoiadb.inc
+--replace_column 10 #
+EXPLAIN SELECT * FROM t1 WHERE a<>b;
+--sorted_result
+SELECT * FROM t1 WHERE a<>b;
+--source include/query_pushdown_condition_sequoiadb.inc
+ANALYZE TABLE t1;
+--replace_column 10 #
+EXPLAIN SELECT * FROM t1 WHERE a>65533 AND b<3;
+--sorted_result
+SELECT * FROM t1 WHERE a>65533 AND b<3;
+--source include/query_pushdown_condition_sequoiadb.inc
+--replace_column 10 #
+EXPLAIN SELECT * FROM t1 WHERE a<>b;
+--sorted_result
+SELECT * FROM t1 WHERE a<>b;
+--source include/query_pushdown_condition_sequoiadb.inc
+DROP TABLE t1;
+
+#mediumint
+CREATE TABLE t1 (
+  a MEDIUMINT UNSIGNED,
+  b MEDIUMINT UNSIGNED
+);
+LOAD DATA INFILE '../../std_data/index_select_sequoiadb_3.dat' INTO TABLE t1 FIELDS TERMINATED BY ';';
+alter table t1 add PRIMARY KEY(a);
+alter table t1 add index b(b);
+alter table t1 add index ab(a,b);
+alter table t1 add index ba(b,a);
+SHOW CREATE TABLE t1;
+--replace_column 10 #
+EXPLAIN SELECT * FROM t1 WHERE a>65533 AND b<3;
+--sorted_result
+SELECT * FROM t1 WHERE a>65533 AND b<3;
+--source include/query_pushdown_condition_sequoiadb.inc
+ANALYZE TABLE t1;
+--replace_column 10 #
+EXPLAIN SELECT * FROM t1 WHERE a>65533 AND b<3;
+--sorted_result
+SELECT * FROM t1 WHERE a>65533 AND b<3;
+--source include/query_pushdown_condition_sequoiadb.inc
+DROP TABLE t1;
+
+#int
+CREATE TABLE t1 (
+  a INT UNSIGNED,
+  b INT UNSIGNED
+);
+LOAD DATA INFILE '../../std_data/index_select_sequoiadb_3.dat' INTO TABLE t1 FIELDS TERMINATED BY ';';
+alter table t1 add PRIMARY KEY(a);
+alter table t1 add index b(b);
+alter table t1 add index ab(a,b);
+alter table t1 add index ba(b,a);
+SHOW CREATE TABLE t1;
+--replace_column 10 #
+EXPLAIN SELECT * FROM t1 WHERE a>=65534 AND b<=3;
+--sorted_result
+SELECT * FROM t1 WHERE a>=65534 AND b<=3;
+--source include/query_pushdown_condition_sequoiadb.inc
+ANALYZE TABLE t1;
+--replace_column 10 #
+EXPLAIN SELECT * FROM t1 WHERE a>=65534 AND b<=3;
+--sorted_result
+SELECT * FROM t1 WHERE a>=65534 AND b<=3;
+--source include/query_pushdown_condition_sequoiadb.inc
+DROP TABLE t1;
+
+#bigint
+CREATE TABLE t1 (
+  a BIGINT UNSIGNED,
+  b BIGINT UNSIGNED
+);
+LOAD DATA INFILE '../../std_data/index_select_sequoiadb_3.dat' INTO TABLE t1 FIELDS TERMINATED BY ';';
+alter table t1 add PRIMARY KEY(a);
+alter table t1 add index b(b);
+alter table t1 add index ab(a,b);
+alter table t1 add index ba(b,a);
+SHOW CREATE TABLE t1;
+--replace_column 10 #
+EXPLAIN SELECT * FROM t1 WHERE a in (1,2,3);
+--sorted_result
+SELECT * FROM t1 WHERE a in (1,2,3);
+--source include/query_pushdown_condition_sequoiadb.inc
+--replace_column 10 #
+EXPLAIN SELECT * FROM t1 WHERE b BETWEEN 1 and 3;
+--sorted_result
+SELECT * FROM t1 WHERE b BETWEEN 1 and 3;
+--source include/query_pushdown_condition_sequoiadb.inc
+ANALYZE TABLE t1;
+--replace_column 10 #
+EXPLAIN SELECT * FROM t1 WHERE a in (1,2,3);
+--sorted_result
+SELECT * FROM t1 WHERE a in (1,2,3);
+--source include/query_pushdown_condition_sequoiadb.inc
+--replace_column 10 #
+EXPLAIN SELECT * FROM t1 WHERE b BETWEEN 1 and 3;
+--sorted_result
+SELECT * FROM t1 WHERE b BETWEEN 1 and 3;
+--source include/query_pushdown_condition_sequoiadb.inc
+DROP TABLE t1;
+
+DROP DATABASE index_select_sequoiadb_22802;
+
+set session sequoiadb_stats_cache_level=default;
+
+--source include/uninstall_sequoiadb.inc

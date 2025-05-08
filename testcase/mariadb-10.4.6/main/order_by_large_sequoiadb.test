@@ -1,0 +1,15 @@
+#Case 20093
+--source include/big_test.inc
+--source include/have_sequoiadb.inc
+
+CREATE TABLE t1 ( id INT PRIMARY KEY AUTO_INCREMENT, a INT, b CHAR(64) );
+LOAD DATA INFILE '../../std_data/loaddata_large_sequoiadb.dat' INTO TABLE t1(a,b);
+# query with order by
+SELECT * FROM t1 WHERE a > 855000 AND b < 'test' ORDER BY a,b; 
+# create index
+CREATE INDEX a ON t1(a);
+CREATE INDEX b ON t1(b);
+SELECT * FROM t1 WHERE a <= 15000 AND b >= 'HELLO' ORDER BY a;
+DROP TABLE t1;
+
+--source include/uninstall_sequoiadb.inc

@@ -1,0 +1,807 @@
+SET SESSION sequoiadb_optimizer_options = "direct_sort,direct_limit,direct_count";
+SET SESSION sequoiadb_cls_pushdown_expand = ON;
+SET SESSION optimizer_switch = "optimizer_sort_pushdown=ON";
+SET SESSION optimizer_index_sort_prune = ON;
+DROP DATABASE IF EXISTS build_sort_cond_on_runtime_sequoiadb;
+CREATE DATABASE build_sort_cond_on_runtime_sequoiadb;
+DROP DATABASE build_sort_cond_on_runtime_sequoiadb;
+CREATE DATABASE build_sort_cond_on_runtime_sequoiadb;
+USE build_sort_cond_on_runtime_sequoiadb;
+SET sql_mode="STRICT_TRANS_TABLES,ERROR_FOR_DIVISION_BY_ZERO,NO_AUTO_CREATE_USER,NO_ENGINE_SUBSTITUTION";
+Warnings:
+Warning	3135	'NO_ZERO_DATE', 'NO_ZERO_IN_DATE' and 'ERROR_FOR_DIVISION_BY_ZERO' sql modes should be used with strict mode. They will be merged with strict mode in a future release.
+CREATE TABLE t1(
+col1 int NOT NULL,
+col2 varchar(10) NOT NULL,
+col3 datetime,
+col4 varchar(10),
+KEY idx_col12(col1,col2),
+UNIQUE KEY idx_col3(col3)
+);
+INSERT INTO t1 VALUES
+(0,'abc','20221115114010','abc'),
+(1,'abcdef','20221115114015','abcdef'),
+(1,'abcdef','20221115114018','abcdef'),
+(2,'def','20221115114020','def'),
+(3,'abcde','20221115114022','efg'),
+(4,'def','20221115114210','def'),
+(4,'def','20221115114215','def'),
+(5,'defg ','20221115114510','defg'),
+(6,'xyz','20221115114512','xyz '),
+(7,'xyz ','20221115114518','xyz '),
+(8,'xxx',null,null),
+(9,'yyy',null,null);
+CREATE VIEW v1 AS SELECT * FROM t1 WHERE col1 > 3;
+CREATE TABLE t2 LIKE t1;
+INSERT INTO t2 SELECT * FROM t1;
+SET SESSION sequoiadb_build_sort_cond_on_runtime = OFF;
+SELECT @@sequoiadb_build_sort_cond_on_runtime;
+@@sequoiadb_build_sort_cond_on_runtime
+0
+explain select * from t1 where col2>'abc' order by col1;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	ALL	NULL	NULL	NULL	NULL	12	33.33	Using where with pushed condition (`build_sort_cond_on_runtime_sequoiadb`.`t1`.`col2` > 'abc'); Using pushed sort (`build_sort_cond_on_runtime_sequoiadb`.`t1`.`col1`)
+Warnings:
+Note	1003	/* select#1 */ select `build_sort_cond_on_runtime_sequoiadb`.`t1`.`col1` AS `col1`,`build_sort_cond_on_runtime_sequoiadb`.`t1`.`col2` AS `col2`,`build_sort_cond_on_runtime_sequoiadb`.`t1`.`col3` AS `col3`,`build_sort_cond_on_runtime_sequoiadb`.`t1`.`col4` AS `col4` from `build_sort_cond_on_runtime_sequoiadb`.`t1` where (`build_sort_cond_on_runtime_sequoiadb`.`t1`.`col2` > 'abc') order by `build_sort_cond_on_runtime_sequoiadb`.`t1`.`col1`
+select col1 from t1 where col2>'abc' order by col1;
+col1
+1
+1
+2
+3
+4
+4
+5
+6
+7
+8
+9
+explain select * from t1 where col2>'abc' group by col1;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	NULL	NULL	NULL	NULL	NULL	12	33.33	Using where with pushed condition (`build_sort_cond_on_runtime_sequoiadb`.`t1`.`col2` > 'abc'); Using pushed GROUP BY; Storage engine handles access type
+Warnings:
+Note	1003	/* select#1 */ select `build_sort_cond_on_runtime_sequoiadb`.`t1`.`col1` AS `col1`,`build_sort_cond_on_runtime_sequoiadb`.`t1`.`col2` AS `col2`,`build_sort_cond_on_runtime_sequoiadb`.`t1`.`col3` AS `col3`,`build_sort_cond_on_runtime_sequoiadb`.`t1`.`col4` AS `col4` from `build_sort_cond_on_runtime_sequoiadb`.`t1` where (`build_sort_cond_on_runtime_sequoiadb`.`t1`.`col2` > 'abc') group by `build_sort_cond_on_runtime_sequoiadb`.`t1`.`col1`
+select col1 from t1 where col2>'abc' group by col1;
+col1
+1
+2
+3
+4
+5
+6
+7
+8
+9
+explain select * from t1 where col2>'abc' group by col1 order by col1;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	NULL	NULL	NULL	NULL	NULL	12	33.33	Using where with pushed condition (`build_sort_cond_on_runtime_sequoiadb`.`t1`.`col2` > 'abc'); Using pushed GROUP BY; Using pushed ORDER BY; Storage engine handles access type
+Warnings:
+Note	1003	/* select#1 */ select `build_sort_cond_on_runtime_sequoiadb`.`t1`.`col1` AS `col1`,`build_sort_cond_on_runtime_sequoiadb`.`t1`.`col2` AS `col2`,`build_sort_cond_on_runtime_sequoiadb`.`t1`.`col3` AS `col3`,`build_sort_cond_on_runtime_sequoiadb`.`t1`.`col4` AS `col4` from `build_sort_cond_on_runtime_sequoiadb`.`t1` where (`build_sort_cond_on_runtime_sequoiadb`.`t1`.`col2` > 'abc') group by `build_sort_cond_on_runtime_sequoiadb`.`t1`.`col1` order by `build_sort_cond_on_runtime_sequoiadb`.`t1`.`col1`
+select col1 from t1 where col2>'abc' group by col1 order by col1;
+col1
+1
+2
+3
+4
+5
+6
+7
+8
+9
+explain select * from t1 where col2>'abc' group by col1 limit 3;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	NULL	NULL	NULL	NULL	NULL	12	33.33	Using where with pushed condition (`build_sort_cond_on_runtime_sequoiadb`.`t1`.`col2` > 'abc'); Using pushed GROUP BY; Storage engine handles access type
+Warnings:
+Note	1003	/* select#1 */ select `build_sort_cond_on_runtime_sequoiadb`.`t1`.`col1` AS `col1`,`build_sort_cond_on_runtime_sequoiadb`.`t1`.`col2` AS `col2`,`build_sort_cond_on_runtime_sequoiadb`.`t1`.`col3` AS `col3`,`build_sort_cond_on_runtime_sequoiadb`.`t1`.`col4` AS `col4` from `build_sort_cond_on_runtime_sequoiadb`.`t1` where (`build_sort_cond_on_runtime_sequoiadb`.`t1`.`col2` > 'abc') group by `build_sort_cond_on_runtime_sequoiadb`.`t1`.`col1` limit 3
+select col1 from t1 where col2>'abc' group by col1 limit 3;
+col1
+1
+2
+3
+explain select col1 from t1 order by col1;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	index	NULL	idx_col12	16	NULL	12	100.00	Using index
+Warnings:
+Note	1003	/* select#1 */ select `build_sort_cond_on_runtime_sequoiadb`.`t1`.`col1` AS `col1` from `build_sort_cond_on_runtime_sequoiadb`.`t1` order by `build_sort_cond_on_runtime_sequoiadb`.`t1`.`col1`
+select col1 from t1 order by col1;
+col1
+0
+1
+1
+2
+3
+4
+4
+5
+6
+7
+8
+9
+explain select col1 from t1 group by col1;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	index	NULL	idx_col12	16	NULL	12	100.00	Using pushed GROUP BY; Using index
+Warnings:
+Note	1003	/* select#1 */ select `build_sort_cond_on_runtime_sequoiadb`.`t1`.`col1` AS `col1` from `build_sort_cond_on_runtime_sequoiadb`.`t1` group by `build_sort_cond_on_runtime_sequoiadb`.`t1`.`col1`
+select col1 from t1 group by col1;
+col1
+0
+1
+2
+3
+4
+5
+6
+7
+8
+9
+explain select col1 from t1 group by col1 order by col1;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	index	NULL	idx_col12	16	NULL	12	100.00	Using pushed GROUP BY; Using pushed ORDER BY; Using index
+Warnings:
+Note	1003	/* select#1 */ select `build_sort_cond_on_runtime_sequoiadb`.`t1`.`col1` AS `col1` from `build_sort_cond_on_runtime_sequoiadb`.`t1` group by `build_sort_cond_on_runtime_sequoiadb`.`t1`.`col1` order by `build_sort_cond_on_runtime_sequoiadb`.`t1`.`col1`
+select col1 from t1 group by col1 order by col1;
+col1
+0
+1
+2
+3
+4
+5
+6
+7
+8
+9
+explain select col1 from t1 group by col1 limit 3;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	index	NULL	idx_col12	16	NULL	12	100.00	Using pushed GROUP BY; Using index
+Warnings:
+Note	1003	/* select#1 */ select `build_sort_cond_on_runtime_sequoiadb`.`t1`.`col1` AS `col1` from `build_sort_cond_on_runtime_sequoiadb`.`t1` group by `build_sort_cond_on_runtime_sequoiadb`.`t1`.`col1` limit 3
+select col1 from t1 group by col1 limit 3;
+col1
+0
+1
+2
+explain select * from t1 where col1>2 or col3="20221115114210" order by col3;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	ALL	idx_col3,idx_col12	NULL	NULL	NULL	12	40.00	Using where with pushed condition ((`build_sort_cond_on_runtime_sequoiadb`.`t1`.`col1` > 2) or (`build_sort_cond_on_runtime_sequoiadb`.`t1`.`col3` = '20221115114210')); Using pushed sort (`build_sort_cond_on_runtime_sequoiadb`.`t1`.`col3`)
+Warnings:
+Note	1003	/* select#1 */ select `build_sort_cond_on_runtime_sequoiadb`.`t1`.`col1` AS `col1`,`build_sort_cond_on_runtime_sequoiadb`.`t1`.`col2` AS `col2`,`build_sort_cond_on_runtime_sequoiadb`.`t1`.`col3` AS `col3`,`build_sort_cond_on_runtime_sequoiadb`.`t1`.`col4` AS `col4` from `build_sort_cond_on_runtime_sequoiadb`.`t1` where ((`build_sort_cond_on_runtime_sequoiadb`.`t1`.`col1` > 2) or (`build_sort_cond_on_runtime_sequoiadb`.`t1`.`col3` = '20221115114210')) order by `build_sort_cond_on_runtime_sequoiadb`.`t1`.`col3`
+select * from t1 where col1>2 or col3="20221115114210" order by col3;
+col1	col2	col3	col4
+8	xxx	NULL	NULL
+9	yyy	NULL	NULL
+3	abcde	2022-11-15 11:40:22	efg
+4	def	2022-11-15 11:42:10	def
+4	def	2022-11-15 11:42:15	def
+5	defg 	2022-11-15 11:45:10	defg
+6	xyz	2022-11-15 11:45:12	xyz 
+7	xyz 	2022-11-15 11:45:18	xyz 
+explain select * from t1 where col1>2 or col3="20221115114210" group by col3;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	NULL	idx_col3,idx_col12	NULL	NULL	NULL	12	40.00	Using where with pushed condition ((`build_sort_cond_on_runtime_sequoiadb`.`t1`.`col1` > 2) or (`build_sort_cond_on_runtime_sequoiadb`.`t1`.`col3` = '20221115114210')); Using pushed GROUP BY; Storage engine handles access type
+Warnings:
+Note	1003	/* select#1 */ select `build_sort_cond_on_runtime_sequoiadb`.`t1`.`col1` AS `col1`,`build_sort_cond_on_runtime_sequoiadb`.`t1`.`col2` AS `col2`,`build_sort_cond_on_runtime_sequoiadb`.`t1`.`col3` AS `col3`,`build_sort_cond_on_runtime_sequoiadb`.`t1`.`col4` AS `col4` from `build_sort_cond_on_runtime_sequoiadb`.`t1` where ((`build_sort_cond_on_runtime_sequoiadb`.`t1`.`col1` > 2) or (`build_sort_cond_on_runtime_sequoiadb`.`t1`.`col3` = '20221115114210')) group by `build_sort_cond_on_runtime_sequoiadb`.`t1`.`col3`
+select * from t1 where col1>2 or col3="20221115114210" group by col3;
+col1	col2	col3	col4
+8	xxx	NULL	NULL
+3	abcde	2022-11-15 11:40:22	efg
+4	def	2022-11-15 11:42:10	def
+4	def	2022-11-15 11:42:15	def
+5	defg 	2022-11-15 11:45:10	defg
+6	xyz	2022-11-15 11:45:12	xyz 
+7	xyz 	2022-11-15 11:45:18	xyz 
+explain select * from t1 where col1>2 or col3="20221115114210" group by col3 order by col3;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	NULL	idx_col3,idx_col12	NULL	NULL	NULL	12	40.00	Using where with pushed condition ((`build_sort_cond_on_runtime_sequoiadb`.`t1`.`col1` > 2) or (`build_sort_cond_on_runtime_sequoiadb`.`t1`.`col3` = '20221115114210')); Using pushed GROUP BY; Using pushed ORDER BY; Storage engine handles access type
+Warnings:
+Note	1003	/* select#1 */ select `build_sort_cond_on_runtime_sequoiadb`.`t1`.`col1` AS `col1`,`build_sort_cond_on_runtime_sequoiadb`.`t1`.`col2` AS `col2`,`build_sort_cond_on_runtime_sequoiadb`.`t1`.`col3` AS `col3`,`build_sort_cond_on_runtime_sequoiadb`.`t1`.`col4` AS `col4` from `build_sort_cond_on_runtime_sequoiadb`.`t1` where ((`build_sort_cond_on_runtime_sequoiadb`.`t1`.`col1` > 2) or (`build_sort_cond_on_runtime_sequoiadb`.`t1`.`col3` = '20221115114210')) group by `build_sort_cond_on_runtime_sequoiadb`.`t1`.`col3` order by `build_sort_cond_on_runtime_sequoiadb`.`t1`.`col3`
+select * from t1 where col1>2 or col3="20221115114210" group by col3 order by col3;
+col1	col2	col3	col4
+8	xxx	NULL	NULL
+3	abcde	2022-11-15 11:40:22	efg
+4	def	2022-11-15 11:42:10	def
+4	def	2022-11-15 11:42:15	def
+5	defg 	2022-11-15 11:45:10	defg
+6	xyz	2022-11-15 11:45:12	xyz 
+7	xyz 	2022-11-15 11:45:18	xyz 
+explain select * from t1 where col1>2 or col3="20221115114210" group by col3 limit 3;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	NULL	idx_col3,idx_col12	NULL	NULL	NULL	12	40.00	Using where with pushed condition ((`build_sort_cond_on_runtime_sequoiadb`.`t1`.`col1` > 2) or (`build_sort_cond_on_runtime_sequoiadb`.`t1`.`col3` = '20221115114210')); Using pushed GROUP BY; Storage engine handles access type
+Warnings:
+Note	1003	/* select#1 */ select `build_sort_cond_on_runtime_sequoiadb`.`t1`.`col1` AS `col1`,`build_sort_cond_on_runtime_sequoiadb`.`t1`.`col2` AS `col2`,`build_sort_cond_on_runtime_sequoiadb`.`t1`.`col3` AS `col3`,`build_sort_cond_on_runtime_sequoiadb`.`t1`.`col4` AS `col4` from `build_sort_cond_on_runtime_sequoiadb`.`t1` where ((`build_sort_cond_on_runtime_sequoiadb`.`t1`.`col1` > 2) or (`build_sort_cond_on_runtime_sequoiadb`.`t1`.`col3` = '20221115114210')) group by `build_sort_cond_on_runtime_sequoiadb`.`t1`.`col3` limit 3
+select * from t1 where col1>2 or col3="20221115114210" group by col3 limit 3;
+col1	col2	col3	col4
+8	xxx	NULL	NULL
+3	abcde	2022-11-15 11:40:22	efg
+4	def	2022-11-15 11:42:10	def
+explain select * from t1 where col1>3 order by col2;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	ALL	idx_col12	NULL	NULL	NULL	12	75.00	Using where with pushed condition (`build_sort_cond_on_runtime_sequoiadb`.`t1`.`col1` > 3); Using pushed sort (`build_sort_cond_on_runtime_sequoiadb`.`t1`.`col2`)
+Warnings:
+Note	1003	/* select#1 */ select `build_sort_cond_on_runtime_sequoiadb`.`t1`.`col1` AS `col1`,`build_sort_cond_on_runtime_sequoiadb`.`t1`.`col2` AS `col2`,`build_sort_cond_on_runtime_sequoiadb`.`t1`.`col3` AS `col3`,`build_sort_cond_on_runtime_sequoiadb`.`t1`.`col4` AS `col4` from `build_sort_cond_on_runtime_sequoiadb`.`t1` where (`build_sort_cond_on_runtime_sequoiadb`.`t1`.`col1` > 3) order by `build_sort_cond_on_runtime_sequoiadb`.`t1`.`col2`
+select * from t1 where col1>3 order by col2;
+col1	col2	col3	col4
+4	def	2022-11-15 11:42:10	def
+4	def	2022-11-15 11:42:15	def
+5	defg 	2022-11-15 11:45:10	defg
+8	xxx	NULL	NULL
+6	xyz	2022-11-15 11:45:12	xyz 
+7	xyz 	2022-11-15 11:45:18	xyz 
+9	yyy	NULL	NULL
+explain select * from t1 where col1>3 group by col2;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	NULL	idx_col12	NULL	NULL	NULL	12	33.33	Using where with pushed condition (`build_sort_cond_on_runtime_sequoiadb`.`t1`.`col1` > 3); Using pushed GROUP BY; Storage engine handles access type
+Warnings:
+Note	1003	/* select#1 */ select `build_sort_cond_on_runtime_sequoiadb`.`t1`.`col1` AS `col1`,`build_sort_cond_on_runtime_sequoiadb`.`t1`.`col2` AS `col2`,`build_sort_cond_on_runtime_sequoiadb`.`t1`.`col3` AS `col3`,`build_sort_cond_on_runtime_sequoiadb`.`t1`.`col4` AS `col4` from `build_sort_cond_on_runtime_sequoiadb`.`t1` where (`build_sort_cond_on_runtime_sequoiadb`.`t1`.`col1` > 3) group by `build_sort_cond_on_runtime_sequoiadb`.`t1`.`col2`
+select * from t1 where col1>3 group by col2;
+col1	col2	col3	col4
+4	def	2022-11-15 11:42:10	def
+5	defg 	2022-11-15 11:45:10	defg
+8	xxx	NULL	NULL
+6	xyz	2022-11-15 11:45:12	xyz 
+7	xyz 	2022-11-15 11:45:18	xyz 
+9	yyy	NULL	NULL
+explain select * from t1 where col1>3 group by col2 order by col2;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	NULL	idx_col12	NULL	NULL	NULL	12	33.33	Using where with pushed condition (`build_sort_cond_on_runtime_sequoiadb`.`t1`.`col1` > 3); Using pushed GROUP BY; Using pushed ORDER BY; Storage engine handles access type
+Warnings:
+Note	1003	/* select#1 */ select `build_sort_cond_on_runtime_sequoiadb`.`t1`.`col1` AS `col1`,`build_sort_cond_on_runtime_sequoiadb`.`t1`.`col2` AS `col2`,`build_sort_cond_on_runtime_sequoiadb`.`t1`.`col3` AS `col3`,`build_sort_cond_on_runtime_sequoiadb`.`t1`.`col4` AS `col4` from `build_sort_cond_on_runtime_sequoiadb`.`t1` where (`build_sort_cond_on_runtime_sequoiadb`.`t1`.`col1` > 3) group by `build_sort_cond_on_runtime_sequoiadb`.`t1`.`col2` order by `build_sort_cond_on_runtime_sequoiadb`.`t1`.`col2`
+select * from t1 where col1>3 group by col2 order by col2;
+col1	col2	col3	col4
+4	def	2022-11-15 11:42:10	def
+5	defg 	2022-11-15 11:45:10	defg
+8	xxx	NULL	NULL
+6	xyz	2022-11-15 11:45:12	xyz 
+7	xyz 	2022-11-15 11:45:18	xyz 
+9	yyy	NULL	NULL
+explain select * from t1 where col1>3 group by col2 limit 3;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	NULL	idx_col12	NULL	NULL	NULL	12	33.33	Using where with pushed condition (`build_sort_cond_on_runtime_sequoiadb`.`t1`.`col1` > 3); Using pushed GROUP BY; Storage engine handles access type
+Warnings:
+Note	1003	/* select#1 */ select `build_sort_cond_on_runtime_sequoiadb`.`t1`.`col1` AS `col1`,`build_sort_cond_on_runtime_sequoiadb`.`t1`.`col2` AS `col2`,`build_sort_cond_on_runtime_sequoiadb`.`t1`.`col3` AS `col3`,`build_sort_cond_on_runtime_sequoiadb`.`t1`.`col4` AS `col4` from `build_sort_cond_on_runtime_sequoiadb`.`t1` where (`build_sort_cond_on_runtime_sequoiadb`.`t1`.`col1` > 3) group by `build_sort_cond_on_runtime_sequoiadb`.`t1`.`col2` limit 3
+select * from t1 where col1>3 group by col2 limit 3;
+col1	col2	col3	col4
+4	def	2022-11-15 11:42:10	def
+5	defg 	2022-11-15 11:45:10	defg
+8	xxx	NULL	NULL
+explain select * from t1 where col1=3 order by col3;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	ref	idx_col12	idx_col12	4	const	2	100.00	Using where; Using filesort
+Warnings:
+Note	1003	/* select#1 */ select `build_sort_cond_on_runtime_sequoiadb`.`t1`.`col1` AS `col1`,`build_sort_cond_on_runtime_sequoiadb`.`t1`.`col2` AS `col2`,`build_sort_cond_on_runtime_sequoiadb`.`t1`.`col3` AS `col3`,`build_sort_cond_on_runtime_sequoiadb`.`t1`.`col4` AS `col4` from `build_sort_cond_on_runtime_sequoiadb`.`t1` where (`build_sort_cond_on_runtime_sequoiadb`.`t1`.`col1` = 3) order by `build_sort_cond_on_runtime_sequoiadb`.`t1`.`col3`
+select * from t1 where col1=3 order by col3;
+col1	col2	col3	col4
+3	abcde	2022-11-15 11:40:22	efg
+explain select * from t1 where col1=3 group by col3;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	ref	idx_col12	idx_col12	4	const	2	100.00	Using pushed GROUP BY
+Warnings:
+Note	1003	/* select#1 */ select `build_sort_cond_on_runtime_sequoiadb`.`t1`.`col1` AS `col1`,`build_sort_cond_on_runtime_sequoiadb`.`t1`.`col2` AS `col2`,`build_sort_cond_on_runtime_sequoiadb`.`t1`.`col3` AS `col3`,`build_sort_cond_on_runtime_sequoiadb`.`t1`.`col4` AS `col4` from `build_sort_cond_on_runtime_sequoiadb`.`t1` where (`build_sort_cond_on_runtime_sequoiadb`.`t1`.`col1` = 3) group by `build_sort_cond_on_runtime_sequoiadb`.`t1`.`col3`
+select * from t1 where col1=3 group by col3;
+col1	col2	col3	col4
+3	abcde	2022-11-15 11:40:22	efg
+explain select * from t1 where col1=3 group by col3 order by col3;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	ref	idx_col12	idx_col12	4	const	2	100.00	Using pushed GROUP BY; Using pushed ORDER BY
+Warnings:
+Note	1003	/* select#1 */ select `build_sort_cond_on_runtime_sequoiadb`.`t1`.`col1` AS `col1`,`build_sort_cond_on_runtime_sequoiadb`.`t1`.`col2` AS `col2`,`build_sort_cond_on_runtime_sequoiadb`.`t1`.`col3` AS `col3`,`build_sort_cond_on_runtime_sequoiadb`.`t1`.`col4` AS `col4` from `build_sort_cond_on_runtime_sequoiadb`.`t1` where (`build_sort_cond_on_runtime_sequoiadb`.`t1`.`col1` = 3) group by `build_sort_cond_on_runtime_sequoiadb`.`t1`.`col3` order by `build_sort_cond_on_runtime_sequoiadb`.`t1`.`col3`
+select * from t1 where col1=3 group by col3 order by col3;
+col1	col2	col3	col4
+3	abcde	2022-11-15 11:40:22	efg
+explain select * from t1 where col1=3 group by col3 limit 3;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	ref	idx_col12	idx_col12	4	const	2	100.00	Using pushed GROUP BY
+Warnings:
+Note	1003	/* select#1 */ select `build_sort_cond_on_runtime_sequoiadb`.`t1`.`col1` AS `col1`,`build_sort_cond_on_runtime_sequoiadb`.`t1`.`col2` AS `col2`,`build_sort_cond_on_runtime_sequoiadb`.`t1`.`col3` AS `col3`,`build_sort_cond_on_runtime_sequoiadb`.`t1`.`col4` AS `col4` from `build_sort_cond_on_runtime_sequoiadb`.`t1` where (`build_sort_cond_on_runtime_sequoiadb`.`t1`.`col1` = 3) group by `build_sort_cond_on_runtime_sequoiadb`.`t1`.`col3` limit 3
+select * from t1 where col1=3 group by col3 limit 3;
+col1	col2	col3	col4
+3	abcde	2022-11-15 11:40:22	efg
+explain select * from t1 where col3="20221115114510" order by col1;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	const	idx_col3	idx_col3	6	const	1	100.00	NULL
+Warnings:
+Note	1003	/* select#1 */ select '5' AS `col1`,'defg ' AS `col2`,'2022-11-15 11:45:10' AS `col3`,'defg' AS `col4` from `build_sort_cond_on_runtime_sequoiadb`.`t1` where 1 order by '5'
+select * from t1 where col3="20221115114510" order by col1;
+col1	col2	col3	col4
+5	defg 	2022-11-15 11:45:10	defg
+explain select * from t1 where col3="20221115114510" group by col1;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	const	idx_col3	idx_col3	6	const	1	100.00	Using pushed GROUP BY
+Warnings:
+Note	1003	/* select#1 */ select '5' AS `col1`,'defg ' AS `col2`,'2022-11-15 11:45:10' AS `col3`,'defg' AS `col4` from `build_sort_cond_on_runtime_sequoiadb`.`t1` where 1 group by '5'
+select * from t1 where col3="20221115114510" group by col1;
+col1	col2	col3	col4
+5	defg 	2022-11-15 11:45:10	defg
+explain select * from t1 where col3="20221115114510" group by col1 order by col1;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	const	idx_col3	idx_col3	6	const	1	100.00	Using pushed GROUP BY; Using pushed ORDER BY
+Warnings:
+Note	1003	/* select#1 */ select '5' AS `col1`,'defg ' AS `col2`,'2022-11-15 11:45:10' AS `col3`,'defg' AS `col4` from `build_sort_cond_on_runtime_sequoiadb`.`t1` where 1 group by '5' order by '5'
+select * from t1 where col3="20221115114510" group by col1 order by col1;
+col1	col2	col3	col4
+5	defg 	2022-11-15 11:45:10	defg
+explain select * from t1 where col3="20221115114510" group by col1 limit 3;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	const	idx_col3	idx_col3	6	const	1	100.00	Using pushed GROUP BY
+Warnings:
+Note	1003	/* select#1 */ select '5' AS `col1`,'defg ' AS `col2`,'2022-11-15 11:45:10' AS `col3`,'defg' AS `col4` from `build_sort_cond_on_runtime_sequoiadb`.`t1` where 1 group by '5' limit 3
+select * from t1 where col3="20221115114510" group by col1 limit 3;
+col1	col2	col3	col4
+5	defg 	2022-11-15 11:45:10	defg
+explain (select * from t1 where col4>="def" order by col4 limit 2,3) union (select * from t2 where col1>=1 group by col2 order by col2 limit 2,1) order by col3 limit 2,3;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	PRIMARY	t1	NULL	NULL	NULL	NULL	NULL	NULL	12	33.33	Using where with pushed condition (`build_sort_cond_on_runtime_sequoiadb`.`t1`.`col4` >= 'def'); Using pushed ORDER BY; Storage engine handles access type
+2	UNION	t2	NULL	NULL	idx_col12	NULL	NULL	NULL	12	33.33	Using where with pushed condition (`build_sort_cond_on_runtime_sequoiadb`.`t2`.`col1` >= 1); Using pushed GROUP BY; Using pushed ORDER BY; Storage engine handles access type
+NULL	UNION RESULT	<union1,2>	NULL	ALL	NULL	NULL	NULL	NULL	NULL	NULL	Using temporary; Using filesort
+(select * from t1 where col4>="def" order by col4 limit 2,3) union (select * from t2 where col1>=1 group by col2 order by col2 limit 2,1) order by col3 limit 2,3;
+col1	col2	col3	col4
+4	def	2022-11-15 11:42:15	def
+5	defg 	2022-11-15 11:45:10	defg
+explain select *,(select col1 from t1 where col2>="bcd" order by col3 limit 0,1) from t2 where t2.col4 in(select col2 from t1 where col2>"def" group by col1 desc order by col1) group by col1 limit 3;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	PRIMARY	t2	NULL	index	idx_col12	idx_col12	16	NULL	3	100.00	Using where with pushed condition (`build_sort_cond_on_runtime_sequoiadb`.`t2`.`col4` is not null)
+1	PRIMARY	<subquery3>	NULL	eq_ref	<auto_key>	<auto_key>	12	build_sort_cond_on_runtime_sequoiadb.t2.col4	1	100.00	NULL
+3	MATERIALIZED	t1	NULL	index	NULL	idx_col12	16	NULL	12	33.33	Using where with pushed condition (`build_sort_cond_on_runtime_sequoiadb`.`t1`.`col2` > 'def'); Using index
+2	SUBQUERY	t1	NULL	NULL	NULL	NULL	NULL	NULL	12	33.33	Using where with pushed condition (`build_sort_cond_on_runtime_sequoiadb`.`t1`.`col2` >= 'bcd'); Using pushed ORDER BY; Storage engine handles access type
+select *,(select col1 from t1 where col2>="bcd" order by col3 limit 0,1) from t2 where t2.col4 in(select col2 from t1 where col2>"def" group by col1 desc order by col1) group by col1 limit 3;
+col1	col2	col3	col4	(select col1 from t1 where col2>="bcd" order by col3 limit 0,1)
+5	defg 	2022-11-15 11:45:10	defg	8
+6	xyz	2022-11-15 11:45:12	xyz 	8
+7	xyz 	2022-11-15 11:45:18	xyz 	8
+explain select * from (select * from t1 where col2>"def" order by col4 desc limit 5) dt where col1>=1 limit 2,3;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	PRIMARY	<derived2>	NULL	ALL	NULL	NULL	NULL	NULL	3	33.33	Using where
+2	DERIVED	t1	NULL	NULL	NULL	NULL	NULL	NULL	12	33.33	Using where with pushed condition (`build_sort_cond_on_runtime_sequoiadb`.`t1`.`col2` > 'def'); Using pushed ORDER BY; Storage engine handles access type
+select * from (select * from t1 where col2>"def" order by col4 desc limit 5) dt where col1>=1 limit 2,3;
+col1	col2	col3	col4
+5	defg 	2022-11-15 11:45:10	defg
+8	xxx	NULL	NULL
+9	yyy	NULL	NULL
+explain select * from (select * from t1 where col1>1 group by col4 desc limit 4) dt where col4>"aef" order by col4 desc limit 2,2;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	PRIMARY	<derived2>	NULL	ALL	NULL	NULL	NULL	NULL	3	33.33	Using where; Using filesort
+2	DERIVED	t1	NULL	NULL	idx_col12	NULL	NULL	NULL	12	33.33	Using where with pushed condition (`build_sort_cond_on_runtime_sequoiadb`.`t1`.`col1` > 1); Using pushed GROUP BY; Storage engine handles access type
+select * from (select * from t1 where col1>1 group by col4 desc limit 4) dt where col4>"aef" order by col4 desc limit 2,2;
+col1	col2	col3	col4
+5	defg 	2022-11-15 11:45:10	defg
+2	def	2022-11-15 11:40:20	def
+explain select * from v1 group by col1;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	NULL	idx_col12	NULL	NULL	NULL	12	33.33	Using where with pushed condition (`build_sort_cond_on_runtime_sequoiadb`.`t1`.`col1` > 3); Using pushed GROUP BY; Storage engine handles access type
+Warnings:
+Note	1003	/* select#1 */ select `build_sort_cond_on_runtime_sequoiadb`.`t1`.`col1` AS `col1`,`build_sort_cond_on_runtime_sequoiadb`.`t1`.`col2` AS `col2`,`build_sort_cond_on_runtime_sequoiadb`.`t1`.`col3` AS `col3`,`build_sort_cond_on_runtime_sequoiadb`.`t1`.`col4` AS `col4` from `build_sort_cond_on_runtime_sequoiadb`.`t1` where (`build_sort_cond_on_runtime_sequoiadb`.`t1`.`col1` > 3) group by `build_sort_cond_on_runtime_sequoiadb`.`t1`.`col1`
+select * from v1 group by col1;
+col1	col2	col3	col4
+4	def	2022-11-15 11:42:10	def
+5	defg 	2022-11-15 11:45:10	defg
+6	xyz	2022-11-15 11:45:12	xyz 
+7	xyz 	2022-11-15 11:45:18	xyz 
+8	xxx	NULL	NULL
+9	yyy	NULL	NULL
+explain select * from v1 group by col1;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	NULL	idx_col12	NULL	NULL	NULL	12	33.33	Using where with pushed condition (`build_sort_cond_on_runtime_sequoiadb`.`t1`.`col1` > 3); Using pushed GROUP BY; Storage engine handles access type
+Warnings:
+Note	1003	/* select#1 */ select `build_sort_cond_on_runtime_sequoiadb`.`t1`.`col1` AS `col1`,`build_sort_cond_on_runtime_sequoiadb`.`t1`.`col2` AS `col2`,`build_sort_cond_on_runtime_sequoiadb`.`t1`.`col3` AS `col3`,`build_sort_cond_on_runtime_sequoiadb`.`t1`.`col4` AS `col4` from `build_sort_cond_on_runtime_sequoiadb`.`t1` where (`build_sort_cond_on_runtime_sequoiadb`.`t1`.`col1` > 3) group by `build_sort_cond_on_runtime_sequoiadb`.`t1`.`col1`
+select col1 from v1 group by col1;
+col1
+4
+5
+6
+7
+8
+9
+explain select * from v1 order by col3;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	ALL	idx_col12	NULL	NULL	NULL	12	75.00	Using where with pushed condition (`build_sort_cond_on_runtime_sequoiadb`.`t1`.`col1` > 3); Using pushed sort (`build_sort_cond_on_runtime_sequoiadb`.`t1`.`col3`)
+Warnings:
+Note	1003	/* select#1 */ select `build_sort_cond_on_runtime_sequoiadb`.`t1`.`col1` AS `col1`,`build_sort_cond_on_runtime_sequoiadb`.`t1`.`col2` AS `col2`,`build_sort_cond_on_runtime_sequoiadb`.`t1`.`col3` AS `col3`,`build_sort_cond_on_runtime_sequoiadb`.`t1`.`col4` AS `col4` from `build_sort_cond_on_runtime_sequoiadb`.`t1` where (`build_sort_cond_on_runtime_sequoiadb`.`t1`.`col1` > 3) order by `build_sort_cond_on_runtime_sequoiadb`.`t1`.`col3`
+select * from v1 order by col3;
+col1	col2	col3	col4
+8	xxx	NULL	NULL
+9	yyy	NULL	NULL
+4	def	2022-11-15 11:42:10	def
+4	def	2022-11-15 11:42:15	def
+5	defg 	2022-11-15 11:45:10	defg
+6	xyz	2022-11-15 11:45:12	xyz 
+7	xyz 	2022-11-15 11:45:18	xyz 
+explain select * from v1 order by col3;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	ALL	idx_col12	NULL	NULL	NULL	12	75.00	Using where with pushed condition (`build_sort_cond_on_runtime_sequoiadb`.`t1`.`col1` > 3); Using pushed sort (`build_sort_cond_on_runtime_sequoiadb`.`t1`.`col3`)
+Warnings:
+Note	1003	/* select#1 */ select `build_sort_cond_on_runtime_sequoiadb`.`t1`.`col1` AS `col1`,`build_sort_cond_on_runtime_sequoiadb`.`t1`.`col2` AS `col2`,`build_sort_cond_on_runtime_sequoiadb`.`t1`.`col3` AS `col3`,`build_sort_cond_on_runtime_sequoiadb`.`t1`.`col4` AS `col4` from `build_sort_cond_on_runtime_sequoiadb`.`t1` where (`build_sort_cond_on_runtime_sequoiadb`.`t1`.`col1` > 3) order by `build_sort_cond_on_runtime_sequoiadb`.`t1`.`col3`
+select col3 from v1 order by col3;
+col3
+NULL
+NULL
+2022-11-15 11:42:10
+2022-11-15 11:42:15
+2022-11-15 11:45:10
+2022-11-15 11:45:12
+2022-11-15 11:45:18
+SET SESSION sequoiadb_build_sort_cond_on_runtime = ON;
+SELECT @@sequoiadb_build_sort_cond_on_runtime;
+@@sequoiadb_build_sort_cond_on_runtime
+1
+explain select * from t1 where col2>'abc' order by col1;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	ALL	NULL	NULL	NULL	NULL	12	33.33	Using where with pushed condition (`build_sort_cond_on_runtime_sequoiadb`.`t1`.`col2` > 'abc'); Using pushed sort (`build_sort_cond_on_runtime_sequoiadb`.`t1`.`col1`)
+Warnings:
+Note	1003	/* select#1 */ select `build_sort_cond_on_runtime_sequoiadb`.`t1`.`col1` AS `col1`,`build_sort_cond_on_runtime_sequoiadb`.`t1`.`col2` AS `col2`,`build_sort_cond_on_runtime_sequoiadb`.`t1`.`col3` AS `col3`,`build_sort_cond_on_runtime_sequoiadb`.`t1`.`col4` AS `col4` from `build_sort_cond_on_runtime_sequoiadb`.`t1` where (`build_sort_cond_on_runtime_sequoiadb`.`t1`.`col2` > 'abc') order by `build_sort_cond_on_runtime_sequoiadb`.`t1`.`col1`
+select col1 from t1 where col2>'abc' order by col1;
+col1
+1
+1
+2
+3
+4
+4
+5
+6
+7
+8
+9
+explain select * from t1 where col2>'abc' group by col1;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	NULL	NULL	NULL	NULL	NULL	12	33.33	Using where with pushed condition (`build_sort_cond_on_runtime_sequoiadb`.`t1`.`col2` > 'abc'); Using pushed GROUP BY; Storage engine handles access type
+Warnings:
+Note	1003	/* select#1 */ select `build_sort_cond_on_runtime_sequoiadb`.`t1`.`col1` AS `col1`,`build_sort_cond_on_runtime_sequoiadb`.`t1`.`col2` AS `col2`,`build_sort_cond_on_runtime_sequoiadb`.`t1`.`col3` AS `col3`,`build_sort_cond_on_runtime_sequoiadb`.`t1`.`col4` AS `col4` from `build_sort_cond_on_runtime_sequoiadb`.`t1` where (`build_sort_cond_on_runtime_sequoiadb`.`t1`.`col2` > 'abc') group by `build_sort_cond_on_runtime_sequoiadb`.`t1`.`col1`
+select col1 from t1 where col2>'abc' group by col1;
+col1
+1
+2
+3
+4
+5
+6
+7
+8
+9
+explain select * from t1 where col2>'abc' group by col1 order by col1;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	NULL	NULL	NULL	NULL	NULL	12	33.33	Using where with pushed condition (`build_sort_cond_on_runtime_sequoiadb`.`t1`.`col2` > 'abc'); Using pushed GROUP BY; Using pushed ORDER BY; Storage engine handles access type
+Warnings:
+Note	1003	/* select#1 */ select `build_sort_cond_on_runtime_sequoiadb`.`t1`.`col1` AS `col1`,`build_sort_cond_on_runtime_sequoiadb`.`t1`.`col2` AS `col2`,`build_sort_cond_on_runtime_sequoiadb`.`t1`.`col3` AS `col3`,`build_sort_cond_on_runtime_sequoiadb`.`t1`.`col4` AS `col4` from `build_sort_cond_on_runtime_sequoiadb`.`t1` where (`build_sort_cond_on_runtime_sequoiadb`.`t1`.`col2` > 'abc') group by `build_sort_cond_on_runtime_sequoiadb`.`t1`.`col1` order by `build_sort_cond_on_runtime_sequoiadb`.`t1`.`col1`
+select col1 from t1 where col2>'abc' group by col1 order by col1;
+col1
+1
+2
+3
+4
+5
+6
+7
+8
+9
+explain select * from t1 where col2>'abc' group by col1 limit 3;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	NULL	NULL	NULL	NULL	NULL	12	33.33	Using where with pushed condition (`build_sort_cond_on_runtime_sequoiadb`.`t1`.`col2` > 'abc'); Using pushed GROUP BY; Storage engine handles access type
+Warnings:
+Note	1003	/* select#1 */ select `build_sort_cond_on_runtime_sequoiadb`.`t1`.`col1` AS `col1`,`build_sort_cond_on_runtime_sequoiadb`.`t1`.`col2` AS `col2`,`build_sort_cond_on_runtime_sequoiadb`.`t1`.`col3` AS `col3`,`build_sort_cond_on_runtime_sequoiadb`.`t1`.`col4` AS `col4` from `build_sort_cond_on_runtime_sequoiadb`.`t1` where (`build_sort_cond_on_runtime_sequoiadb`.`t1`.`col2` > 'abc') group by `build_sort_cond_on_runtime_sequoiadb`.`t1`.`col1` limit 3
+select col1 from t1 where col2>'abc' group by col1 limit 3;
+col1
+1
+2
+3
+explain select col1 from t1 order by col1;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	index	NULL	idx_col12	16	NULL	12	100.00	Using index
+Warnings:
+Note	1003	/* select#1 */ select `build_sort_cond_on_runtime_sequoiadb`.`t1`.`col1` AS `col1` from `build_sort_cond_on_runtime_sequoiadb`.`t1` order by `build_sort_cond_on_runtime_sequoiadb`.`t1`.`col1`
+select col1 from t1 order by col1;
+col1
+0
+1
+1
+2
+3
+4
+4
+5
+6
+7
+8
+9
+explain select col1 from t1 group by col1;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	index	NULL	idx_col12	16	NULL	12	100.00	Using pushed GROUP BY; Using index
+Warnings:
+Note	1003	/* select#1 */ select `build_sort_cond_on_runtime_sequoiadb`.`t1`.`col1` AS `col1` from `build_sort_cond_on_runtime_sequoiadb`.`t1` group by `build_sort_cond_on_runtime_sequoiadb`.`t1`.`col1`
+select col1 from t1 group by col1;
+col1
+0
+1
+2
+3
+4
+5
+6
+7
+8
+9
+explain select col1 from t1 group by col1 order by col1;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	index	NULL	idx_col12	16	NULL	12	100.00	Using pushed GROUP BY; Using pushed ORDER BY; Using index
+Warnings:
+Note	1003	/* select#1 */ select `build_sort_cond_on_runtime_sequoiadb`.`t1`.`col1` AS `col1` from `build_sort_cond_on_runtime_sequoiadb`.`t1` group by `build_sort_cond_on_runtime_sequoiadb`.`t1`.`col1` order by `build_sort_cond_on_runtime_sequoiadb`.`t1`.`col1`
+select col1 from t1 group by col1 order by col1;
+col1
+0
+1
+2
+3
+4
+5
+6
+7
+8
+9
+explain select col1 from t1 group by col1 limit 3;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	index	NULL	idx_col12	16	NULL	12	100.00	Using pushed GROUP BY; Using index
+Warnings:
+Note	1003	/* select#1 */ select `build_sort_cond_on_runtime_sequoiadb`.`t1`.`col1` AS `col1` from `build_sort_cond_on_runtime_sequoiadb`.`t1` group by `build_sort_cond_on_runtime_sequoiadb`.`t1`.`col1` limit 3
+select col1 from t1 group by col1 limit 3;
+col1
+0
+1
+2
+explain select * from t1 where col1>2 or col3="20221115114210" order by col3;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	ALL	idx_col3,idx_col12	NULL	NULL	NULL	12	40.00	Using where with pushed condition ((`build_sort_cond_on_runtime_sequoiadb`.`t1`.`col1` > 2) or (`build_sort_cond_on_runtime_sequoiadb`.`t1`.`col3` = '20221115114210')); Using pushed sort (`build_sort_cond_on_runtime_sequoiadb`.`t1`.`col3`)
+Warnings:
+Note	1003	/* select#1 */ select `build_sort_cond_on_runtime_sequoiadb`.`t1`.`col1` AS `col1`,`build_sort_cond_on_runtime_sequoiadb`.`t1`.`col2` AS `col2`,`build_sort_cond_on_runtime_sequoiadb`.`t1`.`col3` AS `col3`,`build_sort_cond_on_runtime_sequoiadb`.`t1`.`col4` AS `col4` from `build_sort_cond_on_runtime_sequoiadb`.`t1` where ((`build_sort_cond_on_runtime_sequoiadb`.`t1`.`col1` > 2) or (`build_sort_cond_on_runtime_sequoiadb`.`t1`.`col3` = '20221115114210')) order by `build_sort_cond_on_runtime_sequoiadb`.`t1`.`col3`
+select * from t1 where col1>2 or col3="20221115114210" order by col3;
+col1	col2	col3	col4
+8	xxx	NULL	NULL
+9	yyy	NULL	NULL
+3	abcde	2022-11-15 11:40:22	efg
+4	def	2022-11-15 11:42:10	def
+4	def	2022-11-15 11:42:15	def
+5	defg 	2022-11-15 11:45:10	defg
+6	xyz	2022-11-15 11:45:12	xyz 
+7	xyz 	2022-11-15 11:45:18	xyz 
+explain select * from t1 where col1>2 or col3="20221115114210" group by col3;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	NULL	idx_col3,idx_col12	NULL	NULL	NULL	12	40.00	Using where with pushed condition ((`build_sort_cond_on_runtime_sequoiadb`.`t1`.`col1` > 2) or (`build_sort_cond_on_runtime_sequoiadb`.`t1`.`col3` = '20221115114210')); Using pushed GROUP BY; Storage engine handles access type
+Warnings:
+Note	1003	/* select#1 */ select `build_sort_cond_on_runtime_sequoiadb`.`t1`.`col1` AS `col1`,`build_sort_cond_on_runtime_sequoiadb`.`t1`.`col2` AS `col2`,`build_sort_cond_on_runtime_sequoiadb`.`t1`.`col3` AS `col3`,`build_sort_cond_on_runtime_sequoiadb`.`t1`.`col4` AS `col4` from `build_sort_cond_on_runtime_sequoiadb`.`t1` where ((`build_sort_cond_on_runtime_sequoiadb`.`t1`.`col1` > 2) or (`build_sort_cond_on_runtime_sequoiadb`.`t1`.`col3` = '20221115114210')) group by `build_sort_cond_on_runtime_sequoiadb`.`t1`.`col3`
+select * from t1 where col1>2 or col3="20221115114210" group by col3;
+col1	col2	col3	col4
+8	xxx	NULL	NULL
+3	abcde	2022-11-15 11:40:22	efg
+4	def	2022-11-15 11:42:10	def
+4	def	2022-11-15 11:42:15	def
+5	defg 	2022-11-15 11:45:10	defg
+6	xyz	2022-11-15 11:45:12	xyz 
+7	xyz 	2022-11-15 11:45:18	xyz 
+explain select * from t1 where col1>2 or col3="20221115114210" group by col3 order by col3;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	NULL	idx_col3,idx_col12	NULL	NULL	NULL	12	40.00	Using where with pushed condition ((`build_sort_cond_on_runtime_sequoiadb`.`t1`.`col1` > 2) or (`build_sort_cond_on_runtime_sequoiadb`.`t1`.`col3` = '20221115114210')); Using pushed GROUP BY; Using pushed ORDER BY; Storage engine handles access type
+Warnings:
+Note	1003	/* select#1 */ select `build_sort_cond_on_runtime_sequoiadb`.`t1`.`col1` AS `col1`,`build_sort_cond_on_runtime_sequoiadb`.`t1`.`col2` AS `col2`,`build_sort_cond_on_runtime_sequoiadb`.`t1`.`col3` AS `col3`,`build_sort_cond_on_runtime_sequoiadb`.`t1`.`col4` AS `col4` from `build_sort_cond_on_runtime_sequoiadb`.`t1` where ((`build_sort_cond_on_runtime_sequoiadb`.`t1`.`col1` > 2) or (`build_sort_cond_on_runtime_sequoiadb`.`t1`.`col3` = '20221115114210')) group by `build_sort_cond_on_runtime_sequoiadb`.`t1`.`col3` order by `build_sort_cond_on_runtime_sequoiadb`.`t1`.`col3`
+select * from t1 where col1>2 or col3="20221115114210" group by col3 order by col3;
+col1	col2	col3	col4
+8	xxx	NULL	NULL
+3	abcde	2022-11-15 11:40:22	efg
+4	def	2022-11-15 11:42:10	def
+4	def	2022-11-15 11:42:15	def
+5	defg 	2022-11-15 11:45:10	defg
+6	xyz	2022-11-15 11:45:12	xyz 
+7	xyz 	2022-11-15 11:45:18	xyz 
+explain select * from t1 where col1>2 or col3="20221115114210" group by col3 limit 3;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	NULL	idx_col3,idx_col12	NULL	NULL	NULL	12	40.00	Using where with pushed condition ((`build_sort_cond_on_runtime_sequoiadb`.`t1`.`col1` > 2) or (`build_sort_cond_on_runtime_sequoiadb`.`t1`.`col3` = '20221115114210')); Using pushed GROUP BY; Storage engine handles access type
+Warnings:
+Note	1003	/* select#1 */ select `build_sort_cond_on_runtime_sequoiadb`.`t1`.`col1` AS `col1`,`build_sort_cond_on_runtime_sequoiadb`.`t1`.`col2` AS `col2`,`build_sort_cond_on_runtime_sequoiadb`.`t1`.`col3` AS `col3`,`build_sort_cond_on_runtime_sequoiadb`.`t1`.`col4` AS `col4` from `build_sort_cond_on_runtime_sequoiadb`.`t1` where ((`build_sort_cond_on_runtime_sequoiadb`.`t1`.`col1` > 2) or (`build_sort_cond_on_runtime_sequoiadb`.`t1`.`col3` = '20221115114210')) group by `build_sort_cond_on_runtime_sequoiadb`.`t1`.`col3` limit 3
+select * from t1 where col1>2 or col3="20221115114210" group by col3 limit 3;
+col1	col2	col3	col4
+8	xxx	NULL	NULL
+3	abcde	2022-11-15 11:40:22	efg
+4	def	2022-11-15 11:42:10	def
+explain select * from t1 where col1>3 order by col2;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	ALL	idx_col12	NULL	NULL	NULL	12	75.00	Using where with pushed condition (`build_sort_cond_on_runtime_sequoiadb`.`t1`.`col1` > 3); Using pushed sort (`build_sort_cond_on_runtime_sequoiadb`.`t1`.`col2`)
+Warnings:
+Note	1003	/* select#1 */ select `build_sort_cond_on_runtime_sequoiadb`.`t1`.`col1` AS `col1`,`build_sort_cond_on_runtime_sequoiadb`.`t1`.`col2` AS `col2`,`build_sort_cond_on_runtime_sequoiadb`.`t1`.`col3` AS `col3`,`build_sort_cond_on_runtime_sequoiadb`.`t1`.`col4` AS `col4` from `build_sort_cond_on_runtime_sequoiadb`.`t1` where (`build_sort_cond_on_runtime_sequoiadb`.`t1`.`col1` > 3) order by `build_sort_cond_on_runtime_sequoiadb`.`t1`.`col2`
+select * from t1 where col1>3 order by col2;
+col1	col2	col3	col4
+4	def	2022-11-15 11:42:10	def
+4	def	2022-11-15 11:42:15	def
+5	defg 	2022-11-15 11:45:10	defg
+8	xxx	NULL	NULL
+6	xyz	2022-11-15 11:45:12	xyz 
+7	xyz 	2022-11-15 11:45:18	xyz 
+9	yyy	NULL	NULL
+explain select * from t1 where col1>3 group by col2;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	NULL	idx_col12	NULL	NULL	NULL	12	33.33	Using where with pushed condition (`build_sort_cond_on_runtime_sequoiadb`.`t1`.`col1` > 3); Using pushed GROUP BY; Storage engine handles access type
+Warnings:
+Note	1003	/* select#1 */ select `build_sort_cond_on_runtime_sequoiadb`.`t1`.`col1` AS `col1`,`build_sort_cond_on_runtime_sequoiadb`.`t1`.`col2` AS `col2`,`build_sort_cond_on_runtime_sequoiadb`.`t1`.`col3` AS `col3`,`build_sort_cond_on_runtime_sequoiadb`.`t1`.`col4` AS `col4` from `build_sort_cond_on_runtime_sequoiadb`.`t1` where (`build_sort_cond_on_runtime_sequoiadb`.`t1`.`col1` > 3) group by `build_sort_cond_on_runtime_sequoiadb`.`t1`.`col2`
+select * from t1 where col1>3 group by col2;
+col1	col2	col3	col4
+4	def	2022-11-15 11:42:10	def
+5	defg 	2022-11-15 11:45:10	defg
+8	xxx	NULL	NULL
+6	xyz	2022-11-15 11:45:12	xyz 
+7	xyz 	2022-11-15 11:45:18	xyz 
+9	yyy	NULL	NULL
+explain select * from t1 where col1>3 group by col2 order by col2;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	NULL	idx_col12	NULL	NULL	NULL	12	33.33	Using where with pushed condition (`build_sort_cond_on_runtime_sequoiadb`.`t1`.`col1` > 3); Using pushed GROUP BY; Using pushed ORDER BY; Storage engine handles access type
+Warnings:
+Note	1003	/* select#1 */ select `build_sort_cond_on_runtime_sequoiadb`.`t1`.`col1` AS `col1`,`build_sort_cond_on_runtime_sequoiadb`.`t1`.`col2` AS `col2`,`build_sort_cond_on_runtime_sequoiadb`.`t1`.`col3` AS `col3`,`build_sort_cond_on_runtime_sequoiadb`.`t1`.`col4` AS `col4` from `build_sort_cond_on_runtime_sequoiadb`.`t1` where (`build_sort_cond_on_runtime_sequoiadb`.`t1`.`col1` > 3) group by `build_sort_cond_on_runtime_sequoiadb`.`t1`.`col2` order by `build_sort_cond_on_runtime_sequoiadb`.`t1`.`col2`
+select * from t1 where col1>3 group by col2 order by col2;
+col1	col2	col3	col4
+4	def	2022-11-15 11:42:10	def
+5	defg 	2022-11-15 11:45:10	defg
+8	xxx	NULL	NULL
+6	xyz	2022-11-15 11:45:12	xyz 
+7	xyz 	2022-11-15 11:45:18	xyz 
+9	yyy	NULL	NULL
+explain select * from t1 where col1>3 group by col2 limit 3;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	NULL	idx_col12	NULL	NULL	NULL	12	33.33	Using where with pushed condition (`build_sort_cond_on_runtime_sequoiadb`.`t1`.`col1` > 3); Using pushed GROUP BY; Storage engine handles access type
+Warnings:
+Note	1003	/* select#1 */ select `build_sort_cond_on_runtime_sequoiadb`.`t1`.`col1` AS `col1`,`build_sort_cond_on_runtime_sequoiadb`.`t1`.`col2` AS `col2`,`build_sort_cond_on_runtime_sequoiadb`.`t1`.`col3` AS `col3`,`build_sort_cond_on_runtime_sequoiadb`.`t1`.`col4` AS `col4` from `build_sort_cond_on_runtime_sequoiadb`.`t1` where (`build_sort_cond_on_runtime_sequoiadb`.`t1`.`col1` > 3) group by `build_sort_cond_on_runtime_sequoiadb`.`t1`.`col2` limit 3
+select * from t1 where col1>3 group by col2 limit 3;
+col1	col2	col3	col4
+4	def	2022-11-15 11:42:10	def
+5	defg 	2022-11-15 11:45:10	defg
+8	xxx	NULL	NULL
+explain select * from t1 where col1=3 order by col3;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	ref	idx_col12	idx_col12	4	const	2	100.00	Using where; Using filesort
+Warnings:
+Note	1003	/* select#1 */ select `build_sort_cond_on_runtime_sequoiadb`.`t1`.`col1` AS `col1`,`build_sort_cond_on_runtime_sequoiadb`.`t1`.`col2` AS `col2`,`build_sort_cond_on_runtime_sequoiadb`.`t1`.`col3` AS `col3`,`build_sort_cond_on_runtime_sequoiadb`.`t1`.`col4` AS `col4` from `build_sort_cond_on_runtime_sequoiadb`.`t1` where (`build_sort_cond_on_runtime_sequoiadb`.`t1`.`col1` = 3) order by `build_sort_cond_on_runtime_sequoiadb`.`t1`.`col3`
+select * from t1 where col1=3 order by col3;
+col1	col2	col3	col4
+3	abcde	2022-11-15 11:40:22	efg
+explain select * from t1 where col1=3 group by col3;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	ref	idx_col12	idx_col12	4	const	2	100.00	Using pushed GROUP BY
+Warnings:
+Note	1003	/* select#1 */ select `build_sort_cond_on_runtime_sequoiadb`.`t1`.`col1` AS `col1`,`build_sort_cond_on_runtime_sequoiadb`.`t1`.`col2` AS `col2`,`build_sort_cond_on_runtime_sequoiadb`.`t1`.`col3` AS `col3`,`build_sort_cond_on_runtime_sequoiadb`.`t1`.`col4` AS `col4` from `build_sort_cond_on_runtime_sequoiadb`.`t1` where (`build_sort_cond_on_runtime_sequoiadb`.`t1`.`col1` = 3) group by `build_sort_cond_on_runtime_sequoiadb`.`t1`.`col3`
+select * from t1 where col1=3 group by col3;
+col1	col2	col3	col4
+3	abcde	2022-11-15 11:40:22	efg
+explain select * from t1 where col1=3 group by col3 order by col3;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	ref	idx_col12	idx_col12	4	const	2	100.00	Using pushed GROUP BY; Using pushed ORDER BY
+Warnings:
+Note	1003	/* select#1 */ select `build_sort_cond_on_runtime_sequoiadb`.`t1`.`col1` AS `col1`,`build_sort_cond_on_runtime_sequoiadb`.`t1`.`col2` AS `col2`,`build_sort_cond_on_runtime_sequoiadb`.`t1`.`col3` AS `col3`,`build_sort_cond_on_runtime_sequoiadb`.`t1`.`col4` AS `col4` from `build_sort_cond_on_runtime_sequoiadb`.`t1` where (`build_sort_cond_on_runtime_sequoiadb`.`t1`.`col1` = 3) group by `build_sort_cond_on_runtime_sequoiadb`.`t1`.`col3` order by `build_sort_cond_on_runtime_sequoiadb`.`t1`.`col3`
+select * from t1 where col1=3 group by col3 order by col3;
+col1	col2	col3	col4
+3	abcde	2022-11-15 11:40:22	efg
+explain select * from t1 where col1=3 group by col3 limit 3;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	ref	idx_col12	idx_col12	4	const	2	100.00	Using pushed GROUP BY
+Warnings:
+Note	1003	/* select#1 */ select `build_sort_cond_on_runtime_sequoiadb`.`t1`.`col1` AS `col1`,`build_sort_cond_on_runtime_sequoiadb`.`t1`.`col2` AS `col2`,`build_sort_cond_on_runtime_sequoiadb`.`t1`.`col3` AS `col3`,`build_sort_cond_on_runtime_sequoiadb`.`t1`.`col4` AS `col4` from `build_sort_cond_on_runtime_sequoiadb`.`t1` where (`build_sort_cond_on_runtime_sequoiadb`.`t1`.`col1` = 3) group by `build_sort_cond_on_runtime_sequoiadb`.`t1`.`col3` limit 3
+select * from t1 where col1=3 group by col3 limit 3;
+col1	col2	col3	col4
+3	abcde	2022-11-15 11:40:22	efg
+explain select * from t1 where col3="20221115114510" order by col1;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	const	idx_col3	idx_col3	6	const	1	100.00	NULL
+Warnings:
+Note	1003	/* select#1 */ select '5' AS `col1`,'defg ' AS `col2`,'2022-11-15 11:45:10' AS `col3`,'defg' AS `col4` from `build_sort_cond_on_runtime_sequoiadb`.`t1` where 1 order by '5'
+select * from t1 where col3="20221115114510" order by col1;
+col1	col2	col3	col4
+5	defg 	2022-11-15 11:45:10	defg
+explain select * from t1 where col3="20221115114510" group by col1;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	const	idx_col3	idx_col3	6	const	1	100.00	Using pushed GROUP BY
+Warnings:
+Note	1003	/* select#1 */ select '5' AS `col1`,'defg ' AS `col2`,'2022-11-15 11:45:10' AS `col3`,'defg' AS `col4` from `build_sort_cond_on_runtime_sequoiadb`.`t1` where 1 group by '5'
+select * from t1 where col3="20221115114510" group by col1;
+col1	col2	col3	col4
+5	defg 	2022-11-15 11:45:10	defg
+explain select * from t1 where col3="20221115114510" group by col1 order by col1;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	const	idx_col3	idx_col3	6	const	1	100.00	Using pushed GROUP BY; Using pushed ORDER BY
+Warnings:
+Note	1003	/* select#1 */ select '5' AS `col1`,'defg ' AS `col2`,'2022-11-15 11:45:10' AS `col3`,'defg' AS `col4` from `build_sort_cond_on_runtime_sequoiadb`.`t1` where 1 group by '5' order by '5'
+select * from t1 where col3="20221115114510" group by col1 order by col1;
+col1	col2	col3	col4
+5	defg 	2022-11-15 11:45:10	defg
+explain select * from t1 where col3="20221115114510" group by col1 limit 3;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	const	idx_col3	idx_col3	6	const	1	100.00	Using pushed GROUP BY
+Warnings:
+Note	1003	/* select#1 */ select '5' AS `col1`,'defg ' AS `col2`,'2022-11-15 11:45:10' AS `col3`,'defg' AS `col4` from `build_sort_cond_on_runtime_sequoiadb`.`t1` where 1 group by '5' limit 3
+select * from t1 where col3="20221115114510" group by col1 limit 3;
+col1	col2	col3	col4
+5	defg 	2022-11-15 11:45:10	defg
+explain (select * from t1 where col4>="def" order by col4 limit 2,3) union (select * from t2 where col1>=1 group by col2 order by col2 limit 2,1) order by col3 limit 2,3;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	PRIMARY	t1	NULL	NULL	NULL	NULL	NULL	NULL	12	33.33	Using where with pushed condition (`build_sort_cond_on_runtime_sequoiadb`.`t1`.`col4` >= 'def'); Using pushed ORDER BY; Storage engine handles access type
+2	UNION	t2	NULL	NULL	idx_col12	NULL	NULL	NULL	12	33.33	Using where with pushed condition (`build_sort_cond_on_runtime_sequoiadb`.`t2`.`col1` >= 1); Using pushed GROUP BY; Using pushed ORDER BY; Storage engine handles access type
+NULL	UNION RESULT	<union1,2>	NULL	ALL	NULL	NULL	NULL	NULL	NULL	NULL	Using temporary; Using filesort
+(select * from t1 where col4>="def" order by col4 limit 2,3) union (select * from t2 where col1>=1 group by col2 order by col2 limit 2,1) order by col3 limit 2,3;
+col1	col2	col3	col4
+4	def	2022-11-15 11:42:15	def
+5	defg 	2022-11-15 11:45:10	defg
+explain select *,(select col1 from t1 where col2>="bcd" order by col3 limit 0,1) from t2 where t2.col4 in(select col2 from t1 where col2>"def" group by col1 desc order by col1) group by col1 limit 3;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	PRIMARY	t2	NULL	index	idx_col12	idx_col12	16	NULL	3	100.00	Using where with pushed condition (`build_sort_cond_on_runtime_sequoiadb`.`t2`.`col4` is not null)
+1	PRIMARY	<subquery3>	NULL	eq_ref	<auto_key>	<auto_key>	12	build_sort_cond_on_runtime_sequoiadb.t2.col4	1	100.00	NULL
+3	MATERIALIZED	t1	NULL	index	NULL	idx_col12	16	NULL	12	33.33	Using where with pushed condition (`build_sort_cond_on_runtime_sequoiadb`.`t1`.`col2` > 'def'); Using index
+2	SUBQUERY	t1	NULL	NULL	NULL	NULL	NULL	NULL	12	33.33	Using where with pushed condition (`build_sort_cond_on_runtime_sequoiadb`.`t1`.`col2` >= 'bcd'); Using pushed ORDER BY; Storage engine handles access type
+select *,(select col1 from t1 where col2>="bcd" order by col3 limit 0,1) from t2 where t2.col4 in(select col2 from t1 where col2>"def" group by col1 desc order by col1) group by col1 limit 3;
+col1	col2	col3	col4	(select col1 from t1 where col2>="bcd" order by col3 limit 0,1)
+5	defg 	2022-11-15 11:45:10	defg	8
+6	xyz	2022-11-15 11:45:12	xyz 	8
+7	xyz 	2022-11-15 11:45:18	xyz 	8
+explain select * from (select * from t1 where col2>"def" order by col4 desc limit 5) dt where col1>=1 limit 2,3;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	PRIMARY	<derived2>	NULL	ALL	NULL	NULL	NULL	NULL	3	33.33	Using where
+2	DERIVED	t1	NULL	NULL	NULL	NULL	NULL	NULL	12	33.33	Using where with pushed condition (`build_sort_cond_on_runtime_sequoiadb`.`t1`.`col2` > 'def'); Using pushed ORDER BY; Storage engine handles access type
+select * from (select * from t1 where col2>"def" order by col4 desc limit 5) dt where col1>=1 limit 2,3;
+col1	col2	col3	col4
+5	defg 	2022-11-15 11:45:10	defg
+8	xxx	NULL	NULL
+9	yyy	NULL	NULL
+explain select * from (select * from t1 where col1>1 group by col4 desc limit 4) dt where col4>"aef" order by col4 desc limit 2,2;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	PRIMARY	<derived2>	NULL	ALL	NULL	NULL	NULL	NULL	3	33.33	Using where; Using filesort
+2	DERIVED	t1	NULL	NULL	idx_col12	NULL	NULL	NULL	12	33.33	Using where with pushed condition (`build_sort_cond_on_runtime_sequoiadb`.`t1`.`col1` > 1); Using pushed GROUP BY; Storage engine handles access type
+select * from (select * from t1 where col1>1 group by col4 desc limit 4) dt where col4>"aef" order by col4 desc limit 2,2;
+col1	col2	col3	col4
+5	defg 	2022-11-15 11:45:10	defg
+2	def	2022-11-15 11:40:20	def
+explain select * from v1 group by col1;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	NULL	idx_col12	NULL	NULL	NULL	12	33.33	Using where with pushed condition (`build_sort_cond_on_runtime_sequoiadb`.`t1`.`col1` > 3); Using pushed GROUP BY; Storage engine handles access type
+Warnings:
+Note	1003	/* select#1 */ select `build_sort_cond_on_runtime_sequoiadb`.`t1`.`col1` AS `col1`,`build_sort_cond_on_runtime_sequoiadb`.`t1`.`col2` AS `col2`,`build_sort_cond_on_runtime_sequoiadb`.`t1`.`col3` AS `col3`,`build_sort_cond_on_runtime_sequoiadb`.`t1`.`col4` AS `col4` from `build_sort_cond_on_runtime_sequoiadb`.`t1` where (`build_sort_cond_on_runtime_sequoiadb`.`t1`.`col1` > 3) group by `build_sort_cond_on_runtime_sequoiadb`.`t1`.`col1`
+select * from v1 group by col1;
+col1	col2	col3	col4
+4	def	2022-11-15 11:42:10	def
+5	defg 	2022-11-15 11:45:10	defg
+6	xyz	2022-11-15 11:45:12	xyz 
+7	xyz 	2022-11-15 11:45:18	xyz 
+8	xxx	NULL	NULL
+9	yyy	NULL	NULL
+explain select * from v1 group by col1;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	NULL	idx_col12	NULL	NULL	NULL	12	33.33	Using where with pushed condition (`build_sort_cond_on_runtime_sequoiadb`.`t1`.`col1` > 3); Using pushed GROUP BY; Storage engine handles access type
+Warnings:
+Note	1003	/* select#1 */ select `build_sort_cond_on_runtime_sequoiadb`.`t1`.`col1` AS `col1`,`build_sort_cond_on_runtime_sequoiadb`.`t1`.`col2` AS `col2`,`build_sort_cond_on_runtime_sequoiadb`.`t1`.`col3` AS `col3`,`build_sort_cond_on_runtime_sequoiadb`.`t1`.`col4` AS `col4` from `build_sort_cond_on_runtime_sequoiadb`.`t1` where (`build_sort_cond_on_runtime_sequoiadb`.`t1`.`col1` > 3) group by `build_sort_cond_on_runtime_sequoiadb`.`t1`.`col1`
+select col1 from v1 group by col1;
+col1
+4
+5
+6
+7
+8
+9
+explain select * from v1 order by col3;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	ALL	idx_col12	NULL	NULL	NULL	12	75.00	Using where with pushed condition (`build_sort_cond_on_runtime_sequoiadb`.`t1`.`col1` > 3); Using pushed sort (`build_sort_cond_on_runtime_sequoiadb`.`t1`.`col3`)
+Warnings:
+Note	1003	/* select#1 */ select `build_sort_cond_on_runtime_sequoiadb`.`t1`.`col1` AS `col1`,`build_sort_cond_on_runtime_sequoiadb`.`t1`.`col2` AS `col2`,`build_sort_cond_on_runtime_sequoiadb`.`t1`.`col3` AS `col3`,`build_sort_cond_on_runtime_sequoiadb`.`t1`.`col4` AS `col4` from `build_sort_cond_on_runtime_sequoiadb`.`t1` where (`build_sort_cond_on_runtime_sequoiadb`.`t1`.`col1` > 3) order by `build_sort_cond_on_runtime_sequoiadb`.`t1`.`col3`
+select * from v1 order by col3;
+col1	col2	col3	col4
+8	xxx	NULL	NULL
+9	yyy	NULL	NULL
+4	def	2022-11-15 11:42:10	def
+4	def	2022-11-15 11:42:15	def
+5	defg 	2022-11-15 11:45:10	defg
+6	xyz	2022-11-15 11:45:12	xyz 
+7	xyz 	2022-11-15 11:45:18	xyz 
+explain select * from v1 order by col3;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	ALL	idx_col12	NULL	NULL	NULL	12	75.00	Using where with pushed condition (`build_sort_cond_on_runtime_sequoiadb`.`t1`.`col1` > 3); Using pushed sort (`build_sort_cond_on_runtime_sequoiadb`.`t1`.`col3`)
+Warnings:
+Note	1003	/* select#1 */ select `build_sort_cond_on_runtime_sequoiadb`.`t1`.`col1` AS `col1`,`build_sort_cond_on_runtime_sequoiadb`.`t1`.`col2` AS `col2`,`build_sort_cond_on_runtime_sequoiadb`.`t1`.`col3` AS `col3`,`build_sort_cond_on_runtime_sequoiadb`.`t1`.`col4` AS `col4` from `build_sort_cond_on_runtime_sequoiadb`.`t1` where (`build_sort_cond_on_runtime_sequoiadb`.`t1`.`col1` > 3) order by `build_sort_cond_on_runtime_sequoiadb`.`t1`.`col3`
+select col3 from v1 order by col3;
+col3
+NULL
+NULL
+2022-11-15 11:42:10
+2022-11-15 11:42:15
+2022-11-15 11:45:10
+2022-11-15 11:45:12
+2022-11-15 11:45:18
+DROP DATABASE  build_sort_cond_on_runtime_sequoiadb;

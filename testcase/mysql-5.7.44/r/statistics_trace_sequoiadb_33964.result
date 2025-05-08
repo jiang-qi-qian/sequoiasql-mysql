@@ -1,0 +1,27 @@
+# restart
+drop database if exists statistics_trace_sequoiadb_33964;
+create database statistics_trace_sequoiadb_33964;
+drop database statistics_trace_sequoiadb_33964;
+create database statistics_trace_sequoiadb_33964;
+use statistics_trace_sequoiadb_33964;
+set session sequoiadb_debug_log = on;
+set session sequoiadb_secure_log = off;
+set session sequoiadb_share_log_output = on;
+CREATE TABLE t1 (a int);
+INSERT INTO t1 values (1),(2);
+flush tables;
+show status like "sdb_share_updated";
+Variable_name	Value
+sdb_share_updated	1
+select * from t1;
+a
+1
+2
+[Note] Testcase: Operation log begin
+[Note] SequoiaDB: Sdb_share has marked expired in update_stats(),replace the Sdb_share in the bucket with a new one ,sql_str:select * from t1 , table_name:./statistics_trace_sequoiadb_33964/t1, current idx stats map:0
+[Note] SequoiaDB: optimizer pushdown autocommit: 1
+[Note] SequoiaDB: Query message: condition[{}], selector[{}], order_by[{}], hint[{}], limit[-1], offset[0], table[statistics_trace_sequoiadb_33964.t1]
+show status like "sdb_share_updated";
+Variable_name	Value
+sdb_share_updated	2
+drop database statistics_trace_sequoiadb_33964;

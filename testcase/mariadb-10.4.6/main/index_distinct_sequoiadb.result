@@ -1,0 +1,93 @@
+drop database if exists index_distinct_sequoiadb;
+create database index_distinct_sequoiadb;
+drop database index_distinct_sequoiadb;
+create database index_distinct_sequoiadb;
+use index_distinct_sequoiadb;
+create table t1 ( 
+field1 int,
+field2 char(10) default 'sdbadmin',
+field3 varchar(100) default 'sequoiadb',
+field4 datetime default '2021-11-23 15:30:00',
+field5 float(5,2),
+field6 decimal(5,3),
+field7 double(3,2),
+index(field1),index(field2),index(field3),index(field4),
+index(field5),index(field6),index(field7),index(field1,field2,field3),
+index(field1,field2,field3,field4,field5),
+index(field1,field2,field3,field4,field5,field6,field7)
+);
+show create table t1;
+Table	Create Table
+t1	CREATE TABLE `t1` (
+  `field1` int(11) DEFAULT NULL,
+  `field2` char(10) DEFAULT 'sdbadmin',
+  `field3` varchar(100) DEFAULT 'sequoiadb',
+  `field4` datetime DEFAULT '2021-11-23 15:30:00',
+  `field5` float(5,2) DEFAULT NULL,
+  `field6` decimal(5,3) DEFAULT NULL,
+  `field7` double(3,2) DEFAULT NULL,
+  KEY `field1` (`field1`),
+  KEY `field2` (`field2`),
+  KEY `field3` (`field3`),
+  KEY `field4` (`field4`),
+  KEY `field5` (`field5`),
+  KEY `field6` (`field6`),
+  KEY `field7` (`field7`),
+  KEY `field1_2` (`field1`,`field2`,`field3`),
+  KEY `field1_3` (`field1`,`field2`,`field3`,`field4`,`field5`),
+  KEY `field1_4` (`field1`,`field2`,`field3`,`field4`,`field5`,`field6`,`field7`)
+) ENGINE=SequoiaDB DEFAULT CHARSET=latin1
+show index from t1;
+Table	Non_unique	Key_name	Seq_in_index	Column_name	Collation	Cardinality	Sub_part	Packed	Null	Index_type	Comment	Index_comment
+t1	1	field1	1	field1	A	NULL	NULL	NULL	YES	BTREE		
+t1	1	field2	1	field2	A	NULL	NULL	NULL	YES	BTREE		
+t1	1	field3	1	field3	A	NULL	NULL	NULL	YES	BTREE		
+t1	1	field4	1	field4	A	NULL	NULL	NULL	YES	BTREE		
+t1	1	field5	1	field5	A	NULL	NULL	NULL	YES	BTREE		
+t1	1	field6	1	field6	A	NULL	NULL	NULL	YES	BTREE		
+t1	1	field7	1	field7	A	NULL	NULL	NULL	YES	BTREE		
+t1	1	field1_2	1	field1	A	NULL	NULL	NULL	YES	BTREE		
+t1	1	field1_2	2	field2	A	NULL	NULL	NULL	YES	BTREE		
+t1	1	field1_2	3	field3	A	NULL	NULL	NULL	YES	BTREE		
+t1	1	field1_3	1	field1	A	NULL	NULL	NULL	YES	BTREE		
+t1	1	field1_3	2	field2	A	NULL	NULL	NULL	YES	BTREE		
+t1	1	field1_3	3	field3	A	NULL	NULL	NULL	YES	BTREE		
+t1	1	field1_3	4	field4	A	NULL	NULL	NULL	YES	BTREE		
+t1	1	field1_3	5	field5	A	NULL	NULL	NULL	YES	BTREE		
+t1	1	field1_4	1	field1	A	NULL	NULL	NULL	YES	BTREE		
+t1	1	field1_4	2	field2	A	NULL	NULL	NULL	YES	BTREE		
+t1	1	field1_4	3	field3	A	NULL	NULL	NULL	YES	BTREE		
+t1	1	field1_4	4	field4	A	NULL	NULL	NULL	YES	BTREE		
+t1	1	field1_4	5	field5	A	NULL	NULL	NULL	YES	BTREE		
+t1	1	field1_4	6	field6	A	NULL	NULL	NULL	YES	BTREE		
+t1	1	field1_4	7	field7	A	NULL	NULL	NULL	YES	BTREE		
+insert into t1 values(1,'sdbadmin1','sequoiadb1','2021-12-01 10:11:06',243.23,46.771,1.72);
+insert into t1 values(2,'sdbadmin2','sequoiadb2','2021-12-01 10:11:07',703.57,64.813,5.05);
+insert into t1 values(3,'sdbadmin3','sequoiadb3','2021-12-01 10:11:08',788.15,83.752,4.03);
+insert into t1 values(4,'sdbadmin4','sequoiadb4','2021-12-01 10:11:09',830.05,37.432,2.76);
+insert into t1 values(5,'sdbadmin5','sequoiadb5','2021-12-01 10:11:10',834.42,21.476,3.89);
+insert into t1 values(6,'sdbadmin6','sequoiadb6','2021-12-01 10:11:11',869.20,43.768,2.07);
+insert into t1 values(7,'sdbadmin7','sequoiadb7','2021-12-01 10:11:12',837.20,14.866,7.12);
+insert into t1 values(8,'sdbadmin8','sequoiadb8','2021-12-01 10:11:13',438.93,57.431,1.54);
+insert into t1 values(8,'sdbadmin8','sequoiadb8','2021-12-01 10:11:14',902.36,69.711,6.43);
+insert into t1 values(3,'sdbadmin3','sequoiadb3','2021-12-01 10:11:15',319.16,70.082,7.43);
+select * from t1;
+field1	field2	field3	field4	field5	field6	field7
+1	sdbadmin1	sequoiadb1	2021-12-01 10:11:06	243.23	46.771	1.72
+2	sdbadmin2	sequoiadb2	2021-12-01 10:11:07	703.57	64.813	5.05
+3	sdbadmin3	sequoiadb3	2021-12-01 10:11:08	788.15	83.752	4.03
+3	sdbadmin3	sequoiadb3	2021-12-01 10:11:15	319.16	70.082	7.43
+4	sdbadmin4	sequoiadb4	2021-12-01 10:11:09	830.05	37.432	2.76
+5	sdbadmin5	sequoiadb5	2021-12-01 10:11:10	834.42	21.476	3.89
+6	sdbadmin6	sequoiadb6	2021-12-01 10:11:11	869.20	43.768	2.07
+7	sdbadmin7	sequoiadb7	2021-12-01 10:11:12	837.20	14.866	7.12
+8	sdbadmin8	sequoiadb8	2021-12-01 10:11:13	438.93	57.431	1.54
+8	sdbadmin8	sequoiadb8	2021-12-01 10:11:14	902.36	69.711	6.43
+select count(distinct field1),count(distinct field2),count(distinct field3),count(distinct field4),count(distinct field5),count(distinct field6),count(distinct field7) from t1;
+count(distinct field1)	count(distinct field2)	count(distinct field3)	count(distinct field4)	count(distinct field5)	count(distinct field6)	count(distinct field7)
+8	8	8	10	10	10	10
+select count(distinct field1,field2,field3),count(distinct field1,field2,field3,field4,field5),count(distinct field1,field2,field3,field4,field5,field6,field7) from t1;
+count(distinct field1,field2,field3)	count(distinct field1,field2,field3,field4,field5)	count(distinct field1,field2,field3,field4,field5,field6,field7)
+8	10	10
+drop table t1;
+drop database index_distinct_sequoiadb;

@@ -1,0 +1,143 @@
+# Case 26560 26561
+
+--source include/have_sequoiadb.inc
+
+set sequoiadb_debug_log=on;
+
+--disable_warnings
+drop database if exists count_sequoiadb_26560_26561;
+--enable_warnings
+
+create database count_sequoiadb_26560_26561;
+use count_sequoiadb_26560_26561;
+
+#26560
+CREATE TABLE `t1` ( 
+`id` int(11) DEFAULT NULL, 
+`br_no` varchar(10) COLLATE utf8mb4_bin DEFAULT NULL, 
+KEY `idx_id` (`id`), 
+KEY `idx_br_no` (`br_no`) 
+) ENGINE=SequoiaDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin ;
+
+--disable_warnings
+drop procedure if exists test_insert1; 
+--enable_warnings
+delimiter $;
+create procedure test_insert1(IN cnt int) 
+begin 
+  declare i int default 0; 
+  while i < cnt 
+  do
+    insert into t1 (id,br_no)values( i, i%10);
+    set i=i+1; 
+  end while; 
+end $
+
+delimiter ;$
+call test_insert1(1000); 
+
+# 开启direct_count
+set session sequoiadb_optimizer_options = "direct_count,direct_delete,direct_update,direct_sort,direct_limit";
+select count(1) from t1 where br_no is not null; 
+--source include/query_pushdown_condition_sequoiadb.inc
+
+select count(1) from t1 where br_no is not null and id >10;
+--source include/query_pushdown_condition_sequoiadb.inc
+
+select count(1) from t1 where br_no is not null or id >10;
+--source include/query_pushdown_condition_sequoiadb.inc 
+
+select count(1) from t1 where id is null or id >10; 
+--source include/query_pushdown_condition_sequoiadb.inc
+
+select count(1) from t1 where id is not null and id >10;
+--source include/query_pushdown_condition_sequoiadb.inc
+
+# 关闭direct_count
+set session sequoiadb_optimizer_options = "direct_delete,direct_update,direct_sort,direct_limit";
+
+select count(1) from t1 where br_no is not null; 
+--source include/query_pushdown_condition_sequoiadb.inc
+
+select count(1) from t1 where br_no is not null and id >10;
+--source include/query_pushdown_condition_sequoiadb.inc
+
+select count(1) from t1 where br_no is not null or id >10;
+--source include/query_pushdown_condition_sequoiadb.inc 
+
+select count(1) from t1 where id is null or id >10; 
+--source include/query_pushdown_condition_sequoiadb.inc
+
+select count(1) from t1 where id is not null and id >10;
+--source include/query_pushdown_condition_sequoiadb.inc
+
+#26561
+CREATE TABLE `t2` ( 
+`id` int(11) DEFAULT NULL, 
+`br_no` varchar(10) COLLATE utf8mb4_bin DEFAULT NULL, 
+KEY `idx_br_no` (`br_no`) 
+) ENGINE=SequoiaDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin;
+
+--disable_warnings
+drop procedure if exists test_insert2; 
+--enable_warnings
+delimiter $;
+create procedure test_insert2(IN cnt int) 
+begin 
+  declare i int default 0; 
+  while i < cnt 
+  do
+    insert into t2 (id,br_no)values( i, i%10);
+    set i=i+1; 
+  end while; 
+end $
+
+
+delimiter ;$
+call test_insert2(1000);
+
+# 开启direct_count
+set session sequoiadb_optimizer_options = "direct_count,direct_delete,direct_update,direct_sort,direct_limit";
+select count(1) from t2 where br_no is not null; 
+--source include/query_pushdown_condition_sequoiadb.inc
+
+select count(1) from t2 where br_no is not null and id >10; 
+--source include/query_pushdown_condition_sequoiadb.inc
+
+select count(1) from t2 where br_no is not null or id >10; 
+--source include/query_pushdown_condition_sequoiadb.inc
+
+select count(1) from t2 where br_no is null or id =10; 
+--source include/query_pushdown_condition_sequoiadb.inc
+
+select count(1) from t2 where br_no is null or id >10; 
+--source include/query_pushdown_condition_sequoiadb.inc
+
+select count(1) from t2 where br_no is not null and id >10; 
+--source include/query_pushdown_condition_sequoiadb.inc
+
+# 关闭direct_count
+set session sequoiadb_optimizer_options = "direct_delete,direct_update,direct_sort,direct_limit";
+select count(1) from t2 where br_no is not null; 
+--source include/query_pushdown_condition_sequoiadb.inc
+
+select count(1) from t2 where br_no is not null and id >10; 
+--source include/query_pushdown_condition_sequoiadb.inc
+
+select count(1) from t2 where br_no is not null or id >10; 
+--source include/query_pushdown_condition_sequoiadb.inc
+
+select count(1) from t2 where br_no is null or id =10; 
+--source include/query_pushdown_condition_sequoiadb.inc
+
+select count(1) from t2 where br_no is null or id >10; 
+--source include/query_pushdown_condition_sequoiadb.inc
+
+select count(1) from t2 where br_no is not null and id >10; 
+--source include/query_pushdown_condition_sequoiadb.inc
+
+set sequoiadb_debug_log=default;
+set session sequoiadb_optimizer_options = default;
+drop procedure test_insert1;
+drop procedure test_insert2;
+drop database count_sequoiadb_26560_26561;

@@ -1,0 +1,424 @@
+--source include/have_sequoiadb.inc
+--source suite/metadata_sync_sequoiadb/inc/insts_connect_sequoiadb.inc
+
+#seqDB-23097
+#create function related no table 
+connection conn1;
+--disable_warnings
+drop database if exists metadata_sync_routine_ddl_dml_parallel;
+--enable_warnings
+
+create database metadata_sync_routine_ddl_dml_parallel;
+use metadata_sync_routine_ddl_dml_parallel;
+create function hello (s char(20)) returns char(50) deterministic return concat('Hello,' , s , '!');
+
+connection conn2;
+use metadata_sync_routine_ddl_dml_parallel;
+select hello('world');
+
+connection conn1;
+drop function hello;
+
+connection conn2;
+--error 1305
+select hello('world');
+
+#create function related table
+connection conn1;
+delimiter //;
+create function myselect() returns int 
+begin
+   declare c int;
+   insert into t1 values(1,'python'),(2,'java');
+   select id from t1 where cname ='python' into c;
+   delete from t1 where cname = 'python';
+   select id from t1 where cname ='python' into c;
+   return c;
+end//
+delimiter ;//
+
+connection conn2;
+--error 1146
+select myselect();
+
+connection conn1;
+create table t1(id int,cname char(10));
+
+connection conn2;
+select myselect();
+
+connection conn1;
+drop table t1;
+
+connection conn2;
+--error 1146
+select myselect();
+
+connection conn1;
+create table t1(id int,cname char(10));
+
+connection conn2;
+select myselect();
+
+connection conn1;
+drop function myselect;
+
+connection conn2;
+--error 1305
+select myselect();
+drop table t1;
+
+#create function related view
+connection conn1;
+create table t1(id int,cname char(10));
+delimiter //;
+create function myselect() returns int 
+begin
+   declare c int;
+   insert into v1 values(1,'python'),(2,'java');
+   select id from v1 where cname ='python' into c;
+   delete from v1 where cname = 'python';
+   select id from v1 where cname ='python' into c;
+   return c;
+end//
+delimiter ;//
+create view v1 as select * from t1;
+
+connection conn2;
+select myselect();
+
+connection conn1;
+drop view v1;
+
+connection conn2;
+--error 1146
+select myselect();
+
+connection conn1;
+create view v1 as select * from t1;
+
+connection conn2;
+select myselect();
+
+connection conn1;
+drop function myselect;
+drop view v1;
+
+connection conn2;
+--error 1305
+select myselect();
+drop table t1;
+
+#Bug SEQUOIASQLMAINSTREAM-868
+#create function related temporary table
+#connection conn1;
+#create temporary table t1(id int,cname char(10));
+#delimiter //;
+#create function myselect() returns int 
+#begin
+#   declare c int;
+#   insert into t1 values(1,'python'),(2,'java');
+#   select id from t1 where cname ='python' into c;
+#   delete from t1 where cname = 'python';
+#   select id from t1 where cname ='python' into c;
+#   return c;
+#end//
+#delimiter ;//
+#
+#connection conn2;
+#select myselect();
+#
+#connection conn1;
+#drop table t1;
+#
+#connection conn2;
+#--error 1146
+#select myselect();
+#
+#connection conn1;
+#drop function myselect;
+#
+#connection conn2;
+#--error 1305
+#select myselect();
+
+#create function related other database
+connection conn1;
+--disable_warnings
+drop database if exists metadata_sync_ddl_dml_parallel_23097;
+--enable_warnings
+
+create database metadata_sync_ddl_dml_parallel_23097;
+create table metadata_sync_ddl_dml_parallel_23097.t1(id int,cname char(10));
+delimiter //;
+create function myselect() returns int 
+begin
+   declare c int;
+   insert into metadata_sync_ddl_dml_parallel_23097.t1 values(1,'python'),(2,'java');
+   select id from metadata_sync_ddl_dml_parallel_23097.t1 where cname ='python' into c;
+   delete from metadata_sync_ddl_dml_parallel_23097.t1 where cname = 'python';
+   select id from metadata_sync_ddl_dml_parallel_23097.t1 where cname ='python' into c;
+   return c;
+end//
+delimiter ;//
+
+connection conn2;
+select myselect();
+
+connection conn1;
+drop database metadata_sync_ddl_dml_parallel_23097;
+
+connection conn2;
+--error 1146
+select myselect();
+
+connection conn1;
+drop function myselect;
+
+connection conn2;
+--error 1305
+select myselect();
+
+#create function specify the database
+connection conn1;
+create database metadata_sync_ddl_dml_parallel_23097;
+create table t1(id int,cname char(10));
+delimiter //;
+create function metadata_sync_ddl_dml_parallel_23097.myselect() returns int 
+begin
+   declare c int;
+   insert into metadata_sync_routine_ddl_dml_parallel.t1 values(1,'python'),(2,'java');
+   select id from metadata_sync_routine_ddl_dml_parallel.t1 where cname ='python' into c;
+   delete from metadata_sync_routine_ddl_dml_parallel.t1 where cname = 'python';
+   select id from metadata_sync_routine_ddl_dml_parallel.t1 where cname ='python' into c;
+   return c;
+end//
+delimiter ;//
+
+connection conn2;
+select metadata_sync_ddl_dml_parallel_23097.myselect();
+
+connection conn1;
+drop table t1;
+
+connection conn2;
+--error 1146
+select metadata_sync_ddl_dml_parallel_23097.myselect();
+
+connection conn1;
+drop function metadata_sync_ddl_dml_parallel_23097.myselect;
+
+connection conn2;
+--error 1305
+select myselect();
+
+#create function specify the definer
+connection conn1;
+--disable_warnings
+drop user if exists metedata_sync_user_23097;
+--enable_warnings
+
+create user metedata_sync_user_23097;
+GRANT execute ON metadata_sync_routine_ddl_dml_parallel.* TO metedata_sync_user_23097@'%' IDENTIFIED BY 'metedata_sync_user_23097' WITH GRANT OPTION;
+flush privileges;
+
+#Bug SEQUOIASQLMAINSTREAM-897
+connection conn2;
+create definer = metedata_sync_user_23097 function hello (s char(20)) returns char(50) deterministic return concat('Hello,' , s , '!');
+
+connect ( conn3, $mysql_host1, 'metedata_sync_user_23097', 'metedata_sync_user_23097', $mysql_db, $port1 );
+connection conn3;
+select metadata_sync_routine_ddl_dml_parallel.hello('world');
+disconnect conn3;
+
+connection conn1;
+--disable_warnings
+drop user if exists metedata_sync_user_23097_alter;
+--enable_warnings
+
+create user metedata_sync_user_23097_alter;
+GRANT execute ON metadata_sync_routine_ddl_dml_parallel.* TO metedata_sync_user_23097_alter@'%' IDENTIFIED BY 'metedata_sync_user_23097_alter' WITH GRANT OPTION;
+update mysql.proc set definer='metedata_sync_user_23097_alter@%' where name='hello';
+flush privileges;
+
+connect ( conn3, $mysql_host1, 'metedata_sync_user_23097_alter', 'metedata_sync_user_23097_alter', $mysql_db, $port1 );
+connection conn3;
+select metadata_sync_routine_ddl_dml_parallel.hello('world');
+disconnect conn3;
+
+connection conn1;
+drop function hello;
+
+connection conn2;
+--error 1305
+select hello('world');
+
+#seqDB-23099
+#create procedure dependency table
+connection conn1;
+create table t1 (
+        id   char(16) not null default '',
+        data int not null
+);
+create procedure metadata_sync_ddl_dml_parallel()
+  insert into t1 values ("foo", 42);
+
+connection conn2;
+call metadata_sync_ddl_dml_parallel();
+select * from t1;
+drop table t1;
+drop procedure metadata_sync_ddl_dml_parallel;
+
+connection conn1;
+delimiter //;
+create procedure metadata_sync_ddl_dml_parallel()
+begin
+   create table t1 (id char(16) not null default '', data int not null, a int auto_increment key);
+   insert into t1(id, data) values ("foo", 42);
+end//
+delimiter ;//
+
+connection conn2;
+call metadata_sync_ddl_dml_parallel();
+drop procedure metadata_sync_ddl_dml_parallel;
+
+#create procedure dependency view
+connection conn1;
+create view v1 as select * from t1 where id = 'foo';
+create procedure p1 ()
+  update v1 set data = 10;
+
+connection conn2;
+call p1();
+select * from v1;
+drop table t1;
+drop view v1;
+drop procedure p1;
+
+#create function specify the definer
+connection conn1;
+--disable_warnings
+drop user if exists metedata_sync_user_23099;
+--enable_warnings
+
+create user metedata_sync_user_23099;
+GRANT all ON metadata_sync_routine_ddl_dml_parallel.* TO metedata_sync_user_23099@'%' IDENTIFIED BY 'metedata_sync_user_23099' WITH GRANT OPTION;
+create table t1 (
+        id   char(16) not null default '',
+        data int not null
+);
+--disable_warnings
+drop procedure if exists metadata_sync_routine_ddl_dml_parallel;
+--enable_warnings
+
+create definer =  metedata_sync_user_23099 procedure metadata_sync_routine_ddl_dml_parallel()
+  insert into metadata_sync_routine_ddl_dml_parallel.t1 values ("foo", 42);
+
+connect ( conn3, $mysql_host1, 'metedata_sync_user_23099', 'metedata_sync_user_23099', $mysql_db, $port1 );
+connection conn3;
+call metadata_sync_routine_ddl_dml_parallel.metadata_sync_routine_ddl_dml_parallel();
+select * from metadata_sync_routine_ddl_dml_parallel.t1;
+disconnect conn3;
+
+connection conn1;
+--disable_warnings
+drop user if exists metedata_sync_user_23099_alter;
+--enable_warnings
+
+create user metedata_sync_user_23099_alter;
+GRANT all ON metadata_sync_routine_ddl_dml_parallel.* TO metedata_sync_user_23099_alter@'%' IDENTIFIED BY 'metedata_sync_user_23099_alter' WITH GRANT OPTION;
+update mysql.proc set definer='metedata_sync_user_23099_alter@%' where name='metadata_sync_routine_ddl_dml_parallel';
+
+connect ( conn3, $mysql_host1, 'metedata_sync_user_23099_alter', 'metedata_sync_user_23099_alter', $mysql_db, $port1 );
+connection conn3;
+call metadata_sync_routine_ddl_dml_parallel.metadata_sync_routine_ddl_dml_parallel();
+select * from metadata_sync_routine_ddl_dml_parallel.t1;
+disconnect conn3;
+
+connection conn1;
+drop procedure metadata_sync_routine_ddl_dml_parallel;
+
+connection conn2;
+--error 1305
+call metadata_sync_routine_ddl_dml_parallel();
+drop table t1;
+
+#nested procedure
+connection conn1;
+--disable_warnings
+drop procedure if exists zap;
+--enable_warnings
+
+delimiter //;
+create procedure zap(x int, out y int)
+begin
+  declare z int;
+  set z = x+1, y = z;
+end//
+
+--disable_warnings
+drop procedure if exists bar//
+--enable_warnings
+
+create procedure bar(x char(16), y int) comment "111111111111" sql security invoker insert into t1 values (x, y)//
+ 
+delimiter ;//
+create table t1 (
+        id   char(16) not null default '',
+        data int not null
+);
+
+connection conn2;
+--disable_warnings
+drop procedure if exists zip;
+--enable_warnings
+
+delimiter //;
+create procedure zip(x char(16), y int)
+begin
+  declare z int;
+  call zap(y, z);
+  call bar(x, z);
+end//
+delimiter ;//
+
+connection conn1;
+call zip('test',17);
+
+connection conn2;
+drop procedure zap;
+
+connection conn1;
+--error 1305
+call zip('test1',18);
+
+connection conn2;
+drop procedure bar;
+drop procedure zip;
+drop table t1;
+
+#Bug SEQUOIASQLMAINSTREAM-869
+#seqDB-23100
+connection conn1;
+--disable_warnings
+drop trigger if exists t1_bi;
+--enable_warnings
+
+CREATE TABLE t1(a INT NOT NULL, b INT, c INT);
+CREATE TRIGGER t1_bi BEFORE INSERT ON t1 FOR EACH ROW SET NEW.a = 1;
+
+connection conn2;
+INSERT INTO t1(b, c) VALUES (200, 300);
+select * from t1 order by c;
+
+connection conn1;
+drop trigger t1_bi;
+
+connection conn2;
+--error 1364
+INSERT INTO t1(b, c) VALUES (200, 300);
+drop table t1;
+
+drop database metadata_sync_routine_ddl_dml_parallel;
+--source suite/metadata_sync_sequoiadb/inc/insts_disconnect_sequoiadb.inc
+--source include/uninstall_sequoiadb.inc

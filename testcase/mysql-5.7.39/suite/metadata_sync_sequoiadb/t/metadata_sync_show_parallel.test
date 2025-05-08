@@ -1,0 +1,156 @@
+--source include/have_sequoiadb.inc
+--source suite/metadata_sync_sequoiadb/inc/insts_connect_sequoiadb.inc
+
+#seqDB-23109
+#database
+connection conn1;
+--disable_warnings
+drop database if exists metadata_sync_show_parallel;
+--enable_warnings
+create database metadata_sync_show_parallel;
+use metadata_sync_show_parallel;
+
+connection conn2;
+show create database metadata_sync_show_parallel;
+
+connection conn1;
+drop database metadata_sync_show_parallel;
+
+connection conn2;
+--error 1049
+show create database metadata_sync_show_parallel;
+
+connection conn1;
+create database metadata_sync_show_parallel;
+use metadata_sync_show_parallel;
+create table t1(a int);
+
+connection conn2;
+show create table metadata_sync_show_parallel.t1;
+
+connection conn1;
+drop table t1;
+
+connection conn2;
+--error 1146
+show create table metadata_sync_show_parallel.t1;
+
+connection conn1;
+CREATE EVENT IF NOT EXISTS e_hourly
+    ON SCHEDULE AT CURRENT_TIMESTAMP + INTERVAL 1 HOUR
+    DO
+      UPDATE myschema.mytable SET mycol = mycol + 1;
+
+connection conn2;
+--replace_regex /DEFINER=`.*`@/DEFINER=`x`@/ /SCHEDULE AT '.*'/SCHEDULE AT 'y'/
+show create event metadata_sync_show_parallel.e_hourly;
+
+connection conn1;
+drop event e_hourly;
+
+connection conn2;
+--error 1539
+show create event metadata_sync_show_parallel.e_hourly;
+
+connection conn1;
+create function hello (s char(20)) returns char(50) deterministic return concat('Hello,' , s , '!');
+
+connection conn2;
+show create function metadata_sync_show_parallel.hello;
+
+connection conn1;
+drop function hello;
+
+connection conn2;
+--error 1305
+show create function metadata_sync_show_parallel.hello;
+
+connection conn1;
+create table t1 (
+        id   char(16) not null default '',
+        data int not null
+);
+create procedure p23109() insert into t1 values ("foo", 42);
+
+connection conn2;
+show create procedure metadata_sync_show_parallel.p23109;
+
+connection conn1;
+drop procedure p23109;
+
+connection conn2;
+--error 1305
+show create procedure metadata_sync_show_parallel.p23109;
+drop table metadata_sync_show_parallel.t1;
+
+connection conn1;
+--disable_warnings
+drop trigger if exists t1_bi;
+--enable_warnings
+
+CREATE TABLE t1(a INT NOT NULL, b INT, c INT);
+CREATE TRIGGER t1_bi BEFORE INSERT ON t1 FOR EACH ROW SET NEW.a = 1;
+
+connection conn2;
+--replace_column 7 x
+--replace_regex /DEFINER=`.*`@/DEFINER=`x`@/
+show create trigger metadata_sync_show_parallel.t1_bi;
+
+connection conn1;
+drop trigger t1_bi;
+
+connection conn2;
+--error 1360
+show create trigger metadata_sync_show_parallel.t1_bi;
+drop table metadata_sync_show_parallel.t1;
+
+connection conn1;
+--disable_warnings
+drop user if exists 'metadata_sync_user_23109';
+--enable_warnings
+create user 'metadata_sync_user_23109'@'%' IDENTIFIED BY 'metadata_sync_user_23109';
+flush privileges;
+
+connection conn2;
+show create user metadata_sync_user_23109;
+
+connection conn1;
+drop user metadata_sync_user_23109;
+flush privileges;
+
+connection conn2;
+--error 1396
+show create user metadata_sync_user_23109;
+
+connection conn1;
+create table t1(a int);
+create view v1 as select * from t1;
+
+connection conn2;
+show create view metadata_sync_show_parallel.v1;
+
+connection conn1;
+drop view v1;
+
+connection conn2;
+--error 1146
+show create view metadata_sync_show_parallel.v1;
+drop table metadata_sync_show_parallel.t1;
+
+connection conn1;
+create table t1(a int);
+create index a on t1(a);
+
+connection conn2;
+show index from metadata_sync_show_parallel.t1;
+
+connection conn1;
+drop index a on t1;
+
+connection conn2;
+show index from metadata_sync_show_parallel.t1;
+
+drop database metadata_sync_show_parallel;
+
+--source suite/metadata_sync_sequoiadb/inc/insts_disconnect_sequoiadb.inc
+--source include/uninstall_sequoiadb.inc

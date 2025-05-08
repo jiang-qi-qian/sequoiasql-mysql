@@ -1,0 +1,96 @@
+# seqDB-33824
+
+--disable_warnings
+drop database if exists log_secure_sequoiadb;
+--enable_warnings
+create database log_secure_sequoiadb;
+drop database log_secure_sequoiadb;
+create database log_secure_sequoiadb;
+use log_secure_sequoiadb;
+create table t1(a int);
+insert into t1 values(1),(2),(3),(4),(5);
+create table t2 like t1;
+
+let $default_sequoiadb_secure_log = `select @@sequoiadb_secure_log`;
+set session sequoiadb_debug_log = on;
+
+# 配置参数测试
+## default
+set session sequoiadb_secure_log = default;
+show variables like "sequoiadb_secure_log";
+## on / 1
+set session sequoiadb_secure_log = on;
+show variables like "sequoiadb_secure_log";
+set session sequoiadb_secure_log = 1;
+show variables like "sequoiadb_secure_log";
+select @@sequoiadb_secure_log;
+## off / 0
+set session sequoiadb_secure_log = off;
+show variables like "sequoiadb_secure_log";
+set session sequoiadb_secure_log = 0;
+show variables like "sequoiadb_secure_log";
+select @@sequoiadb_secure_log;
+# invalid values
+set session sequoiadb_secure_log = default;
+--error 1231
+set session sequoiadb_secure_log = 2;
+--error 1231
+set session sequoiadb_secure_log = "";
+--error 1231
+set session sequoiadb_secure_log = "0";
+select @@sequoiadb_secure_log;
+
+# source session / global
+connect (con1, localhost, root);
+connect (con2, localhost, root);
+--echo "---con1"
+connection con1;
+set session sequoiadb_secure_log = default;
+select @@sequoiadb_secure_log;
+--echo "---con2"
+connection con2;
+set session sequoiadb_secure_log = default;
+select @@sequoiadb_secure_log;
+## session
+--echo "---con1"
+connection con1;
+set session sequoiadb_secure_log = off;
+select @@sequoiadb_secure_log;
+--echo "---con2"
+connection con2;
+select @@sequoiadb_secure_log;
+## global
+eval set global sequoiadb_secure_log = $default_sequoiadb_secure_log;
+select @@sequoiadb_secure_log;
+disconnect con1;
+disconnect con2;
+connection default;
+
+# 基本功能验证
+let $i = 2;
+while ($i)
+{
+    if ($i == 2) 
+    {
+        set session sequoiadb_secure_log = off;
+        select @@sequoiadb_secure_log;
+    }
+    if ($i == 1)
+    {
+        set session sequoiadb_secure_log = on;
+        select @@sequoiadb_secure_log;
+    }
+
+    let $query = select * from t1 where a = 1;
+    --source include/query_without_sorted_and_get_mysqld_note_log_sequoiadb.inc
+    let $query = delete from t1 where a = 1;
+    --source include/query_without_sorted_and_get_mysqld_note_log_sequoiadb.inc
+    let $query = select * from (select * from t1 where a>3) t2 group by a;
+    --source include/query_with_sorted_and_get_mysqld_note_log_sequoiadb.inc
+
+    dec $i;
+}
+
+eval set global sequoiadb_secure_log = $default_sequoiadb_secure_log;
+
+drop database log_secure_sequoiadb;

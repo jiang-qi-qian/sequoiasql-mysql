@@ -1,0 +1,980 @@
+#!/bin/bash
+
+#   error code list:
+#   10     parameter error
+#   11     instance does not exist
+#   12     get mysql parameter error
+#   13     create database error
+#   14     create table error
+#   15     build mapping item error
+#   16     post drop database error
+#   17     failed to get hosts and their ports
+#   18     failed to check if mapping is enabled
+#   19     failed to check if 'CM', 'SSH' is available
+#   20     failed to check if 'SysMetaGroup' exist or check versions
+
+SDB_CONN_ADDRS=""
+SDB_USER=""
+SDB_PASSWD=""
+SDB_TOKEN=""
+SDB_CIPHERFILE=""
+
+MYSQL_LOGIN=""
+MYSQL_USER=`whoami`
+MYSQL_PASSWD=""
+MYSQL_HOST=`hostname`
+MYSQL_PORT=3306
+
+REMOTE_CTL_METHOD="use_cm"
+
+HOSTS=()
+PORTS=()
+
+function execute_query()
+{
+   local exec_sql=$1
+   local rc=0
+   local msg
+   if [ "${MYSQL_PASSWD}" != "" ]; then
+      msg=$($MYSQL_LOGIN -p"${MYSQL_PASSWD}" -e "${exec_sql}" 2>&1)
+   else
+      msg=$($MYSQL_LOGIN -e "${exec_sql}" 2>&1)
+   fi
+   rc=$?
+   if [[ $rc != 0 ]]; then
+      echo -e "Error in executing SQL: '${exec_sql}'"
+      msg=`echo "${msg}" | grep -v "Using a password"`  # remove 'Using a password' warning
+      echo -e "ERROR: ${msg}"
+   fi
+   return $rc
+}
+ 
+function build_sdb_conn()
+{
+cat <<EOF
+   var db;
+   var user = '${SDB_USER}', passwd = '${SDB_PASSWD}';
+   var token = '${SDB_TOKEN}', cipherFile = '${SDB_CIPHERFILE}';
+   var hostsPorts = '${SDB_CONN_ADDRS}';
+
+   // convert 'localhost.11810,localhost2.11810' into
+   // 'localhost 11810 localhost2 11810'
+   hostsPorts = hostsPorts.replace(/[,:]/g, " ");
+   hostsPorts = hostsPorts.split(' ');
+   for (var i=0; i < hostsPorts.length; i+=2) {
+      try {
+         println("INFO: Connecting to '" + hostsPorts[i] + ":" + hostsPorts[i+1] + "'");
+         if ("" == passwd && "" != user) {
+            // use cipherfile
+            var sdbUser = CipherUser(user).token(token).cipherFile(cipherFile);
+            db = new Sdb(hostsPorts[i], hostsPorts[i+1], sdbUser);
+         } else {
+            db = new Sdb(hostsPorts[i], hostsPorts[i+1], user, passwd);
+         }
+         break;
+      } catch (e) {
+         println("INFO: Sequoiadb Service '" + hostsPorts[i] + ":" + hostsPorts[i+1] + "' is not available");
+         continue;
+      }
+   }
+EOF
+}
+
+function rename_cl()
+{
+   local rc=0
+   local msg
+   local db_name=$1
+   local final_db_name=$2
+   local inited_sdb_conn=`build_sdb_conn`
+
+   if [ "${lower_case_table_names}" == '1' ]; then
+      db_name=`echo ${db_name} | tr '[:upper:]' '[:lower:]'`
+   fi
+   local sdb_js=`cat <<EOF
+      try {
+         println("INFO: Rebuild '${final_db_name}.TABLE_MAPPING'");
+         db.dropCS('${final_db_name}');
+      } catch ( e ) {
+         if ( SDB_DMS_CS_NOTEXIST == e ) {
+            // ignore collection space does not exist error
+         } else {
+            throw "ERROR: Failed to clear original mapping table, error " + getLastErrMsg();
+         }
+      }
+      try {
+         if ("${lower_case_table_names}" == '1') {
+            db.${db_name}.renameCL('table_mapping', 'TABLE_MAPPING');
+         }
+         db.renameCS('${db_name}', '${final_db_name}');
+         println("INFO: Rebuild '${final_db_name}.TABLE_MAPPING' succeeded");
+      } catch ( e ) {
+         throw "ERROR: Failed to rename mapping CS and mapping CL, error " + getLastErrMsg();
+      }
+EOF`
+
+   # echo "INFO: execute sdb command: ${sdb_js}"
+   msg=$($INSTALL_DIR/bin/sdb -s "${sdb_js}")
+   rc=$?
+   # remove "XXXX uncaught exception" prefix
+   echo "${msg}" | sed 's/^.*uncaught exception: //'
+   return $rc;
+}
+
+function set_non_trans_flag()
+{
+   local msg
+   local final_db_name=$1
+   local sdb_js=`cat <<EOF
+      try {
+         println("INFO: Try to set 'NoTrans' flag for '${final_db_name}.TABLE_MAPPING'");
+         db.${final_db_name}.TABLE_MAPPING.setAttributes({'NoTrans': true});
+      } catch ( e ) {
+         println("INFO: Failed to set 'NoTrans' flag for mapping table, ignore error: " + getLastErrMsg());
+      }
+EOF`
+   # echo "INFO: execute sdb command: ${sdb_js}"
+   msg=$($INSTALL_DIR/bin/sdb -s "${sdb_js}")
+   echo "${msg}" | sed 's/^.*uncaught exception: //'
+}
+
+function get_hosts_and_ports()
+{
+   local rc=0
+   local msg
+   if [ "${group_name}" != "" ]; then
+      local inited_sdb_conn=`build_sdb_conn`
+      local sdb_js=`cat <<EOF
+         try {
+            ${inited_sdb_conn}
+            var dbCur = db.HASysGlobalInfo.HARegistry.find({InstanceGroupName: "${group_name}"}, {HostName: "", Port: "", IP: ""});
+            var obj = null;
+            while((obj = dbCur.next() != null)) {
+               var host = dbCur.current().toObj().IP;
+               var port = dbCur.current().toObj().Port;
+               println("HOSTS_PORTS " + host + " " + port);
+            }
+         } catch ( e ) {
+            throw "ERROR: Failed to get hosts and ports from instance group, error " + getLastErrMsg();
+         }
+EOF`
+      msg=$($INSTALL_DIR/bin/sdb -s "${sdb_js}")
+      rc=$?
+      if [[ $rc == 0 ]]; then
+         HOSTS=(`echo "${msg}" | grep "HOSTS_PORTS" | awk '{print $2}' | tr -s '\n' ' '`)
+         PORTS=(`echo "${msg}" | grep "HOSTS_PORTS" | awk '{print $3}' | tr -s '\n' ' '`)
+         if [ ${#HOSTS[@]} == 0 ]; then
+            echo "ERROR: Can't find registry information for instances in group '${group_name}' from 'HASysGlobalInfo.HARegistry'"
+            rc=1
+         fi
+      else
+         echo "${msg}" | sed 's/^.*uncaught exception: //' | egrep "INFO|ERROR|WARN"
+      fi
+   else
+      HOSTS=(${MYSQL_HOST})
+      PORTS=(${MYSQL_PORT})
+   fi;
+   return $rc
+}
+
+# check if mapping is on for all intances in the group
+function check_enable_mapping_flag
+{
+   local msg
+   local mapping_enabled=1
+   for (( i=0; i < ${#HOSTS[@]}; i++))
+   do
+      local host=${HOSTS[i]}
+      local port=${PORTS[i]}
+      # check if 'sequoiadb_enable_mapping' is ON
+      if [ "${MYSQL_PASSWD}" != "" ]; then
+         msg=$($BIN_PATH/mysql -h${host} -P${port} -u${MYSQL_USER} -p"${MYSQL_PASSWD}" -e "SELECT @@sequoiadb_enable_mapping" 2>&1)
+      else
+         msg=$($BIN_PATH/mysql -h${host} -P${port} -u${MYSQL_USER} -e "SELECT @@sequoiadb_enable_mapping" 2>&1)
+      fi
+      if [[ $? != 0 ]]; then
+         msg=`echo "${msg}" | grep -v "Using a password"`  # remove 'Using a password' warning
+         echo "ERROR: $msg"
+         return 2
+      fi
+
+      local sdb_enable_mapping=$(echo "${msg}" | egrep -v "Using a password|sequoiadb_enable_mapping")
+      if [ "${sdb_enable_mapping}" == "0" ]; then
+         echo "INFO: 'sequoiadb_enable_mapping' on ${host}:${port} is not ON"
+         mapping_enabled=0
+         break
+      fi
+   done
+
+   if [[ ${mapping_enabled} == 1 ]]; then
+      echo "INFO: Mapping function has been enabled for instance group '${group_name}'"
+   fi
+   return ${mapping_enabled}
+}
+
+function usage()
+{
+cat <<EOF
+Usage: ${ME} [--instance=NAME] [-uNAME|--user=NAME] [-p|--password=PASSWORD] [--standalone] [--manual-restart]
+Options:
+  --instance=NAME            MySQL instance name.
+  -u, --user=NAME            User to login MySQL instance.
+  -p                         Prompt user input password without echo.
+  --password=PASSWORD        MySQL user password.
+  --standalone               Initialize mapping table if instance group function is not enabled.
+  --manual-restart           Change instance configuration and restart instance manually.
+  -v, --version              Print version information.
+  -h, --help                 Display this help and exit.
+EOF
+}
+
+function show_version()
+{
+   cat $INSTALL_PATH/version.info
+}
+
+function init_sdb_path()
+{
+   if [ ! -f /etc/default/sequoiadb ]; then
+      echo "ERROR: '/etc/default/sequoiadb' does not exists"
+      exit 10
+   fi
+   # initialize sdb command path
+   . /etc/default/sequoiadb
+}
+
+function compare_version()
+{
+   if [[ $1 == $2 ]]; then
+      return 0
+   fi
+   local IFS=.
+   local i ver1=($1) ver2=($2)
+   # fill empty fields in ver1 with zeros
+   for ((i=${#ver1[@]}; i<${#ver2[@]}; i++))
+   do
+      ver1[i]=0
+   done
+   for ((i=0; i<${#ver1[@]}; i++))
+   do
+      if [[ -z ${ver2[i]} ]]; then
+         # fill empty fields in ver2 with zeros
+         ver2[i]=0
+      fi
+      if ((10#${ver1[i]} > 10#${ver2[i]})); then
+         return 1
+      fi
+      if ((10#${ver1[i]} < 10#${ver2[i]})); then
+         return 2
+      fi
+   done
+   return 0
+}
+
+function check_version()
+{
+   local version=$1
+   compare_version $version "5.0.3"
+   if [[ $? == 2 ]]; then  # version is less than 5.0.3
+      compare_version "$version" "5.0"
+      if [[ $? != 2 ]]; then # version is greater than 5.0, report error
+         echo "ERROR: '${ME}' is supported in versions after SequoiaSQL-MySQL-3.4.5 or SequoiaSQL-MySQL-5.0.3"
+         return 1;
+      fi
+      compare_version "$version" "3.4.5"
+      if [[ $? == 2 ]]; then # version is less than 3.4.5, report error
+         echo "ERROR: '${ME}' is supported in versions after SequoiaSQL-MySQL-3.4.5 or SequoiaSQL-MySQL-5.0.3"
+         return 1;
+      fi
+   fi
+   return 0
+}
+
+function pre_check()
+{
+   # test if 'SysMetaGroup' exists
+   local msg
+   local inited_sdb_conn=`build_sdb_conn`
+   local sdb_js=`cat <<EOF
+      try {
+         ${inited_sdb_conn}
+         db.getRG("SysMetaGroup");
+      } catch ( e ) {
+         if ( SDB_CLS_GRP_NOT_EXIST == e ) {
+           throw "ERROR: Replication group 'SysMetaGroup' does not exist, please create it first";
+         } else {
+           throw "ERROR: Failed to get replica group 'SysMetaGroup', error " + getLastErrMsg();
+         }
+      }
+EOF`
+   msg=$($INSTALL_DIR/bin/sdb -s "${sdb_js}")
+   if [ $? != 0 ]; then
+      echo "${msg}" | sed 's/^.*uncaught exception: //' | egrep "INFO|ERROR|WARN"
+      return 1
+   fi
+
+   # version has been checked in 'get_inst_and_group_name'
+   # can't check other SequoiaSQL-MySQL version if REMOTE_CTL_METHOD is "use_manual"
+   if [ "${REMOTE_CTL_METHOD}" == "use_manual" ]; then
+      return 0
+   fi
+
+   # version has been checked in 'get_inst_and_group_name'
+   # no need to check version again if group_type is "meta_sync"
+   if [ "$group_type" == "meta_sync" ]; then
+      return 0
+   fi
+
+   # check version
+   local local_version=`${BIN_PATH}/sdb_sql_ctl --version | grep "SequoiaSQL-MySQL version" | awk -F':' '{print \$2}'`
+   local inited_sdb_conn=`build_sdb_conn`
+   for (( i=0; i < ${#HOSTS[@]}; i++))
+   do
+      local host=${HOSTS[i]}
+      if [ "${REMOTE_CTL_METHOD}" == "use_cm" ]; then
+         local sdb_js=`cat <<EOF
+            try {
+               var remote = new Remote("${host}", 11790);
+               cmd = remote.getCmd();
+               var shellCmd="${BIN_PATH}/sdb_sql_ctl --version | grep SequoiaSQL-MySQL";
+               cmd.run(shellCmd);
+               println(cmd.getLastOut());
+            } catch (e) {
+              throw "ERROR: Failed to check versions, error " + getLastError();
+            }
+EOF`
+         local msg=$($INSTALL_DIR/bin/sdb -s "${sdb_js}")
+         if [ $? != 0 ]; then
+            echo "${msg}" | sed 's/^.*uncaught exception: //' | egrep "INFO|ERROR|WARN"
+            $INSTALL_DIR/bin/sdb -s "quit"
+            echo "ERROR: Failed to get 'sdb_sql_ctl' version from '${host}' by SequoiaDB CM"
+            return 1;
+         fi
+         version=`echo ${msg} | grep "SequoiaSQL-MySQL version" | awk -F':' '{print \$2}'`
+      else
+         local ssh_cmd="${BIN_PATH}/sdb_sql_ctl --version | grep 'SequoiaSQL-MySQL version' | awk -F':' '{print \$2}'"
+         version=$(ssh -q -o BatchMode=yes -o StrictHostKeyChecking=no -o ConnectTimeout=5 ${host} "${ssh_cmd}")
+         if [ $? != 0 ]; then
+            echo "ERROR: Failed to get 'sdb_sql_ctl' version from '${host}' by ssh command"
+            return 1
+         fi
+      fi
+
+      # compare version between local and remote instance
+      compare_version ${local_version} ${version}
+      if [[ $? != 0 ]]; then
+         echo "ERROR: Local instance version '${local_version}' is not equal to remote instance ${host}:${PORTS[i]} version '${version}'"
+         return 1
+      fi
+
+      # check if version is equal or greater than 3.4.5(version 3.4) or 5.0.3(version 5.0)
+      check_version ${version}
+      if [ $? != 0 ]; then
+         # used to let sdbbp exit
+         if [ "${REMOTE_CTL_METHOD}" == "use_cm" ]; then
+            $INSTALL_DIR/bin/sdb -s "quit"
+         fi
+         echo "ERROR: Failed to compare version between ${MYSQL_HOST}(version is ${local_version}) and ${host}(version is ${version})"
+         return 1
+      fi
+   done
+}
+
+function get_inst_and_group_name()
+{
+   local version=`${BIN_PATH}/sdb_sql_ctl --version | grep "SequoiaSQL-MySQL version" | awk -F':' '{print $2}'`
+   check_version ${version}
+   if [ $? != 0 ]; then
+      exit 10;
+   fi
+
+   if [ "${INST_NAME}" != "" ]; then
+      group_name=`${BIN_PATH}/sdb_sql_ctl status "${INST_NAME}" | grep "${INST_NAME}" | awk '{print $1}'`
+   else
+      local result=$(${BIN_PATH}/sdb_sql_ctl status | egrep -v "INSTANCE|Total" | awk '{print $2, $1}' | sort -k 2 | uniq -c -f 1)
+      if [[ $? != 0 ]]; then
+         echo "ERROR: Failed to get instance info, ${result}"
+         exit 10
+      fi
+      local counts=(`echo "${result}" | awk '{print $1}' | tr -s '\n' ' '`)
+      local inst_groups=(`echo "${result}" | awk '{print $3}' | tr -s '\n' ' '`)
+      if [[ ${#counts[@]} > 1 ]]; then
+         echo "ERROR: More than one instance group[${inst_groups[@]}] in current host, please use '--instance' to specify instance name"
+         exit 10
+      elif [[ ${#counts[@]} == 1 ]]; then
+         group_name=${inst_groups[0]}
+         INST_NAME=$(echo ${result} | awk '{print $2}')
+      fi
+   fi
+   if [ "${group_name}" == "-" ]; then
+      group_name=""
+   fi
+   echo "INFO: Instance group name is '${group_name}', instance name is '${INST_NAME}'"
+}
+
+function init_login_args()
+{
+   # init $SQLDATA
+   CONF_INST_PATH="${INSTALL_PATH}/conf/instance"
+   if [ "${INST_NAME}" == "" ]; then
+      echo "ERROR: Instance name is not set"
+      exit 10
+   fi
+
+   if [ ! -f "$CONF_INST_PATH/${INST_NAME}.conf" ]; then
+      echo "ERROR: Instance '${INST_NAME}' does not exist"
+      exit 11
+   fi
+   . $CONF_INST_PATH/${INST_NAME}.conf
+
+   # get sequoiadb auth parameters
+   local conn_addrs=`$BIN_PATH/my_print_defaults -c $SQLDATA/auto.cnf mysqld | grep "^--sequoiadb_conn_addr="`
+   conn_addrs=${conn_addrs#*=}
+   if [ "$conn_addrs" == "" ]; then
+      # set default connection address
+      SDB_CONN_ADDRS="localhost:11810"
+   else
+      SDB_CONN_ADDRS="${conn_addrs//[[:blank:]]/}"
+   fi
+
+   SDB_USER=`$BIN_PATH/my_print_defaults -c $SQLDATA/auto.cnf mysqld | grep "^--sequoiadb_user="`
+   SDB_USER=${SDB_USER#*=}
+
+   SDB_PASSWD=`$BIN_PATH/my_print_defaults -c $SQLDATA/auto.cnf mysqld | grep "^--sequoiadb_password="`
+   SDB_PASSWD=${SDB_PASSWD#*=}
+
+   SDB_TOKEN=`$BIN_PATH/my_print_defaults -c $SQLDATA/auto.cnf mysqld | grep "^--sequoiadb_token="`
+   SDB_TOKEN=${SDB_TOKEN#*=}
+
+   SDB_CIPHERFILE=`$BIN_PATH/my_print_defaults -c $SQLDATA/auto.cnf mysqld | grep "^--sequoiadb_cipherfile="`
+   SDB_CIPHERFILE=${SDB_CIPHERFILE#*=}
+
+   # get mysql port
+   MYSQL_PORT=`cat $SQLDATA/auto.cnf | awk -F'#' '{print $1}' | grep "^\s*port"`
+   MYSQL_PORT=${MYSQL_PORT#*=}
+   if [ "$MYSQL_PORT" == "" ]; then
+      MYSQL_PORT=3306
+   fi
+}
+
+# SQL stmt used to insert record into mapping table
+function build_init_mapping_table_sql_cmd()
+{
+   local full_table_name=$1
+cat <<EOF
+INSERT INTO ${full_table_name} (DBName, TableName, CSName, CLName, IsPhysicalTable)
+   SELECT PARTS.TABLE_SCHEMA collate 'utf8_bin' AS DBName, PARTS.TABLE_NAME collate 'utf8_bin' AS TableName, PARTS.TABLE_SCHEMA AS CSName,
+          PARTS.TABLE_NAME AS CLName, 1 AS IsPhysicalTable
+   FROM information_schema.PARTITIONS AS PARTS, information_schema.TABLES AS TBLS
+   WHERE PARTS.TABLE_SCHEMA = TBLS.TABLE_SCHEMA AND TBLS.TABLE_SCHEMA != '${db_name}' AND
+         PARTS.TABLE_NAME = TBLS.TABLE_NAME AND ENGINE = 'SequoiaDB' AND TABLE_TYPE = 'BASE TABLE' AND
+         (PARTITION_METHOD = 'KEY' OR PARTITION_METHOD = 'HASH' OR PARTITION_METHOD IS NULL)
+   GROUP BY DBName collate 'utf8_bin', TableName collate 'utf8_bin'
+   UNION
+   SELECT PARTS.TABLE_SCHEMA collate 'utf8_bin' AS DBName, CONCAT(PARTS.TABLE_NAME, '#P#', PARTITION_NAME) collate 'utf8_bin' AS TableName,
+          PARTS.TABLE_SCHEMA AS CSName, CONCAT(PARTS.TABLE_NAME, '#P#', PARTITION_NAME) AS CLName,
+          1 AS IsPhysicalTable
+   FROM information_schema.PARTITIONS AS PARTS, information_schema.TABLES AS TBLS
+   WHERE PARTS.TABLE_SCHEMA = TBLS.TABLE_SCHEMA AND TBLS.TABLE_SCHEMA != '${db_name}' AND
+         PARTS.TABLE_NAME = TBLS.TABLE_NAME AND ENGINE = 'SequoiaDB' AND TABLE_TYPE = 'BASE TABLE' AND
+         (PARTITION_METHOD != 'KEY' AND PARTITION_METHOD != 'HASH' AND PARTITION_METHOD IS NOT NULL)
+   GROUP BY DBName collate 'utf8_bin', TableName collate 'utf8_bin', PARTITION_NAME collate 'utf8_bin'
+   UNION
+   SELECT PARTS.TABLE_SCHEMA collate 'utf8_bin' AS DBName,PARTS.TABLE_NAME collate 'utf8_bin' AS TableName, PARTS.TABLE_SCHEMA AS CSName,
+          PARTS.TABLE_NAME AS CLName, 0 AS IsPhysicalTable
+   FROM information_schema.PARTITIONS AS PARTS, information_schema.TABLES AS TBLS 
+   WHERE PARTS.TABLE_SCHEMA = TBLS.TABLE_SCHEMA AND TBLS.TABLE_SCHEMA != '${db_name}' AND
+         PARTS.TABLE_NAME = TBLS.TABLE_NAME AND ENGINE = 'SequoiaDB'  AND TABLE_TYPE = 'BASE TABLE' AND 
+         (PARTITION_METHOD != 'KEY' AND PARTITION_METHOD != 'HASH' AND PARTITION_METHOD IS NOT NULL)
+   GROUP BY DBName collate 'utf8_bin', TableName collate 'utf8_bin'
+   UNION
+   SELECT '', '', '', '', 0
+EOF
+}
+
+# set remote ctl method
+function set_remote_ctl_method()
+{
+   local rc
+   local msg
+   local inited_sdb_conn=`build_sdb_conn`
+   if [ "$group_type" == "meta_sync" ]; then
+      if [ "${NM_STANDALONE}" == "" ]; then
+         echo "ERROR: Instance '${INST_NAME}' is not in any instance group, you can enable mapping function with '--standalone' parameter"
+         rc=1
+      fi
+      return $rc
+   fi
+
+   local sdb_js=`cat <<EOF
+      ${inited_sdb_conn}
+      var hosts = '${HOSTS[@]}'.split(' '), host;
+      try {
+         for (var i = 0; i < hosts.length; i++) {
+            host = hosts[i];
+            var remote = new Remote(host, 11790);
+         }
+      } catch (e) {
+         throw "ERROR: Failed to connect CM on " + host + ", error: " + getLastErrMsg();
+      }
+EOF`
+   # echo "INFO: execute sdb command: ${sdb_js}"
+   msg=$($INSTALL_DIR/bin/sdb -s "${sdb_js}")
+   rc=$?
+   if [[ $rc != 0 ]]; then
+      REMOTE_CTL_METHOD="use_ssh"
+      msg=$(echo "${msg}" | sed 's/^.*uncaught exception: //' | egrep "INFO|ERROR|WARN")
+      echo "${msg}"
+      echo "INFO: SequoiaDB CM is not available on instance group, try to use SSH"
+      for host in ${HOSTS[@]}
+      do
+         msg=$(ssh -q -o BatchMode=yes -o StrictHostKeyChecking=no -o ConnectTimeout=5 ${host} 'exit 0')
+         rc=$?
+         if [[ $rc != 0 ]]; then
+            echo "INFO: SequoiaDB CM and SSH are not available"
+            REMOTE_CTL_METHOD="use_manual"
+            rc=0
+            break;
+         fi
+      done
+   fi
+
+   if [ "${REMOTE_CTL_METHOD}" == "use_manual" -a "${NM_MANUAL_RESTART}" == "" ]; then
+      echo "ERROR: SequoiaDB CM and SSH are not available, you need to enable mapping function with '--manual-restart' parameter"
+      rc=1;
+   fi
+   return $rc;
+}
+
+
+# enable table mapping function and restart instances 
+function enable_table_mapping_and_restart_inst()
+{
+   local enable=$1
+cat <<EOF
+   var remoteCtlMethod="${REMOTE_CTL_METHOD}";
+   var groupType = "${group_type}";
+   if (remoteCtlMethod == "use_cm" || remoteCtlMethod == "use_ssh" || groupType == "meta_sync") {
+      // change instance configuration and restart instance
+      var hosts = '${HOSTS[@]}'.split(' ');
+      var ports = '${PORTS[@]}'.split(' ');
+      for (var i = 0; i < hosts.length; i++)  {
+         var host = hosts[i], port = ports[i];
+         var remote, cmd, cmdPrefix="";
+         if (groupType == "meta_sync") { // meta_sync
+            cmd = new Cmd();
+         } else if (remoteCtlMethod == "use_cm" ) {
+            remote = new Remote(host, 11790);
+            cmd = remote.getCmd();
+         } else {
+            cmd = new Cmd();
+            cmdPrefix = 'ssh -q -o BatchMode=yes -o StrictHostKeyChecking=no -o ConnectTimeout=5 ' + host + ' ';
+         }
+         // get instance name
+         var shellCmd = cmdPrefix + "${BIN_PATH}/sdb_sql_ctl listinst | grep '/" + port + "' | awk '{print \$1}'";
+         println("INFO: Get instance name by " + shellCmd);
+         cmd.run(shellCmd);
+         if ( 0 != cmd.getLastRet())
+         {
+            throw "ERROR: Failed to list instances, error code: " + cmd.getLastRet();
+         }
+         var instName = cmd.getLastOut().trim();
+         println("INFO: Set " + instName + " mapping function to ${enable} and restart it");
+         
+         // enable mapping for instance
+         shellCmd = cmdPrefix + "${BIN_PATH}/sdb_sql_ctl chconf " + instName + " --sdb-enable-mapping=" + "${enable}";
+         cmd.run(shellCmd);
+         if ( 0 != cmd.getLastRet())
+         {
+            throw "ERROR: Failed to enable mapping for '" + instName + "', error code: " + cmd.getLastRet();
+         }
+
+         // restart instance
+         shellCmd = cmdPrefix + "${BIN_PATH}/sdb_sql_ctl restart " + instName;
+         cmd.run(shellCmd);
+         if (0 != cmd.getLastRet())
+         {
+            throw "ERROR: Failed to restart '" + instName + "', error code: " + cmd.getLastRet();
+         }
+      }
+   }
+EOF
+}
+
+function lock_table()
+{
+   local inited_sdb_conn=`build_sdb_conn`
+cat <<EOF
+   ${inited_sdb_conn}
+   try {
+      db.setSessionAttr({TransIsolation: 2, TransMaxLockNum: 0, TransAllowLockEscalation: true});
+      db.transBegin();
+      if ('${group_type}' == 'inst_group') {
+         db.HAInstanceGroup_${group_name}.HALock.findOne();
+      }
+   } catch (e) {
+      throw "ERROR: Failed to add table lock on 'HALOCK' table, error: " + getLastError();
+   }
+EOF
+}
+
+function unlock_table()
+{
+cat <<EOF
+   try {
+      db.transCommit();
+   } catch (e) {
+      throw "ERROR: Failed to release lock on 'HALOCK' table, error: " + getLastError();
+   }
+EOF
+}
+
+function build_mapping_table_js()
+{
+   # initialize mapping table by SQL query, remove '\n' and fold blank characters
+   local full_table_name=$1
+   local inited_sdb_conn=`build_sdb_conn`
+cat <<EOF
+   try {
+      var hostName, port;
+      hostName = "${MYSQL_HOST}";
+      port = "${MYSQL_PORT}";
+      // check if local instance SQLID is max SQLID in HASQLLog
+      if ('${group_type}' == 'inst_group') {
+         ${inited_sdb_conn}
+         var dbCur, maxSQLID = 0, instID, currInstSQLID = 0;
+         // get current instance InstanceID
+         dbCur = db.HASysGlobalInfo.HARegistry.find({HostName: "${MYSQL_HOST}", Port: ${MYSQL_PORT}});
+         instID = dbCur.current().toObj().InstanceID;
+         for (var i = 0; i < 3; i++) {
+            // get MAX SQLID in HAInstanceState
+            dbCur = db.HAInstanceGroup_${group_name}.HAInstanceState.find().sort({SQLID: -1});
+            maxSQLID = dbCur.current().toObj().SQLID;
+
+            dbCur = db.HAInstanceGroup_${group_name}.HAInstanceState.find({InstanceID: instID});
+            currInstSQLID = dbCur.current().toObj().SQLID;
+            if (maxSQLID == currInstSQLID) {
+               break;
+            }
+            sleep(2000);  // sleep 2s
+         }
+         if (maxSQLID != currInstSQLID) {
+            throw "ERROR: There are some metadata operations have not been replay by current instance, please try it later";
+         }
+      }
+
+      // build mysql shell command and run this command by Cmd.run method
+      var cmd = new Cmd();
+      var shellCmd = '${BIN_PATH}/mysql -u${MYSQL_USER} --password="${MYSQL_PASSWD}"';
+      shellCmd += ' -h' + hostName + ' -P' + port + ' -e ' + '"' + sqlCmd + '"';
+      cmd.run(shellCmd);
+      if ( 0 != cmd.getLastRet()) {
+         throw "ERROR: Failed to initialize mapping table, error: " + cmd.getLastOut();
+      }
+      // change configuration of remote hosts restart remote hosts
+   }  catch (e) {
+      throw "ERROR: Failed to initialize mapping table on " + hostName + ":" + port + ", error: " + getLastError();
+   }
+EOF
+}
+
+function build_mapping_table()
+{
+   local msg
+   local full_table_name=$1
+   if [ "${lower_case_table_names}" == '1' ]; then
+      full_table_name=`echo ${full_table_name} | tr '[:upper:]' '[:lower:]'`
+   fi
+   local sql_cmd=`build_init_mapping_table_sql_cmd ${full_table_name} | tr -ds '\n' ' '`
+
+   # local 'HALock' table
+   echo "INFO: Add lock on 'HALock' for instance group '${group_name}'"
+   local sdb_js=`lock_table`
+   msg=$($INSTALL_DIR/bin/sdb -s "${sdb_js}")
+   if [[ $? != 0 ]]; then
+      # remove "XXXX uncaught exception" prefix
+      echo "${msg}" | sed 's/^.*uncaught exception: //'
+      $INSTALL_DIR/bin/sdb -s "quit"
+      return 1
+   fi
+
+   # define SQL command variable first
+   $INSTALL_DIR/bin/sdb -s "var sqlCmd = \"${sql_cmd}\";";
+
+   # initialize mapping table
+   echo "INFO: Initialize mapping table for group '${group_name}'"
+   sdb_js=`build_mapping_table_js ${full_table_name}`
+   msg=$($INSTALL_DIR/bin/sdb -s "${sdb_js}")
+   rc=$?
+
+   if [[ $rc != 0 ]]; then
+      echo "${msg}" | sed 's/^.*uncaught exception: //'
+      $INSTALL_DIR/bin/sdb -s "quit"
+      return 1
+   fi
+
+   # connect to sequoiadb, rename CS and CL
+   echo "INFO: Rename '${full_table_name}' to '${final_db_name}'.TABLE_MAPPING"
+   rename_cl "${db_name}" "${final_db_name}"
+   if [[ $? != 0 ]]; then
+      echo "ERROR: Failed to rename '${full_table_name}' to '${final_db_name}'.TABLE_MAPPING"
+      rc=1
+      $INSTALL_DIR/bin/sdb -s "quit"
+      return $rc;
+   fi
+
+   # try to set 'NoTrans' flags, ignore error if fails
+   set_non_trans_flag "${final_db_name}"
+
+   # enable mapping for remote SQL instances
+   echo "INFO: Enable mapping for instances in group '${group_name}'"
+   sdb_js=`enable_table_mapping_and_restart_inst "ON"`
+   msg=$($INSTALL_DIR/bin/sdb -s "${sdb_js}")
+   if [[ $? != 0 ]]; then
+      # drop mapping table
+      $INSTALL_DIR/bin/sdb -s "db.${final_db_name}.dropCL('TABLE_MAPPING')"
+      if [[ $? != 0 ]]; then
+         echo "WARNING: Failed to drop mapping table '${final_db_name}.TABLE_MAPPING'"
+      fi
+
+      echo "${msg}" | sed 's/^.*uncaught exception: //'
+      echo "INFO: Failed to enable mapping for instances in group '${group_name}', start rollback to initial state"
+      sdb_js=`enable_table_mapping_and_restart_inst "OFF"`
+      msg=$($INSTALL_DIR/bin/sdb -s "${sdb_js}")
+      if [[ $? != 0 ]]; then
+         echo "${msg}" | sed 's/^.*uncaught exception: //'
+         echo "ERROR: Failed to rollback to initial state"
+      else
+         echo "INFO: Rollback to initial state successfully"
+      fi
+      $INSTALL_DIR/bin/sdb -s "quit"
+      return 1
+   fi   
+
+   # prompt user change instance configure and restart instance manually
+   if [ "${REMOTE_CTL_METHOD}" == "use_manual" ]; then
+      echo "INFO: SequoiaDB CM and SSH are not available, you need enable mapping manually for all instances in instance group"
+      echo "INFO: Running commands are 'sdb_sql_ctl chconf <inst_name> --sdb-enable-mapping=ON' and 'sdb_sql_ctl restart <inst_name>'"
+      while true
+      do
+         read -p "INFO: Have all instances enabled the mapping function?[y/N]" answer
+         answer=`echo ${answer} | tr -t [a-z] [A-Z]`
+         if [ "${answer}" == "Y" -o "${answer}" == "YES" ]; then
+            check_enable_mapping_flag
+            local mapping_enabled=$?
+            if [[ ${mapping_enabled} == 1 ]]; then
+               break;
+            fi
+         fi
+      done
+   fi
+
+   # unlock table
+   echo "INFO: Unlock on 'HALock' for instance group '${group_name}'"
+   sdb_js=`unlock_table`
+   $INSTALL_DIR/bin/sdb -s "${sdb_js}"
+   $INSTALL_DIR/bin/sdb -s "quit"
+   return $rc;
+}
+
+##################################
+#    main entry
+##################################
+ME=$(basename "$0")
+
+ARGS=`getopt -o p::vhu: --long version,help,standalone,manual-restart,instance:,user:,password: -n "${ME}" -- "$@"`
+test $? -ne 0 && exit 10
+
+# get path
+dir_name=`dirname $0`
+if [[ ${dir_name:0:1} != "/" ]]; then
+   BIN_PATH=$(pwd)/$dir_name  # relative path
+else
+   BIN_PATH=$dir_name         # absolute path
+fi
+
+cur_path=`pwd`
+cd $BIN_PATH/../ && INSTALL_PATH=`pwd`
+cd $cur_path >> /dev/null >&1
+
+eval set -- "${ARGS}"
+while true
+do
+   case "$1" in
+      -u )                                    MYSQL_USER=$2
+                                              shift 2
+                                              ;;
+      -p )
+         case $2 in
+            "")                  PROMPT_MYSQL_PASSWD=true
+                                 shift 2
+                                 ;;
+            *)                   MYSQL_PASSWD=$2
+                                 shift 2
+                                 ;;
+          esac
+          ;;
+      --instance )                            INST_NAME=$2
+                                              shift 2
+                                              ;;
+      --user )                                MYSQL_USER=$2
+                                              shift 2
+                                              ;;
+      --password )                            MYSQL_PASSWD=$2
+                                              shift 2
+                                              ;;
+      --standalone )                          NM_STANDALONE=true
+                                              shift
+                                              ;;
+      --manual-restart )                      NM_MANUAL_RESTART=true
+                                              shift
+                                              ;;
+      -v | --version)                         show_version
+                                              exit 0
+                                              ;;
+      -h | --help )                           usage
+                                              exit 0
+                                              ;;
+      --)                                     shift
+                                              break
+                                              ;;
+      *)                                      echo "Internal error!"
+                                              exit 10
+                                              ;;
+   esac
+done
+
+# initialize sdb environment variables
+init_sdb_path
+
+# get instance name if '--instance' is not set
+get_inst_and_group_name
+
+# initialize login args used to login MySQL and SequoiaDB server
+init_login_args
+
+# prompt user input mysql password
+if [ "${PROMPT_MYSQL_PASSWD}" == true -a "${MYSQL_PASSWD}" == "" ]; then
+   echo -n "Enter MySQL user password: "
+   # for `read` keep the spaces before and after the string
+   OLD_IFS="${IFS}"
+   IFS=''
+   read -s MYSQL_PASSWD
+   IFS="${OLD_IFS}"
+   echo ""
+fi
+
+
+## build mysql login command
+MYSQL_LOGIN="$BIN_PATH/mysql -h${MYSQL_HOST} -P${MYSQL_PORT} -u${MYSQL_USER}"
+
+# get lower case table names
+if [ "${MYSQL_PASSWD}" != "" ]; then
+   msg=$($MYSQL_LOGIN -p"${MYSQL_PASSWD}" -e "SELECT @@lower_case_table_names" 2>&1)
+else
+   msg=$($MYSQL_LOGIN -e "SELECT @@lower_case_table_names" 2>&1)
+fi
+if [[ $? != 0 ]]; then
+   msg=`echo "${msg}" | grep -v "Using a password"`  # remove 'Using a password' warning
+   echo "ERROR: $msg"
+   exit 12;
+fi
+lower_case_table_names=$(echo "${msg}" | egrep -v "Using a password|lower_case_table_names")
+echo "INFO: MySQL instance 'lower_case_table_names' is ${lower_case_table_names}"
+
+# build mapping database name
+group_type='inst_group'
+if [ "${group_name}" == "" ]; then
+   db_name="SQL_NAME_MAPPING_DEF_INST_GROUP"
+   group_type='meta_sync'
+else
+   db_name=`echo "SQL_NAME_MAPPING_${group_name}" | tr '[:lower:]' '[:upper:]'`
+fi
+final_db_name="${db_name}"
+tmp_db_prefix=`echo "${group_name}" | md5sum | tr a-z A-Z | cut -b 1-6`
+tmp_db_prefix="TMP_${tmp_db_prefix}"
+db_name="${tmp_db_prefix}_${db_name}"
+full_table_name="${db_name}.TABLE_MAPPING"
+drop_db_query="DROP DATABASE IF EXISTS ${db_name}"
+
+# get IPS and Ports of all instances
+get_hosts_and_ports
+if [[ $? != 0 ]]; then
+   echo "ERROR: Failed to get hosts and their ports"
+   exit 17
+fi
+echo "INFO: Hosts[${HOSTS[@]}], Ports[${PORTS[@]}]"
+
+# check if mapping function is enabled
+check_enable_mapping_flag
+rc=$?
+if [[ $rc == 2 ]];then
+   echo "ERROR: Failed to check if mapping function is enabled."
+   exit 18
+elif [[ $rc == 1 ]]; then   # mapping function is already open
+   execute_query "${drop_db_query}"
+   exit 0
+fi
+
+# set remote_ctl_method
+set_remote_ctl_method
+if [[ $? != 0 ]]; then
+   echo "ERROR: Failed to set remote control method"
+   exit 19
+fi
+
+# check if 'SysMetaGroup' exist and check versions
+pre_check
+if [ $? != 0 ]; then
+   echo "ERROR: Failed to precheck runing environment"
+   exit 20
+fi
+
+# create mapping table database
+echo "INFO: Creating temporary database '${db_name}'"
+query="CREATE DATABASE IF NOT EXISTS ${db_name}"
+execute_query "${query}"
+if [[ $? != 0 ]]; then
+   echo "ERROR: Failed to create database '${db_name}'"
+   exit 13
+fi
+
+# create mapping table
+query=`cat <<EOF
+   DROP TABLE IF EXISTS ${full_table_name};
+   CREATE TABLE ${full_table_name}(
+     DBName char(128),
+     TableName char(128),
+     CSName char(128),
+     CLName char(128),
+     IsPhysicalTable int,
+     State int default 1,
+     IsSpecifiedMapping int default 0
+   ) COMMENT = "sequoiadb: { table_options: { Group: 'SysMetaGroup' } }"
+EOF`
+echo "INFO: Creating mapping table '${full_table_name}'"
+execute_query "${query}"
+if [[ $? != 0 ]]; then
+   echo "ERROR: Failed to create table '${full_table_name}'"
+   execute_query "${drop_db_query}"
+   exit 14
+fi
+
+# build mapping table
+echo "INFO: Building mapping table"
+build_mapping_table "${full_table_name}"
+if [[ $? != 0 ]]; then
+   echo "ERROR: Failed to build mapping table"
+   execute_query "${drop_db_query}"
+   exit 15
+fi
+
+# drop CS in MySQL
+echo "INFO: Drop temporary database '${db_name}'"
+query="${drop_db_query}"
+execute_query "${query}"
+if [[ $? != 0 ]]; then
+   echo "ERROR: Failed to drop temporary database '${db_name}'"
+   exit 16
+fi
+echo "INFO: Enable mapping function for instance group '${group_name}' successfully"

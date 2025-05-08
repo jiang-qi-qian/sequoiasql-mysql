@@ -1,0 +1,43 @@
+DROP DATABASE IF EXISTS partition_sequoiadb_24917;
+CREATE DATABASE partition_sequoiadb_24917 character set utf8mb4 COLLATE utf8mb4_bin;
+USE partition_sequoiadb_24917;
+CREATE TABLE t1 (
+a INT,
+b VARCHAR(257),
+c INT NOT NULL,
+PRIMARY KEY (a),
+KEY `inx_b` (b),
+KEY `inx_c`(c)
+)
+PARTITION BY RANGE (a)
+SUBPARTITION BY HASH (a) (
+PARTITION p0 VALUES LESS THAN (10) (SUBPARTITION sp0,SUBPARTITION sp1),
+PARTITION p1 VALUES LESS THAN MAXVALUE(SUBPARTITION sp2,SUBPARTITION sp3)
+);
+LOAD INDEX INTO CACHE t1 PARTITION (p1,`p0`) IGNORE LEAVES;
+Table	Op	Msg_type	Msg_text
+partition_sequoiadb_24917.t1	preload_keys	note	The storage engine for the table doesn't support preload_keys
+ALTER TABLE t1 DROP INDEX `inx_b`;
+set global hot_cache.key_buffer_size=512*1048576;
+CACHE INDEX t1 IN hot_cache;
+Table	Op	Msg_type	Msg_text
+partition_sequoiadb_24917.t1	assign_to_keycache	note	The storage engine for the table doesn't support assign_to_keycache
+alter table t1 add d char(1);
+set global hot_cache.key_buffer_size=default;
+optimize table t1;
+Table	Op	Msg_type	Msg_text
+partition_sequoiadb_24917.t1	optimize	status	OK
+alter table t1 add e char(1);
+analyze select * from t1;
+id	select_type	table	type	possible_keys	key	key_len	ref	rows	r_rows	filtered	r_filtered	Extra
+1	SIMPLE	t1	ALL	NULL	NULL	NULL	NULL	0	0.00	0.00	100.00	
+alter table t1 add f char(1);
+check table t1;
+Table	Op	Msg_type	Msg_text
+partition_sequoiadb_24917.t1	check	status	OK
+alter table t1 add g char(1);
+repair table t1;
+Table	Op	Msg_type	Msg_text
+partition_sequoiadb_24917.t1	repair	status	OK
+alter table t1 add h char(1);
+DROP DATABASE partition_sequoiadb_24917;

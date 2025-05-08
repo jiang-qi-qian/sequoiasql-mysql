@@ -1,0 +1,1666 @@
+#check basic query with sharding to sequoiadb
+#Case 13098#Case 13099#Case 13100#Case 13101#Case 13102#Case 13103#Case 13104#Case 13105
+#Case 13106#Case 13107#Case 13108#Case 13109#Case 13110#Case 13111#Case 13112#Case 13113
+#Case 13114#Case 13115#Case 13116#Case 13117#Case 13118#Case 13119#Case 13120#Case 13121
+#Case 13305#Case 13306#Case 15436#Case 15438#Case 22080#Case 22379#Case 22380#Case 22381
+#Case 22382#Case 22383#Case 22384#Case 22385#Case 22386#Case 22387#Case 22388#Case 22389
+#Case 22785#Case 23020#Case 23021#Case 23022#Case 23037
+--source include/have_sequoiadb.inc
+
+--disable_warnings
+DROP TABLE IF EXISTS t1, t2;
+--enable_warnings
+
+#
+# INSERT INTO ... SELECT
+#
+CREATE TABLE t1 (a TINYINT UNSIGNED NOT NULL, b INT UNSIGNED NOT NULL)COMMENT="Sharding table for example, sequoiadb:{ table_options: { ShardingKey: { a: 1 }, ShardingType: 'range' } }" ;
+CREATE TABLE t2 (a TINYINT UNSIGNED NOT NULL, b INT UNSIGNED NOT NULL)COMMENT="Sharding table for example, sequoiadb:{ table_options: { ShardingKey: { a: 1 }, ShardingType: 'range' } }";
+INSERT INTO t1 (a,b) VALUES (1,36),(8,11),(3,5),(6,9),(4,10),(9,1),(2,12),(7,18),(5,2),(10,0);
+INSERT INTO t2 (a,b) VALUES (102,6),(99,5),(87,22),(79,9),(85,7),(101,5),(80,14),(100,1),(97,29),(98,19);
+INSERT INTO t1 ( a, b ) SELECT MAX(a), MAX(b) FROM t2;
+INSERT INTO t2 ( a, b ) SELECT MIN(a), MIN(b) FROM t1;
+INSERT INTO t1 SELECT t2.a,t2.b FROM t2;
+INSERT INTO t2 SELECT t1.a,t1.b FROM t1;
+--sorted_result
+SELECT * FROM t1;
+--sorted_result
+SELECT * FROM t2;
+UPDATE t1 SET b = 3 WHERE b>5;
+UPDATE t2 SET b = 2 WHERE b>=0;
+--sorted_result
+SELECT * FROM t1;
+--sorted_result
+SELECT * FROM t2;
+DELETE FROM t1 WHERE a > 3;
+DELETE FROM t2 WHERE a >= 0;
+--sorted_result
+SELECT * FROM t1;
+--sorted_result
+SELECT * FROM t2;
+DROP TABLE t1,t2;
+
+#
+# UPDATE/DELETE WITH WHERE + ORDER BY + LIMIT
+#
+CREATE TABLE t1 (a INT key, b VARCHAR(10));
+INSERT INTO t1 VALUES (2,'abcd1e'),(5,'abcd2e'),(11,'helloworld'),(3,'1234567'),(10,'ccccc'),(12,'string'),(9,'word'),(8,'xxyyzz'),(1,'ABCD'),(6,'abcd'),(15,'ABCD1e'),(4,'ABCD2e');
+# UPDATE
+UPDATE t1 SET b = "updateb1" WHERE b = "abcd1e";
+--sorted_result
+SELECT * FROM t1;
+UPDATE t1 SET b = "updateb2" WHERE b <=> "abcd2e";
+--sorted_result
+SELECT * FROM t1;
+#BUG #SEQUOIASQLMAINSTREAM-600
+UPDATE t1 SET b = "updateb3" WHERE b < "abcd" ORDER BY b DESC;
+--sorted_result
+SELECT * FROM t1;
+UPDATE t1 SET b = "updateb4" WHERE b <= "ccccc";
+--sorted_result
+SELECT * FROM t1;
+UPDATE t1 SET b = "updateb5" WHERE b > "word";
+--sorted_result
+SELECT * FROM t1;
+UPDATE t1 SET b = "updateb6" WHERE b >= "updateb4" ORDER BY b LIMIT 2;
+--sorted_result
+SELECT * FROM t1;
+UPDATE t1 SET b = "updateb7" WHERE b BETWEEN "updateb1" AND "updateb4" ORDER BY a DESC LIMIT 4;
+--sorted_result
+SELECT * FROM t1;
+UPDATE t1 SET b = "updateb8" WHERE b IN ("word", "updateb5", "updateb6", "string");
+--sorted_result
+SELECT * FROM t1;
+UPDATE t1 SET b = "updateb9" WHERE b NOT IN ("updateb7", "helloworld");
+--sorted_result
+SELECT * FROM t1;
+UPDATE t1 SET b = "updateb10" WHERE b LIKE "updateb7%";
+--sorted_result
+SELECT * FROM t1;
+UPDATE t1 SET b = "updateb11" WHERE b REGEXP "updateb1";
+--sorted_result
+SELECT * FROM t1;
+UPDATE t1 SET b = "updateb12" WHERE b != "updateb11";
+--sorted_result
+SELECT * FROM t1;
+UPDATE t1 SET b = "updateb13" WHERE b IS NULL;
+--sorted_result
+SELECT * FROM t1;
+UPDATE t1 SET b = "updateb14" WHERE b IS NOT NULL;
+--sorted_result
+SELECT * FROM t1;
+# DELETE
+DELETE FROM t1;
+INSERT INTO t1 VALUES (2,'abcd1e'),(5,'abcd2e'),(11,'helloworld'),(3,'1234567'),(10,'ccccc'),(12,'string'),(9,'word'),(8,'xxyyzz'),(1,'ABCD'),(6,'abcd'),(25,'ABCD1e'),(4,'ABCD2e'),(14,"test1"),(18,"abcde"),(15,"abcdef"),(13,"bcd"),(21,"bcde"),(17,"acdef");
+DELETE FROM t1 WHERE b = "abcd1e";
+--sorted_result
+SELECT * FROM t1;
+DELETE FROM t1 WHERE b <=> "abcd2e";
+--sorted_result
+SELECT * FROM t1;
+#BUG #SEQUOIASQLMAINSTREAM-600
+DELETE FROM t1 WHERE b < "ABCD1e";
+--sorted_result
+SELECT * FROM t1;
+DELETE FROM t1 WHERE b <= "abcd" ORDER BY b DESC LIMIT 2;
+--sorted_result
+SELECT * FROM t1;
+DELETE FROM t1 WHERE b > "word";
+--sorted_result
+SELECT * FROM t1;
+DELETE FROM t1 WHERE b >= "word";
+--sorted_result
+SELECT * FROM t1;
+DELETE FROM t1 WHERE b BETWEEN "ccccc" AND "helloworld" ORDER BY b LIMIT 2;
+--sorted_result
+SELECT * FROM t1;
+DELETE FROM t1 WHERE b LIKE "abcde%" ORDER BY a DESC LIMIT 1;
+--sorted_result
+SELECT * FROM t1;
+DELETE FROM t1 WHERE b REGEXP "str";
+--sorted_result
+SELECT * FROM t1;
+DELETE FROM t1 WHERE b IN ("bcd", "acdef");
+--sorted_result
+SELECT * FROM t1;
+DELETE FROM t1  WHERE b != "test1";
+--sorted_result
+SELECT * FROM t1;
+DELETE FROM t1 WHERE b IS NOT NULL;
+--sorted_result
+SELECT * FROM t1;
+DROP TABLE t1;
+
+#
+# MULTI UPDATE/MULTI DELETE
+#
+CREATE TABLE t1(pk INT, a MEDIUMINT, b SMALLINT, PRIMARY KEY (pk));
+CREATE TABLE t2(pk INT, a MEDIUMINT, b SMALLINT, PRIMARY KEY (pk));
+INSERT INTO t1 VALUES (1,1,1),(13,14,2),(11,8,3),(7,21,14),(5,5,6),(9,13,5),(2,9,4),(16,7,9),(10,28,3),(21,21,21),(8,8,8),(19,8,3);
+INSERT INTO t2 VALUES (1,1,1),(6,11,2),(8,13,3),(5,21,14),(7,5,6),(15,17,5),(14,8,4),(21,7,9),(17,21,3),(12,14,21),(10,8,8),(2,8,3);
+# UPDATE
+UPDATE t1 AS A, t2 AS B SET A.a = -1, B.b = -1 WHERE A.a = 9 AND B.b = 3;
+--sorted_result
+SELECT * FROM t1;
+--sorted_result
+SELECT * FROM t2;
+UPDATE t1 AS A, t2 AS B SET A.a = -2, B.b = -2 WHERE A.a > 13 AND B.b <= 5;
+--sorted_result
+SELECT * FROM t1;
+--sorted_result
+SELECT * FROM t2;
+UPDATE t1 AS A, t2 AS B SET A.a = -3, B.b = -3 WHERE A.a < 6 AND B.b >= 11;
+--sorted_result
+SELECT * FROM t1;
+--sorted_result
+SELECT * FROM t2;
+UPDATE t1 AS A, t2 AS B SET A.a = -4, B.b = -4 WHERE A.a BETWEEN 6 AND 12;
+--sorted_result
+SELECT * FROM t1;
+--sorted_result
+SELECT * FROM t2;
+# DELETE
+DELETE FROM t1;
+DELETE FROM t2;
+INSERT INTO t1 VALUES (1,1,1),(13,14,2),(11,8,3),(7,21,14),(5,5,6),(9,13,5),(2,9,4),(16,7,9),(10,28,3),(21,21,21),(8,8,8),(19,8,3);
+INSERT INTO t2 VALUES (1,1,1),(6,11,2),(8,13,3),(5,21,14),(7,5,6),(15,17,5),(14,8,4),(21,7,9),(17,21,3),(12,14,21),(10,8,8),(2,8,3);
+DELETE t1.*, t2.* FROM t1,t2 WHERE t1.a = t2.b AND t1.b > 10;
+--sorted_result
+SELECT * FROM t1;
+--sorted_result
+SELECT * FROM t2;
+DELETE t1.*, t2.* FROM t1,t2 WHERE t1.a < t2.b AND t1.a >= 11 AND t2.b <= 15;
+--sorted_result
+SELECT * FROM t1;
+--sorted_result
+SELECT * FROM t2;
+# CREATE INDEX
+CREATE INDEX a ON t1(a);
+CREATE INDEX b ON t1(b);
+CREATE INDEX a ON t2(a);
+CREATE INDEX b ON t2(b);
+DELETE FROM t1;
+DELETE FROM t2;
+INSERT INTO t1 VALUES (1,1,1),(13,14,2),(11,8,3),(7,21,14),(5,5,6),(9,13,5),(2,9,4),(16,7,9),(10,28,3),(21,21,21),(8,8,8),(19,8,3);
+INSERT INTO t2 VALUES (1,1,1),(6,11,2),(8,13,3),(5,21,14),(7,5,6),(15,17,5),(14,8,4),(21,7,9),(17,21,3),(12,14,21),(10,8,8),(2,8,3);
+# UPDATE
+UPDATE t1 AS A, t2 AS B SET A.a = -1, B.b = -1 WHERE A.a = 9 AND B.b = 3;
+--sorted_result
+SELECT * FROM t1;
+--sorted_result
+SELECT * FROM t2;
+UPDATE t1 AS A, t2 AS B SET A.a = -2, B.b = -2 WHERE A.a > 13 AND B.b <= 5;
+--sorted_result
+SELECT * FROM t1;
+--sorted_result
+SELECT * FROM t2;
+UPDATE t1 AS A, t2 AS B SET A.a = -3, B.b = -3 WHERE A.a < 6 AND B.b >= 11;
+--sorted_result
+SELECT * FROM t1;
+--sorted_result
+SELECT * FROM t2;
+UPDATE t1 AS A, t2 AS B SET A.a = -4, B.b = -4 WHERE A.a BETWEEN 6 AND 12;
+--sorted_result
+SELECT * FROM t1;
+--sorted_result
+SELECT * FROM t2;
+# DELETE
+DELETE FROM t1;
+DELETE FROM t2;
+INSERT INTO t1 VALUES (1,1,1),(13,14,2),(11,8,3),(7,21,14),(5,5,6),(9,13,5),(2,9,4),(16,7,9),(10,28,3),(21,21,21),(8,8,8),(19,8,3);
+INSERT INTO t2 VALUES (1,1,1),(6,11,2),(8,13,3),(5,21,14),(7,5,6),(15,17,5),(14,8,4),(21,7,9),(17,21,3),(12,14,21),(10,8,8),(2,8,3);
+DELETE t1.*, t2.* FROM t1,t2 WHERE t1.a = t2.b AND t1.b > 10;
+--sorted_result
+SELECT * FROM t1;
+--sorted_result
+SELECT * FROM t2;
+DELETE t1.*, t2.* FROM t1,t2 WHERE t1.a < t2.b AND t1.a >= 11 AND t2.b <= 15;
+--sorted_result
+SELECT * FROM t1;
+--sorted_result
+SELECT * FROM t2;
+DROP TABLE t1,t2;
+
+#
+# TRUNCATE TABLE 
+#
+CREATE TABLE t1(a BINARY(127));
+INSERT INTO t1 VALUES ("a"),("a "),("abcdefg"),("ABCD"),("hello"),(" HELLO"),(" string ");
+SELECT * FROM t1 ORDER BY a;
+TRUNCATE TABLE t1;
+SELECT * FROM t1;
+DROP TABLE t1;
+
+#
+# QUERY WITH WHERE + BASIC CONDITION + AND + OR + NOT + IN + LIKE + REGEX
+#
+CREATE TABLE t1 (a INT, b TEXT, c char(16),unique index b(b(32)));
+INSERT INTO t1 VALUES (2,'abcd1e', 'testc1'),(5,'abcd2e','testc2'),(11,'helloworld','helloworld'),(3,'1234567','1234567'),(10,'ccccc','testc3'),(12,'string','string'),(9,'word','testc4'),(8,'xxyyzz','xxyyzz'),(1,'ABCD','ABCD'),(6,'abcd','testc5'),(15,'ABCD1e','testc6'),(4,'ABCD2e','ABCD2e'),(14,"11111","11111"),(7,"22222","22222"),(21,NULL,NULL);
+SELECT * FROM t1 WHERE b = "abcd1e";
+SELECT a,b FROM t1 WHERE b <=> "abcd2e";
+#BUG #SEQUOIASQLMAINSTREAM-600
+SELECT a,b,c FROM t1 WHERE b < "abcd" ORDER BY b DESC;
+SELECT * FROM t1 WHERE b <= "ccccc";
+SELECT * FROM t1 WHERE b > "abcde";
+SELECT * FROM t1 WHERE b >= "ABCD1e" ORDER BY b,a LIMIT 7;
+SELECT a FROM t1 WHERE b BETWEEN "abcd1e" AND "xxyyzz" ORDER BY a DESC LIMIT 7;
+--sorted_result
+SELECT b FROM t1 WHERE b IN ("word", "ABCD", "ABCD2e", "string", "helloworld", "11111", "1234567");
+SELECT c FROM t1 WHERE b NOT IN ("abcd", "22222", "11111");
+SELECT * FROM t1 WHERE b LIKE "abc%";
+--sorted_result
+SELECT * FROM t1 WHERE b REGEXP "1";
+SELECT * FROM t1 WHERE b != "abcd2e";
+SELECT * FROM t1 WHERE b <> "ABCD";
+--sorted_result
+SELECT b,c FROM t1 WHERE b = c;
+SELECT a FROM t1 WHERE b IS NULL;
+SELECT * FROM t1 WHERE b > "abcd1e" AND c <= "testc4";
+SELECT * FROM t1 WHERE b < "string" AND c >= "testc1";
+--sorted_result
+SELECT * FROM t1 WHERE b <= "string" OR c > "testc5";
+--sorted_result
+SELECT * FROM t1 WHERE b > "abcdefg" OR c < "testc11";
+SELECT * FROM t1 WHERE NOT b <= "abcd"; 
+--sorted_result
+SELECT * FROM t1 WHERE NOT b > "11111" OR c < "testc3";
+DROP TABLE t1;
+
+#
+# FUNC (FIELD)
+#
+CREATE TABLE t1 (a SMALLINT NOT NULL key, b MEDIUMINT NOT NULL);
+INSERT INTO t1 (a,b) VALUES (1,36),(8,11),(3,5),(6,9),(4,10),(9,1),(2,12),(7,18),(5,2),(10,0);
+SELECT COUNT(a) FROM t1 WHERE a > 3;
+--sorted_result
+SELECT AVG(b) FROM t1 WHERE a >= 2;
+--sorted_result
+SELECT MAX(a) FROM t1 WHERE a < 10;
+--sorted_result
+SELECT MIN(b) FROM t1 WHERE a != 1;
+--sorted_result
+SELECT SUM(a) FROM t1 WHERE a IS NOT NULL;
+--sorted_result
+SELECT CONCAT(a,b) AS ab FROM t1 WHERE a IS NOT NULL AND b IS NOT NULL;
+# CREATE INDEX
+CREATE INDEX b ON t1(b);
+--sorted_result
+SELECT COUNT(a) FROM t1 WHERE a > 3;
+--sorted_result
+SELECT AVG(b) FROM t1 WHERE a >= 2;
+--sorted_result
+SELECT MAX(a) FROM t1 WHERE a < 10;
+--sorted_result
+SELECT MIN(b) FROM t1 WHERE a != 1;
+SELECT SUM(a) FROM t1 WHERE a IS NOT NULL;
+--sorted_result
+SELECT CONCAT(a,b) AS ab FROM t1 WHERE a IS NOT NULL AND b IS NOT NULL;
+DROP TABLE t1;
+
+#
+# FUNC OF STRING
+#
+CREATE TABLE t1 (a CHAR(64) key, b BIT(8));
+INSERT INTO t1 VALUES ('one', 94),("", 31),('two', 61),('four', 78),('hello', 88),('abcdefg', 122),('abc', 0),('monty', 9),('www.sequoiadb.com', 107),(' 123', 11),('456 ', 23),(' 789 ', 34), (' 01', 34), ('VVV', 1);
+--sorted_result
+SELECT a,b FROM t1 WHERE BIT_LENGTH(b) > 6;
+--sorted_result
+SELECT * FROM t1 WHERE CHAR_LENGTH(a) <= 4 ;
+--sorted_result
+SELECT * FROM t1 WHERE LENGTH(a) != 3 ;
+--sorted_result
+SELECT * FROM t1 WHERE CHAR(ASCII(a)) = 'a' OR ORD(a) = 't' ;
+--sorted_result
+SELECT * FROM t1 WHERE HEX(b) >= '4D';
+--sorted_result
+SELECT * FROM t1 WHERE LOCATE(a, "abc") > 0 OR LOCATE(a, "hel") IS NULL;
+--sorted_result
+SELECT * FROM t1 WHERE INSTR(a, "o") > 1;
+--sorted_result
+SELECT * FROM t1 WHERE POSITION('b' IN a) < 5;
+#SEQUOIASQLMAINSTREAM-206
+#--sorted_result
+#SELECT * FROM t1 WHERE LEFT(a,2) > 'h' AND LEFT(a,3) > 'd';
+--sorted_result
+SELECT * FROM t1 WHERE a <= LCASE('h') AND a >= UCASE('t');
+--sorted_result
+SELECT * FROM t1 WHERE SUBSTRING(a,1,2) <> 'bc' AND MID(a,2,1) < 'o';
+#SEQUOIASQLMAINSTREAM-206
+#--sorted_result
+#SELECT * FROM t1 WHERE SUBSTRING_INDEX(a,'.',1) > 'hello';
+--sorted_result
+SELECT a,b FROM t1 WHERE LTRIM(a) <= 'four' and RTRIM(a) >= '456';
+--sorted_result
+SELECT * FROM t1 WHERE a > REPEAT('g',10);
+--sorted_result
+SELECT * FROM t1 WHERE a > CONCAT_WS('com','.','sequoiadb');
+#SEQUOIASQLMAINSTREM-206
+#--sorted_result
+#SELECT * FROM t2 WHERE STRCMP(a , 'hel') > 0;
+--sorted_result
+SELECT DISTINCT a FROM t1 WHERE ELT(a, 'ab') IS NOT NULL;
+--sorted_result
+SELECT a FROM t1 WHERE FIELD(a, "abc","abcdefg","hello") > 0;
+--sorted_result
+SELECT a,b FROM t1 WHERE FIND_IN_SET(a, 'abc') > 0;
+--sorted_result
+SELECT * FROM t1 WHERE INSTR(a, 'o') > 0;
+--sorted_result
+SELECT a FROM t1 WHERE a != INSERT('axdefg',2,1,'bc');
+--sorted_result
+SELECT a,b FROM t1 WHERE a > REPLACE('hello','hel','ol');
+--sorted_result
+SELECT * FROM t1 WHERE a < REVERSE('com');
+--sorted_result
+SELECT * FROM t1 WHERE a > RPAD('abcd',3,'12') AND a < LPAD('helxy', 3 , 2);
+--sorted_result
+SELECT * FROM t1 WHERE a >= MAKE_SET(7,'a','b','c');
+--sorted_result
+SELECT * FROM t1 WHERE b < OCT(56);
+# CREATE INDEX
+CREATE INDEX b ON t1(b);
+--sorted_result
+SELECT a,b FROM t1 WHERE BIT_LENGTH(b) > 6;
+--sorted_result
+SELECT * FROM t1 WHERE CHAR_LENGTH(a) <= 4 ;
+--sorted_result
+SELECT * FROM t1 WHERE LENGTH(a) != 3 ;
+--sorted_result
+SELECT * FROM t1 WHERE CHAR(ASCII(a)) = 'a' OR ORD(a) = 't' ;
+--sorted_result
+SELECT * FROM t1 WHERE HEX(b) >= '4D';
+--sorted_result
+SELECT * FROM t1 WHERE LOCATE(a, "abc") > 0 OR LOCATE(a, "hel") IS NULL;
+--sorted_result
+SELECT * FROM t1 WHERE INSTR(a, "o") > 1;
+--sorted_result
+SELECT * FROM t1 WHERE POSITION('b' IN a) < 5;
+#SEQUOIASQLMAINSTREAM-206
+#--sorted_result
+#SELECT * FROM t1 WHERE LEFT(a,2) > 'h' AND LEFT(a,3) > 'd';
+SELECT * FROM t1 WHERE a <= LCASE('h') AND a >= UCASE('t');
+--sorted_result
+SELECT * FROM t1 WHERE SUBSTRING(a,1,2) <> 'bc' AND MID(a,2,1) < 'o';
+#SEQUOIASQLMAINSTREAM-206
+#--sorted_result
+#SELECT * FROM t1 WHERE SUBSTRING_INDEX(a,'.',1) > 'hello';
+--sorted_result
+SELECT a,b FROM t1 WHERE LTRIM(a) <= 'four' and RTRIM(a) >= '456';
+SELECT * FROM t1 WHERE a > REPEAT('g',10);
+SELECT * FROM t1 WHERE a > CONCAT_WS('com','.','sequoiadb');
+#SEQUOIASQLMAINSTREM-206
+#--sorted_result
+#SELECT * FROM t2 WHERE STRCMP(a , 'hel') > 0;
+SELECT DISTINCT a FROM t1 WHERE ELT(a, 'ab') IS NOT NULL;
+SELECT a FROM t1 WHERE FIELD(a, "abc","abcdefg","hello") > 0;
+--sorted_result
+SELECT a,b FROM t1 WHERE FIND_IN_SET(a, 'abc') > 0;
+--sorted_result
+SELECT * FROM t1 WHERE INSTR(a, 'o') > 0;
+# SEQUOIASQLMAINSTREAM-220
+#--sorted_result
+#SELECT a FROM t1 WHERE a != INSERT('axdefg',2,1,'bc');
+SELECT a,b FROM t1 WHERE a > REPLACE('hello','hel','ol');
+# SEQUOIASQLMAINSTREAM-220
+#--sorted_result
+#SELECT * FROM t1 WHERE a < REVERSE('com');
+SELECT * FROM t1 WHERE a > RPAD('abcd',3,'12') AND a < LPAD('helxy', 3 , 2);
+SELECT * FROM t1 WHERE a >= MAKE_SET(7,'a','b','c');
+--sorted_result
+SELECT * FROM t1 WHERE b < OCT(56);
+DROP TABLE t1;
+
+#
+# FUNC OF DATE/DATETIME/TIMESTAMP
+#
+CREATE TABLE t1 (d DATE key, dt DATETIME, t TIMESTAMP, tm time);
+INSERT INTO t1 VALUES ("2000-02-05", "2002-10-21 00:00:00", "1994-03-02 10:11:12", "09:00:00"),("2002-12-31", "2002-10-28 00:00:00", "1997-01-02 03:04:05", "13:00:00"),("2003-03-01", "2002-11-04 00:00:00", "1999-04-02 00:00:00", "19:38:34"),("2001-01-01", "2003-10-29 16:51:06", "1998-12-31 23:59:59", "12:30:35"),("1997-12-01", "2004-11-05 16:47:31", "2000-12-31 23:59:59", "20:33:34"),("1999-11-30", "2011-01-20 01:00:00", "2001-01-01 00:00:00", "100:55:50"),("2007-08-01", "2038-01-19 12:14:07", "2010-02-01 09:31:01", "300:55:50"),("2006-01-01", "2020-01-13 19:12:17", "2010-02-01 09:31:04", "-24:00:00"),("2005-05-05", "1999-03-14 02:17:27", "2008-02-23 09:23:45", "24:00:00"),("2010-07-15", "2001-06-06 01:01:01", "2010-03-05 11:08:02", "48:00:00"),("2019-01-01", "2008-09-19 07:13:16", "2011-01-06 12:34:30", "-48:00:00");
+--sorted_result
+SELECT * FROM t1 WHERE d > DATE_FORMAT(dt, "%Y-%m-%d");
+--sorted_result
+SELECT d,dt,tm FROM t1 WHERE TIME_FORMAT(tm, '%H') >= 20;
+--sorted_result
+SELECT d,tm FROM t1 WHERE tm < SEC_TO_TIME('837:59:59');
+--sorted_result
+SELECT t,tm FROM t1 WHERE TIME_TO_SEC(tm) > 100000;
+--sorted_result
+SELECT * FROM t1 WHERE dt <= DATE_ADD(t, INTERVAL 1 SECOND);
+--sorted_result
+SELECT * FROM t1 WHERE t <= DATE_SUB(dt, INTERVAL 1 SECOND);
+--sorted_result
+SELECT * FROM t1 WHERE EXTRACT(DAY FROM d) > 2;
+--sorted_result
+SELECT * FROM t1 WHERE DAYNAME(d) > 'Saturday';
+--sorted_result
+SELECT * FROM t1 WHERE MONTHNAME(dt) > 'March';
+--sorted_result
+SELECT d,dt,t FROM t1 WHERE DAYOFYEAR(t) > 60;
+--sorted_result
+SELECT dt,t,tm FROM t1 WHERE DAYOFMONTH(t) > 20;
+--sorted_result
+SELECT * FROM t1 WHERE WEEK(d) < 30;
+--sorted_result
+SELECT * FROM t1 WHERE WEEKOFYEAR(dt) != 45 AND WEEKDAY(t) <= 3;
+--sorted_result
+SELECT * FROM t1 WHERE MONTH(d) > 2 AND WEEK(dt) < 50 AND YEAR(t) != 2010;
+--sorted_result
+SELECT * FROM t1 WHERE YEARWEEK(d) > 200201 AND HOUR(t) < 20 AND QUARTER(dt) <> 1;
+--sorted_result
+SELECT * FROM t1 WHERE TO_DAYS(t) <= 731516;
+--sorted_result
+SELECT * FROM t1 WHERE UNIX_TIMESTAMP(t) > 1000000000;
+--sorted_result
+SELECT * FROM t1 WHERE t < FROM_UNIXTIME(950000000);
+--sorted_result
+SELECT d,t FROM t1 WHERE t >= TIMESTAMPADD(HOUR,8820,d);
+--sorted_result
+SELECT * FROM t1 WHERE TIMESTAMPDIFF(day,dt,t) > 0;
+--sorted_result
+SELECT * FROM t1 WHERE LAST_DAY(d) < "2005-12-31" AND FROM_DAYS(TO_DAYS(t)) > "1999-12-01";
+--sorted_result
+SELECT * FROM t1 WHERE t < LOCALTIMESTAMP() AND t <> UTC_TIMESTAMP();
+--sorted_result
+SELECT * FROM t1 WHERE MONTHNAME(STR_TO_DATE(d,'%Y-%m-%d')) >= 'March';
+--sorted_result
+SELECT * FROM t1 WHERE DATE(d) BETWEEN CAST("2003-1-1" as DATE) AND CAST("2008-12-1" as DATE);
+--sorted_result
+SELECT * FROM t1 WHERE MAKEDATE(2002,1) BETWEEN DATE(d) AND DATE(dt);
+--sorted_result
+SELECT d,dt,tm FROM t1 WHERE ADDTIME(tm, '20:40:00') > '40:00:00' AND SUBTIME(tm, '30:23:00') < '-80:00:00';
+--sorted_result
+SELECT * FROM t1 WHERE tm > MAKETIME(30,25,7);
+# CREATE INDEX
+CREATE INDEX dt ON t1(dt);
+CREATE INDEX t ON t1(t);
+CREATE INDEX tm ON t1(tm);
+--sorted_result
+SELECT * FROM t1 WHERE d > DATE_FORMAT(dt, "%Y-%m-%d");
+--sorted_result
+SELECT d,dt,tm FROM t1 WHERE TIME_FORMAT(tm, '%H') >= 20;
+SELECT d,tm FROM t1 WHERE tm < SEC_TO_TIME('837:59:59');
+--sorted_result
+SELECT t,tm FROM t1 WHERE TIME_TO_SEC(tm) > 100000;
+--sorted_result
+SELECT * FROM t1 WHERE dt <= DATE_ADD(t, INTERVAL 1 SECOND);
+--sorted_result
+SELECT * FROM t1 WHERE t <= DATE_SUB(dt, INTERVAL 1 SECOND);
+--sorted_result
+SELECT * FROM t1 WHERE EXTRACT(DAY FROM d) > 2;
+--sorted_result
+SELECT * FROM t1 WHERE DAYNAME(d) > 'Saturday';
+--sorted_result
+SELECT * FROM t1 WHERE MONTHNAME(dt) > 'March';
+--sorted_result
+SELECT d,dt,t FROM t1 WHERE DAYOFYEAR(t) > 60;
+--sorted_result
+SELECT dt,t,tm FROM t1 WHERE DAYOFMONTH(t) > 20;
+--sorted_result
+SELECT * FROM t1 WHERE WEEK(d) < 30;
+--sorted_result
+SELECT * FROM t1 WHERE WEEKOFYEAR(dt) != 45 AND WEEKDAY(t) <= 3;
+--sorted_result
+SELECT * FROM t1 WHERE MONTH(d) > 2 AND WEEK(dt) < 50 AND YEAR(t) != 2010;
+--sorted_result
+SELECT * FROM t1 WHERE YEARWEEK(d) > 200201 AND HOUR(t) < 20 AND QUARTER(dt) <> 1;
+--sorted_result
+SELECT * FROM t1 WHERE TO_DAYS(t) <= 731516;
+--sorted_result
+SELECT * FROM t1 WHERE UNIX_TIMESTAMP(t) > 1000000000;
+SELECT * FROM t1 WHERE t < FROM_UNIXTIME(950000000);
+--sorted_result
+SELECT d,t FROM t1 WHERE t >= TIMESTAMPADD(HOUR,8820,d);
+--sorted_result
+SELECT * FROM t1 WHERE TIMESTAMPDIFF(day,dt,t) > 0;
+--sorted_result
+SELECT * FROM t1 WHERE LAST_DAY(d) < "2005-12-31" AND FROM_DAYS(TO_DAYS(t)) > "1999-12-01";
+SELECT * FROM t1 WHERE t < LOCALTIMESTAMP() AND t <> UTC_TIMESTAMP();
+--sorted_result
+SELECT * FROM t1 WHERE MONTHNAME(STR_TO_DATE(d,'%Y-%m-%d')) >= 'March';
+--sorted_result
+SELECT * FROM t1 WHERE DATE(d) BETWEEN CAST("2003-1-1" as DATE) AND CAST("2008-12-1" as DATE);
+--sorted_result
+SELECT * FROM t1 WHERE MAKEDATE(2002,1) BETWEEN DATE(d) AND DATE(dt);
+--sorted_result
+SELECT d,dt,tm FROM t1 WHERE ADDTIME(tm, '20:40:00') > '40:00:00' AND SUBTIME(tm, '30:23:00') < '-80:00:00';
+SELECT * FROM t1 WHERE tm > MAKETIME(30,25,7);
+DROP TABLE t1;
+
+#
+# FUNC OF MATH
+#
+CREATE TABLE t1 (a INT key, b MEDIUMINT, c DECIMAL(60,30), d DOUBLE);
+INSERT INTO t1 VALUES (1,4,12.12,4.551),(10,6,11.11,4.55),(22,21,123.123,3.14),(34,30,12345.12345,3.14135),(14,10,100.1,111.551),(9,9,9.9,99.341),(30,31,34.67,14.001),(101,100,234.354,678.1),(89,89,90.89,90.99),(13,21,21.3,-34.01
+),(67,34,45.21,123.001),(28,28,12.21,12.21),(110,99,110.99,110.99),(200,200,455.12,455.12),(300,300,1.1,1.1);
+--sorted_result
+SELECT * FROM t1 WHERE FLOOR(d) > 10 AND CEILING(c) < 55 AND CEIL(a) > 10;
+--sorted_result
+SELECT * FROM t1 WHERE TRUNCATE(d,1) <= 4.5;
+--sorted_result
+SELECT * FROM t1 WHERE ROUND(c) > 100;
+--sorted_result
+SELECT * FROM t1 WHERE ABS(d) < 100 AND SIGN(d) > -1;
+--sorted_result
+SELECT * FROM t1 WHERE LOG(EXP(a)) >100;
+--sorted_result
+SELECT * FROM t1 WHERE EXP(LN(SQRT(a))*4) < 1000.000000000000002;
+--sorted_result
+SELECT * FROM t1 WHERE LOG2(a) > 6 AND POW(10,LOG10(b)) > 81;
+--sorted_result
+SELECT * FROM t1 WHERE POWER(a,2) > b;
+--sorted_result
+SELECT * FROM t1 WHERE RAND(b) < 0.23454;
+--sorted_result
+SELECT * FROM t1 WHERE FORMAT(ABS(TAN(d)),6) > 1.23456 AND FORMAT(SIN(a/2),6) > 0;
+--sorted_result
+SELECT * FROM t1 WHERE FORMAT(COS(c/2),6) > 0.333333 AND FORMAT(cot(b),6) < 0.123456;
+--sorted_result
+SELECT * FROM t1 WHERE DEGREES(a) > 1000 AND RADIANS(b) > 1.0001;
+--sorted_result
+SELECT * FROM t1 WHERE ACOS(c/100) IS NOT NULL AND ASIN(d/100) IS NOT NULL;
+--sorted_result
+SELECT * FROM t1 WHERE MOD(CAST(b AS UNSIGNED), 3) > 0 AND SQRT(CAST(a AS UNSIGNED)) >= 5.5;
+--sorted_result
+SELECT * FROM t1 WHERE (a DIV 2) >= c - b;
+--sorted_result
+SELECT * FROM t1 WHERE a * b / 10 > d + c;
+--sorted_result
+SELECT * FROM t1 WHERE MOD(CRC32(b), 2) > 0;
+# CREATE INDEX
+CREATE INDEX b ON t1(b);
+CREATE INDEX c ON t1(c);
+CREATE INDEX d ON t1(d);
+--sorted_result
+SELECT * FROM t1 WHERE FLOOR(d) > 10 AND CEILING(c) < 55 AND CEIL(a) > 10;
+--sorted_result
+SELECT * FROM t1 WHERE TRUNCATE(d,1) <= 4.5;
+--sorted_result
+SELECT * FROM t1 WHERE ROUND(c) > 100;
+--sorted_result
+SELECT * FROM t1 WHERE ABS(d) < 100 AND SIGN(d) > -1;
+--sorted_result
+SELECT * FROM t1 WHERE LOG(EXP(a)) >100;
+--sorted_result
+SELECT * FROM t1 WHERE EXP(LN(SQRT(a))*4) < 1000.000000000000002;
+--sorted_result
+SELECT * FROM t1 WHERE LOG2(a) > 6 AND POW(10,LOG10(b)) > 81;
+--sorted_result
+SELECT * FROM t1 WHERE POWER(a,2) > b;
+--sorted_result
+SELECT * FROM t1 WHERE RAND(b) < 0.23454;
+--sorted_result
+SELECT * FROM t1 WHERE FORMAT(ABS(TAN(d)),6) > 1.23456 AND FORMAT(SIN(a/2),6) > 0;
+--sorted_result
+SELECT * FROM t1 WHERE FORMAT(COS(c/2),6) > 0.333333 AND FORMAT(cot(b),6) < 0.123456;
+--sorted_result
+SELECT * FROM t1 WHERE DEGREES(a) > 1000 AND RADIANS(b) > 1.0001;
+--sorted_result
+SELECT * FROM t1 WHERE ACOS(c/100) IS NOT NULL AND ASIN(d/100) IS NOT NULL;
+--sorted_result
+SELECT * FROM t1 WHERE MOD(CAST(b AS UNSIGNED), 3) > 0 AND SQRT(CAST(a AS UNSIGNED)) >= 5.5;
+--sorted_result
+SELECT * FROM t1 WHERE (a DIV 2) >= c - b;
+--sorted_result
+SELECT * FROM t1 WHERE a * b / 10 > d + c;
+--sorted_result
+SELECT * FROM t1 WHERE MOD(CRC32(b), 2) > 0;
+DROP TABLE t1;
+
+#
+# FUNC OF GROUP
+#
+CREATE TABLE t1(a INT key, b BIGINT, c VARCHAR(127));
+INSERT INTO t1 VALUES (11, 101, 'abcd'),(34, 75, '123'),(-9, 56, 'hello'),(22, 99, 'vac'),(-1, 32, '456'),(4, -25, '789'),(30, 30, 'page'),(67, 59, 'opp'),(12, 63, 'ewi'),(36,-23, 'roe'),(-13, 49, 'fls'),(17, 9, 'dj'),(6, 19, 'gfl'),(2, -2, 'fks');
+--sorted_result
+SELECT SUM(a) FROM t1 GROUP BY a;
+--sorted_result
+SELECT COUNT(b) FROM t1 GROUP BY b;
+--sorted_result
+SELECT AVG(a) FROM t1 GROUP BY a;
+#sequoiadb不走索引时查询记录返回的记录顺序不同，导致STD函数计算结果不同，如：1.66666666+1.77777777+1.33333333和1.66666666+1.33333333+1.77777777，前者两个数相加有进位，后者两个数相加没有进位，最终两种情况算完后的结果是不同的，偶现问题。修改为走索引顺序查询不会有问题，但是后面语句有覆盖，此处测试点意义不大，注释掉该测试点
+#--sorted_result
+#SELECT STD(ALL b) FROM t1;
+
+# SEQUOIASQLMAINSTREAM-220
+#--sorted_result
+#SELECT VARIANCE(b) FROM t1;
+--sorted_result
+SELECT BIT_OR(a) FROM t1;
+--sorted_result
+SELECT BIT_AND(b) FROM t1;
+--sorted_result
+SELECT MIN(a) FROM t1;
+--sorted_result
+SELECT MAX(b) FROM t1;
+--sorted_result
+SELECT a,b FROM t1 GROUP BY a,b HAVING SUM(a) = SUM(b) ;
+--sorted_result
+SELECT a FROM t1 GROUP BY a HAVING AVG(a) > 9;
+--sorted_result
+SELECT a FROM t1 GROUP BY a HAVING MAX(a) > 20;
+--sorted_result
+SELECT b FROM t1 GROUP BY b HAVING MIN(b) < 15;
+# CREATE INDEX
+CREATE INDEX b ON t1(b);
+SELECT SUM(a) FROM t1 GROUP BY a;
+SELECT COUNT(b) FROM t1 GROUP BY b;
+SELECT AVG(a) FROM t1 GROUP BY a;
+SELECT STD(ALL b) FROM t1;
+# SEQUOIASQLMAINSTREAM-220
+#--sorted_result
+#SELECT VARIANCE(b) FROM t1;
+SELECT BIT_OR(a) FROM t1;
+SELECT BIT_AND(b) FROM t1;
+--sorted_result
+SELECT MIN(a) FROM t1;
+--sorted_result
+SELECT MAX(b) FROM t1;
+--sorted_result
+SELECT a,b FROM t1 GROUP BY a,b HAVING SUM(a) = SUM(b) ;
+SELECT a FROM t1 GROUP BY a HAVING AVG(a) > 9;
+SELECT a FROM t1 GROUP BY a HAVING MAX(a) > 20;
+SELECT b FROM t1 GROUP BY b HAVING MIN(b) < 15;
+DROP TABLE t1;
+
+#
+# QUERY WITH GROUP BY
+#
+CREATE TABLE t1 (a MEDIUMINT key, b INT, c CHAR(64), d BLOB, e DATE, f TEXT);
+CREATE TABLE t2 (a INT key, b BIGINT);
+CREATE TABLE t3 (a INT4 key, b CHAR(16), c DATETIME) CHARSET=UTF8;
+INSERT INTO t1 VALUES (13,5,'aaa','aaa','2005-05-01','aaa'),(5,2,'bb1','bb1','2006-06-05','bb1'),(-3,1,'111','111','2008-01-12','111'),(21,3,'eog','eog','1990-03-01','eog'),(15,35,'fqc','fqc','2015-09-30','fqc'),(-16,-9,'yew','yew','2001-09-01','yew'),(31,13,'bow','bow','2101-07-21','bow'),(6,10,NULL,NULL,NULL,NULL),(101,-2,NULL,NULL,NULL,NULL),(7,2,'dno','dno','2010-04-01','dno'),(65,4,'hello','hello','2093-11-5','hello'),(27,-14,NULL,NULL,NULL,NULL),(22,11,NULL,NULL,NULL,NULL),(-33,-3,'yew','yew','2001-09-01','yew'),(23,13,'bb1','bb1','2006-06-05','bb1');
+INSERT INTO t2 VALUES (13,5),(-3,2),(21,3),(65,4),(31,4),(23,13),(45,-4),(1,24),(11,9),(10,10);
+INSERT INTO t3 VALUES (13,'aaa','2005-05-01 12:30:00'),(-3,'bb1','2005-05-01 12:30:00'),(21,'111','2005-05-01 12:30:00'),(65,'eog','2004-05-01 12:30:00'),(31,'fqc','2195-05-01 11:30:00'),(23,'yew','2000-10-01 12:30:00'),(45,'bow',NULL),(1,'dno',NULL),(11,'hello',NULL),(10,'fed',NULL);
+--sorted_result
+SELECT a, COUNT(*) FROM t1 GROUP BY a HAVING a > 20;
+--sorted_result
+SELECT b, SUM(a) FROM t1 GROUP BY b,a DESC;
+--sorted_result
+SELECT a, MIN(b),e, COUNT(DISTINCT c) FROM t1 GROUP BY a,b,c,e HAVING a > b + c;
+SELECT BINARY d FROM t1 GROUP BY d ORDER BY d;
+--sorted_result
+SELECT GROUP_CONCAT(DISTINCT d) AS dd FROM t1 GROUP BY d HAVING dd LIKE "%";
+--sorted_result
+SELECT a, d, ROUND(RAND(b)*5) r2 FROM t1 WHERE a < 60 GROUP BY a,b,d HAVING d > 'a';
+--sorted_result
+SELECT MAX(t1.a), t1.b, t1.e FROM t1 LEFT JOIN t2 ON t2.a = t1.a AND t2.b = t1.b WHERE t1.d < 'hello' GROUP BY t1.a,t1.b,t1.e;
+--sorted_result
+SELECT t1.a,t2.b FROM t1,t2 WHERE t1.b=t2.b GROUP BY t1.a,t2.b ORDER BY NULL;
+--sorted_result
+SELECT a, SUM(b) AS b1 FROM t1 GROUP BY a HAVING SUM(b) > 10 AND a < 50;
+--sorted_result
+SELECT b FROM t3 WHERE a >= 20 AND b <= 'f' GROUP BY b;
+--source include/turn_off_only_full_group_by.inc
+--sorted_result
+SELECT DISTINCT a, b, c, d, e, f FROM t1 WHERE a > 31 GROUP BY 'const';
+--source include/restore_sql_mode_after_turn_off_only_full_group_by.inc
+--sorted_result
+SELECT c DIV 1 AS cc, a FROM t1 GROUP BY cc,a;
+--sorted_result
+SELECT COUNT(DISTINCT(t1.c)), LEFT(d, 256) AS comment FROM t1 LEFT JOIN t2 ON t1.a=t2.a GROUP BY comment;
+--sorted_result
+SELECT DATE(LEFT(e+1,7)) FROM t1 GROUP BY 1;
+--sorted_result
+SET SQL_MODE = 'ONLY_FULL_GROUP_BY';
+--sorted_result
+SELECT MAX(a)-MIN(a) FROM t1 GROUP BY b;
+--sorted_result
+SELECT a FROM t1 GROUP BY t1.a
+  HAVING (SELECT AVG(SUM(t1.b) + t2.b) FROM t2 ORDER BY SUM(t2.a) LIMIT 1);
+--sorted_result
+SELECT SUBSTRING(a,1,10), LENGTH(a), GROUP_CONCAT(b) FROM t3 GROUP BY a;
+SET sql_mode = default;
+# CREATE INDEX
+CREATE INDEX b ON t1(b);
+CREATE INDEX c ON t1(c);
+CREATE INDEX e ON t1(e);
+CREATE INDEX f ON t1(f(16));
+CREATE INDEX b ON t2(b);
+CREATE INDEX b ON t3(b);
+CREATE INDEX c ON t3(c);
+SELECT a, COUNT(*) FROM t1 GROUP BY a HAVING a > 20;
+--sorted_result
+SELECT b, SUM(a) FROM t1 GROUP BY b,a DESC;
+--sorted_result
+SELECT a, MIN(b),e, COUNT(DISTINCT c) FROM t1 GROUP BY a,b,c,e HAVING a > b + c;
+SELECT BINARY d FROM t1 GROUP BY d ORDER BY d;
+--sorted_result
+SELECT GROUP_CONCAT(DISTINCT d) AS dd FROM t1 GROUP BY d HAVING dd LIKE "%";
+SELECT a, d, ROUND(RAND(b)*5) r2 FROM t1 WHERE a < 60 GROUP BY a,b,d HAVING d > 'a';
+--sorted_result
+SELECT MAX(t1.a), t1.b, t1.e FROM t1 LEFT JOIN t2 ON t2.a = t1.a AND t2.b = t1.b WHERE t1.d < 'hello' GROUP BY t1.a,t1.b,t1.e;
+--sorted_result
+SELECT t1.a,t2.b FROM t1,t2 WHERE t1.b=t2.b GROUP BY t1.a,t2.b ORDER BY NULL;
+--sorted_result
+SELECT a, SUM(b) AS b1 FROM t1 GROUP BY a HAVING SUM(b) > 10 AND a < 50;
+SELECT b FROM t3 WHERE a >= 20 AND b <= 'f' GROUP BY b;
+--source include/turn_off_only_full_group_by.inc
+SELECT DISTINCT a, b, c, d, e, f FROM t1 WHERE a > 31 GROUP BY 'const';
+--source include/restore_sql_mode_after_turn_off_only_full_group_by.inc
+--sorted_result
+SELECT c DIV 1 AS cc, a FROM t1 GROUP BY cc,a;
+--sorted_result
+SELECT COUNT(DISTINCT(t1.c)), LEFT(d, 256) AS comment FROM t1 LEFT JOIN t2 ON t1.a=t2.a GROUP BY comment;
+SELECT DATE(LEFT(e+1,7)) FROM t1 GROUP BY 1;
+SET SQL_MODE = 'ONLY_FULL_GROUP_BY';
+--sorted_result
+SELECT MAX(a)-MIN(a) FROM t1 GROUP BY b;
+--sorted_result
+SELECT a FROM t1 GROUP BY t1.a
+  HAVING (SELECT AVG(SUM(t1.b) + t2.b) FROM t2 ORDER BY SUM(t2.a) LIMIT 1);
+--sorted_result
+SELECT SUBSTRING(a,1,10), LENGTH(a), GROUP_CONCAT(b) FROM t3 GROUP BY a;
+SET sql_mode = default;
+DROP TABLE t1,t2,t3;
+# Bug #SEQUOIASQLMAINSTREAM-156
+# Bug #SEQUOIASQLMAINSTREAM-221
+#CREATE TABLE t1(a char(16), b text) DEFAULT CHARSET=latin1 COLLATE=latin1_bin;
+#INSERT INTO t1 VALUES ("hello", "hello");
+#INSERT INTO t1 VALUES ("HELLO", "HELLO");
+#INSERT INTO t1 VALUES ("hello ", "hello ");
+#INSERT INTO t1 VALUES ("HELLO ", "HELLO ");
+#INSERT INTO t1 VALUES (" hello", " hello");
+#INSERT INTO t1 VALUES (" HELLO", " HELLO");
+#INSERT INTO t1 VALUES (" hello ", " hello ");
+#INSERT INTO t1 VALUES (" HELLO ", " HELLO ");
+#INSERT INTO t1 VALUES ("HELLO ", "HELLO ");
+#INSERT INTO t1 VALUES ("hello ", "hello ");
+#INSERT INTO t1 VALUES ("hello", "hello");
+#INSERT INTO t1 VALUES ("HELLO", "HELLO");
+#INSERT INTO t1 VALUES ("hello1", "hello1");
+#INSERT INTO t1 VALUES ("HELLO1", "HELLO1");
+#INSERT INTO t1 VALUES ("hello1 ", "hello1 ");
+#INSERT INTO t1 VALUES ("HELLO1 ", "HELLO1 ");
+#INSERT INTO t1 VALUES (" hello1", " hello1");
+#INSERT INTO t1 VALUES (" HELLO1", " HELLO1");
+#INSERT INTO t1 VALUES (" hello1 ", " hello1 ");
+#INSERT INTO t1 VALUES (" HELLO1 ", " HELLO1 ");
+#INSERT INTO t1 VALUES ("HELLO1 ", "HELLO1 ");
+#INSERT INTO t1 VALUES ("hello1", "hello1");
+#INSERT INTO t1 VALUES ("hello1 ", "hello1 ");
+#INSERT INTO t1 VALUES ("HELLO1", "HELLO1");
+#--sorted_result
+#SELECT a, COUNT(*) FROM t1 GROUP BY a;
+#--sorted_result
+#SELECT a, COUNT(*) FROM t1 GROUP BY a HAVING a = "hello";
+#--sorted_result
+#SELECT a, COUNT(*) FROM t1 GROUP BY a HAVING a = "HELLO";
+#--sorted_result
+#SELECT a, COUNT(*) FROM t1 GROUP BY a HAVING a = "hello1 ";
+#--sorted_result
+#SELECT a, COUNT(*) FROM t1 GROUP BY a HAVING a = "HELLO1 ";
+#--sorted_result
+#SELECT a, COUNT(*) FROM t1 GROUP BY a HAVING a = " hello";
+#--sorted_result
+#SELECT a, COUNT(*) FROM t1 GROUP BY a HAVING a = " HELLO";
+#--sorted_result
+#SELECT a, COUNT(*) FROM t1 GROUP BY a HAVING a = " hello1 ";
+#--sorted_result
+#SELECT a, COUNT(*) FROM t1 GROUP BY a HAVING a = " HELLO1 ";
+#--sorted_result
+#SELECT a, b, COUNT(*) FROM t1 GROUP BY a,b HAVING a = b;
+## CREATE INDEX
+#CREATE INDEX a ON t1(a);
+#--sorted_result
+#SELECT a, COUNT(*) FROM t1 GROUP BY a;
+#--sorted_result
+#SELECT a, COUNT(*) FROM t1 GROUP BY a HAVING a = "hello";
+#--sorted_result
+#SELECT a, COUNT(*) FROM t1 GROUP BY a HAVING a = "HELLO";
+#--sorted_result
+#SELECT a, COUNT(*) FROM t1 GROUP BY a HAVING a = "hello1 ";
+#--sorted_result
+#SELECT a, COUNT(*) FROM t1 GROUP BY a HAVING a = "HELLO1 ";
+#--sorted_result
+#SELECT a, COUNT(*) FROM t1 GROUP BY a HAVING a = " hello";
+#--sorted_result
+#SELECT a, COUNT(*) FROM t1 GROUP BY a HAVING a = " HELLO";
+#--sorted_result
+#SELECT a, COUNT(*) FROM t1 GROUP BY a HAVING a = " hello1 ";
+#--sorted_result
+#SELECT a, COUNT(*) FROM t1 GROUP BY a HAVING a = " HELLO1 ";
+#--sorted_result
+#SELECT a, b, COUNT(*) FROM t1 GROUP BY a,b HAVING a = b;
+#DROP TABLE t1;
+
+# Bug #SEQUOIASQLMAINSTREAM-156
+# Bug #SEQUOIASQLMAINSTREAM-221
+#CREATE TABLE t1(a varchar(16), b set("hello","hello1"," hello", " hello1", " HELLO"," HELLO1","HELLO","HELLO1")) DEFAULT CHARSET=latin1 COLLATE=latin1_bin;
+#INSERT INTO t1 VALUES ("hello", "hello");
+#INSERT INTO t1 VALUES ("HELLO", "HELLO");
+#INSERT INTO t1 VALUES ("hello ", "hello ");
+#INSERT INTO t1 VALUES ("HELLO ", "HELLO ");
+#INSERT INTO t1 VALUES (" hello", " hello");
+#INSERT INTO t1 VALUES (" HELLO", " HELLO");
+#INSERT INTO t1 VALUES (" hello ", " hello ");
+#INSERT INTO t1 VALUES (" HELLO ", " HELLO ");
+#INSERT INTO t1 VALUES ("HELLO ", "HELLO ");
+#INSERT INTO t1 VALUES ("hello ", "hello ");
+#INSERT INTO t1 VALUES ("hello", "hello");
+#INSERT INTO t1 VALUES ("HELLO", "HELLO");
+#INSERT INTO t1 VALUES ("hello1", "hello1");
+#INSERT INTO t1 VALUES ("HELLO1", "HELLO1");
+#INSERT INTO t1 VALUES ("hello1 ", "hello1 ");
+#INSERT INTO t1 VALUES ("HELLO1 ", "HELLO1 ");
+#INSERT INTO t1 VALUES (" hello1", " hello1");
+#INSERT INTO t1 VALUES (" HELLO1", " HELLO1");
+#INSERT INTO t1 VALUES (" hello1 ", " hello1 ");
+#INSERT INTO t1 VALUES (" HELLO1 ", " HELLO1 ");
+#INSERT INTO t1 VALUES ("HELLO1 ", "HELLO1 ");
+#INSERT INTO t1 VALUES ("hello1", "hello1");
+#INSERT INTO t1 VALUES ("hello1 ", "hello1 ");
+#INSERT INTO t1 VALUES ("HELLO1", "HELLO1");
+#--sorted_result
+#SELECT a, COUNT(*) FROM t1 GROUP BY a;
+#--sorted_result
+#SELECT a, COUNT(*) FROM t1 GROUP BY a HAVING a = "hello";
+#--sorted_result
+#SELECT a, COUNT(*) FROM t1 GROUP BY a HAVING a = "HELLO";
+#--sorted_result
+#SELECT a, COUNT(*) FROM t1 GROUP BY a HAVING a = "hello1 ";
+#--sorted_result
+#SELECT a, COUNT(*) FROM t1 GROUP BY a HAVING a = "HELLO1 ";
+#--sorted_result
+#SELECT a, COUNT(*) FROM t1 GROUP BY a HAVING a = " hello";
+#--sorted_result
+#SELECT a, COUNT(*) FROM t1 GROUP BY a HAVING a = " HELLO";
+#--sorted_result
+#SELECT a, COUNT(*) FROM t1 GROUP BY a HAVING a = " hello1 ";
+#--sorted_result
+#SELECT a, COUNT(*) FROM t1 GROUP BY a HAVING a = " HELLO1 ";
+#--sorted_result
+#SELECT a, b, COUNT(*) FROM t1 GROUP BY a,b HAVING a = b;
+## CREATE INDEX 
+#CREATE INDEX a ON t1(a);
+#--sorted_result
+#SELECT a, COUNT(*) FROM t1 GROUP BY a;
+#--sorted_result
+#SELECT a, COUNT(*) FROM t1 GROUP BY a HAVING a = "hello";
+#--sorted_result
+#SELECT a, COUNT(*) FROM t1 GROUP BY a HAVING a = "HELLO";
+#--sorted_result
+#SELECT a, COUNT(*) FROM t1 GROUP BY a HAVING a = "hello1 ";
+#--sorted_result
+#SELECT a, COUNT(*) FROM t1 GROUP BY a HAVING a = "HELLO1 ";
+#--sorted_result
+#SELECT a, COUNT(*) FROM t1 GROUP BY a HAVING a = " hello";
+#--sorted_result
+#SELECT a, COUNT(*) FROM t1 GROUP BY a HAVING a = " HELLO";
+#--sorted_result
+#SELECT a, COUNT(*) FROM t1 GROUP BY a HAVING a = " hello1 ";
+#--sorted_result
+#SELECT a, COUNT(*) FROM t1 GROUP BY a HAVING a = " HELLO1 ";
+#--sorted_result
+#SELECT a, b, COUNT(*) FROM t1 GROUP BY a,b HAVING a = b;
+#DROP TABLE t1;
+
+# Bug #SEQUOIASQLMAINSTREAM-156
+# Bug #SEQUOIASQLMAINSTREAM-221
+#CREATE TABLE t1(a tinytext, b mediumtext, c text, d longtext) DEFAULT CHARSET=latin1 COLLATE=latin1_bin;
+#INSERT INTO t1 VALUES ("hello", "hello", "hello", "hello");
+#INSERT INTO t1 VALUES ("HELLO", "HELLO", "HELLO", "HELLO");
+#INSERT INTO t1 VALUES ("hello ", "hello ", "hello ", "hello ");
+#INSERT INTO t1 VALUES ("HELLO ", "HELLO ", "HELLO ", "HELLO ");
+#INSERT INTO t1 VALUES (" hello", " hello", " hello", " hello");
+#INSERT INTO t1 VALUES (" HELLO", " HELLO", " HELLO", " HELLO");
+#INSERT INTO t1 VALUES (" hello ", " hello ", " hello ", " hello ");
+#INSERT INTO t1 VALUES (" HELLO ", " HELLO ", " HELLO ", " HELLO ");
+#INSERT INTO t1 VALUES ("HELLO ", "HELLO ", "HELLO ", "HELLO ");
+#INSERT INTO t1 VALUES ("hello ", "hello ", "hello ", "hello ");
+#INSERT INTO t1 VALUES ("hello", "hello", "hello", "hello");
+#INSERT INTO t1 VALUES ("HELLO", "HELLO", "HELLO", "HELLO");
+#INSERT INTO t1 VALUES ("hello1", "hello1", "hello1", "hello1");
+#INSERT INTO t1 VALUES ("HELLO1", "HELLO1", "HELLO1", "HELLO1");
+#INSERT INTO t1 VALUES ("hello1 ", "hello1 ", "hello1 ", "hello1 ");
+#INSERT INTO t1 VALUES ("HELLO1 ", "HELLO1 ", "HELLO1 ", "HELLO1 ");
+#INSERT INTO t1 VALUES (" hello1", " hello1", " hello1", " hello1");
+#INSERT INTO t1 VALUES (" HELLO1", " HELLO1", " HELLO1", " HELLO1");
+#INSERT INTO t1 VALUES (" hello1 ", " hello1 ", " hello1 ", " hello1 ");
+#INSERT INTO t1 VALUES (" HELLO1 ", " HELLO1 ", " HELLO1 ", " HELLO1 ");
+#INSERT INTO t1 VALUES ("HELLO1 ", "HELLO1 ", "HELLO1 ", "HELLO1 ");
+#INSERT INTO t1 VALUES ("hello1", "hello1", "hello1", "hello1");
+#INSERT INTO t1 VALUES ("hello1 ", "hello1 ", "hello1 ", "hello1 ");
+#INSERT INTO t1 VALUES ("HELLO1", "HELLO1", "HELLO1", "HELLO1");
+#--sorted_result
+#SELECT a, COUNT(*) FROM t1 GROUP BY a;
+#--sorted_result
+#SELECT a, COUNT(*) FROM t1 GROUP BY a HAVING a = "hello";
+#--sorted_result
+#SELECT b, COUNT(*) FROM t1 GROUP BY b HAVING b = "HELLO";
+#--sorted_result
+#SELECT c, COUNT(*) FROM t1 GROUP BY c HAVING c = "hello1 ";
+#--sorted_result
+#SELECT d, COUNT(*) FROM t1 GROUP BY d HAVING d = "HELLO1 ";
+#--sorted_result
+#SELECT d, COUNT(*) FROM t1 GROUP BY d HAVING d = " hello";
+#--sorted_result
+#SELECT c, COUNT(*) FROM t1 GROUP BY c HAVING c = " HELLO";
+#--sorted_result
+#SELECT b, COUNT(*) FROM t1 GROUP BY b HAVING b = " hello1 ";
+#--sorted_result
+#SELECT a, COUNT(*) FROM t1 GROUP BY a HAVING a = " HELLO1 ";
+#--sorted_result
+#SELECT c, d, COUNT(*) FROM t1 GROUP BY c, d HAVING c = d;
+## CREATE INDEX 
+#CREATE INDEX a ON t1(a(16));
+#CREATE INDEX b ON t1(b(16));
+#CREATE INDEX c ON t1(c(16));
+#CREATE INDEX d ON t1(d(16));
+#--sorted_result
+#SELECT a, COUNT(*) FROM t1 GROUP BY a;
+#--sorted_result
+#SELECT a, COUNT(*) FROM t1 GROUP BY a HAVING a = "hello";
+#--sorted_result
+#SELECT b, COUNT(*) FROM t1 GROUP BY b HAVING b = "HELLO";
+#--sorted_result
+#SELECT c, COUNT(*) FROM t1 GROUP BY c HAVING c = "hello1 ";
+#--sorted_result
+#SELECT d, COUNT(*) FROM t1 GROUP BY d HAVING d = "HELLO1 ";
+#--sorted_result
+#SELECT d, COUNT(*) FROM t1 GROUP BY d HAVING d = " hello";
+#--sorted_result
+#SELECT c, COUNT(*) FROM t1 GROUP BY c HAVING c = " HELLO";
+#--sorted_result
+#SELECT b, COUNT(*) FROM t1 GROUP BY b HAVING b = " hello1 ";
+#--sorted_result
+#SELECT a, COUNT(*) FROM t1 GROUP BY a HAVING a = " HELLO1 ";
+#--sorted_result
+#SELECT c, d, COUNT(*) FROM t1 GROUP BY c,d HAVING c = d;
+#DROP TABLE t1;
+
+#
+# QUERY WITH ORDER BY + LIMIT + OFFSET
+#
+CREATE TABLE t1 (i INT key, c CHAR(127));
+CREATE TABLE t2 (i INT key) ;
+INSERT INTO t1 VALUES(23,'Emettre'),(2,'appel'),(1,'offres'),(14,'Liste'),(5,'aes'),(9,'des'),(3,'ajoute'),(12,'appel'),(53,'les'),(-2,'fiche'),(-99,'les'),(0,'hello'),(6,'materiel'),(19,'Axmark'),(33,'axmark'),(11,NULL);
+INSERT INTO t2 VALUES(2),(5),(12),(-99),(-1),(4),(13),(25),(9),(8),(19),(1);
+SELECT CONCAT(i,"-",c) AS ic FROM t1 ORDER BY ic;
+SELECT DISTINCT c,i FROM t1 ORDER BY RAND(i);
+SELECT i AS ii,c FROM t1 WHERE c LIKE "a%" ORDER BY i;
+SELECT * FROM t2 WHERE i >= 1 AND i < 20 ORDER BY i desc;
+SELECT t1.i, t1.c, t2.i FROM t1 JOIN t2 WHERE t2.i = t1.i ORDER BY t2.i, t1.c;
+SELECT c FROM t1 AS m LEFT JOIN t2 AS n ON (m.i = n.i AND n.i <= 20) ORDER BY n.i,m.c LIMIT 5 OFFSET 4;
+SELECT * FROM t1 WHERE i > 10 ORDER BY i LIMIT 4 OFFSET 1;
+(SELECT i,c FROM t1 WHERE c LIKE '%l' ORDER BY c DESC) ORDER BY i ASC;
+# CREATE INDEX
+CREATE INDEX c ON t1(c);
+SELECT CONCAT(i,"-",c) AS ic FROM t1 ORDER BY ic;
+SELECT DISTINCT c,i FROM t1 ORDER BY RAND(i);
+SELECT i AS ii,c FROM t1 WHERE c LIKE "a%" ORDER BY i;
+SELECT * FROM t2 WHERE i >= 1 AND i < 20 ORDER BY i desc;
+SELECT t1.i, t1.c, t2.i FROM t1 JOIN t2 WHERE t2.i = t1.i ORDER BY t2.i, t1.c;
+SELECT c FROM t1 AS m LEFT JOIN t2 AS n ON (m.i = n.i AND n.i <= 20) ORDER BY n.i,m.c LIMIT 5 OFFSET 4;
+SELECT * FROM t1 WHERE i > 10 ORDER BY i LIMIT 4 OFFSET 1;
+(SELECT i,c FROM t1 WHERE c LIKE '%l' ORDER BY c DESC) ORDER BY i ASC;
+DROP TABLE t1,t2;
+
+#
+# QUERY WITH MULTI_TABLES
+#
+CREATE TABLE t1 (a INT key, t TEXT);
+INSERT INTO t1 VALUES(23,'Eoej'),(2,'abcd'),(1,'erd'),(14,'Liste'),(12,'appel'),(53,'les'),(-2,'fiche'),(19,'MIN'),(33,'Min'),(43,NULL);
+CREATE TABLE t2 (a INT key);
+INSERT INTO t2 VALUES(2),(5),(12),(-99),(-1),(9),(8),(19),(43);
+--sorted_result
+SELECT t1.a, t1.t, t2.a FROM t1,t2;
+--sorted_result
+SELECT * FROM t1,t2 WHERE t1.a > t2.a AND t2.a < 10;
+--sorted_result
+SELECT m.a,n.a FROM t1 AS m, t2 AS n WHERE m.a <= n.a AND n.a IS NOT NULL;
+# CREATE INDEX
+CREATE INDEX t ON t1(t(16));
+--sorted_result
+SELECT t1.a, t1.t, t2.a FROM t1,t2;
+--sorted_result
+SELECT * FROM t1,t2 WHERE t1.a > t2.a AND t2.a < 10;
+--sorted_result
+SELECT m.a,n.a FROM t1 AS m, t2 AS n WHERE m.a <= n.a AND n.a IS NOT NULL;
+DROP TABLE t1,t2;
+
+#
+# SUBQUERY 
+#
+CREATE TABLE t1(a INT key, b VARCHAR(64));
+CREATE TABLE t2(a INT key, b CHAR(64));
+CREATE TABLE t3(a INT key, b CHAR(64), c DATE);
+INSERT INTO t1 VALUES (4,'wa'),(2,'ac'),(11,'op'),(9,'djow'),(16,'oerrg'),(20,'erw'),(17,'abc'),(13,'ope'),(14,'md'),(-7,'relqw'),(111,NULL);
+INSERT INTO t2 VALUES (3,'fd'),(1,'ghdf'),(12,'ew'),(9,'djow'),(16,'oerrg'),(20,'erw'),(17,'abc'),(13,'ope'),(14,'md'),(19,'gfd'),(111,NULL);
+INSERT INTO t3 VALUES (4,'wa','1990-02-22'),(2,'ac','2190-03-22'),(11,'op','2001-11-22'),(1,'a','2006-01-22'),(16,'oo','1998-02-22'),(20,'erw','1997-07-21'),(17,'abc','1983-01-22'),(12,'ope','2005-06-22'),(14,'md','2010-12-22'),(-7,'ei','2019-01-01'),(111,NULL,NULL);
+--sorted_result
+SELECT (SELECT a FROM t1 WHERE t1.a = t2.a), a FROM t2;
+--sorted_result
+SELECT (SELECT a FROM t1 WHERE a = 4), (SELECT 1 UNION SELECT b LIMIT 1) FROM t2;
+--sorted_result
+(SELECT * FROM t2 WHERE t2.b = (SELECT b FROM t3 ORDER BY 1 desc LIMIT 1 OFFSET 4)) UNION (SELECT * FROM t1 WHERE t1.b = (SELECT b FROM t2 WHERE a = 17) ORDER BY a);
+--sorted_result
+SELECT * FROM t3 WHERE EXISTS (SELECT * FROM t2 WHERE t2.b = t3.b);
+--sorted_result
+SELECT * FROM t2 WHERE NOT EXISTS (SELECT * FROM t1 WHERE t2.b = t1.b);
+--sorted_result
+SELECT * FROM t3 WHERE b IN (SELECT b FROM t2);
+--sorted_result
+SELECT * FROM t1 WHERE a NOT IN (SELECT a FROM t2 WHERE a > 0);
+--sorted_result
+SELECT * FROM t1 WHERE b <> SOME (SELECT b FROM t3);
+--sorted_result
+SELECT * FROM t3 WHERE a >= ANY (SELECT b FROM t2);
+--sorted_result
+SELECT * FROM t1 WHERE b != ALL (SELECT b FROM t2 WHERE b < 'www');
+--sorted_result
+SELECT * FROM t2 WHERE 'abc' <= SOME (SELECT b FROM t2 WHERE a > 0 GROUP BY 1);
+--sorted_result
+SELECT m.a1 FROM (SELECT a AS a1, b FROM t1) AS m LEFT JOIN t2 AS n ON m.b >= 'erw' AND m.b = n.b WHERE n.b <> 'ope';
+# CREATE INDEX
+CREATE INDEX b ON t1(b);
+CREATE INDEX b ON t2(b);
+CREATE INDEX b ON t3(b);
+SELECT (SELECT a FROM t1 WHERE t1.a = t2.a), a FROM t2;
+--sorted_result
+SELECT (SELECT a FROM t1 WHERE a = 4), (SELECT 1 UNION SELECT b LIMIT 1) FROM t2;
+--sorted_result
+(SELECT * FROM t2 WHERE t2.b = (SELECT b FROM t3 ORDER BY 1 desc LIMIT 1 OFFSET 4)) UNION (SELECT * FROM t1 WHERE t1.b = (SELECT b FROM t2 WHERE a = 17) ORDER BY a);
+--sorted_result
+SELECT * FROM t3 WHERE EXISTS (SELECT * FROM t2 WHERE t2.b = t3.b);
+--sorted_result
+SELECT * FROM t2 WHERE NOT EXISTS (SELECT * FROM t1 WHERE t2.b = t1.b);
+--sorted_result
+SELECT * FROM t3 WHERE b IN (SELECT b FROM t2);
+--sorted_result
+SELECT * FROM t1 WHERE a NOT IN (SELECT a FROM t2 WHERE a > 0);
+--sorted_result
+SELECT * FROM t1 WHERE b <> SOME (SELECT b FROM t3);
+--sorted_result
+SELECT * FROM t3 WHERE a >= ANY (SELECT b FROM t2);
+--sorted_result
+SELECT * FROM t1 WHERE b != ALL (SELECT b FROM t2 WHERE b < 'www');
+--sorted_result
+SELECT * FROM t2 WHERE 'abc' <= SOME (SELECT b FROM t2 WHERE a > 0 GROUP BY 1);
+SELECT m.a1 FROM (SELECT a AS a1, b FROM t1) AS m LEFT JOIN t2 AS n ON m.b >= 'erw' AND m.b = n.b WHERE n.b <> 'ope';
+DROP TABLE t1,t2,t3;
+
+#
+# JOIN 
+#
+CREATE TABLE t1(a MEDIUMINT key, b VARCHAR(16));
+CREATE TABLE t2(a INT key, b CHAR(16));
+CREATE TABLE t3(a SMALLINT key, b TEXT);
+INSERT INTO t1 VALUES (1,'home'),(3,'progss'),(11,'ger'),(2,'djow'),(13,'oerrg'),(21,'erw'),(10,'abc'),(15,'callcenter'),(16,'null'),(-5,'nele'),(111,NULL);
+INSERT INTO t2 VALUES (3,'fd'),(1,'home'),(13,'ger'),(9,'djow'),(16,'oerrg'),(20,'erw'),(10,'abc'),(15,'callcenter'),(14,'md'),(19,'gfd'),(111,NULL);
+INSERT INTO t3 VALUES (4,'wa'),(1,'home'),(11,'ger'),(101,'a'),(16,'null'),(21,'erw'),(10,'abc'),(12,'djow'),(14,'md'),(-5,'nele'),(111,NULL);
+--sorted_result
+SELECT * FROM (t1, t2) JOIN t3 ON (t1.a >= 20 AND t2.b < t1.b);
+--sorted_result
+SELECT * FROM t1 NATURAL JOIN t2 WHERE 1 AND (b > 'a' AND a < 15);
+--sorted_result
+SELECT * FROM t1 LEFT JOIN t2 ON (t1.a=t2.a) LEFT JOIN t3 ON (t2.b=t3.b);
+--sorted_result
+SELECT * FROM t1 NATURAL LEFT JOIN t2 NATURAL LEFT JOIN t3;
+SELECT t1.a,t2.a,t3.a FROM t2 RIGHT JOIN t3 ON (t2.a=t3.a),t1 ORDER BY t1.a,t2.a,t3.a;
+--sorted_result
+SELECT * FROM t1,t2 NATURAL RIGHT JOIN t3 ORDER BY t1.b,t2.b,t3.b;
+SELECT STRAIGHT_JOIN t1.a,t2.b FROM t1,t2 WHERE t2.b <> 'abc' AND t1.a=t2.a ORDER BY t1.a, t2.b;
+# CREATE INDEX
+CREATE INDEX b ON t1(b);
+CREATE INDEX b ON t2(b);
+CREATE INDEX b ON t3(b(16));
+--sorted_result
+SELECT * FROM (t1, t2) JOIN t3 ON (t1.a >= 20 AND t2.b < t1.b);
+--sorted_result
+SELECT * FROM t1 NATURAL JOIN t2 WHERE 1 AND (b > 'a' AND a < 15);
+--sorted_result
+SELECT * FROM t1 LEFT JOIN t2 ON (t1.a=t2.a) LEFT JOIN t3 ON (t2.b=t3.b);
+--sorted_result
+SELECT * FROM t1 NATURAL LEFT JOIN t2 NATURAL LEFT JOIN t3;
+SELECT t1.a,t2.a,t3.a FROM t2 RIGHT JOIN t3 ON (t2.a=t3.a),t1 ORDER BY t1.a,t2.a,t3.a;
+--sorted_result
+SELECT * FROM t1,t2 NATURAL RIGHT JOIN t3 ORDER BY t1.b,t2.b,t3.b;
+SELECT STRAIGHT_JOIN t1.a,t2.b FROM t1,t2 WHERE t2.b <> 'abc' AND t1.a=t2.a ORDER BY t1.a, t2.b;
+DROP TABLE t1,t2,t3;
+
+#
+# UPDATE/DELETE
+#
+CREATE TABLE t1(a INT key, b BLOB);
+CREATE TABLE t2(a BIGINT key);
+INSERT INTO t1 VALUES (2,'home'),(16,'progss'),(9,'ger'),(7,'djow'),(1,'oerrg'),(-3,'erw'),(-1,'abc'),(11,'callcenter'),(14,'null'),(6,'nele'),(111,NULL);
+INSERT INTO t2 VALUES (7),(2),(1),(-1),(10),(15),(13),(6),(8),(11),(4);
+UPDATE t1 SET b= (SELECT b FROM t2 WHERE t1.a = t2.a);
+--sorted_result
+SELECT * FROM t1;
+--sorted_result
+UPDATE t1 SET b=NULL WHERE b NOT LIKE 'n';
+--sorted_result
+SELECT * FROM t1;
+UPDATE t1,t2 SET t1.b='UPDATEb2' WHERE t1.a IN (SELECT a FROM t2);
+--sorted_result
+SELECT * FROM t1;
+UPDATE t1 SET b = b + '123' WHERE 1 = (SELECT t1.a AS a1 FROM t2 WHERE t2.a > t1.a ORDER BY a LIMIT 1);
+--sorted_result
+SELECT * FROM t1;
+UPDATE t1 JOIN t2 ON t1.a=t2.a SET b = b + '456' WHERE t1.a > 1;
+--sorted_result
+SELECT * FROM t1;
+DELETE FROM t1 WHERE b = (SELECT b FROM t2 WHERE t1.a = t2.a);
+--sorted_result
+SELECT * FROM t1;
+DELETE FROM t1 WHERE b IS NULL AND (SELECT a FROM t2 WHERE a > 2 ORDER BY a LIMIT 1) > 1;
+--sorted_result
+SELECT * FROM t1;
+INSERT INTO t1 VALUES (112,'home'),(114,'null'),(116,'nele'),(111,NULL);
+--sorted_result
+SELECT * FROM t1;
+DELETE t1 FROM (SELECT SUM(a) a FROM t1) x,t1;
+--sorted_result
+SELECT * FROM t1;
+DROP TABLE t1,t2;
+
+#
+# CHECK LARGE SORTING FOR SequoiaDB
+#
+--source std_data/bug_sql-279.sql
+#BUG #SEQUOIASQLMAINSTREAM-279
+--disable_result_log
+ANALYZE TABLE elec_meter_data;
+--enable_result_log
+SELECT COUNT(*) FROM elec_meter_data WHERE meter_id IN (497, 498, 499, 500) AND date_time >= "2018-04-03 00:00:00" AND date_time < "2018-04-20 00:00:00" ORDER BY id, date_time ASC;
+SELECT * FROM elec_meter_data WHERE meter_id IN (497, 498, 499, 500) AND date_time >= "2018-04-03 00:00:00" AND date_time < "2018-04-20 00:00:00" ORDER BY id, date_time ASC;
+DROP TABLE elec_meter_data;
+
+#
+# QUERY NOT LIKE
+#
+#BUG #SEQUOIASQLMAINSTREAM-608
+CREATE TABLE t1 ( c CHAR(16), vc VARCHAR(16) );
+CREATE TABLE t2 ( tx1 TINYTEXT, tx2 TEXT, tx3 MEDIUMTEXT, tx4 LONGTEXT );
+INSERT INTO t1 VALUES ('hello','hello'), ('hello ','hello '), ('holo','holo'), ('holo ','holo '), ('abc','abc');
+INSERT INTO t2 VALUES ('hello','hello','hello','hello'), ('hello ','hello ','hello ','hello ');
+INSERT INTO t2 VALUES ('holo','holo','holo','holo'), ('holo ','holo ','holo ','holo '), ('abc','abc','abc','abc');
+SELECT * FROM t1 WHERE c NOT LIKE 'h%l%';
+SELECT * FROM t1 WHERE vc NOT LIKE 'h%l%';
+SELECT * FROM t2 WHERE tx1 NOT LIKE 'h%l%';
+SELECT * FROM t2 WHERE tx2 NOT LIKE 'h%l%';
+SELECT * FROM t2 WHERE tx3 NOT LIKE 'h%l%';
+SELECT * FROM t2 WHERE tx4 NOT LIKE 'h%l%';
+SELECT * FROM t1 WHERE c NOT LIKE 'h_l_';
+SELECT * FROM t1 WHERE vc NOT LIKE 'h_l_';
+SELECT * FROM t2 WHERE tx1 NOT LIKE 'h_l_';
+SELECT * FROM t2 WHERE tx2 NOT LIKE 'h_l_';
+SELECT * FROM t2 WHERE tx3 NOT LIKE 'h_l_';
+SELECT * FROM t2 WHERE tx4 NOT LIKE 'h_l_';
+DROP TABLE t1,t2;
+
+#
+# LIMIT PUSH DOWN TESTING
+#
+#SEQUOIASQLMAINSTREAM-291
+CREATE TABLE t1 ( id INT AUTO_INCREMENT, a BIGINT, c CHAR(64), key(id, c), key(c) );
+INSERT INTO t1(a,c) VALUES (1,'op'),(-1,'bc'),(10,'123'),(1,'tf'),(-9,'001'),(15,'9a'),(0,'abc'),(5,'jk'),(19,'123'),(9,'hello'),(1,'bc');
+#seqDB-22379
+--sorted_result
+SELECT * FROM t1 LIMIT 3;
+--sorted_result
+SELECT * FROM t1 LIMIT 2 OFFSET 4;
+#seqDB-22380
+--sorted_result
+SELECT * FROM t1 WHERE NOT a > 3 LIMIT 2;
+--sorted_result
+SELECT * FROM t1 WHERE id >= 5 AND a < 10 OR c = 'abc' LIMIT 2 OFFSET 1;
+#seqDB-22381
+SELECT * FROM t1 ORDER BY id LIMIT 3 OFFSET 1;
+SELECT * FROM t1 WHERE c > 'a' ORDER BY c LIMIT 3 OFFSET 2;
+#seqDB-22382
+--sorted_result
+SELECT * FROM t1 WHERE id > LENGTH(c) LIMIT 3;
+--sorted_result
+SELECT * FROM t1 WHERE 10 > ABS(a) LIMIT 3 OFFSET 2;
+#seqDB-22383
+--sorted_result
+SELECT * FROM t1 WHERE id <= 10 ORDER BY a LIMIT 4 OFFSET 2;
+--sorted_result
+SELECT id, FLOOR(id/2) AS s, COUNT(*) AS c FROM t1 GROUP BY id,c ORDER BY c;
+#seqDB-22384
+--sorted_result
+SELECT a FROM t1 GROUP BY a LIMIT 5;
+--sorted_result
+SELECT id FROM t1 HAVING id > 2 LIMIT 5 OFFSET 1;
+--sorted_result
+SELECT a,id FROM t1 WHERE a > 3 GROUP BY a,id HAVING id > 3 LIMIT 3 OFFSET 1;
+#seqDB-22385
+--sorted_result
+SELECT DISTINCT a FROM t1 LIMIT 3 OFFSET 2;
+SELECT DISTINCT c FROM t1 ORDER BY c LIMIT 3;
+#seqDB-22386
+--sorted_result
+SELECT SQL_CALC_FOUND_ROWS * FROM t1 LIMIT 2 OFFSET 3;
+SELECT FOUND_ROWS();
+#seqDB-22387
+CREATE TABLE t2 ( id INT, vc VARCHAR(16));
+INSERT INTO t2 VALUES (1,'op'),(-1,'bc'),(10,'123'),(7,'ui'),(18,'123'),(10,'hello'),(0,'bc');
+--sorted_result
+SELECT * FROM t2 LEFT JOIN t1 ON t2.id = t1.id LIMIT 3 OFFSET 1;
+--sorted_result
+SELECT (SELECT a FROM t1 WHERE t1.a=t2.vc), vc FROM t2 LIMIT 2 OFFSET 1;
+#seqDB-22388
+CREATE TABLE t3 SELECT * FROM t1 WHERE id > 5 LIMIT 5;
+INSERT INTO t3 SELECT * FROM t1 ORDER BY id LIMIT 3 OFFSET 2;
+#seqDB-22389
+UPDATE t1 SET a = -99 WHERE id < 10 LIMIT 4;
+DELETE FROM t2 LIMIT 2;
+#seqDB-23020
+--sorted_result
+SELECT * FROM t1 WHERE id < 4 OR c <= 'bc' LIMIT 1,2;
+--sorted_result
+SELECT * FROM t1 WHERE id <= 4 OR c > 'abc' LIMIT 2 OFFSET 3;
+#seqDB-23021
+--sorted_result
+SELECT * FROM t1 WHERE id IN (1,2,5,6,8,11) LIMIT 3,2; 
+--sorted_result
+SELECT * FROM t1 WHERE c NOT IN ('123','bc','abc','hello') LIMIT 3 OFFSET 1;
+#seqDB-23022
+INSERT INTO t1 (id,a) VALUES (12,12), (13,13);
+--sorted_result
+SELECT * FROM t1 WHERE c = 'abc' OR c IS NULL LIMIT 1,2; 
+DROP TABLE t1,t2,t3;
+
+# seqDB-22785 
+CREATE TABLE `gis_search` (
+   gid int not null auto_increment primary key,
+  `poin` point default null,
+  `line` linestring default null,
+  `poly` polygon default null,
+  `mpoin` multipoint default null,
+  `mline` multilinestring default null,
+  `mploy` multipolygon default null,
+  `geoco` geometrycollection default null,
+  `geom` geometry default null,
+  `poin2` point default null,
+  `line2` linestring default null,
+  `poly2` polygon default null,
+  `mpoin2` multipoint default null,
+  `mline2` multilinestring default null,
+  `mploy2` multipolygon default null,
+  `geoco2` geometrycollection default null,
+  `geom2` geometry default null
+);
+
+SHOW CREATE TABLE gis_search;
+
+SET @point1 = ST_PointFromText('POINT(1 1)');
+SET @point2 = ST_PointFromText('POINT(10 10)');
+SET @point3 = ST_PointFromText('POINT(20 10)');
+SET @point4 = ST_PointFromText('POINT(0 0)');
+SET @point5 = ST_PointFromWKB(ST_AsWKB(ST_PointFromText('POINT(1 1)')));
+SET @point6 = ST_PointFromWKB(ST_AsBinary(ST_PointFromText('POINT(20 10)')));
+SET @point7 = ST_PointFromWKB(ST_AsBinary(ST_PointFromText('POINT(20 20)')));
+
+SET @line1 = LineFromText('LINESTRING(0 0,10 10)');
+SET @line2 = ST_LineFromText('LINESTRING(0 0,10 10,20 25,50 60)');
+SET @line3 = ST_LineStringFromText('LINESTRING(0 0,10 10,20 25,50 60)');
+SET @line4 = LineFromWKB(ST_AsWKB(LineString(Point(0, 0), Point(10, 10))));
+SET @line5 = ST_LineFromWKB(ST_AsWKB(LineString(Point(10, 10), Point(40, 10))));
+SET @line6 = ST_LineStringFromWKB(ST_AsWKB(LineString(Point(10, 10), Point(40, 10))));
+
+SET @poly1 = PolyFromText('POLYGON((10 10,20 10,20 20,10 20,10 10))');
+SET @poly2 = ST_PolyFromText('POLYGON((0 0,50 0,50 50,0 50,0 0), (10 10,20 10,20 20,10 20,10 10))');
+SET @poly3 = ST_PolygonFromText('POLYGON((10 10,20 10,20 20,10 20,10 10))');
+SET @poly4 = PolyFromWKB(ST_AsWKB(Polygon(LineString(Point(10, 10), Point(20, 10), Point(20, 20), Point(10, 20), Point(10, 10)))));
+SET @poly5 = ST_PolyFromWKB(ST_AsWKB(Polygon(LineString(Point(0, 0), Point(30, 0), Point(30, 30), Point(0, 0)))));
+SET @poly6 = ST_PolygonFromWKB(ST_AsWKB(Polygon(LineString(Point(0, 0), Point(30, 0), Point(30, 30), Point(0, 0)))));
+
+SET @mpoin1 = MPointFromText('MULTIPOINT(0 0,10 10,10 20,20 20)');
+SET @mpoin2 = ST_MPointFromText('MULTIPOINT(0 0,10 10,10 20,20 20)');
+SET @mpoin3 = ST_MultiPointFromText('MULTIPOINT(0 0,10 10,10 20,20 20)');
+SET @mpoin4 = MPointFromWKB(ST_AsWKB(MultiPoint(Point(3, 6), Point(4, 10))));
+SET @mpoin5 = ST_MPointFromWKB(ST_AsWKB(MultiPoint(Point(3, 6), Point(4, 10))));
+SET @mpoin6 = ST_MultiPointFromWKB(ST_AsWKB(MultiPoint(Point(3, 6), Point(4, 10))));
+
+SET @mline1 = MLineFromText('MULTILINESTRING((10 48,10 21,10 0),(16 0,16 23,16 48))');
+SET @mline2 = ST_MultiLineStringFromText('MULTILINESTRING((10 48,10 21,10 0),(16 0,16 23,16 48))');
+SET @mline3 = ST_MLineFromText('MULTILINESTRING((10 48,10 21,10 0))');
+SET @mline4 = MLineFromWKB(ST_AsWKB(MultiLineString(LineString(Point(1, 2), Point(3, 5)), LineString(Point(2, 5), Point(5, 8), Point(21, 7)))));
+SET @mline5 = ST_MLineFromWKB(ST_AsWKB(MultiLineString(LineString(Point(1, 2), Point(3, 5)), LineString(Point(2, 5), Point(5, 8), Point(21, 7)))));
+SET @mline6 = ST_MultiLineStringFromWKB(ST_AsWKB(MultiLineString(LineString(Point(1, 2), Point(3, 5)), LineString(Point(2, 5), Point(5, 8), Point(21, 7)))));
+
+SET @mploy1 = MPolyFromText('MULTIPOLYGON(((28 26,28 0,84 0,84 42,28 26),(52 18,66 23,73 9,48 6,52 18)),((59 18,67 18,67 13,59 13,59 18)))');
+SET @mploy2 = ST_MultiPolygonFromText('MULTIPOLYGON(((28 26,28 0,84 0,84 42,28 26),(52 18,66 23,73 9,48 6,52 18)),((59 18,67 18,67 13,59 13,59 18)))');
+SET @mploy3 = ST_MPolyFromText('MULTIPOLYGON(((28 26,28 0,84 0,84 42,28 26),(52 18,66 23,73 9,48 6,52 18)),((59 18,67 18,67 13,59 13,59 18)))');
+SET @mploy4 = MPolyFromWKB(ST_AsWKB(MultiPolygon(Polygon(LineString(Point(0, 3), Point(3, 3), Point(3, 0), Point(0, 3))))));
+SET @mploy5 = ST_MPolyFromWKB(ST_AsWKB(MultiPolygon(Polygon(LineString(Point(0, 3), Point(3, 3), Point(3, 0), Point(0, 3))))));
+SET @mploy6 = ST_MultiPolygonFromWKB(ST_AsWKB(MultiPolygon(Polygon(LineString(Point(0, 3), Point(3, 3), Point(3, 0), Point(0, 3))))));
+
+SET @geoco1 = GeomCollFromText('GEOMETRYCOLLECTION(POINT(0 0), LINESTRING(0 0,10 10))');
+SET @geoco2 = ST_GeomCollFromText('GEOMETRYCOLLECTION(POINT(0 0), LINESTRING(0 0,10 10))');
+SET @geoco3 = ST_GeometryCollectionFromText('GEOMETRYCOLLECTION(POINT(0 0), LINESTRING(0 0,10 10))');
+SET @geoco4 = ST_GeomCollFromTxt('GEOMETRYCOLLECTION(POINT(0 0), LINESTRING(0 0,10 10))');
+SET @geoco5 = GeomCollFromWKB(ST_AsWKB(GeometryCollection(Point(44, 6), LineString(Point(3, 6), Point(7, 9)))));
+SET @geoco6 = ST_GeomCollFromWKB(ST_AsWKB(GeometryCollection(Point(44, 6), LineString(Point(3, 6), Point(7, 9)))));
+SET @geoco7 = ST_GeometryCollectionFromWKB(ST_AsWKB(GeometryCollection(Point(44, 6), LineString(Point(3, 6), Point(7, 9)))));
+
+INSERT INTO gis_search VALUES
+(1001,@point1,null,null,null,null,null,null,null,@point1,null,null,null,null,null,null,null),
+(1002,@point1,null,null,null,null,null,null,null,@point2,null,null,null,null,null,null,null),
+(1003,@point1,null,null,null,null,null,null,null,@point5,null,null,null,null,null,null,null),
+(1004,@point1,null,null,null,null,null,null,null,@point4,null,null,null,null,null,null,null),
+(1005,@point2,null,null,null,null,null,null,null,@point5,null,null,null,null,null,null,null),
+(1006,@point3,null,null,null,null,null,null,null,@point5 ,null,null,null,null,null,null,null),
+(1007,@point4,null,null,null,null,null,null,null,@point4 ,null,null,null,null,null,null,null),
+(1008,@point5,null,null,null,null,null,null,null,@point4 ,null,null,null,null,null,null,null),
+(1009,@point6,null,null,null,null,null,null,null,@point7 ,null,null,null,null,null,null,null),
+(1010,@point7,null,null,null,null,null,null,null,@point4 ,null,null,null,null,null,null,null);
+
+INSERT INTO gis_search VALUES
+(1101,null,@line1,null,null,null,null,null,null,null,@line1,null,null,null,null,null,null),
+(1102,null,@line1,null,null,null,null,null,null,null,@line11,null,null,null,null,null,null),
+(1103,null,@line1,null,null,null,null,null,null,null,@line2,null,null,null,null,null,null),
+(1104,null,@line2,null,null,null,null,null,null,null,null,null,null,null,null,null,null),
+(1105,null,@line3,null,null,null,null,null,null,null,@line4,null,null,null,null,null,null),
+(1106,null,@line4,null,null,null,null,null,null,null,@line5,null,null,null,null,null,null),
+(1107,null,@line5,null,null,null,null,null,null,null,@line6,null,null,null,null,null,null),
+(1118,null,@line6,null,null,null,null,null,null,null,@line4,null,null,null,null,null,null);
+
+INSERT INTO gis_search VALUES
+(1201,null,null,@poly1,null,null,null,null,null,null,null,@poly1,null,null,null,null,null),
+(1202,null,null,@poly2,null,null,null,null,null,null,null,@poly1,null,null,null,null,null),
+(1203,null,null,@poly3,null,null,null,null,null,null,null,@poly1,null,null,null,null,null),
+(1204,null,null,@poly4,null,null,null,null,null,null,null,@poly4,null,null,null,null,null),
+(1205,null,null,@poly5,null,null,null,null,null,null,null,@poly4,null,null,null,null,null),
+(1206,null,null,@poly6,null,null,null,null,null,null,null,@poly4,null,null,null,null,null);
+
+INSERT INTO gis_search VALUES
+(1301,null,null,null,@mpoin1,null,null,null,null,null,null,null,@mpoin1,null,null,null,null),
+(1302,null,null,null,@mpoin2,null,null,null,null,null,null,null,@mpoin1,null,null,null,null),
+(1303,null,null,null,@mpoin3,null,null,null,null,null,null,null,@mpoin1,null,null,null,null),
+(1304,null,null,null,@mpoin4,null,null,null,null,null,null,null,@mpoin4,null,null,null,null),
+(1305,null,null,null,@mpoin5,null,null,null,null,null,null,null,@mpoin5,null,null,null,null),
+(1306,null,null,null,@mpoin6,null,null,null,null,null,null,null,@mpoin6,null,null,null,null);
+
+INSERT INTO gis_search VALUES
+(1401,null,null,null,null,@mline1,null,null,null,null,null,null,null,@mline1,null,null,null),
+(1402,null,null,null,null,@mline2,null,null,null,null,null,null,null,@mline1,null,null,null),
+(1403,null,null,null,null,@mline3,null,null,null,null,null,null,null,@mline1,null,null,null),
+(1404,null,null,null,null,@mline4,null,null,null,null,null,null,null,@mline4,null,null,null),
+(1405,null,null,null,null,@mline5,null,null,null,null,null,null,null,@mline4,null,null,null),
+(1406,null,null,null,null,@mline6,null,null,null,null,null,null,null,@mline4,null,null,null);
+
+INSERT INTO gis_search VALUES
+(1501,null,null,null,null,null,@mploy1,null,null,null,null,null,null,null,@mploy1,null,null),
+(1502,null,null,null,null,null,@mploy2,null,null,null,null,null,null,null,@mploy1,null,null),
+(1503,null,null,null,null,null,@mploy3,null,null,null,null,null,null,null,@mploy1,null,null),
+(1504,null,null,null,null,null,@mploy4,null,null,null,null,null,null,null,@mploy4,null,null),
+(1505,null,null,null,null,null,@mploy5,null,null,null,null,null,null,null,@mploy4,null,null),
+(1506,null,null,null,null,null,@mploy6,null,null,null,null,null,null,null,@mploy4,null,null);
+
+INSERT INTO gis_search VALUES
+(1601,null,null,null,null,null,null,@geoco1,null,null,null,null,null,null,null,@geoco1,null),
+(1602,null,null,null,null,null,null,@geoco2,null,null,null,null,null,null,null,@geoco1,null),
+(1603,null,null,null,null,null,null,@geoco3,null,null,null,null,null,null,null,@geoco1,null),
+(1604,null,null,null,null,null,null,@geoco4,null,null,null,null,null,null,null,@geoco1,null),
+(1605,null,null,null,null,null,null,@geoco5,null,null,null,null,null,null,null,@geoco4,null),
+(1606,null,null,null,null,null,null,@geoco6,null,null,null,null,null,null,null,@geoco4,null),
+(1607,null,null,null,null,null,null,@geoco7,null,null,null,null,null,null,null,@geoco4,null);
+
+INSERT INTO gis_search VALUES
+(1701,@point1,@line1,@poly1,@mpoin1,@mline1,@mploy1,@geoco1,@point1,null,null,null,null,null,null,@geoco1,@point1),
+(1702,@point1,@line1,@poly1,@mpoin1,@mline1,@mploy1,@geoco2,@line1,null,null,null,null,null,null,@geoco1,@line1),
+(1703,@point1,@line1,@poly1,@mpoin1,@mline1,@mploy1,@geoco3,@poly1,null,null,null,null,null,null,@geoco1,@poly1),
+(1704,@point1,@line1,@poly1,@mpoin1,@mline1,@mploy1,@geoco4,@mpoin1,null,null,null,null,null,null,@geoco1,@mpoin1),
+(1705,@point1,@line1,@poly1,@mpoin1,@mline1,@mploy1,@geoco5,@mline1,null,null,null,null,null,null,@geoco4,@mline1),
+(1706,@point1,@line1,@poly1,@mpoin1,@mline1,@mploy1,@geoco6,@mploy1,null,null,null,null,null,null,@geoco4,@mploy1),
+(1707,@point1,@line1,@poly1,@mpoin1,@mline1,@mploy1,@geoco7,@geoco1,null,null,null,null,null,null,@geoco4,@geoco1);
+
+#Point(),ST_NumPoints(),ST_PointFromGeoHash()、HEX（）
+--sorted_result
+SELECT gid, ST_AsText(poin),ST_AsText(poin2) FROM gis_search where poin is not null or poin2 is not null ;
+--sorted_result
+SELECT gid, ST_AsText(poin),ST_AsText(poin2) FROM gis_search where poin2=ST_PointFromText('POINT(10 10)');
+--sorted_result
+SELECT gid, ST_AsText(line) FROM gis_search where ST_NumPoints(line)=2;
+--sorted_result
+SELECT gid ,HEX(poin) FROM gis_search;
+--sorted_result
+SELECT gid ,HEX(poin) FROM gis_search where HEX(poin)="000000000101000000000000000000F03F000000000000F03F";
+
+#ST_PointFromText(),ST_PointFromWKB()
+--sorted_result
+SELECT gid, ST_AsText(poin),ST_AsText(poin2) FROM gis_search where ST_Within(ST_PointFromText('POINT(1 1)'),poin2);
+--sorted_result
+SELECT gid, ST_AsText(poin),ST_AsText(poin2) FROM gis_search where poin2 = ST_PointFromWKB(ST_AsWKB(ST_PointFromText('POINT(1 1)')));
+--sorted_result
+SELECT gid, ST_AsText(poin),ST_AsText(poin2) FROM gis_search where ST_Within(ST_PointFromWKB(ST_AsWKB(ST_PointFromText('POINT(1 1)'))),poin2);
+--sorted_result
+SELECT gid, ST_AsText(poin) FROM gis_search where poin = ST_PointFromText('POINT(10 10)');
+--sorted_result
+SELECT gid, ST_AsText(poin) FROM gis_search where poin = ST_PointFromWKB(ST_AsWKB(ST_PointFromText('POINT(10 10)')));
+
+#ST_PointN(),ST_StartPoint()
+--sorted_result
+SELECT gid, ST_AsText(line),ST_AsText(line2) FROM gis_search where ST_Within(ST_PointN(line,2),@point2);
+--sorted_result
+SELECT gid, ST_AsText(ST_StartPoint(line)),ST_AsText(line) FROM gis_search;
+--sorted_result
+SELECT gid, ST_AsText(ST_StartPoint(line)),ST_AsText(line) FROM gis_search where ST_StartPoint(line)=@point4;
+
+#ST_X(),ST_Y()
+--sorted_result
+SELECT gid, ST_AsText(poin),ST_AsText(poin2) FROM gis_search where ST_X(poin)=1;
+--sorted_result
+SELECT gid, ST_AsText(poin),ST_AsText(poin2) FROM gis_search where ST_Y(poin)=1;
+
+#LineFromText()，ST_LineFromText()，ST_LineStringFromText()，LineFromWKB()，LineString()，ST_LineFromWKB()，ST_LineStringFromWKB()
+--sorted_result
+SELECT gid, ST_AsText(line), ST_AsText(line2) FROM gis_search;
+--sorted_result
+SELECT gid, ST_AsText(line), ST_AsText(line2) FROM gis_search where line = @line1 ;
+--sorted_result
+SELECT gid, ST_AsText(line), ST_AsText(line2) FROM gis_search where line = @line2 ;
+--sorted_result
+SELECT gid, ST_AsText(line), ST_AsText(line2) FROM gis_search where line = @line3 ;
+--sorted_result
+SELECT gid, ST_AsText(line), ST_AsText(line2) FROM gis_search where line = @line4 ;
+--sorted_result
+SELECT gid, ST_AsText(line), ST_AsText(line2) FROM gis_search where line = @line5 ;
+--sorted_result
+SELECT gid, ST_AsText(line), ST_AsText(line2) FROM gis_search where line = @line6;
+
+#PolyFromText(),ST_PolyFromText()， ST_PolygonFromText(),Polygon(),PolyFromWKB(),ST_PolyFromWKB()，ST_PolygonFromWKB()
+--sorted_result
+SELECT gid, ST_AsText(poly), ST_AsText(poly2) FROM gis_search;
+--sorted_result
+SELECT gid, ST_AsText(poly), ST_AsText(poly2) FROM gis_search where poly = @poly1 ;
+--sorted_result
+SELECT gid, ST_AsText(poly), ST_AsText(poly2) FROM gis_search where poly = @poly2 ;
+--sorted_result
+SELECT gid, ST_AsText(poly), ST_AsText(poly2) FROM gis_search where poly = @poly3 ;
+--sorted_result
+SELECT gid, ST_AsText(poly), ST_AsText(poly2) FROM gis_search where poly = @poly4 ;
+--sorted_result
+SELECT gid, ST_AsText(poly), ST_AsText(poly2) FROM gis_search where poly = @poly5 ;
+--sorted_result
+SELECT gid, ST_AsText(poly), ST_AsText(poly2) FROM gis_search where poly = @poly6;
+
+#MPointFromText() , ST_MPointFromText()，ST_MultiPointFromText(),MultiPoint(),MPointFromWKB(),ST_MPointFromWKB()，ST_MultiPointFromWKB()
+--sorted_result
+SELECT gid, ST_AsText(mpoin), ST_AsText(mpoin2) FROM gis_search;
+--sorted_result
+SELECT gid, ST_AsText(mpoin), ST_AsText(mpoin2) FROM gis_search where mpoin = @mpoin1 ;
+--sorted_result
+SELECT gid, ST_AsText(mpoin), ST_AsText(mpoin2) FROM gis_search where mpoin = @mpoin2 ;
+--sorted_result
+SELECT gid, ST_AsText(mpoin), ST_AsText(mpoin2) FROM gis_search where mpoin = @mpoin3 ;
+--sorted_result
+SELECT gid, ST_AsText(mpoin), ST_AsText(mpoin2) FROM gis_search where mpoin = @mpoin4 ;
+--sorted_result
+SELECT gid, ST_AsText(mpoin), ST_AsText(mpoin2) FROM gis_search where mpoin = @mpoin5 ;
+--sorted_result
+SELECT gid, ST_AsText(mpoin), ST_AsText(mpoin2) FROM gis_search where mpoin = @mpoin6;
+
+#MLineFromText(),ST_MLineFromText()，ST_MultiLineStringFromText(),MultiLineString(),MLineFromWKB(),ST_MLineFromWKB()，ST_MultiLineStringFromWKB()
+--sorted_result
+SELECT gid, ST_AsText(mline), ST_AsText(mline2) FROM gis_search;
+--sorted_result
+SELECT gid, ST_AsText(mline), ST_AsText(mline2) FROM gis_search where mline = @mline1 ;
+--sorted_result
+SELECT gid, ST_AsText(mline), ST_AsText(mline2) FROM gis_search where mline = @mline2 ;
+--sorted_result
+SELECT gid, ST_AsText(mline), ST_AsText(mline2) FROM gis_search where mline = @mline3 ;
+--sorted_result
+SELECT gid, ST_AsText(mline), ST_AsText(mline2) FROM gis_search where mline = @mline4 ;
+--sorted_result
+SELECT gid, ST_AsText(mline), ST_AsText(mline2) FROM gis_search where mline = @mline5 ;
+--sorted_result
+SELECT gid, ST_AsText(mline), ST_AsText(mline2) FROM gis_search where mline = @mline6;
+
+#MPolyFromText(),ST_MPolyFromText()，ST_MultiPolygonFromText(),MultiPolygon(),MPolyFromWKB(),ST_MPolyFromWKB()，ST_MultiPolygonFromWKB()
+--sorted_result
+SELECT gid, ST_AsText(mploy), ST_AsText(mploy2) FROM gis_search;
+--sorted_result
+SELECT gid, ST_AsText(mploy), ST_AsText(mploy2) FROM gis_search where mploy = @mploy1 ;
+--sorted_result
+SELECT gid, ST_AsText(mploy), ST_AsText(mploy2) FROM gis_search where mploy = @mploy2 ;
+--sorted_result
+SELECT gid, ST_AsText(mploy), ST_AsText(mploy2) FROM gis_search where mploy = @mploy3 ;
+--sorted_result
+SELECT gid, ST_AsText(mploy), ST_AsText(mploy2) FROM gis_search where mploy = @mploy4 ;
+--sorted_result
+SELECT gid, ST_AsText(mploy), ST_AsText(mploy2) FROM gis_search where mploy = @mploy5 ;
+--sorted_result
+SELECT gid, ST_AsText(mploy), ST_AsText(mploy2) FROM gis_search where mploy = @mploy6;
+
+#GeomCollFromText(),ST_GeomCollFromText()，ST_GeometryCollectionFromText()，ST_GeomCollFromTxt(),GeometryCollection(),GeomCollFromWKB(),ST_GeomCollFromWKB()，ST_GeometryCollectionFromWKB()
+--sorted_result
+SELECT gid, ST_AsText(geoco), ST_AsText(geoco2) FROM gis_search;
+--sorted_result
+SELECT gid, ST_AsText(geoco), ST_AsText(geoco2) FROM gis_search where geoco = @geoco1 ;
+--sorted_result
+SELECT gid, ST_AsText(geoco), ST_AsText(geoco2) FROM gis_search where geoco = @geoco2 ;
+--sorted_result
+SELECT gid, ST_AsText(geoco), ST_AsText(geoco2) FROM gis_search where geoco = @geoco3 ;
+--sorted_result
+SELECT gid, ST_AsText(geoco), ST_AsText(geoco2) FROM gis_search where geoco = @geoco4 ;
+--sorted_result
+SELECT gid, ST_AsText(geoco), ST_AsText(geoco2) FROM gis_search where geoco = @geoco5 ;
+--sorted_result
+SELECT gid, ST_AsText(geoco), ST_AsText(geoco2) FROM gis_search where geoco = @geoco6;
+--sorted_result
+SELECT gid, ST_AsText(geoco), ST_AsText(geoco2) FROM gis_search where geoco = @geoco7;
+
+# MBREquals()
+--sorted_result
+SELECT gid, ST_AsText(poin) FROM gis_search where MBREquals(@point1,poin);
+--sorted_result
+SELECT gid, ST_AsText(line) FROM gis_search where MBREquals(@line1,line);
+
+#ST_AsGeoJSON()
+--sorted_result
+SELECT gid, ST_AsText(poly),ST_AsGeoJSON(poly) FROM gis_search where poly is not null or poly2 is not null;
+
+# ST_Area(),ST_Buffer()
+--sorted_result
+SELECT gid, ST_AsText(poly),ST_Area(poly) FROM gis_search where poly is not null or poly2 is not null;
+--sorted_result
+SELECT gid, ST_AsText(poly),ST_Area(poly) FROM gis_search where ST_Area(poly) <= 450;
+--sorted_result
+SELECT gid, ST_AsText(poly),ST_Area(poly),ST_Area(poly2) FROM gis_search where poly is not null or poly2 is not null;
+--sorted_result
+SELECT gid, ST_AsText(poly),ST_Area(ST_Buffer(poly,2)),ST_Area(ST_Buffer(poly2,2)) FROM gis_search where ST_Area(ST_Buffer(poly,2))<651;
+
+# ST_Contains, ST_Buffer, ST_Buffer_Strategy,ST_Centroid(),ST_ConvexHull()
+SET @pt  = ST_GeomFromText('POINT(0 0)');
+set @g='MULTIPOINT(-2 -2,2 -2,2 2,-2 2,-2 -2)';
+SET @pt_strategy = ST_Buffer_Strategy('point_square');
+--sorted_result
+SELECT gid, ST_AsText(poin) FROM gis_search where ST_Contains(ST_PointFromText('POINT(10 10)'),poin);
+--sorted_result
+SELECT gid, ST_AsText(poin) FROM gis_search where ST_Contains(ST_PolyFromText(ST_AsText(ST_Buffer(@pt,2,@pt_strategy))),poin);
+--sorted_result
+SELECT gid, ST_AsText(poin) FROM gis_search where poin = @point4;
+--sorted_result
+SELECT gid, ST_AsText(poin) FROM gis_search where poin = ST_Centroid(ST_PolyFromText(ST_AsText(ST_Buffer(@pt,2,@pt_strategy))));
+--sorted_result
+SELECT gid, ST_AsText(poin) FROM gis_search where ST_Contains(ST_PolyFromText(ST_AsText(ST_ConvexHull(ST_GeomFromText(@g)))),poin);
+
+# ST_Dimension(),ST_Disjoint(),ST_Distance(),ST_Distance_Sphere(),ST_EndPoint(),ST_Difference()
+--sorted_result
+SELECT gid, ST_Dimension(poly) FROM gis_search where ST_Dimension(poly)<=2;
+--sorted_result
+SELECT gid, ST_AsText(poly),ST_AsText(poly2) FROM gis_search where ST_Disjoint(poly,poly2)=0;
+--sorted_result
+SELECT gid, ST_AsText(poly),ST_AsText(poly2) FROM gis_search where ST_Distance(poly,poly2)=0;
+--sorted_result
+SELECT gid, ST_AsText(poin),ST_AsText(line),ST_AsText(ST_EndPoint(line)) FROM gis_search where poin!=ST_EndPoint(line);
+--sorted_result
+SELECT gid, ST_AsText(poin), ST_AsText(poin2),ST_AsText(ST_Difference(poin,poin2)) FROM gis_search where poin=ST_Difference(poin,poin2);
+
+#ST_Envelope()
+--sorted_result
+SELECT gid, ST_AsText(poin),ST_AsText(line),ST_AsText(ST_Envelope(line)) FROM gis_search where poin!=ST_EndPoint(line);
+
+#ST_Equals()
+--sorted_result
+SELECT gid, ST_AsText(poin),ST_AsText(poin2) FROM gis_search where ST_Equals(poin,poin2);
+--sorted_result
+SELECT gid, ST_AsText(line),ST_AsText(line2) FROM gis_search where ST_Equals(line,line2);
+--sorted_result
+SELECT gid, ST_AsText(poly),ST_AsText(poly2) FROM gis_search where ST_Equals(poly,poly2);
+--sorted_result
+SELECT gid, ST_AsText(mpoin),ST_AsText(mpoin2) FROM gis_search where ST_Equals(mpoin,mpoin2);
+--sorted_result
+SELECT gid, ST_AsText(mline),ST_AsText(mline2) FROM gis_search where ST_Equals(mline,mline2);
+--sorted_result
+SELECT gid, ST_AsText(geoco),ST_AsText(geoco2) FROM gis_search where ST_Equals(geoco,geoco2);
+
+#ST_GeometryType()
+--sorted_result
+SELECT gid, ST_AsText(geoco),ST_AsText(geoco2),ST_GeometryType(geoco) FROM gis_search where ST_GeometryType(geoco)='GEOMETRYCOLLECTION';
+
+#ST_Intersects(),ST_IsClosed(),ST_IsEmpty(),ST_IsSimple(),ST_IsValid(),ST_Length(),ST_Overlaps()
+--sorted_result
+SELECT gid, ST_AsText(poly),ST_AsText(poly2),ST_Intersects(poly,poly2) FROM gis_search where ST_Intersects(poly,poly2)=1;
+--sorted_result
+SELECT gid, ST_AsText(line),ST_AsText(line2),ST_IsClosed(line) FROM gis_search where ST_IsClosed(line)=0;
+--sorted_result
+SELECT gid, ST_AsText(line),ST_AsText(line2),ST_IsEmpty(line) FROM gis_search where ST_IsEmpty(line)=0;
+--sorted_result
+SELECT gid, ST_AsText(line),ST_AsText(line2),ST_IsSimple(line) FROM gis_search where ST_IsSimple(line)=1;
+--sorted_result
+SELECT gid, ST_AsText(line),ST_AsText(line2),ST_IsValid(line) FROM gis_search where ST_IsValid(line)=1;
+--sorted_result
+SELECT gid, ST_AsText(line),ST_AsText(line2),ST_Length(line) FROM gis_search where ST_Length(line)>1;
+--sorted_result
+SELECT gid, ST_AsText(line),ST_AsText(line2),ST_Overlaps(line,line2) FROM gis_search where ST_Overlaps(line,line2)=0;
+
+#ST_NumGeometries()
+--sorted_result
+SELECT gid, ST_AsText(mline),ST_AsText(mline2),ST_NumGeometries(mline) FROM gis_search where ST_NumGeometries(mline)>1;
+
+#ST_NumInteriorRing()，ST_NumInteriorRings()
+--sorted_result
+SELECT gid, ST_AsText(poly),ST_AsText(poly2),ST_NumInteriorRing(poly) FROM gis_search where ST_NumInteriorRing(poly)=0;
+--sorted_result
+SELECT gid, ST_AsText(poly),ST_AsText(poly2),ST_NumInteriorRings(poly) FROM gis_search where ST_NumInteriorRings(poly)=0;
+
+# ST_Within()
+--sorted_result
+SELECT gid, ST_AsText(poin),ST_AsText(poin2) FROM gis_search where ST_Within(ST_PointFromText('POINT(1 1)'),poin2);
+
+DROP TABLE gis_search;
+
+#
+# FIELD NAME CASE SENSITIVITY TESTING 
+#
+#seqDB-23037
+CREATE TABLE t1 ( id INT PRIMARY KEY, col1 CHAR(8), COL2 CHAR(8), col3 CHAR(8), col4 CHAR(8) );
+INSERT INTO t1 VALUES (1,'test1','test1','test1','test1'), (2,'test2','test2','test2','test2'), (3,'test3','test3','test3','test3');
+INSERT INTO t1 VALUES (4,'test4','test4','test4','test4'), (5,'test5','test5','test5','test5'), (6,'test6','test6','test6','test6');
+SELECT COUNT(id) FROM t1;
+SELECT COUNT(ID) FROM t1;
+SELECT col2 FROM t1 WHERE col2 = 'test2';
+SELECT COL2 FROM t1 WHERE col2 > 'test5';
+UPDATE t1 SET COL1 = CONCAT('update', ID), col2 = CONCAT('update', id) WHERE id > 1 AND COL1 < 'test3';
+SELECT ID,COL1,col2,COL3 FROM t1 ORDER BY ID;
+DELETE FROM t1 WHERE ID > 1 AND col2 = 'test4';
+SELECT ID,COL1,col2,COL3 FROM t1 ORDER BY COL2;
+SELECT ID,col2 FROM t1 GROUP BY ID,col2 ORDER BY id,col2;
+DROP TABLE t1;
+
+--source include/uninstall_sequoiadb.inc

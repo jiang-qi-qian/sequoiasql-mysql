@@ -1,0 +1,11 @@
+#seqDB-24925
+
+--disable_warnings
+drop sequence if exists seqTable;
+--enable_warnings
+
+create sequence seqTable;
+--error 131
+insert into seqTable values (1,1,1000,1,0,1000,0,0);
+
+drop sequence seqTable;

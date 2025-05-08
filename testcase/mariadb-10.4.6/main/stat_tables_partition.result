@@ -1,0 +1,16 @@
+#
+# Bug mdev-3866: valgrind complain from ANALYZE on a table with BIT field
+# 
+CREATE DATABASE test_stat_tables_partition;
+USE test_stat_tables_partition;
+SET use_stat_tables = 'preferably';
+CREATE TABLE t1 (pk int PRIMARY KEY, a bit(1), INDEX idx(a)
+) ENGINE=SEQUOIADB PARTITION BY KEY(pk) PARTITIONS 2;
+INSERT INTO t1 VALUES (1,1),(2,0),(3,0),(4,1);
+ANALYZE TABLE t1;
+Table	Op	Msg_type	Msg_text
+test_stat_tables_partition.t1	analyze	status	Engine-independent statistics collected
+test_stat_tables_partition.t1	analyze	status	OK
+SET use_stat_tables = DEFAULT;
+DROP TABLE t1;
+DROP DATABASE test_stat_tables_partition;

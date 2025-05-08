@@ -1,0 +1,12 @@
+# The include statement below is a temp one for tests that are yet to
+#be ported to run with SequoiaDB,
+
+--source include/have_sequoiadb.inc
+
+set optimizer_switch='batched_key_access=on,mrr_cost_based=off';
+
+--source include/join_cache.inc
+
+set optimizer_switch = default;
+
+--source include/uninstall_sequoiadb.inc

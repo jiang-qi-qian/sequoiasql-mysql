@@ -1,0 +1,88 @@
+#case 18871 #Case 18865
+
+--source include/have_sequoiadb.inc
+--source suite/metadata_sync_sequoiadb/inc/insts_connect_sequoiadb.inc
+
+# connect to conn1, clear users in the beginning
+connection conn1;
+--disable_warnings
+DROP USER IF EXISTS "metasync_user1"@"localhost";
+DROP USER IF EXISTS "metasync_user2"@"localhost";
+DROP USER IF EXISTS "metasync_user3"@"localhost";
+DROP USER IF EXISTS "metasync_user1_new"@"localhost";
+DROP USER IF EXISTS "metasync_user2_new"@"localhost";
+FLUSH PRIVILEGES;
+--enable_warnings
+
+# connect to conn2, check users are cleaned in the beginning
+#Bug #SEQUOIASQLMAINSTREAM-933
+connection conn2;
+--error ER_NONEXISTING_GRANT
+SHOW GRANTS FOR 'metasync_user1'@'localhost';
+--error ER_NONEXISTING_GRANT
+SHOW GRANTS FOR 'metasync_user2'@'localhost';
+--error ER_NONEXISTING_GRANT
+SHOW GRANTS FOR 'metasync_user3'@'localhost';
+--error ER_NONEXISTING_GRANT
+SHOW GRANTS FOR 'metasync_user1_new'@'localhost';
+--error ER_NONEXISTING_GRANT
+SHOW GRANTS FOR 'metasync_user2_new'@'localhost';
+
+# seqDB-18871
+# seqDB-18865
+# begin testing
+#
+# CREATE/ALTER/DROP USER
+# GRENT/REVOKE USER
+connection conn1;
+CREATE USER 'metasync_user1'@'localhost', 'metasync_user2'@'localhost' 
+            IDENTIFIED WITH sha256_password BY '123' REQUIRE X509 WITH MAX_USER_CONNECTIONS 60 PASSWORD EXPIRE INTERVAL 180 DAY;
+CREATE USER IF NOT EXISTS 'metasync_user3'@'localhost' IDENTIFIED BY '123' ACCOUNT LOCK;
+# grant user 
+GRANT INSERT, DELETE, UPDATE ON *.*  TO 'metasync_user1'@'localhost' IDENTIFIED BY '123';
+# SEQUOIASQLMAINSTREAM-340
+FLUSH PRIVILEGES;
+# check metadatas after create
+#Bug #SEQUOIASQLMAINSTREAM-933
+connection conn2;
+SHOW GRANTS FOR 'metasync_user1'@'localhost';
+SHOW GRANTS FOR 'metasync_user2'@'localhost';
+SHOW GRANTS FOR 'metasync_user3'@'localhost';
+SELECT user, host, password_expired, max_user_connections, ssl_type, plugin FROM mysql.user WHERE user = 'metasync_user1';
+SELECT user, host, password_expired, max_user_connections, ssl_type, plugin FROM mysql.user WHERE user = 'metasync_user2';
+SELECT user, host, password_expired, max_user_connections, ssl_type, plugin FROM mysql.user WHERE user = 'metasync_user3';
+# alter user
+RENAME USER 'metasync_user1'@'localhost' TO 'metasync_user1_new'@'localhost', 'metasync_user2'@'localhost' TO 'metasync_user2_new'@'localhost';
+ALTER USER IF EXISTS 'metasync_user1_new'@'localhost' PASSWORD EXPIRE;
+# revoke grant
+REVOKE DELETE ON *.* FROM 'metasync_user1_new'@'localhost';
+FLUSH PRIVILEGES;
+# check metadatas after alter
+#Bug #SEQUOIASQLMAINSTREAM-933
+connection conn1;
+SHOW GRANTS FOR 'metasync_user1_new'@'localhost';
+SHOW GRANTS FOR 'metasync_user3'@'localhost';
+SELECT user, host, password_expired, max_user_connections, ssl_type, plugin FROM mysql.user WHERE user = 'metasync_user1';
+SELECT user, host, password_expired, max_user_connections, ssl_type, plugin FROM mysql.user WHERE user = 'metasync_user2';
+SELECT user, host, password_expired, max_user_connections, ssl_type, plugin FROM mysql.user WHERE user = 'metasync_user1_new';
+SELECT user, host, password_expired, max_user_connections, ssl_type, plugin FROM mysql.user WHERE user = 'metasync_user2_new';
+# drop user
+DROP USER IF EXISTS 'metasync_user1_new'@'localhost';
+DROP USER 'metasync_user2_new'@'localhost';
+DROP USER 'metasync_user3'@'localhost';
+FLUSH PRIVILEGES;
+# check metadatas after drop
+#Bug #SEQUOIASQLMAINSTREAM-933
+connection conn2;
+--error ER_NONEXISTING_GRANT
+SHOW GRANTS FOR 'metasync_user1_new'@'localhost';
+--error ER_NONEXISTING_GRANT
+SHOW GRANTS FOR 'metasync_user2_new'@'localhost';
+--error ER_NONEXISTING_GRANT
+SHOW GRANTS FOR 'metasync_user3'@'localhost';
+SELECT user, host, password_expired FROM mysql.user WHERE user = 'metasync_user1_new';
+SELECT user, host, password_expired FROM mysql.user WHERE user = 'metasync_user2_new';
+SELECT user, host, password_expired FROM mysql.user WHERE user = 'metasync_user3';
+
+--source include/uninstall_sequoiadb.inc
+--source suite/metadata_sync_sequoiadb/inc/insts_disconnect_sequoiadb.inc

@@ -1,0 +1,1191 @@
+drop database if exists like_single_func_pushdown_sequoiadb_2;
+create database like_single_func_pushdown_sequoiadb_2;
+drop database like_single_func_pushdown_sequoiadb_2;
+create database like_single_func_pushdown_sequoiadb_2;
+use like_single_func_pushdown_sequoiadb_2;
+set session sequoiadb_debug_log=on;
+set session sequoiadb_support_mode='';
+drop table if exists t1, t2, t3, t4, t5;
+create table t1(
+a varchar(514) charset utf8mb4 collate utf8mb4_bin
+);
+create table t2(
+a varchar(20) charset utf8mb4 collate utf8mb4_bin
+);
+create table t3(
+a set('a1','b2','c3') charset utf8mb4 collate utf8mb4_bin
+);
+create table t4(
+a int
+);
+create table t5(
+a varchar(20) charset utf8mb4 collate utf8mb4_unicode_ci
+);
+select adddate('2000-01-01','31'),adddate('2000-01-01', 30);
+adddate('2000-01-01','31')	adddate('2000-01-01', 30)
+2000-02-01	2000-01-31
+insert into t1 values(adddate('2000-01-01','31')),(adddate('2000-01-01', 30));
+select * from t1 where a like adddate('2000-01-01','31') order by a;
+a
+2000-02-01
+[Note] SequoiaDB: Query message: condition[{ "a": { "$regex": "^2000\\-02\\-01$", "$options": "s" } }], selector[{}], order_by[{ "a": 1 }], hint[{}], limit[-1], offset[0], table[like_single_func_pushdown_sequoiadb_2.t1]
+select * from t1 where a like adddate('2000-01-01', 30) order by a;
+a
+2000-01-31
+[Note] SequoiaDB: Query message: condition[{ "a": { "$regex": "^2000\\-01\\-31$", "$options": "s" } }], selector[{}], order_by[{ "a": 1 }], hint[{}], limit[-1], offset[0], table[like_single_func_pushdown_sequoiadb_2.t1]
+select * from t2 where a like adddate((a),'31');
+a
+[Note] SequoiaDB: Query message: condition[{}], selector[{}], order_by[{}], hint[{}], limit[-1], offset[0], table[like_single_func_pushdown_sequoiadb_2.t2]
+select * from t2 where a like adddate(null,'31');
+a
+[Note] SequoiaDB: Query message: condition[{}], selector[{}], order_by[{}], hint[{}], limit[-1], offset[0], table[like_single_func_pushdown_sequoiadb_2.t2]
+select * from t3 where a like adddate('2000-01-01','31');
+a
+[Note] SequoiaDB: Query message: condition[{}], selector[{}], order_by[{}], hint[{}], limit[-1], offset[0], table[like_single_func_pushdown_sequoiadb_2.t3]
+select * from t4 where a like adddate('2000-01-01','31');
+a
+[Note] SequoiaDB: Query message: condition[{}], selector[{}], order_by[{}], hint[{}], limit[-1], offset[0], table[like_single_func_pushdown_sequoiadb_2.t4]
+select * from t5 where a like adddate('2000-01-01','31');
+a
+[Note] SequoiaDB: Query message: condition[{}], selector[{}], order_by[{}], hint[{}], limit[-1], offset[0], table[like_single_func_pushdown_sequoiadb_2.t5]
+select addtime('2000-01-01 12:00:00','1');
+addtime('2000-01-01 12:00:00','1')
+2000-01-01 12:00:01
+insert into t1 values(addtime('2000-01-01 12:00:00','1'));
+select * from t1 where a like addtime('2000-01-01 12:00:00','1') order by a;
+a
+2000-01-01 12:00:01
+[Note] SequoiaDB: Query message: condition[{ "a": { "$regex": "^2000\\-01\\-01 12:00:01$", "$options": "s" } }], selector[{}], order_by[{ "a": 1 }], hint[{}], limit[-1], offset[0], table[like_single_func_pushdown_sequoiadb_2.t1]
+select convert_tz('2000-01-01 12:00:00','+00:00','+01:00');
+convert_tz('2000-01-01 12:00:00','+00:00','+01:00')
+2000-01-01 13:00:00
+insert into t1 values(convert_tz('2000-01-01 12:00:00','+00:00','+01:00'));
+select * from t1 where a like convert_tz('2000-01-01 12:00:00','+00:00','+01:00') order by a;
+a
+2000-01-01 13:00:00
+[Note] SequoiaDB: Query message: condition[{ "a": { "$regex": "^2000\\-01\\-01 13:00:00$", "$options": "s" } }], selector[{}], order_by[{ "a": 1 }], hint[{}], limit[-1], offset[0], table[like_single_func_pushdown_sequoiadb_2.t1]
+select * from t2 where a like curdate() order by a;
+a
+[Note] SequoiaDB: Query message: condition[{ "a": { "$regex": "", "$options": "s" } }], selector[{}], order_by[{ "a": 1 }], hint[{}], limit[-1], offset[0], table[like_single_func_pushdown_sequoiadb_2.t2]
+select * from t2 where a like current_date() order by a;
+a
+[Note] SequoiaDB: Query message: condition[{ "a": { "$regex": "", "$options": "s" } }], selector[{}], order_by[{ "a": 1 }], hint[{}], limit[-1], offset[0], table[like_single_func_pushdown_sequoiadb_2.t2]
+select * from t2 where a like current_time() order by a;
+a
+[Note] SequoiaDB: Query message: condition[{ "a": { "$regex": "", "$options": "s" } }], selector[{}], order_by[{ "a": 1 }], hint[{}], limit[-1], offset[0], table[like_single_func_pushdown_sequoiadb_2.t2]
+select * from t2 where a like current_timestamp() order by a;
+a
+[Note] SequoiaDB: Query message: condition[{ "a": { "$regex": "", "$options": "s" } }], selector[{}], order_by[{ "a": 1 }], hint[{}], limit[-1], offset[0], table[like_single_func_pushdown_sequoiadb_2.t2]
+select date('2000-01-01 12:00:00');
+date('2000-01-01 12:00:00')
+2000-01-01
+insert into t1 values(date('2000-01-01 12:00:00'));
+select * from t1 where a like date('2000-01-01 12:00:00') order by a;
+a
+2000-01-01
+[Note] SequoiaDB: Query message: condition[{ "a": { "$regex": "^2000\\-01\\-01$", "$options": "s" } }], selector[{}], order_by[{ "a": 1 }], hint[{}], limit[-1], offset[0], table[like_single_func_pushdown_sequoiadb_2.t1]
+select date_add('2000-01-01',interval 1 day);
+date_add('2000-01-01',interval 1 day)
+2000-01-02
+insert into t1 values(date_add('2000-01-01',interval 1 day));
+select * from t1 where a like date_add('2000-01-01',interval 1 day) order by a;
+a
+2000-01-02
+[Note] SequoiaDB: Query message: condition[{ "a": { "$regex": "^2000\\-01\\-02$", "$options": "s" } }], selector[{}], order_by[{ "a": 1 }], hint[{}], limit[-1], offset[0], table[like_single_func_pushdown_sequoiadb_2.t1]
+select date_format('12:00:00','%H:%i:%s');
+date_format('12:00:00','%H:%i:%s')
+00:00:00
+insert into t1 values(date_format('12:00:00','%H:%i:%s'));
+select * from t1 where a like date_format('12:00:00','%H:%i:%s') order by a;
+a
+00:00:00
+[Note] SequoiaDB: Query message: condition[{ "a": { "$regex": "^00:00:00$", "$options": "s" } }], selector[{}], order_by[{ "a": 1 }], hint[{}], limit[-1], offset[0], table[like_single_func_pushdown_sequoiadb_2.t1]
+select date_sub('2000-01-01',interval 1 day);
+date_sub('2000-01-01',interval 1 day)
+1999-12-31
+insert into t1 values(date_sub('2000-01-01',interval 1 day));
+select * from t1 where a like date_sub('2000-01-01',interval 1 day) order by a;
+a
+1999-12-31
+[Note] SequoiaDB: Query message: condition[{ "a": { "$regex": "^1999\\-12\\-31$", "$options": "s" } }], selector[{}], order_by[{ "a": 1 }], hint[{}], limit[-1], offset[0], table[like_single_func_pushdown_sequoiadb_2.t1]
+select datediff('2000-01-01','2000-01-02');
+datediff('2000-01-01','2000-01-02')
+-1
+insert into t1 values(datediff('2000-01-01','2000-01-02'));
+select * from t1 where a like datediff('2000-01-01','2000-01-02') order by a;
+a
+-1
+[Note] SequoiaDB: Query message: condition[{ "a": { "$regex": "^\\-1$", "$options": "s" } }], selector[{}], order_by[{ "a": 1 }], hint[{}], limit[-1], offset[0], table[like_single_func_pushdown_sequoiadb_2.t1]
+select day('2000-01-01');
+day('2000-01-01')
+1
+insert into t1 values(day('2000-01-01'));
+select * from t1 where a like day('2000-01-01') order by a;
+a
+1
+[Note] SequoiaDB: Query message: condition[{ "a": { "$regex": "^1$", "$options": "s" } }], selector[{}], order_by[{ "a": 1 }], hint[{}], limit[-1], offset[0], table[like_single_func_pushdown_sequoiadb_2.t1]
+select dayname('2000-01-01');
+dayname('2000-01-01')
+Saturday
+insert into t1 values(dayname('2000-01-01'));
+select * from t1 where a like dayname('2000-01-01') order by a;
+a
+Saturday
+[Note] SequoiaDB: Query message: condition[{ "a": { "$regex": "^Saturday$", "$options": "s" } }], selector[{}], order_by[{ "a": 1 }], hint[{}], limit[-1], offset[0], table[like_single_func_pushdown_sequoiadb_2.t1]
+select dayofmonth('2000-01-01');
+dayofmonth('2000-01-01')
+1
+insert into t1 values(dayofmonth('2000-01-01'));
+select * from t1 where a like dayofmonth('2000-01-01') order by a;
+a
+1
+1
+[Note] SequoiaDB: Query message: condition[{ "a": { "$regex": "^1$", "$options": "s" } }], selector[{}], order_by[{ "a": 1 }], hint[{}], limit[-1], offset[0], table[like_single_func_pushdown_sequoiadb_2.t1]
+select dayofweek('2000-02-01');
+dayofweek('2000-02-01')
+3
+insert into t1 values(dayofweek('2000-02-01'));
+select * from t1 where a like dayofweek('2000-02-01') order by a;
+a
+3
+[Note] SequoiaDB: Query message: condition[{ "a": { "$regex": "^3$", "$options": "s" } }], selector[{}], order_by[{ "a": 1 }], hint[{}], limit[-1], offset[0], table[like_single_func_pushdown_sequoiadb_2.t1]
+select * from t2 where a like dayofweek((a));
+a
+[Note] SequoiaDB: Query message: condition[{}], selector[{}], order_by[{}], hint[{}], limit[-1], offset[0], table[like_single_func_pushdown_sequoiadb_2.t2]
+select * from t3 where a like dayofweek('2000-02-01');
+a
+[Note] SequoiaDB: Query message: condition[{}], selector[{}], order_by[{}], hint[{}], limit[-1], offset[0], table[like_single_func_pushdown_sequoiadb_2.t3]
+select * from t4 where a like dayofweek('2000-02-01');
+a
+[Note] SequoiaDB: Query message: condition[{}], selector[{}], order_by[{}], hint[{}], limit[-1], offset[0], table[like_single_func_pushdown_sequoiadb_2.t4]
+select * from t5 where a like dayofweek('2000-02-01');
+a
+[Note] SequoiaDB: Query message: condition[{}], selector[{}], order_by[{}], hint[{}], limit[-1], offset[0], table[like_single_func_pushdown_sequoiadb_2.t5]
+select dayofyear('2000-01-01');
+dayofyear('2000-01-01')
+1
+insert into t1 values(dayofyear('2000-01-01'));
+select * from t1 where a like dayofyear('2000-01-01') order by a;
+a
+1
+1
+1
+[Note] SequoiaDB: Query message: condition[{ "a": { "$regex": "^1$", "$options": "s" } }], selector[{}], order_by[{ "a": 1 }], hint[{}], limit[-1], offset[0], table[like_single_func_pushdown_sequoiadb_2.t1]
+select extract(microsecond from '2000-01-01 12:00:00.000123');
+extract(microsecond from '2000-01-01 12:00:00.000123')
+123
+insert into t1 values(extract(microsecond from '2000-01-01 12:00:00.000123'));
+select * from t1 where a like extract(microsecond from '2000-01-01 12:00:00.000123') order by a;
+a
+123
+[Note] SequoiaDB: Query message: condition[{ "a": { "$regex": "^123$", "$options": "s" } }], selector[{}], order_by[{ "a": 1 }], hint[{}], limit[-1], offset[0], table[like_single_func_pushdown_sequoiadb_2.t1]
+select from_days(730485);
+from_days(730485)
+2000-01-01
+insert into t1 values(from_days(730485));
+select * from t1 where a like from_days(730485) order by a;
+a
+2000-01-01
+2000-01-01
+[Note] SequoiaDB: Query message: condition[{ "a": { "$regex": "^2000\\-01\\-01$", "$options": "s" } }], selector[{}], order_by[{ "a": 1 }], hint[{}], limit[-1], offset[0], table[like_single_func_pushdown_sequoiadb_2.t1]
+select from_unixtime(946699200);
+from_unixtime(946699200)
+2000-01-01 07:00:00
+insert into t1 values(from_unixtime(946699200));
+select * from t1 where a like from_unixtime(946699200) order by a;
+a
+2000-01-01 07:00:00
+[Note] SequoiaDB: Query message: condition[{ "a": { "$regex": "^2000\\-01\\-01 07:00:00$", "$options": "s" } }], selector[{}], order_by[{ "a": 1 }], hint[{}], limit[-1], offset[0], table[like_single_func_pushdown_sequoiadb_2.t1]
+select get_format(date,'iso');
+get_format(date,'iso')
+%Y-%m-%d
+insert into t1 values(get_format(date,'iso'));
+select * from t1 where a like get_format(date,'iso') order by a;
+a
+%Y-%m-%d
+[Note] SequoiaDB: Query message: condition[{ "a": { "$regex": "^.*Y\\-.*m\\-.*d$", "$options": "s" } }], selector[{}], order_by[{ "a": 1 }], hint[{}], limit[-1], offset[0], table[like_single_func_pushdown_sequoiadb_2.t1]
+select hour('2000-01-01 12:00:00');
+hour('2000-01-01 12:00:00')
+12
+insert into t1 values(hour('2000-01-01 12:00:00'));
+select * from t1 where a like hour('2000-01-01 12:00:00') order by a;
+a
+12
+[Note] SequoiaDB: Query message: condition[{ "a": { "$regex": "^12$", "$options": "s" } }], selector[{}], order_by[{ "a": 1 }], hint[{}], limit[-1], offset[0], table[like_single_func_pushdown_sequoiadb_2.t1]
+select last_day('2000-01-01 12:00:00');
+last_day('2000-01-01 12:00:00')
+2000-01-31
+insert into t1 values(last_day('2000-01-01 12:00:00'));
+select * from t1 where a like last_day('2000-01-01 12:00:00') order by a;
+a
+2000-01-31
+2000-01-31
+[Note] SequoiaDB: Query message: condition[{ "a": { "$regex": "^2000\\-01\\-31$", "$options": "s" } }], selector[{}], order_by[{ "a": 1 }], hint[{}], limit[-1], offset[0], table[like_single_func_pushdown_sequoiadb_2.t1]
+select * from t2 where a like localtime() order by a;
+a
+[Note] SequoiaDB: Query message: condition[{ "a": { "$regex": "", "$options": "s" } }], selector[{}], order_by[{ "a": 1 }], hint[{}], limit[-1], offset[0], table[like_single_func_pushdown_sequoiadb_2.t2]
+select makedate(2000,1);
+makedate(2000,1)
+2000-01-01
+insert into t1 values(makedate(2000,1));
+select * from t1 where a like makedate(2000,1) order by a;
+a
+2000-01-01
+2000-01-01
+2000-01-01
+[Note] SequoiaDB: Query message: condition[{ "a": { "$regex": "^2000\\-01\\-01$", "$options": "s" } }], selector[{}], order_by[{ "a": 1 }], hint[{}], limit[-1], offset[0], table[like_single_func_pushdown_sequoiadb_2.t1]
+select maketime(12,00,00);
+maketime(12,00,00)
+12:00:00
+insert into t1 values(maketime(12,00,00));
+select * from t1 where a like maketime(12,00,00) order by a;
+a
+12:00:00
+[Note] SequoiaDB: Query message: condition[{ "a": { "$regex": "^12:00:00$", "$options": "s" } }], selector[{}], order_by[{ "a": 1 }], hint[{}], limit[-1], offset[0], table[like_single_func_pushdown_sequoiadb_2.t1]
+select microsecond('2000-01-01 12:00:00.000123');
+microsecond('2000-01-01 12:00:00.000123')
+123
+insert into t1 values(microsecond('2000-01-01 12:00:00.000123'));
+select * from t1 where a like microsecond('2000-01-01 12:00:00.000123') order by a;
+a
+123
+123
+[Note] SequoiaDB: Query message: condition[{ "a": { "$regex": "^123$", "$options": "s" } }], selector[{}], order_by[{ "a": 1 }], hint[{}], limit[-1], offset[0], table[like_single_func_pushdown_sequoiadb_2.t1]
+select minute('2000-01-01 12:00:00.000123');
+minute('2000-01-01 12:00:00.000123')
+0
+insert into t1 values(minute('2000-01-01 12:00:00.000123'));
+select * from t1 where a like minute('2000-01-01 12:00:00.000123') order by a;
+a
+0
+[Note] SequoiaDB: Query message: condition[{ "a": { "$regex": "^0$", "$options": "s" } }], selector[{}], order_by[{ "a": 1 }], hint[{}], limit[-1], offset[0], table[like_single_func_pushdown_sequoiadb_2.t1]
+select month('2000-01-01');
+month('2000-01-01')
+1
+insert into t1 values(month('2000-01-01'));
+select * from t1 where a like month('2000-01-01') order by a;
+a
+1
+1
+1
+1
+[Note] SequoiaDB: Query message: condition[{ "a": { "$regex": "^1$", "$options": "s" } }], selector[{}], order_by[{ "a": 1 }], hint[{}], limit[-1], offset[0], table[like_single_func_pushdown_sequoiadb_2.t1]
+select monthname('2000-01-01');
+monthname('2000-01-01')
+January
+insert into t1 values(monthname('2000-01-01'));
+select * from t1 where a like monthname('2000-01-01') order by a;
+a
+January
+[Note] SequoiaDB: Query message: condition[{ "a": { "$regex": "^January$", "$options": "s" } }], selector[{}], order_by[{ "a": 1 }], hint[{}], limit[-1], offset[0], table[like_single_func_pushdown_sequoiadb_2.t1]
+select * from t2 where a like now() order by a;
+a
+[Note] SequoiaDB: Query message: condition[{ "a": { "$regex": "", "$options": "s" } }], selector[{}], order_by[{ "a": 1 }], hint[{}], limit[-1], offset[0], table[like_single_func_pushdown_sequoiadb_2.t2]
+select period_add('20000101',1);
+period_add('20000101',1)
+20000102
+insert into t1 values(period_add('20000101',1));
+select * from t1 where a like period_add('20000101',1) order by a;
+a
+20000102
+[Note] SequoiaDB: Query message: condition[{ "a": { "$regex": "^20000102$", "$options": "s" } }], selector[{}], order_by[{ "a": 1 }], hint[{}], limit[-1], offset[0], table[like_single_func_pushdown_sequoiadb_2.t1]
+select period_diff('20000101','20000102');
+period_diff('20000101','20000102')
+-1
+insert into t1 values(period_diff('20000101','20000102'));
+select * from t1 where a like period_diff('20000101','20000102') order by a;
+a
+-1
+-1
+[Note] SequoiaDB: Query message: condition[{ "a": { "$regex": "^\\-1$", "$options": "s" } }], selector[{}], order_by[{ "a": 1 }], hint[{}], limit[-1], offset[0], table[like_single_func_pushdown_sequoiadb_2.t1]
+select quarter('2000-01-01');
+quarter('2000-01-01')
+1
+insert into t1 values(quarter('2000-01-01'));
+select * from t1 where a like quarter('2000-01-01') order by a;
+a
+1
+1
+1
+1
+1
+[Note] SequoiaDB: Query message: condition[{ "a": { "$regex": "^1$", "$options": "s" } }], selector[{}], order_by[{ "a": 1 }], hint[{}], limit[-1], offset[0], table[like_single_func_pushdown_sequoiadb_2.t1]
+select second('12:00:00');
+second('12:00:00')
+0
+insert into t1 values(second('12:00:00'));
+select * from t1 where a like second('12:00:00') order by a;
+a
+0
+0
+[Note] SequoiaDB: Query message: condition[{ "a": { "$regex": "^0$", "$options": "s" } }], selector[{}], order_by[{ "a": 1 }], hint[{}], limit[-1], offset[0], table[like_single_func_pushdown_sequoiadb_2.t1]
+select sec_to_time(43200);
+sec_to_time(43200)
+12:00:00
+insert into t1 values(sec_to_time(43200));
+select * from t1 where a like sec_to_time(43200) order by a;
+a
+12:00:00
+12:00:00
+[Note] SequoiaDB: Query message: condition[{ "a": { "$regex": "^12:00:00$", "$options": "s" } }], selector[{}], order_by[{ "a": 1 }], hint[{}], limit[-1], offset[0], table[like_single_func_pushdown_sequoiadb_2.t1]
+select str_to_date('01,01,2000','%d,%m,%Y');
+str_to_date('01,01,2000','%d,%m,%Y')
+2000-01-01
+insert into t1 values(str_to_date('01,01,2000','%d,%m,%Y'));
+select * from t1 where a like str_to_date('01,01,2000','%d,%m,%Y') order by a;
+a
+2000-01-01
+2000-01-01
+2000-01-01
+2000-01-01
+[Note] SequoiaDB: Query message: condition[{ "a": { "$regex": "^2000\\-01\\-01$", "$options": "s" } }], selector[{}], order_by[{ "a": 1 }], hint[{}], limit[-1], offset[0], table[like_single_func_pushdown_sequoiadb_2.t1]
+select * from t2 where a like str_to_date((a),'%d,%m,%Y');
+a
+[Note] SequoiaDB: Query message: condition[{}], selector[{}], order_by[{}], hint[{}], limit[-1], offset[0], table[like_single_func_pushdown_sequoiadb_2.t2]
+select * from t3 where a like str_to_date('01,01,2000','%d,%m,%Y');
+a
+[Note] SequoiaDB: Query message: condition[{}], selector[{}], order_by[{}], hint[{}], limit[-1], offset[0], table[like_single_func_pushdown_sequoiadb_2.t3]
+select * from t4 where a like str_to_date('01,01,2000','%d,%m,%Y');
+a
+[Note] SequoiaDB: Query message: condition[{}], selector[{}], order_by[{}], hint[{}], limit[-1], offset[0], table[like_single_func_pushdown_sequoiadb_2.t4]
+select * from t5 where a like str_to_date('01,01,2000','%d,%m,%Y');
+a
+[Note] SequoiaDB: Query message: condition[{}], selector[{}], order_by[{}], hint[{}], limit[-1], offset[0], table[like_single_func_pushdown_sequoiadb_2.t5]
+select subdate('2000-01-01 12:00:00',1);
+subdate('2000-01-01 12:00:00',1)
+1999-12-31 12:00:00
+insert into t1 values(subdate('2000-01-01 12:00:00',1));
+select * from t1 where a like subdate('2000-01-01 12:00:00',1) order by a;
+a
+1999-12-31 12:00:00
+[Note] SequoiaDB: Query message: condition[{ "a": { "$regex": "^1999\\-12\\-31 12:00:00$", "$options": "s" } }], selector[{}], order_by[{ "a": 1 }], hint[{}], limit[-1], offset[0], table[like_single_func_pushdown_sequoiadb_2.t1]
+select subtime('2000-01-01 12:00:00',1);
+subtime('2000-01-01 12:00:00',1)
+2000-01-01 11:59:59
+insert into t1 values(subtime('2000-01-01 12:00:00',1));
+select * from t1 where a like subtime('2000-01-01 12:00:00',1) order by a;
+a
+2000-01-01 11:59:59
+[Note] SequoiaDB: Query message: condition[{ "a": { "$regex": "^2000\\-01\\-01 11:59:59$", "$options": "s" } }], selector[{}], order_by[{ "a": 1 }], hint[{}], limit[-1], offset[0], table[like_single_func_pushdown_sequoiadb_2.t1]
+select * from t2 where a like sysdate() order by a;
+a
+[Note] SequoiaDB: Query message: condition[{}], selector[{}], order_by[{ "a": 1 }], hint[{}], limit[-1], offset[0], table[like_single_func_pushdown_sequoiadb_2.t2]
+select time('2000-01-01 12:00:00.000123');
+time('2000-01-01 12:00:00.000123')
+12:00:00.000123
+insert into t1 values(time('2000-01-01 12:00:00.000123'));
+select * from t1 where a like time('2000-01-01 12:00:00.000123') order by a;
+a
+12:00:00.000123
+[Note] SequoiaDB: Query message: condition[{ "a": { "$regex": "^12:00:00\\.000123$", "$options": "s" } }], selector[{}], order_by[{ "a": 1 }], hint[{}], limit[-1], offset[0], table[like_single_func_pushdown_sequoiadb_2.t1]
+select time_format('8:12:12', '%H %i %s');
+time_format('8:12:12', '%H %i %s')
+08 12 12
+insert into t1 values(time_format('8:12:12', '%H %i %s'));
+select * from t1 where a like time_format('8:12:12', '%H %i %s') order by a;
+a
+08 12 12
+[Note] SequoiaDB: Query message: condition[{ "a": { "$regex": "^08 12 12$", "$options": "s" } }], selector[{}], order_by[{ "a": 1 }], hint[{}], limit[-1], offset[0], table[like_single_func_pushdown_sequoiadb_2.t1]
+select time_to_sec('8:12:12');
+time_to_sec('8:12:12')
+29532
+insert into t1 values(time_to_sec('8:12:12'));
+select * from t1 where a like time_to_sec('8:12:12') order by a;
+a
+29532
+[Note] SequoiaDB: Query message: condition[{ "a": { "$regex": "^29532$", "$options": "s" } }], selector[{}], order_by[{ "a": 1 }], hint[{}], limit[-1], offset[0], table[like_single_func_pushdown_sequoiadb_2.t1]
+select timediff('2000-01-01 12:00:00.000123','2000-01-01 12:00:00.000124');
+timediff('2000-01-01 12:00:00.000123','2000-01-01 12:00:00.000124')
+-00:00:00.000001
+insert into t1 values(timediff('2000-01-01 12:00:00.000123','2000-01-01 12:00:00.000124'));
+select * from t1 where a like timediff('2000-01-01 12:00:00.000123','2000-01-01 12:00:00.000124') order by a;
+a
+-00:00:00.000001
+[Note] SequoiaDB: Query message: condition[{ "a": { "$regex": "^\\-00:00:00\\.000001$", "$options": "s" } }], selector[{}], order_by[{ "a": 1 }], hint[{}], limit[-1], offset[0], table[like_single_func_pushdown_sequoiadb_2.t1]
+select timestamp('2000-01-01');
+timestamp('2000-01-01')
+2000-01-01 00:00:00
+insert into t1 values(timestamp('2000-01-01'));
+select * from t1 where a like timestamp('2000-01-01') order by a;
+a
+2000-01-01 00:00:00
+[Note] SequoiaDB: Query message: condition[{ "a": { "$regex": "^2000\\-01\\-01 00:00:00$", "$options": "s" } }], selector[{}], order_by[{ "a": 1 }], hint[{}], limit[-1], offset[0], table[like_single_func_pushdown_sequoiadb_2.t1]
+select timestampadd(minute,1,'2000-01-01 12:00:00');
+timestampadd(minute,1,'2000-01-01 12:00:00')
+2000-01-01 12:01:00
+insert into t1 values(timestampadd(minute,1,'2000-01-01 12:00:00'));
+select * from t1 where a like timestampadd(minute,1,'2000-01-01 12:00:00') order by a;
+a
+2000-01-01 12:01:00
+[Note] SequoiaDB: Query message: condition[{ "a": { "$regex": "^2000\\-01\\-01 12:01:00$", "$options": "s" } }], selector[{}], order_by[{ "a": 1 }], hint[{}], limit[-1], offset[0], table[like_single_func_pushdown_sequoiadb_2.t1]
+select timestampdiff(year,'1999-01-01','2000-01-01');
+timestampdiff(year,'1999-01-01','2000-01-01')
+1
+insert into t1 values(timestampdiff(year,'1999-01-01','2000-01-01'));
+select * from t1 where a like timestampdiff(year,'1999-01-01','2000-01-01') order by a;
+a
+1
+1
+1
+1
+1
+1
+[Note] SequoiaDB: Query message: condition[{ "a": { "$regex": "^1$", "$options": "s" } }], selector[{}], order_by[{ "a": 1 }], hint[{}], limit[-1], offset[0], table[like_single_func_pushdown_sequoiadb_2.t1]
+select to_days('2000-01-01');
+to_days('2000-01-01')
+730485
+insert into t1 values(to_days('2000-01-01'));
+select * from t1 where a like to_days('2000-01-01') order by a;
+a
+730485
+[Note] SequoiaDB: Query message: condition[{ "a": { "$regex": "^730485$", "$options": "s" } }], selector[{}], order_by[{ "a": 1 }], hint[{}], limit[-1], offset[0], table[like_single_func_pushdown_sequoiadb_2.t1]
+select to_seconds('2000-01-01 12:00:00');
+to_seconds('2000-01-01 12:00:00')
+63113947200
+insert into t1 values(to_seconds('2000-01-01 12:00:00'));
+select * from t1 where a like to_seconds('2000-01-01 12:00:00') order by a;
+a
+63113947200
+[Note] SequoiaDB: Query message: condition[{ "a": { "$regex": "^63113947200$", "$options": "s" } }], selector[{}], order_by[{ "a": 1 }], hint[{}], limit[-1], offset[0], table[like_single_func_pushdown_sequoiadb_2.t1]
+select unix_timestamp('2000-01-01 12:00:00.000123');
+unix_timestamp('2000-01-01 12:00:00.000123')
+946717200.000123
+insert into t1 values(unix_timestamp('2000-01-01 12:00:00.000123'));
+select * from t1 where a like unix_timestamp('2000-01-01 12:00:00.000123') order by a;
+a
+946717200.000123
+[Note] SequoiaDB: Query message: condition[{ "a": { "$regex": "^946717200\\.000123$", "$options": "s" } }], selector[{}], order_by[{ "a": 1 }], hint[{}], limit[-1], offset[0], table[like_single_func_pushdown_sequoiadb_2.t1]
+select * from t2 where a like utc_date() order by a;
+a
+[Note] SequoiaDB: Query message: condition[{ "a": { "$regex": "", "$options": "s" } }], selector[{}], order_by[{ "a": 1 }], hint[{}], limit[-1], offset[0], table[like_single_func_pushdown_sequoiadb_2.t2]
+select * from t2 where a like utc_time() order by a;
+a
+[Note] SequoiaDB: Query message: condition[{ "a": { "$regex": "", "$options": "s" } }], selector[{}], order_by[{ "a": 1 }], hint[{}], limit[-1], offset[0], table[like_single_func_pushdown_sequoiadb_2.t2]
+select * from t2 where a like utc_timestamp() order by a;
+a
+[Note] SequoiaDB: Query message: condition[{ "a": { "$regex": "", "$options": "s" } }], selector[{}], order_by[{ "a": 1 }], hint[{}], limit[-1], offset[0], table[like_single_func_pushdown_sequoiadb_2.t2]
+select week('2000-01-01');
+week('2000-01-01')
+0
+insert into t1 values(week('2000-01-01'));
+select * from t1 where a like week('2000-01-01') order by a;
+a
+0
+0
+0
+[Note] SequoiaDB: Query message: condition[{ "a": { "$regex": "^0$", "$options": "s" } }], selector[{}], order_by[{ "a": 1 }], hint[{}], limit[-1], offset[0], table[like_single_func_pushdown_sequoiadb_2.t1]
+select weekday('2000-01-01');
+weekday('2000-01-01')
+5
+insert into t1 values(weekday('2000-01-01'));
+select * from t1 where a like weekday('2000-01-01') order by a;
+a
+5
+[Note] SequoiaDB: Query message: condition[{ "a": { "$regex": "^5$", "$options": "s" } }], selector[{}], order_by[{ "a": 1 }], hint[{}], limit[-1], offset[0], table[like_single_func_pushdown_sequoiadb_2.t1]
+select weekofyear('2000-01-01');
+weekofyear('2000-01-01')
+52
+insert into t1 values(weekofyear('2000-01-01'));
+select * from t1 where a like weekofyear('2000-01-01') order by a;
+a
+52
+[Note] SequoiaDB: Query message: condition[{ "a": { "$regex": "^52$", "$options": "s" } }], selector[{}], order_by[{ "a": 1 }], hint[{}], limit[-1], offset[0], table[like_single_func_pushdown_sequoiadb_2.t1]
+select year('2000-01-01');
+year('2000-01-01')
+2000
+insert into t1 values(year('2000-01-01'));
+select * from t1 where a like year('2000-01-01') order by a;
+a
+2000
+[Note] SequoiaDB: Query message: condition[{ "a": { "$regex": "^2000$", "$options": "s" } }], selector[{}], order_by[{ "a": 1 }], hint[{}], limit[-1], offset[0], table[like_single_func_pushdown_sequoiadb_2.t1]
+select yearweek('2000-01-01');
+yearweek('2000-01-01')
+199952
+insert into t1 values(yearweek('2000-01-01'));
+select * from t1 where a like yearweek('2000-01-01') order by a;
+a
+199952
+[Note] SequoiaDB: Query message: condition[{ "a": { "$regex": "^199952$", "$options": "s" } }], selector[{}], order_by[{ "a": 1 }], hint[{}], limit[-1], offset[0], table[like_single_func_pushdown_sequoiadb_2.t1]
+select mod(1.5,1),mod('1.5','1');
+mod(1.5,1)	mod('1.5','1')
+0.5	0.5
+insert into t1 values(mod(1.5,1)),(mod('1.5','1'));
+select * from t1 where a like mod(1.5,1) order by a;
+a
+0.5
+0.5
+[Note] SequoiaDB: Query message: condition[{ "a": { "$regex": "^0\\.5$", "$options": "s" } }], selector[{}], order_by[{ "a": 1 }], hint[{}], limit[-1], offset[0], table[like_single_func_pushdown_sequoiadb_2.t1]
+select * from t1 where a like mod('1.5','1') order by a;
+a
+0.5
+0.5
+[Note] SequoiaDB: Query message: condition[{ "a": { "$regex": "^0\\.5$", "$options": "s" } }], selector[{}], order_by[{ "a": 1 }], hint[{}], limit[-1], offset[0], table[like_single_func_pushdown_sequoiadb_2.t1]
+select * from t2 where a like mod((a),1);
+a
+[Note] SequoiaDB: Query message: condition[{}], selector[{}], order_by[{}], hint[{}], limit[-1], offset[0], table[like_single_func_pushdown_sequoiadb_2.t2]
+select * from t2 where a like mod(1.5,null);
+a
+[Note] SequoiaDB: Query message: condition[{}], selector[{}], order_by[{}], hint[{}], limit[-1], offset[0], table[like_single_func_pushdown_sequoiadb_2.t2]
+select * from t3 where a like mod(1.5,1);
+a
+[Note] SequoiaDB: Query message: condition[{}], selector[{}], order_by[{}], hint[{}], limit[-1], offset[0], table[like_single_func_pushdown_sequoiadb_2.t3]
+select * from t4 where a like mod(1.5,1);
+a
+[Note] SequoiaDB: Query message: condition[{}], selector[{}], order_by[{}], hint[{}], limit[-1], offset[0], table[like_single_func_pushdown_sequoiadb_2.t4]
+select * from t5 where a like mod(1.5,1);
+a
+[Note] SequoiaDB: Query message: condition[{}], selector[{}], order_by[{}], hint[{}], limit[-1], offset[0], table[like_single_func_pushdown_sequoiadb_2.t5]
+select (1.5 % 2);
+(1.5 % 2)
+1.5
+insert into t1 values((1.5 % 2));
+select * from t1 where a like (1.5 % 2) order by a;
+a
+1.5
+[Note] SequoiaDB: Query message: condition[{ "a": { "$regex": "^1\\.5$", "$options": "s" } }], selector[{}], order_by[{ "a": 1 }], hint[{}], limit[-1], offset[0], table[like_single_func_pushdown_sequoiadb_2.t1]
+select (1 + 2);
+(1 + 2)
+3
+insert into t1 values((1 + 2));
+select * from t1 where a like (1 + 2) order by a;
+a
+3
+3
+[Note] SequoiaDB: Query message: condition[{ "a": { "$regex": "^3$", "$options": "s" } }], selector[{}], order_by[{ "a": 1 }], hint[{}], limit[-1], offset[0], table[like_single_func_pushdown_sequoiadb_2.t1]
+select (1 - 3);
+(1 - 3)
+-2
+insert into t1 values((1 - 3));
+select * from t1 where a like (1 - 3) order by a;
+a
+-2
+[Note] SequoiaDB: Query message: condition[{ "a": { "$regex": "^\\-2$", "$options": "s" } }], selector[{}], order_by[{ "a": 1 }], hint[{}], limit[-1], offset[0], table[like_single_func_pushdown_sequoiadb_2.t1]
+select (-4);
+(-4)
+-4
+insert into t1 values(-4);
+select * from t1 where a like (-4) order by a;
+a
+-4
+[Note] SequoiaDB: Query message: condition[{ "a": { "$regex": "^\\-4$", "$options": "s" } }], selector[{}], order_by[{ "a": 1 }], hint[{}], limit[-1], offset[0], table[like_single_func_pushdown_sequoiadb_2.t1]
+select (1 * 4);
+(1 * 4)
+4
+insert into t1 values((1 * 4));
+select * from t1 where a like (1 * 4) order by a;
+a
+4
+[Note] SequoiaDB: Query message: condition[{ "a": { "$regex": "^4$", "$options": "s" } }], selector[{}], order_by[{ "a": 1 }], hint[{}], limit[-1], offset[0], table[like_single_func_pushdown_sequoiadb_2.t1]
+select (1 / 5);
+(1 / 5)
+0.2000
+insert into t1 values((1 / 5));
+select * from t1 where a like (1 / 5) order by a;
+a
+[Note] SequoiaDB: Query message: condition[{ "a": { "$regex": "^0\\.2000$", "$options": "s" } }], selector[{}], order_by[{ "a": 1 }], hint[{}], limit[-1], offset[0], table[like_single_func_pushdown_sequoiadb_2.t1]
+select (11 div -2);
+(11 div -2)
+-5
+insert into t1 values((11 div -2));
+select * from t1 where a like (11 div -2) order by a;
+a
+-5
+[Note] SequoiaDB: Query message: condition[{ "a": { "$regex": "^\\-5$", "$options": "s" } }], selector[{}], order_by[{ "a": 1 }], hint[{}], limit[-1], offset[0], table[like_single_func_pushdown_sequoiadb_2.t1]
+select abs(-5);
+abs(-5)
+5
+insert into t1 values(abs(-5));
+select * from t1 where a like abs(-5) order by a;
+a
+5
+5
+[Note] SequoiaDB: Query message: condition[{ "a": { "$regex": "^5$", "$options": "s" } }], selector[{}], order_by[{ "a": 1 }], hint[{}], limit[-1], offset[0], table[like_single_func_pushdown_sequoiadb_2.t1]
+select acos(0);
+acos(0)
+1.5707963267948966
+insert into t1 values(acos(0));
+select * from t1 where a like acos(0) order by a;
+a
+1.5707963267948966
+[Note] SequoiaDB: Query message: condition[{ "a": { "$regex": "^1\\.5707963267948966$", "$options": "s" } }], selector[{}], order_by[{ "a": 1 }], hint[{}], limit[-1], offset[0], table[like_single_func_pushdown_sequoiadb_2.t1]
+select asin(0.2);
+asin(0.2)
+0.2013579207903308
+insert into t1 values(asin(0.2));
+select * from t1 where a like asin(0.2) order by a;
+a
+0.2013579207903308
+[Note] SequoiaDB: Query message: condition[{ "a": { "$regex": "^0\\.2013579207903308$", "$options": "s" } }], selector[{}], order_by[{ "a": 1 }], hint[{}], limit[-1], offset[0], table[like_single_func_pushdown_sequoiadb_2.t1]
+select atan(2);
+atan(2)
+1.1071487177940904
+insert into t1 values(atan(2));
+select * from t1 where a like atan(2) order by a;
+a
+1.1071487177940904
+[Note] SequoiaDB: Query message: condition[{ "a": { "$regex": "^1\\.1071487177940904$", "$options": "s" } }], selector[{}], order_by[{ "a": 1 }], hint[{}], limit[-1], offset[0], table[like_single_func_pushdown_sequoiadb_2.t1]
+select atan(-2,2);
+atan(-2,2)
+-0.7853981633974483
+insert into t1 values(atan(-2,2));
+select * from t1 where a like atan(-2,2) order by a;
+a
+-0.7853981633974483
+[Note] SequoiaDB: Query message: condition[{ "a": { "$regex": "^\\-0\\.7853981633974483$", "$options": "s" } }], selector[{}], order_by[{ "a": 1 }], hint[{}], limit[-1], offset[0], table[like_single_func_pushdown_sequoiadb_2.t1]
+select ceil(-6.123);
+ceil(-6.123)
+-6
+insert into t1 values(ceil(-6.123));
+select * from t1 where a like ceil(-6.123) order by a;
+a
+-6
+[Note] SequoiaDB: Query message: condition[{ "a": { "$regex": "^\\-6$", "$options": "s" } }], selector[{}], order_by[{ "a": 1 }], hint[{}], limit[-1], offset[0], table[like_single_func_pushdown_sequoiadb_2.t1]
+select ceiling(-6.123);
+ceiling(-6.123)
+-6
+insert into t1 values(ceiling(-6.123));
+select * from t1 where a like ceiling(-6.123) order by a;
+a
+-6
+-6
+[Note] SequoiaDB: Query message: condition[{ "a": { "$regex": "^\\-6$", "$options": "s" } }], selector[{}], order_by[{ "a": 1 }], hint[{}], limit[-1], offset[0], table[like_single_func_pushdown_sequoiadb_2.t1]
+select conv('a',16,2);
+conv('a',16,2)
+1010
+insert into t1 values(conv('a',16,2));
+select * from t1 where a like conv('a',16,2) order by a;
+a
+1010
+[Note] SequoiaDB: Query message: condition[{ "a": { "$regex": "^1010$", "$options": "s" } }], selector[{}], order_by[{ "a": 1 }], hint[{}], limit[-1], offset[0], table[like_single_func_pushdown_sequoiadb_2.t1]
+select cos(2);
+cos(2)
+-0.4161468365471424
+insert into t1 values(cos(2));
+select * from t1 where a like cos(2) order by a;
+a
+-0.4161468365471424
+[Note] SequoiaDB: Query message: condition[{ "a": { "$regex": "^\\-0\\.4161468365471424$", "$options": "s" } }], selector[{}], order_by[{ "a": 1 }], hint[{}], limit[-1], offset[0], table[like_single_func_pushdown_sequoiadb_2.t1]
+select cot(12);
+cot(12)
+-1.5726734063976893
+insert into t1 values(cot(12));
+select * from t1 where a like cot(12) order by a;
+a
+-1.5726734063976893
+[Note] SequoiaDB: Query message: condition[{ "a": { "$regex": "^\\-1\\.5726734063976893$", "$options": "s" } }], selector[{}], order_by[{ "a": 1 }], hint[{}], limit[-1], offset[0], table[like_single_func_pushdown_sequoiadb_2.t1]
+select crc32('ssql');
+crc32('ssql')
+2086232995
+insert into t1 values(crc32('ssql'));
+select * from t1 where a like crc32('ssql') order by a;
+a
+2086232995
+[Note] SequoiaDB: Query message: condition[{ "a": { "$regex": "^2086232995$", "$options": "s" } }], selector[{}], order_by[{ "a": 1 }], hint[{}], limit[-1], offset[0], table[like_single_func_pushdown_sequoiadb_2.t1]
+select degrees(2);
+degrees(2)
+114.59155902616465
+insert into t1 values(degrees(2));
+select * from t1 where a like degrees(2) order by a;
+a
+114.59155902616465
+[Note] SequoiaDB: Query message: condition[{ "a": { "$regex": "^114\\.59155902616465$", "$options": "s" } }], selector[{}], order_by[{ "a": 1 }], hint[{}], limit[-1], offset[0], table[like_single_func_pushdown_sequoiadb_2.t1]
+select exp(2);
+exp(2)
+7.38905609893065
+insert into t1 values(exp(2));
+select * from t1 where a like exp(2) order by a;
+a
+7.38905609893065
+[Note] SequoiaDB: Query message: condition[{ "a": { "$regex": "^7\\.38905609893065$", "$options": "s" } }], selector[{}], order_by[{ "a": 1 }], hint[{}], limit[-1], offset[0], table[like_single_func_pushdown_sequoiadb_2.t1]
+select floor(15.123);
+floor(15.123)
+15
+insert into t1 values(floor(15.123));
+select * from t1 where a like floor(15.123) order by a;
+a
+15
+[Note] SequoiaDB: Query message: condition[{ "a": { "$regex": "^15$", "$options": "s" } }], selector[{}], order_by[{ "a": 1 }], hint[{}], limit[-1], offset[0], table[like_single_func_pushdown_sequoiadb_2.t1]
+select ln(2);
+ln(2)
+0.6931471805599453
+insert into t1 values(ln(2));
+select * from t1 where a like ln(2) order by a;
+a
+0.6931471805599453
+[Note] SequoiaDB: Query message: condition[{ "a": { "$regex": "^0\\.6931471805599453$", "$options": "s" } }], selector[{}], order_by[{ "a": 1 }], hint[{}], limit[-1], offset[0], table[like_single_func_pushdown_sequoiadb_2.t1]
+select log(2);
+log(2)
+0.6931471805599453
+insert into t1 values(log(2));
+select * from t1 where a like log(2) order by a;
+a
+0.6931471805599453
+0.6931471805599453
+[Note] SequoiaDB: Query message: condition[{ "a": { "$regex": "^0\\.6931471805599453$", "$options": "s" } }], selector[{}], order_by[{ "a": 1 }], hint[{}], limit[-1], offset[0], table[like_single_func_pushdown_sequoiadb_2.t1]
+select log2(3);
+log2(3)
+1.5849625007211563
+insert into t1 values(log2(3));
+select * from t1 where a like log2(3) order by a;
+a
+1.5849625007211563
+[Note] SequoiaDB: Query message: condition[{ "a": { "$regex": "^1\\.5849625007211563$", "$options": "s" } }], selector[{}], order_by[{ "a": 1 }], hint[{}], limit[-1], offset[0], table[like_single_func_pushdown_sequoiadb_2.t1]
+select log10(2);
+log10(2)
+0.3010299956639812
+insert into t1 values(log10(2));
+select * from t1 where a like log10(2) order by a;
+a
+0.3010299956639812
+[Note] SequoiaDB: Query message: condition[{ "a": { "$regex": "^0\\.3010299956639812$", "$options": "s" } }], selector[{}], order_by[{ "a": 1 }], hint[{}], limit[-1], offset[0], table[like_single_func_pushdown_sequoiadb_2.t1]
+select pi();
+pi()
+3.141593
+select * from t1 where a like pi() order by a;
+a
+[Note] SequoiaDB: Query message: condition[{ "a": { "$regex": "^3\\.141593$", "$options": "s" } }], selector[{}], order_by[{ "a": 1 }], hint[{}], limit[-1], offset[0], table[like_single_func_pushdown_sequoiadb_2.t1]
+select pow(2,2),pow('2','3');
+pow(2,2)	pow('2','3')
+4	8
+insert into t1 values(pow(2,2)),(pow('2','3'));
+select * from t1 where a like pow(2,2) order by a;
+a
+4
+4
+[Note] SequoiaDB: Query message: condition[{ "a": { "$regex": "^4$", "$options": "s" } }], selector[{}], order_by[{ "a": 1 }], hint[{}], limit[-1], offset[0], table[like_single_func_pushdown_sequoiadb_2.t1]
+select * from t1 where a like pow('2','3') order by a;
+a
+8
+[Note] SequoiaDB: Query message: condition[{ "a": { "$regex": "^8$", "$options": "s" } }], selector[{}], order_by[{ "a": 1 }], hint[{}], limit[-1], offset[0], table[like_single_func_pushdown_sequoiadb_2.t1]
+select * from t2 where a like pow((a),2);
+a
+[Note] SequoiaDB: Query message: condition[{}], selector[{}], order_by[{}], hint[{}], limit[-1], offset[0], table[like_single_func_pushdown_sequoiadb_2.t2]
+select * from t3 where a like pow(2,2);
+a
+[Note] SequoiaDB: Query message: condition[{}], selector[{}], order_by[{}], hint[{}], limit[-1], offset[0], table[like_single_func_pushdown_sequoiadb_2.t3]
+select * from t4 where a like pow(2,2);
+a
+[Note] SequoiaDB: Query message: condition[{}], selector[{}], order_by[{}], hint[{}], limit[-1], offset[0], table[like_single_func_pushdown_sequoiadb_2.t4]
+select * from t5 where a like pow(2,2);
+a
+[Note] SequoiaDB: Query message: condition[{}], selector[{}], order_by[{}], hint[{}], limit[-1], offset[0], table[like_single_func_pushdown_sequoiadb_2.t5]
+select radians(90);
+radians(90)
+1.5707963267948966
+insert into t1 values(radians(90));
+select * from t1 where a like radians(90) order by a;
+a
+1.5707963267948966
+1.5707963267948966
+[Note] SequoiaDB: Query message: condition[{ "a": { "$regex": "^1\\.5707963267948966$", "$options": "s" } }], selector[{}], order_by[{ "a": 1 }], hint[{}], limit[-1], offset[0], table[like_single_func_pushdown_sequoiadb_2.t1]
+select * from t2 where a like rand() order by a;
+a
+[Note] SequoiaDB: Query message: condition[{}], selector[{}], order_by[{ "a": 1 }], hint[{}], limit[-1], offset[0], table[like_single_func_pushdown_sequoiadb_2.t2]
+select round(1.298,1),round('1.211','1');
+round(1.298,1)	round('1.211','1')
+1.3	1.2
+insert into t1 values(round(1.298,1)),(round('1.211','1'));
+select * from t1 where a like round(1.298,1) order by a;
+a
+1.3
+[Note] SequoiaDB: Query message: condition[{ "a": { "$regex": "^1\\.3$", "$options": "s" } }], selector[{}], order_by[{ "a": 1 }], hint[{}], limit[-1], offset[0], table[like_single_func_pushdown_sequoiadb_2.t1]
+select * from t1 where a like round('1.211','1') order by a;
+a
+1.2
+[Note] SequoiaDB: Query message: condition[{ "a": { "$regex": "^1\\.2$", "$options": "s" } }], selector[{}], order_by[{ "a": 1 }], hint[{}], limit[-1], offset[0], table[like_single_func_pushdown_sequoiadb_2.t1]
+select * from t2 where a like round((a),1);
+a
+[Note] SequoiaDB: Query message: condition[{}], selector[{}], order_by[{}], hint[{}], limit[-1], offset[0], table[like_single_func_pushdown_sequoiadb_2.t2]
+select * from t3 where a like round(1.298,1);
+a
+[Note] SequoiaDB: Query message: condition[{}], selector[{}], order_by[{}], hint[{}], limit[-1], offset[0], table[like_single_func_pushdown_sequoiadb_2.t3]
+select * from t4 where a like round(1.298,1);
+a
+[Note] SequoiaDB: Query message: condition[{}], selector[{}], order_by[{}], hint[{}], limit[-1], offset[0], table[like_single_func_pushdown_sequoiadb_2.t4]
+select * from t5 where a like round(1.298,1);
+a
+[Note] SequoiaDB: Query message: condition[{}], selector[{}], order_by[{}], hint[{}], limit[-1], offset[0], table[like_single_func_pushdown_sequoiadb_2.t5]
+select sign(0);
+sign(0)
+0
+insert into t1 values(sign(0));
+select * from t1 where a like sign(0) order by a;
+a
+0
+0
+0
+0
+[Note] SequoiaDB: Query message: condition[{ "a": { "$regex": "^0$", "$options": "s" } }], selector[{}], order_by[{ "a": 1 }], hint[{}], limit[-1], offset[0], table[like_single_func_pushdown_sequoiadb_2.t1]
+select sin(2);
+sin(2)
+0.9092974268256817
+insert into t1 values(sin(2));
+select * from t1 where a like sin(2) order by a;
+a
+0.9092974268256817
+[Note] SequoiaDB: Query message: condition[{ "a": { "$regex": "^0\\.9092974268256817$", "$options": "s" } }], selector[{}], order_by[{ "a": 1 }], hint[{}], limit[-1], offset[0], table[like_single_func_pushdown_sequoiadb_2.t1]
+select sqrt(2);
+sqrt(2)
+1.4142135623730951
+insert into t1 values(sqrt(2));
+select * from t1 where a like sqrt(2) order by a;
+a
+1.4142135623730951
+[Note] SequoiaDB: Query message: condition[{ "a": { "$regex": "^1\\.4142135623730951$", "$options": "s" } }], selector[{}], order_by[{ "a": 1 }], hint[{}], limit[-1], offset[0], table[like_single_func_pushdown_sequoiadb_2.t1]
+select tan(2);
+tan(2)
+-2.185039863261519
+insert into t1 values(tan(2));
+select * from t1 where a like tan(2) order by a;
+a
+-2.185039863261519
+[Note] SequoiaDB: Query message: condition[{ "a": { "$regex": "^\\-2\\.185039863261519$", "$options": "s" } }], selector[{}], order_by[{ "a": 1 }], hint[{}], limit[-1], offset[0], table[like_single_func_pushdown_sequoiadb_2.t1]
+select truncate(-1.234,1);
+truncate(-1.234,1)
+-1.2
+insert into t1 values(truncate(-1.234,1));
+select * from t1 where a like truncate(-1.234,1) order by a;
+a
+-1.2
+[Note] SequoiaDB: Query message: condition[{ "a": { "$regex": "^\\-1\\.2$", "$options": "s" } }], selector[{}], order_by[{ "a": 1 }], hint[{}], limit[-1], offset[0], table[like_single_func_pushdown_sequoiadb_2.t1]
+select (case 1 when 1 then 'one' when 2 then 'two' else 'more' end),(case 1 when 1 then 10 when 2 then 20 else 30 end);
+(case 1 when 1 then 'one' when 2 then 'two' else 'more' end)	(case 1 when 1 then 10 when 2 then 20 else 30 end)
+one	10
+insert into t1 values((case 1 when 1 then 'one' when 2 then 'two' else 'more' end)),((case 1 when 1 then 10 when 2 then 20 else 30 end));
+select * from t1 where a like (case 1 when 1 then 'one' when 2 then 'two' else 'more' end) order by a;
+a
+one
+[Note] SequoiaDB: Query message: condition[{ "a": { "$regex": "^one$", "$options": "s" } }], selector[{}], order_by[{ "a": 1 }], hint[{}], limit[-1], offset[0], table[like_single_func_pushdown_sequoiadb_2.t1]
+select * from t1 where a like (case 1 when 1 then 10 when 2 then 20 else 30 end) order by a;
+a
+10
+[Note] SequoiaDB: Query message: condition[{ "a": { "$regex": "^10$", "$options": "s" } }], selector[{}], order_by[{ "a": 1 }], hint[{}], limit[-1], offset[0], table[like_single_func_pushdown_sequoiadb_2.t1]
+select * from t2 where a like (case (a) when 1 then 10 when 2 then 20 else 30 end);
+a
+[Note] SequoiaDB: Query message: condition[{}], selector[{}], order_by[{}], hint[{}], limit[-1], offset[0], table[like_single_func_pushdown_sequoiadb_2.t2]
+select * from t2 where a like (case 3 when 1 then 10 when 2 then 20 else null end);
+a
+[Note] SequoiaDB: Query message: condition[{}], selector[{}], order_by[{}], hint[{}], limit[-1], offset[0], table[like_single_func_pushdown_sequoiadb_2.t2]
+select * from t3 where a like (case 1 when 1 then 10 when 2 then 20 else 30 end);
+a
+[Note] SequoiaDB: Query message: condition[{}], selector[{}], order_by[{}], hint[{}], limit[-1], offset[0], table[like_single_func_pushdown_sequoiadb_2.t3]
+select * from t4 where a like (case 1 when 1 then 10 when 2 then 20 else 30 end);
+a
+[Note] SequoiaDB: Query message: condition[{}], selector[{}], order_by[{}], hint[{}], limit[-1], offset[0], table[like_single_func_pushdown_sequoiadb_2.t4]
+select * from t5 where a like (case 1 when 1 then 10 when 2 then 20 else 30 end);
+a
+[Note] SequoiaDB: Query message: condition[{}], selector[{}], order_by[{}], hint[{}], limit[-1], offset[0], table[like_single_func_pushdown_sequoiadb_2.t5]
+select if(1,'yes','no'),if(1,10,20);
+if(1,'yes','no')	if(1,10,20)
+yes	10
+insert into t1 values(if(1,'yes','no')),(if(1,10,20));
+select * from t1 where a like if(1,'yes','no') order by a;
+a
+yes
+[Note] SequoiaDB: Query message: condition[{ "a": { "$regex": "^yes$", "$options": "s" } }], selector[{}], order_by[{ "a": 1 }], hint[{}], limit[-1], offset[0], table[like_single_func_pushdown_sequoiadb_2.t1]
+select * from t1 where a like if(1,10,20) order by a;
+a
+10
+10
+[Note] SequoiaDB: Query message: condition[{ "a": { "$regex": "^10$", "$options": "s" } }], selector[{}], order_by[{ "a": 1 }], hint[{}], limit[-1], offset[0], table[like_single_func_pushdown_sequoiadb_2.t1]
+select * from t2 where a like if((a),10,20);
+a
+[Note] SequoiaDB: Query message: condition[{}], selector[{}], order_by[{}], hint[{}], limit[-1], offset[0], table[like_single_func_pushdown_sequoiadb_2.t2]
+select * from t3 where a like if(1,10,20);
+a
+[Note] SequoiaDB: Query message: condition[{}], selector[{}], order_by[{}], hint[{}], limit[-1], offset[0], table[like_single_func_pushdown_sequoiadb_2.t3]
+select * from t4 where a like if(1,10,20);
+a
+[Note] SequoiaDB: Query message: condition[{}], selector[{}], order_by[{}], hint[{}], limit[-1], offset[0], table[like_single_func_pushdown_sequoiadb_2.t4]
+select * from t5 where a like if(1,10,20);
+a
+[Note] SequoiaDB: Query message: condition[{}], selector[{}], order_by[{}], hint[{}], limit[-1], offset[0], table[like_single_func_pushdown_sequoiadb_2.t5]
+select ifnull('a','b'),ifnull(1,0);
+ifnull('a','b')	ifnull(1,0)
+a	1
+insert into t1 values(ifnull('a','b')),(ifnull(1,0));
+select * from t1 where a like ifnull('a','b') order by a;
+a
+a
+[Note] SequoiaDB: Query message: condition[{ "a": { "$regex": "^a$", "$options": "s" } }], selector[{}], order_by[{ "a": 1 }], hint[{}], limit[-1], offset[0], table[like_single_func_pushdown_sequoiadb_2.t1]
+select * from t1 where a like ifnull(1,0) order by a;
+a
+1
+1
+1
+1
+1
+1
+1
+[Note] SequoiaDB: Query message: condition[{ "a": { "$regex": "^1$", "$options": "s" } }], selector[{}], order_by[{ "a": 1 }], hint[{}], limit[-1], offset[0], table[like_single_func_pushdown_sequoiadb_2.t1]
+select * from t2 where a like ifnull((a),0);
+a
+[Note] SequoiaDB: Query message: condition[{}], selector[{}], order_by[{}], hint[{}], limit[-1], offset[0], table[like_single_func_pushdown_sequoiadb_2.t2]
+select * from t3 where a like ifnull('a','b');
+a
+[Note] SequoiaDB: Query message: condition[{}], selector[{}], order_by[{}], hint[{}], limit[-1], offset[0], table[like_single_func_pushdown_sequoiadb_2.t3]
+select * from t4 where a like ifnull('a','b');
+a
+[Note] SequoiaDB: Query message: condition[{}], selector[{}], order_by[{}], hint[{}], limit[-1], offset[0], table[like_single_func_pushdown_sequoiadb_2.t4]
+select * from t5 where a like ifnull('a','b');
+a
+[Note] SequoiaDB: Query message: condition[{}], selector[{}], order_by[{}], hint[{}], limit[-1], offset[0], table[like_single_func_pushdown_sequoiadb_2.t5]
+select nullif('cba','a');
+nullif('cba','a')
+cba
+insert into t1 values(nullif('cba','a'));
+select * from t1 where a like nullif('cba','a') order by a;
+a
+cba
+[Note] SequoiaDB: Query message: condition[{ "a": { "$regex": "^cba$", "$options": "s" } }], selector[{}], order_by[{ "a": 1 }], hint[{}], limit[-1], offset[0], table[like_single_func_pushdown_sequoiadb_2.t1]
+select binary 'a',binary 1;
+binary 'a'	binary 1
+a	1
+insert into t1 values(binary 'a'),(binary 1);
+select * from t1 where a like binary 'a' order by a;
+a
+a
+a
+[Note] SequoiaDB: Query message: condition[{ "a": { "$regex": "^a$", "$options": "s" } }], selector[{}], order_by[{ "a": 1 }], hint[{}], limit[-1], offset[0], table[like_single_func_pushdown_sequoiadb_2.t1]
+select * from t1 where a like binary 1 order by a;
+a
+1
+1
+1
+1
+1
+1
+1
+1
+[Note] SequoiaDB: Query message: condition[{ "a": { "$regex": "^1$", "$options": "s" } }], selector[{}], order_by[{ "a": 1 }], hint[{}], limit[-1], offset[0], table[like_single_func_pushdown_sequoiadb_2.t1]
+select * from t2 where a like binary (a);
+a
+[Note] SequoiaDB: Query message: condition[{}], selector[{}], order_by[{}], hint[{}], limit[-1], offset[0], table[like_single_func_pushdown_sequoiadb_2.t2]
+select * from t2 where a like binary null;
+a
+[Note] SequoiaDB: Query message: condition[{}], selector[{}], order_by[{}], hint[{}], limit[-1], offset[0], table[like_single_func_pushdown_sequoiadb_2.t2]
+select * from t3 where a like binary 'a';
+a
+[Note] SequoiaDB: Query message: condition[{}], selector[{}], order_by[{}], hint[{}], limit[-1], offset[0], table[like_single_func_pushdown_sequoiadb_2.t3]
+select * from t4 where a like binary 'a';
+a
+[Note] SequoiaDB: Query message: condition[{}], selector[{}], order_by[{}], hint[{}], limit[-1], offset[0], table[like_single_func_pushdown_sequoiadb_2.t4]
+select * from t5 where a like binary 'a';
+a
+[Note] SequoiaDB: Query message: condition[{}], selector[{}], order_by[{}], hint[{}], limit[-1], offset[0], table[like_single_func_pushdown_sequoiadb_2.t5]
+select cast('a' as binary),cast(0x12345 as binary);
+cast('a' as binary)	cast(0x12345 as binary)
+a	#E
+insert into t1 values(cast('a' as binary)),(cast(0x12345 as binary));
+select * from t1 where a like cast('a' as binary) order by a;
+a
+a
+a
+a
+[Note] SequoiaDB: Query message: condition[{ "a": { "$regex": "^a$", "$options": "s" } }], selector[{}], order_by[{ "a": 1 }], hint[{}], limit[-1], offset[0], table[like_single_func_pushdown_sequoiadb_2.t1]
+select * from t1 where a like cast(0x12345 as binary) order by a;
+a
+#E
+[Note] SequoiaDB: Query message: condition[{ "a": { "$regex": "^#E$", "$options": "s" } }], selector[{}], order_by[{ "a": 1 }], hint[{}], limit[-1], offset[0], table[like_single_func_pushdown_sequoiadb_2.t1]
+select * from t2 where a like cast((a) as binary);
+a
+[Note] SequoiaDB: Query message: condition[{}], selector[{}], order_by[{}], hint[{}], limit[-1], offset[0], table[like_single_func_pushdown_sequoiadb_2.t2]
+select * from t3 where a like cast('a' as binary);
+a
+[Note] SequoiaDB: Query message: condition[{}], selector[{}], order_by[{}], hint[{}], limit[-1], offset[0], table[like_single_func_pushdown_sequoiadb_2.t3]
+select * from t4 where a like cast('a' as binary);
+a
+[Note] SequoiaDB: Query message: condition[{}], selector[{}], order_by[{}], hint[{}], limit[-1], offset[0], table[like_single_func_pushdown_sequoiadb_2.t4]
+select * from t5 where a like cast('a' as binary);
+a
+[Note] SequoiaDB: Query message: condition[{}], selector[{}], order_by[{}], hint[{}], limit[-1], offset[0], table[like_single_func_pushdown_sequoiadb_2.t5]
+select convert('abcd' using latin1);
+convert('abcd' using latin1)
+abcd
+insert into t1 values(convert('abcd' using latin1));
+select * from t1 where a like convert('abcd' using latin1) order by a;
+a
+abcd
+[Note] SequoiaDB: Query message: condition[{ "a": { "$regex": "^abcd$", "$options": "s" } }], selector[{}], order_by[{ "a": 1 }], hint[{}], limit[-1], offset[0], table[like_single_func_pushdown_sequoiadb_2.t1]
+select * from t2 where a like convert((a) using latin1);
+a
+[Note] SequoiaDB: Query message: condition[{}], selector[{}], order_by[{}], hint[{}], limit[-1], offset[0], table[like_single_func_pushdown_sequoiadb_2.t2]
+select * from t3 where a like convert('abcd' using latin1);
+a
+[Note] SequoiaDB: Query message: condition[{}], selector[{}], order_by[{}], hint[{}], limit[-1], offset[0], table[like_single_func_pushdown_sequoiadb_2.t3]
+select * from t4 where a like convert('abcd' using latin1);
+a
+[Note] SequoiaDB: Query message: condition[{}], selector[{}], order_by[{}], hint[{}], limit[-1], offset[0], table[like_single_func_pushdown_sequoiadb_2.t4]
+select * from t5 where a like convert('abcd' using latin1);
+a
+[Note] SequoiaDB: Query message: condition[{}], selector[{}], order_by[{}], hint[{}], limit[-1], offset[0], table[like_single_func_pushdown_sequoiadb_2.t5]
+select extractvalue('<cases><case>(1)</case></cases>','/cases/case'),extractvalue('<cases><case>abc</case></cases>','/cases/case');
+extractvalue('<cases><case>(1)</case></cases>','/cases/case')	extractvalue('<cases><case>abc</case></cases>','/cases/case')
+(1)	abc
+insert into t1 values(extractvalue('<cases><case>(1)</case></cases>','/cases/case')),(extractvalue('<cases><case>abc</case></cases>','/cases/case'));
+select * from t1 where a like extractvalue('<cases><case>(1)</case></cases>','/cases/case') order by a;
+a
+(1)
+[Note] SequoiaDB: Query message: condition[{ "a": { "$regex": "^\\(1\\)$", "$options": "s" } }], selector[{}], order_by[{ "a": 1 }], hint[{}], limit[-1], offset[0], table[like_single_func_pushdown_sequoiadb_2.t1]
+select * from t1 where a like extractvalue('<cases><case>abc</case></cases>','/cases/case') order by a;
+a
+abc
+[Note] SequoiaDB: Query message: condition[{ "a": { "$regex": "^abc$", "$options": "s" } }], selector[{}], order_by[{ "a": 1 }], hint[{}], limit[-1], offset[0], table[like_single_func_pushdown_sequoiadb_2.t1]
+select * from t2 where a like extractvalue('<cases><case>abc</case></cases>',null);
+a
+[Note] SequoiaDB: Query message: condition[{}], selector[{}], order_by[{}], hint[{}], limit[-1], offset[0], table[like_single_func_pushdown_sequoiadb_2.t2]
+select * from t2 where a like extractvalue((a),'/cases/case');
+a
+[Note] SequoiaDB: Query message: condition[{}], selector[{}], order_by[{}], hint[{}], limit[-1], offset[0], table[like_single_func_pushdown_sequoiadb_2.t2]
+select * from t3 where a like extractvalue('<cases><case>abc</case></cases>','/cases/case');
+a
+[Note] SequoiaDB: Query message: condition[{}], selector[{}], order_by[{}], hint[{}], limit[-1], offset[0], table[like_single_func_pushdown_sequoiadb_2.t3]
+select * from t4 where a like extractvalue('<cases><case>abc</case></cases>','/cases/case');
+a
+[Note] SequoiaDB: Query message: condition[{}], selector[{}], order_by[{}], hint[{}], limit[-1], offset[0], table[like_single_func_pushdown_sequoiadb_2.t4]
+select * from t5 where a like extractvalue('<cases><case>abc</case></cases>','/cases/case');
+a
+[Note] SequoiaDB: Query message: condition[{}], selector[{}], order_by[{}], hint[{}], limit[-1], offset[0], table[like_single_func_pushdown_sequoiadb_2.t5]
+select updatexml('<a>123456</a>','/a','<b>abcdef</b>');
+updatexml('<a>123456</a>','/a','<b>abcdef</b>')
+<b>abcdef</b>
+insert into t1 values(updatexml('<a>123456</a>','/a','<b>abcdef</b>'));
+select * from t1 where a like updatexml('<a>123456</a>','/a','<b>abcdef</b>') order by a;
+a
+<b>abcdef</b>
+[Note] SequoiaDB: Query message: condition[{ "a": { "$regex": "^<b>abcdef</b>$", "$options": "s" } }], selector[{}], order_by[{ "a": 1 }], hint[{}], limit[-1], offset[0], table[like_single_func_pushdown_sequoiadb_2.t1]
+select * from t2 where a like updatexml((a),'/a','<b>abcdef</b>');
+a
+[Note] SequoiaDB: Query message: condition[{}], selector[{}], order_by[{}], hint[{}], limit[-1], offset[0], table[like_single_func_pushdown_sequoiadb_2.t2]
+select * from t3 where a like updatexml('<a>123456</a>','/a','<b>abcdef</b>');
+a
+[Note] SequoiaDB: Query message: condition[{}], selector[{}], order_by[{}], hint[{}], limit[-1], offset[0], table[like_single_func_pushdown_sequoiadb_2.t3]
+select * from t4 where a like updatexml('<a>123456</a>','/a','<b>abcdef</b>');
+a
+[Note] SequoiaDB: Query message: condition[{}], selector[{}], order_by[{}], hint[{}], limit[-1], offset[0], table[like_single_func_pushdown_sequoiadb_2.t4]
+select * from t5 where a like updatexml('<a>123456</a>','/a','<b>abcdef</b>');
+a
+[Note] SequoiaDB: Query message: condition[{}], selector[{}], order_by[{}], hint[{}], limit[-1], offset[0], table[like_single_func_pushdown_sequoiadb_2.t5]
+select (29|15);
+(29|15)
+31
+insert into t1 values((29|15));
+select * from t1 where a like (29|15) order by a;
+a
+31
+[Note] SequoiaDB: Query message: condition[{ "a": { "$regex": "^31$", "$options": "s" } }], selector[{}], order_by[{ "a": 1 }], hint[{}], limit[-1], offset[0], table[like_single_func_pushdown_sequoiadb_2.t1]
+select (29&15),('1'&'3');
+(29&15)	('1'&'3')
+13	1
+insert into t1 values((29&15)),(('1'&'3'));
+select * from t1 where a like (29&15) order by a;
+a
+13
+[Note] SequoiaDB: Query message: condition[{ "a": { "$regex": "^13$", "$options": "s" } }], selector[{}], order_by[{ "a": 1 }], hint[{}], limit[-1], offset[0], table[like_single_func_pushdown_sequoiadb_2.t1]
+select * from t1 where a like ('1'&'3') order by a;
+a
+1
+1
+1
+1
+1
+1
+1
+1
+1
+[Note] SequoiaDB: Query message: condition[{ "a": { "$regex": "^1$", "$options": "s" } }], selector[{}], order_by[{ "a": 1 }], hint[{}], limit[-1], offset[0], table[like_single_func_pushdown_sequoiadb_2.t1]
+select * from t2 where a like (null&15);
+a
+[Note] SequoiaDB: Query message: condition[{}], selector[{}], order_by[{}], hint[{}], limit[-1], offset[0], table[like_single_func_pushdown_sequoiadb_2.t2]
+select * from t2 where a like ((a)&15);
+a
+[Note] SequoiaDB: Query message: condition[{}], selector[{}], order_by[{}], hint[{}], limit[-1], offset[0], table[like_single_func_pushdown_sequoiadb_2.t2]
+select * from t3 where a like (29&15);
+a
+[Note] SequoiaDB: Query message: condition[{}], selector[{}], order_by[{}], hint[{}], limit[-1], offset[0], table[like_single_func_pushdown_sequoiadb_2.t3]
+select * from t4 where a like (29&15);
+a
+[Note] SequoiaDB: Query message: condition[{}], selector[{}], order_by[{}], hint[{}], limit[-1], offset[0], table[like_single_func_pushdown_sequoiadb_2.t4]
+select * from t5 where a like (29&15);
+a
+[Note] SequoiaDB: Query message: condition[{}], selector[{}], order_by[{}], hint[{}], limit[-1], offset[0], table[like_single_func_pushdown_sequoiadb_2.t5]
+select (11^3);
+(11^3)
+8
+insert into t1 values((11^3));
+select * from t1 where a like (11^3) order by a;
+a
+8
+8
+[Note] SequoiaDB: Query message: condition[{ "a": { "$regex": "^8$", "$options": "s" } }], selector[{}], order_by[{ "a": 1 }], hint[{}], limit[-1], offset[0], table[like_single_func_pushdown_sequoiadb_2.t1]
+select (1<<4),('1'<<'5');
+(1<<4)	('1'<<'5')
+16	32
+insert into t1 values((1<<4)),(('1'<<'5'));
+select * from t1 where a like (1<<4) order by a;
+a
+16
+[Note] SequoiaDB: Query message: condition[{ "a": { "$regex": "^16$", "$options": "s" } }], selector[{}], order_by[{ "a": 1 }], hint[{}], limit[-1], offset[0], table[like_single_func_pushdown_sequoiadb_2.t1]
+select * from t1 where a like ('1'<<'5') order by a;
+a
+32
+[Note] SequoiaDB: Query message: condition[{ "a": { "$regex": "^32$", "$options": "s" } }], selector[{}], order_by[{ "a": 1 }], hint[{}], limit[-1], offset[0], table[like_single_func_pushdown_sequoiadb_2.t1]
+select * from t2 where a like ((a)<<4);
+a
+[Note] SequoiaDB: Query message: condition[{}], selector[{}], order_by[{}], hint[{}], limit[-1], offset[0], table[like_single_func_pushdown_sequoiadb_2.t2]
+select * from t3 where a like (1<<4);
+a
+[Note] SequoiaDB: Query message: condition[{}], selector[{}], order_by[{}], hint[{}], limit[-1], offset[0], table[like_single_func_pushdown_sequoiadb_2.t3]
+select * from t4 where a like (1<<4);
+a
+[Note] SequoiaDB: Query message: condition[{}], selector[{}], order_by[{}], hint[{}], limit[-1], offset[0], table[like_single_func_pushdown_sequoiadb_2.t4]
+select * from t5 where a like (1<<4);
+a
+[Note] SequoiaDB: Query message: condition[{}], selector[{}], order_by[{}], hint[{}], limit[-1], offset[0], table[like_single_func_pushdown_sequoiadb_2.t5]
+select (512>>4);
+(512>>4)
+32
+insert into t1 values((512>>4));
+select * from t1 where a like (512>>4) order by a;
+a
+32
+32
+[Note] SequoiaDB: Query message: condition[{ "a": { "$regex": "^32$", "$options": "s" } }], selector[{}], order_by[{ "a": 1 }], hint[{}], limit[-1], offset[0], table[like_single_func_pushdown_sequoiadb_2.t1]
+select (~1);
+(~1)
+18446744073709551614
+insert into t1 values((~1));
+select * from t1 where a like (~1) order by a;
+a
+18446744073709551614
+[Note] SequoiaDB: Query message: condition[{ "a": { "$regex": "^18446744073709551614$", "$options": "s" } }], selector[{}], order_by[{ "a": 1 }], hint[{}], limit[-1], offset[0], table[like_single_func_pushdown_sequoiadb_2.t1]
+select bit_count(5),bit_count('7');
+bit_count(5)	bit_count('7')
+2	3
+insert into t1 values(bit_count(5)),(bit_count('7'));
+select * from t1 where a like bit_count(5) order by a;
+a
+2
+[Note] SequoiaDB: Query message: condition[{ "a": { "$regex": "^2$", "$options": "s" } }], selector[{}], order_by[{ "a": 1 }], hint[{}], limit[-1], offset[0], table[like_single_func_pushdown_sequoiadb_2.t1]
+select * from t1 where a like bit_count('7') order by a;
+a
+3
+3
+3
+[Note] SequoiaDB: Query message: condition[{ "a": { "$regex": "^3$", "$options": "s" } }], selector[{}], order_by[{ "a": 1 }], hint[{}], limit[-1], offset[0], table[like_single_func_pushdown_sequoiadb_2.t1]
+select * from t2 where a like bit_count((a));
+a
+[Note] SequoiaDB: Query message: condition[{}], selector[{}], order_by[{}], hint[{}], limit[-1], offset[0], table[like_single_func_pushdown_sequoiadb_2.t2]
+select * from t3 where a like bit_count(5);
+a
+[Note] SequoiaDB: Query message: condition[{}], selector[{}], order_by[{}], hint[{}], limit[-1], offset[0], table[like_single_func_pushdown_sequoiadb_2.t3]
+select * from t4 where a like bit_count(5);
+a
+[Note] SequoiaDB: Query message: condition[{}], selector[{}], order_by[{}], hint[{}], limit[-1], offset[0], table[like_single_func_pushdown_sequoiadb_2.t4]
+select * from t5 where a like bit_count(5);
+a
+[Note] SequoiaDB: Query message: condition[{}], selector[{}], order_by[{}], hint[{}], limit[-1], offset[0], table[like_single_func_pushdown_sequoiadb_2.t5]
+set session sequoiadb_debug_log=default;
+set session sequoiadb_support_mode=default;
+drop table t1, t2, t3, t4, t5;
+drop database like_single_func_pushdown_sequoiadb_2;

@@ -1,0 +1,385 @@
+#case 18858#case 18861#case 18863#case 18877#case 18959
+
+--source include/have_sequoiadb.inc
+--source suite/metadata_sync_sequoiadb/inc/insts_connect_sequoiadb.inc
+
+# connect to conn1, clear databases in the beginning
+connection conn1;
+set session sequoiadb_support_mode="";
+--disable_warnings
+DROP DATABASE IF EXISTS metasync_alter_tables;
+--enable_warnings
+
+# connect to conn2, check databases are cleaned in the beginning
+connection conn2;
+set session sequoiadb_support_mode="";
+--sleep $sleep
+--error ER_BAD_DB_ERROR 
+SHOW CREATE DATABASE metasync_alter_tables;
+
+# seqDB-18858
+# begin testing
+#
+# ALTER TABLES 
+#
+# test alter table comment, charset, engine, tablespace, check
+connection conn1;
+CREATE DATABASE metasync_alter_tables;
+USE metasync_alter_tables;
+--disable_query_log
+CREATE TABLE IF NOT EXISTS metasync_reserved ( id INT PRIMARY KEY );
+--enable_query_log
+CREATE TABLE t1 ( a INT );
+CREATE TABLE t2 ( a VARCHAR(255) );
+CREATE TABLE t3 ( a INT ) ENGINE = SEQUOIADB;
+CREATE TABLE t4 ( a INT );
+# SEQUOIASQLMAINSTREAM-339
+ALTER TABLE t1 COMMENT "{table_options:{ShardingKey:{a:1}},ShardingType:'range',Compressed:true,CompressionType:'lzw',ReplSize:3,EnsureShardingIndex:false, StrictDataMode:true,AutoIndexId:true}", ALGORITHM=COPY;
+ALTER TABLE t2 CONVERT TO CHARACTER SET 'cp1251', ALGORITHM=COPY;
+# recover
+ALTER TABLE t3 ENGINE INNODB;
+ALTER TABLE t4 TABLESPACE ts, ALGORITHM = INPLACE;
+ALTER TABLE t4 ADD CHECK ( a > 10 );
+# check metadatas after alter
+connection conn2;
+--sleep $sleep
+USE metasync_alter_tables;
+SHOW CREATE TABLE t1;
+SHOW CREATE TABLE t2;
+SHOW CREATE TABLE t3;
+SHOW CREATE TABLE t4;
+# clear tables
+connection conn1;
+DROP TABLE t1,t2,t3,t4;
+# check tables cleared
+connection conn2;
+--sleep $sleep
+--error ER_NO_SUCH_TABLE
+SHOW CREATE TABLE t1;
+--error ER_NO_SUCH_TABLE
+SHOW CREATE TABLE t2;
+--error ER_NO_SUCH_TABLE
+SHOW CREATE TABLE t3;
+--error ER_NO_SUCH_TABLE
+SHOW CREATE TABLE t4;
+
+# seqDB-18861
+# test add/drop field
+connection conn1;
+CREATE TABLE t1 ( a INT, b INT, c INT );
+CREATE TABLE t2 ( a INT UNIQUE KEY );
+CREATE TABLE t3 ( a INT PRIMARY KEY );
+CREATE TABLE t4 ( a INT PRIMARY KEY );
+CREATE TABLE t5 ( a INT UNIQUE KEY );
+ALTER TABLE t1 ADD COLUMN ( d INT, e INT, f INT );
+# not null without default value
+ALTER TABLE t1 ADD COLUMN ( g INT NOT NULL, h FLOAT NOT NULL, i DECIMAL(10,2) NOT NULL, j BIT NOT NULL );
+ALTER TABLE t1 ADD COLUMN ( k DATE NOT NULL, l DATETIME NOT NULL, m TIME NOT NULL, n YEAR NOT NULL );
+ALTER TABLE t1 ADD COLUMN ( o CHAR NOT NULL, p VARCHAR(255) NOT NULL, q BINARY NOT NULL, r VARBINARY(255) NOT NULL, s BLOB NOT NULL, t TEXT NOT NULL );
+ALTER TABLE t1 ADD COLUMN ( u ENUM("a","b") NOT NULL, v SET('a', 'b') );
+# not null/null with default value
+ALTER TABLE t1 ADD w INT NOT NULL DEFAULT 10;
+# sorted column
+ALTER TABLE t1 ADD COLUMN x VARCHAR(255) AFTER b;
+ALTER TABLE t1 ADD COLUMN y VARCHAR(255) FIRST;
+# add field, with comment, collate, format
+ALTER TABLE t1 ADD ( z INT COMMENT "alter table" COLLATE utf8_bin COLUMN_FORMAT DYNAMIC STORAGE MEMORY );
+# add field, with foreign key
+ALTER TABLE t2 ADD ( b INT REFERENCES t2(a) MATCH FULL ON DELETE RESTRICT );
+ALTER TABLE t2 DROP FOREIGN KEY a;
+ALTER TABLE t3 ADD ( b INT REFERENCES t2(a) MATCH PARTIAL ON UPDATE CASCADE );
+ALTER TABLE t3 DROP FOREIGN KEY a;
+ALTER TABLE t4 ADD ( b INT REFERENCES t2(a) MATCH FULL ON DELETE RESTRICT );
+ALTER TABLE t5 ADD ( b INT REFERENCES t2(a) MATCH PARTIAL ON UPDATE CASCADE );
+# drop field
+ALTER TABLE t1 DROP COLUMN c;
+# check metadatas after alter 
+connection conn2;
+--sleep $sleep
+SHOW CREATE TABLE t1;
+SHOW CREATE TABLE t2;
+SHOW CREATE TABLE t3;
+SHOW CREATE TABLE t4;
+SHOW CREATE TABLE t5;
+# clear tables
+connection conn1;
+DROP TABLE t1,t2,t3,t4,t5;
+# check tables cleared
+connection conn2;
+--sleep $sleep
+--error ER_NO_SUCH_TABLE
+SHOW CREATE TABLE t1;
+--error ER_NO_SUCH_TABLE
+SHOW CREATE TABLE t2;
+--error ER_NO_SUCH_TABLE
+SHOW CREATE TABLE t3;
+--error ER_NO_SUCH_TABLE
+SHOW CREATE TABLE t4;
+--error ER_NO_SUCH_TABLE
+SHOW CREATE TABLE t5;
+
+# seqDB-18863
+# test alter primary key, unique key, key
+connection conn1;
+CREATE TABLE t1 ( a CHAR(8) DEFAULT NULL );
+CREATE TABLE t2 ( a CHAR(8) PRIMARY KEY );
+CREATE TABLE t3 ( a CHAR(8) PRIMARY KEY );
+CREATE TABLE t4 ( a CHAR(8) DEFAULT NULL, b INT ); 
+CREATE TABLE t5 ( a CHAR(8) DEFAULT NULL, UNIQUE INDEX(a) );
+CREATE TABLE t6 ( a CHAR(8) DEFAULT NULL, b INT, c FLOAT );
+ALTER TABLE t1 ADD PRIMARY KEY(a);
+ALTER TABLE t2 DROP PRIMARY KEY, ADD PRIMARY KEY(a);
+ALTER TABLE t3 DROP PRIMARY KEY;
+ALTER TABLE t4 ADD UNIQUE KEY a(b,a);
+ALTER TABLE t5 DROP INDEX a;
+ALTER TABLE t6 ADD INDEX(a,c,b);
+ALTER TABLE t6 RENAME INDEX a TO a_new, ALGORITHM = COPY;
+# check metadatas after alter 
+connection conn2;
+--sleep $sleep
+SHOW CREATE TABLE t1;
+SHOW CREATE TABLE t2;
+SHOW CREATE TABLE t3;
+SHOW CREATE TABLE t4;
+SHOW CREATE TABLE t5;
+SHOW CREATE TABLE t6;
+# clear tables
+connection conn1;
+DROP TABLE t1,t2,t3,t4,t5,t6;
+# check tables cleared
+connection conn2;
+--sleep $sleep
+--error ER_NO_SUCH_TABLE
+SHOW CREATE TABLE t1;
+--error ER_NO_SUCH_TABLE
+SHOW CREATE TABLE t2;
+--error ER_NO_SUCH_TABLE
+SHOW CREATE TABLE t3;
+--error ER_NO_SUCH_TABLE
+SHOW CREATE TABLE t4;
+--error ER_NO_SUCH_TABLE
+SHOW CREATE TABLE t5;
+--error ER_NO_SUCH_TABLE
+SHOW CREATE TABLE t6;
+
+# seqDB-18877
+# test add auto_increment and primary key, unique key, key
+# test alter/drop auto_increment
+connection conn1;
+CREATE TABLE t1 ( a INT, b INT, c INT );
+CREATE TABLE t2 ( a INT, b INT, c INT );
+CREATE TABLE t3 ( a INT, b INT, c INT );
+CREATE TABLE t4 ( a INT AUTO_INCREMENT, b INT, PRIMARY KEY(a) );
+ALTER TABLE t1 ADD COLUMN ( d INT AUTO_INCREMENT PRIMARY KEY );
+ALTER TABLE t2 ADD COLUMN ( e INT AUTO_INCREMENT UNIQUE KEY );
+ALTER TABLE t3 ADD COLUMN ( f INT AUTO_INCREMENT KEY );
+ALTER TABLE t4 CHANGE a a INT;
+ALTER TABLE t4 DROP PRIMARY KEY, ADD PRIMARY KEY(b,a);
+ALTER TABLE t4 MODIFY b INT AUTO_INCREMENT;
+# check metadatas after alter 
+connection conn2;
+--sleep $sleep
+SHOW CREATE TABLE t1;
+SHOW CREATE TABLE t2;
+SHOW CREATE TABLE t3;
+SHOW CREATE TABLE t4;
+# clear tables
+connection conn1;
+DROP TABLE t1,t2,t3,t4;
+# check tables cleared
+connection conn2;
+--sleep $sleep
+--error ER_NO_SUCH_TABLE
+SHOW CREATE TABLE t1;
+--error ER_NO_SUCH_TABLE
+SHOW CREATE TABLE t2;
+--error ER_NO_SUCH_TABLE
+SHOW CREATE TABLE t3;
+--error ER_NO_SUCH_TABLE
+SHOW CREATE TABLE t4;
+
+# test alter field
+connection conn1;
+# add/alter/drop field's comment, charset, collate, format
+CREATE TABLE t1 ( a INT, b INT, c INT, d INT );
+CREATE TABLE t2 ( a INT COMMENT "a", b INT, c INT );
+CREATE TABLE t3 ( a INT, b INT, c INT );
+CREATE TABLE t4 ( a INT COMMENT "a", b INT, c INT );
+CREATE TABLE t5 ( a INT, b INT, c INT );
+CREATE TABLE t6 ( a INT DEFAULT 1, b INT, c INT );
+CREATE TABLE t7 ( a INT DEFAULT 3, b INT, c INT );
+CREATE TABLE t8 ( d INT );
+CREATE TABLE t9 ( d INT DEFAULT 5 );
+CREATE TABLE t10 ( a INT, b INT, c INT );
+CREATE TABLE t11 ( a INT NOT NULL, b INT, c INT );
+CREATE TABLE t12 ( a INT, b INT, c INT );
+CREATE TABLE t13 ( a INT NOT NULL DEFAULT 1, b INT, c INT );
+CREATE TABLE t14 ( a ENUM('a','b'), b SET('a', 'b'), c INT );
+# add/alter/drop field's comment, charset, collate, format
+ALTER TABLE t1 CHANGE a a INT COMMENT "alter table" COLLATE utf8_bin COLUMN_FORMAT DYNAMIC STORAGE MEMORY;
+ALTER TABLE t2 CHANGE a a INT;
+ALTER TABLE t3 MODIFY a INT COMMENT "alter table" COLLATE utf8_bin COLUMN_FORMAT DYNAMIC STORAGE MEMORY;
+ALTER TABLE t4 MODIFY a INT;
+# add/alter/drop field's default key
+ALTER TABLE t5 ALTER a SET DEFAULT 10;
+ALTER TABLE t6 ALTER a DROP DEFAULT;
+ALTER TABLE t7 CHANGE COLUMN a d INT DEFAULT 10;
+ALTER TABLE t8 CHANGE COLUMN d d INT DEFAULT 100;
+ALTER TABLE t9 MODIFY COLUMN d INT;
+# set field to null/not null 
+ALTER TABLE t10 CHANGE a a INT NOT NULL;
+ALTER TABLE t11 CHANGE a a INT;
+ALTER TABLE t12 MODIFY a INT NOT NULL DEFAULT 10;
+ALTER TABLE t13 MODIFY a INT;
+# sort to field
+ALTER TABLE t1 CHANGE a a INT AFTER b;
+ALTER TABLE t1 MODIFY c INT FIRST;
+# rename field
+ALTER TABLE t1 CHANGE d e BIGINT;
+ALTER TABLE t1 FORCE;
+# alter enum, set
+ALTER TABLE t14 CHANGE a a ENUM('a', 'b', 'c');
+ALTER TABLE t14 CHANGE b b SET("a", "b", "c");
+# check metadatas after alter 
+connection conn2;
+--sleep $sleep
+SHOW CREATE TABLE t1;
+SHOW CREATE TABLE t2;
+SHOW CREATE TABLE t3;
+SHOW CREATE TABLE t4;
+SHOW CREATE TABLE t5;
+SHOW CREATE TABLE t6;
+SHOW CREATE TABLE t7;
+SHOW CREATE TABLE t8;
+SHOW CREATE TABLE t9;
+SHOW CREATE TABLE t10;
+SHOW CREATE TABLE t11;
+SHOW CREATE TABLE t12;
+SHOW CREATE TABLE t13;
+SHOW CREATE TABLE t14;
+# clear tables
+connection conn1;
+DROP TABLE t1,t2,t3,t4,t5,t6,t7,t8,t9,t10,t11,t12,t13,t14;
+# check tables cleared
+connection conn2;
+--sleep $sleep
+--error ER_NO_SUCH_TABLE
+SHOW CREATE TABLE t1;
+--error ER_NO_SUCH_TABLE
+SHOW CREATE TABLE t2;
+--error ER_NO_SUCH_TABLE
+SHOW CREATE TABLE t3;
+--error ER_NO_SUCH_TABLE
+SHOW CREATE TABLE t4;
+--error ER_NO_SUCH_TABLE
+SHOW CREATE TABLE t5;
+--error ER_NO_SUCH_TABLE
+SHOW CREATE TABLE t6;
+--error ER_NO_SUCH_TABLE
+SHOW CREATE TABLE t7;
+--error ER_NO_SUCH_TABLE
+SHOW CREATE TABLE t8;
+--error ER_NO_SUCH_TABLE
+SHOW CREATE TABLE t9;
+--error ER_NO_SUCH_TABLE
+SHOW CREATE TABLE t10;
+--error ER_NO_SUCH_TABLE
+SHOW CREATE TABLE t11;
+--error ER_NO_SUCH_TABLE
+SHOW CREATE TABLE t12;
+--error ER_NO_SUCH_TABLE
+SHOW CREATE TABLE t13;
+--error ER_NO_SUCH_TABLE
+SHOW CREATE TABLE t14;
+
+# seqDB-18959
+# test rename table
+connection conn1;
+CREATE TABLE t1 ( a INT, b INT, c INT );
+CREATE TABLE t2 ( a INT, b INT, c INT );
+CREATE TABLE t11 ( a INT, b INT, c INT );
+CREATE TABLE t12 ( a INT, b INT, c INT );
+# SEQUOIASQLMAINSTREAM-337
+ALTER TABLE t1 RENAME t3, MIN_ROWS 10 MAX_ROWS 100;
+RENAME TABLE t3 TO t1, t2 TO t4;
+# SEQUOIASQLMAINSTREAM-354
+ALTER TABLE t11 RENAME t13, ALGORITHM = COPY;
+ALTER TABLE t12 RENAME TO t14, ALGORITHM = COPY;
+# check metadatas after rename
+connection conn2;
+--sleep $sleep
+SHOW CREATE TABLE t1;
+--error ER_NO_SUCH_TABLE
+SHOW CREATE TABLE t2;
+--error ER_NO_SUCH_TABLE
+SHOW CREATE TABLE t3;
+SHOW CREATE TABLE t4;
+--error ER_NO_SUCH_TABLE
+SHOW CREATE TABLE t11;
+--error ER_NO_SUCH_TABLE
+SHOW CREATE TABLE t12;
+SHOW CREATE TABLE t13;
+SHOW CREATE TABLE t14;
+connection conn1;
+# clear tables
+DROP TABLE t1,t4,t13,t14;
+# check tables cleared
+connection conn2;
+--sleep $sleep
+--error ER_NO_SUCH_TABLE
+SHOW CREATE TABLE t1;
+--error ER_NO_SUCH_TABLE
+SHOW CREATE TABLE t4;
+--error ER_NO_SUCH_TABLE
+SHOW CREATE TABLE t13;
+--error ER_NO_SUCH_TABLE
+SHOW CREATE TABLE t14;
+
+# test alter partiton
+connection conn1;
+CREATE TABLE t1 ( id INT NOT NULL, a INT, PRIMARY KEY( id ) );
+CREATE TABLE t2 ( id INT )
+PARTITION BY RANGE ( id )
+(PARTITION p0 VALUES LESS THAN (0),
+ PARTITION p1 VALUES LESS THAN (1) );
+# convert to partition table
+ALTER TABLE t1 PARTITION BY RANGE ( id )
+SUBPARTITION BY HASH ( id )
+(PARTITION p0 VALUES LESS THAN (0) ( SUBPARTITION sp0 ),
+ PARTITION p1 VALUES LESS THAN (1) ( SUBPARTITION sp1 ),
+ PARTITION p2 VALUES LESS THAN (2) ( SUBPARTITION sp2 ) );
+# add partition
+ALTER TABLE t1 ADD PARTITION ( PARTITION p3 VALUES LESS THAN (3) ( SUBPARTITION sp3 ) );
+# reorganize partition
+ALTER TABLE t1 REORGANIZE PARTITION p0,p1 INTO ( PARTITION p1 VALUES LESS THAN (1) );
+# drop partition
+ALTER TABLE t1 DROP PARTITION p2;
+# convert to non-partition table
+ALTER TABLE t2 REMOVE PARTITIONING;
+# check metadatas after alter
+connection conn2;
+--sleep $sleep
+SHOW CREATE TABLE t1;
+SHOW CREATE TABLE t2;
+# clear tables
+connection conn1;
+DROP TABLE t1,t2;
+# check tables cleared
+connection conn2;
+--sleep $sleep
+--error ER_NO_SUCH_TABLE
+SHOW CREATE TABLE t1;
+--error ER_NO_SUCH_TABLE
+SHOW CREATE TABLE t2;
+
+# clear databases in the ending
+connection conn1;
+DROP DATABASE metasync_alter_tables;
+# check databases are cleaned in the ending
+connection conn2;
+--sleep $sleep
+--error ER_BAD_DB_ERROR 
+SHOW CREATE DATABASE metasync_alter_tables;
+
+--source include/uninstall_sequoiadb.inc
+--source suite/metadata_sync_sequoiadb/inc/insts_disconnect_sequoiadb.inc

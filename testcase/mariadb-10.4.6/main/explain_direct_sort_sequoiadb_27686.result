@@ -1,0 +1,112 @@
+drop database if exists explain_direct_sort_27686;
+create database explain_direct_sort_27686;
+drop database explain_direct_sort_27686;
+create database explain_direct_sort_27686;
+use explain_direct_sort_27686;
+set session sequoiadb_debug_log=on;
+set session optimizer_switch='mrr=on';
+drop table if exists t1;
+create table t1(
+col1 int,
+col2 varchar(10),
+col3 varchar(10),
+col4 varchar(10),
+key idx_col1(col1),
+key idx_col2(col2),
+key idx_col12(col1,col2),
+unique key uniq_idx4(col4)
+);
+insert into t1 values(3,'abd','def','defg');
+insert into t1 values(4,'abc','abcdef','xyz');
+insert into t1 values(0,'abde','xyz','def');
+insert into t1 values(5,'xyz','abc','abd');
+insert into t1 values(2,'defg','abd','efg');
+insert into t1 values(6,'abcdef','abde','abc');
+insert into t1 values(1,'def','defg','abcdef');
+insert into t1 values(null,null,null,null);
+select * from t1 order by col1;
+col1	col2	col3	col4
+NULL	NULL	NULL	NULL
+0	abde	xyz	def
+1	def	defg	abcdef
+2	defg	abd	efg
+3	abd	def	defg
+4	abc	abcdef	xyz
+5	xyz	abc	abd
+6	abcdef	abde	abc
+select * from t1 order by col2;
+col1	col2	col3	col4
+NULL	NULL	NULL	NULL
+4	abc	abcdef	xyz
+6	abcdef	abde	abc
+3	abd	def	defg
+0	abde	xyz	def
+1	def	defg	abcdef
+2	defg	abd	efg
+5	xyz	abc	abd
+select * from t1 order by col3;
+col1	col2	col3	col4
+NULL	NULL	NULL	NULL
+5	xyz	abc	abd
+4	abc	abcdef	xyz
+2	defg	abd	efg
+6	abcdef	abde	abc
+3	abd	def	defg
+1	def	defg	abcdef
+0	abde	xyz	def
+select * from t1 order by col4;
+col1	col2	col3	col4
+NULL	NULL	NULL	NULL
+6	abcdef	abde	abc
+1	def	defg	abcdef
+5	xyz	abc	abd
+0	abde	xyz	def
+3	abd	def	defg
+2	defg	abd	efg
+4	abc	abcdef	xyz
+create table t2 like t1;
+insert into t2 select * from t1;
+explain select * from t1 where col1 > (select max(col1) from t2 where col2 > 'abc' and col2 < 'def');
+id	select_type	table	type	possible_keys	key	key_len	ref	rows	Extra
+1	PRIMARY	t1	range	idx_col1,idx_col12	idx_col1	5	NULL	6	Using where with pushed condition
+2	SUBQUERY	t2	index	idx_col2	idx_col12	18	NULL	8	Using where with pushed condition; Using index
+select * from t1 where col1 > (select max(col1) from t2 where col2 > 'abc' and col2 < 'def');
+col1	col2	col3	col4
+[Note] SequoiaDB: Query message: condition[{ "$and": [ { "col2": { "$gt": "abc" } }, { "col2": { "$lt": "def" } } ] }], selector[{}], order_by[{ "col1": 1, "col2": 1 }], hint[{ "": "idx_col12" }], limit[-1], offset[0], table[explain_direct_sort_27686.t2]
+[Note] SequoiaDB: Query message: condition[{ "col1": { "$gt": 6 } }], selector[{}], order_by[{ "col1": 1 }], hint[{ "": "idx_col1" }], limit[-1], offset[0], table[explain_direct_sort_27686.t1]
+explain select * from t1 where col1 > (select max(col1) from t2 where col2 > 'abc' and col2 < 'def') order by col1;
+id	select_type	table	type	possible_keys	key	key_len	ref	rows	Extra
+1	PRIMARY	t1	range	idx_col1,idx_col12	idx_col1	5	NULL	6	Using where with pushed condition
+2	SUBQUERY	t2	index	idx_col2	idx_col12	18	NULL	8	Using where with pushed condition; Using index
+select * from t1 where col1 > (select max(col1) from t2 where col2 > 'abc' and col2 < 'def') order by col1;
+col1	col2	col3	col4
+[Note] SequoiaDB: Query message: condition[{ "$and": [ { "col2": { "$gt": "abc" } }, { "col2": { "$lt": "def" } } ] }], selector[{}], order_by[{ "col1": 1, "col2": 1 }], hint[{ "": "idx_col12" }], limit[-1], offset[0], table[explain_direct_sort_27686.t2]
+[Note] SequoiaDB: Query message: condition[{ "col1": { "$gt": 6 } }], selector[{}], order_by[{ "col1": 1 }], hint[{ "": "idx_col1" }], limit[-1], offset[0], table[explain_direct_sort_27686.t1]
+explain select * from t1 where col1 > (select max(col1) from t2 where col2 > 'abc' and col2 < 'def') order by col2;
+id	select_type	table	type	possible_keys	key	key_len	ref	rows	Extra
+1	PRIMARY	t1	range	idx_col1,idx_col12	idx_col1	5	NULL	6	Using where with pushed condition; Using filesort
+2	SUBQUERY	t2	index	idx_col2	idx_col12	18	NULL	8	Using where with pushed condition; Using index
+select * from t1 where col1 > (select max(col1) from t2 where col2 > 'abc' and col2 < 'def') order by col2;
+col1	col2	col3	col4
+[Note] SequoiaDB: Query message: condition[{ "$and": [ { "col2": { "$gt": "abc" } }, { "col2": { "$lt": "def" } } ] }], selector[{}], order_by[{ "col1": 1, "col2": 1 }], hint[{ "": "idx_col12" }], limit[-1], offset[0], table[explain_direct_sort_27686.t2]
+[Note] SequoiaDB: Query message: condition[{ "col1": { "$gt": 6 } }], selector[{}], order_by[{ "col1": 1 }], hint[{ "": "idx_col1" }], limit[-1], offset[0], table[explain_direct_sort_27686.t1]
+explain select * from t1 where col1 > (select max(col1) from t2 where col2 > 'abc' and col2 < 'def') order by col3;
+id	select_type	table	type	possible_keys	key	key_len	ref	rows	Extra
+1	PRIMARY	t1	range	idx_col1,idx_col12	idx_col1	5	NULL	6	Using where with pushed condition; Using filesort
+2	SUBQUERY	t2	index	idx_col2	idx_col12	18	NULL	8	Using where with pushed condition; Using index
+select * from t1 where col1 > (select max(col1) from t2 where col2 > 'abc' and col2 < 'def') order by col3;
+col1	col2	col3	col4
+[Note] SequoiaDB: Query message: condition[{ "$and": [ { "col2": { "$gt": "abc" } }, { "col2": { "$lt": "def" } } ] }], selector[{}], order_by[{ "col1": 1, "col2": 1 }], hint[{ "": "idx_col12" }], limit[-1], offset[0], table[explain_direct_sort_27686.t2]
+[Note] SequoiaDB: Query message: condition[{ "col1": { "$gt": 6 } }], selector[{}], order_by[{ "col1": 1 }], hint[{ "": "idx_col1" }], limit[-1], offset[0], table[explain_direct_sort_27686.t1]
+explain select * from t1 where col1 > (select max(col1) from t2 where col2 > 'abc' and col2 < 'def') order by col2 desc;
+id	select_type	table	type	possible_keys	key	key_len	ref	rows	Extra
+1	PRIMARY	t1	range	idx_col1,idx_col12	idx_col1	5	NULL	6	Using where with pushed condition; Using filesort
+2	SUBQUERY	t2	index	idx_col2	idx_col12	18	NULL	8	Using where with pushed condition; Using index
+select * from t1 where col1 > (select max(col1) from t2 where col2 > 'abc' and col2 < 'def') order by col2 desc;
+col1	col2	col3	col4
+[Note] SequoiaDB: Query message: condition[{ "$and": [ { "col2": { "$gt": "abc" } }, { "col2": { "$lt": "def" } } ] }], selector[{}], order_by[{ "col1": 1, "col2": 1 }], hint[{ "": "idx_col12" }], limit[-1], offset[0], table[explain_direct_sort_27686.t2]
+[Note] SequoiaDB: Query message: condition[{ "col1": { "$gt": 6 } }], selector[{}], order_by[{ "col1": 1 }], hint[{ "": "idx_col1" }], limit[-1], offset[0], table[explain_direct_sort_27686.t1]
+drop table t1,t2;
+set session sequoiadb_debug_log=off;
+set session optimizer_switch=default;
+drop database explain_direct_sort_27686;

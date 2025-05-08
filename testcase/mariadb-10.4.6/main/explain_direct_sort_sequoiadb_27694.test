@@ -1,0 +1,80 @@
+#seqDB-27694 视图、虚拟表查询
+--source include/have_sequoiadb.inc
+--disable_warnings
+drop database if exists explain_direct_sort_27694;
+--enable_warnings
+create database explain_direct_sort_27694;
+drop database explain_direct_sort_27694;
+create database explain_direct_sort_27694;
+
+use explain_direct_sort_27694;
+set session sequoiadb_debug_log=on;
+set session optimizer_switch='mrr=on';
+
+--disable_warnings
+drop table if exists t1;
+--enable_warnings
+create table t1(
+col1 int,
+col2 varchar(10),
+col3 varchar(10),
+col4 varchar(10),
+key idx_col1(col1),
+key idx_col2(col2),
+key idx_col12(col1,col2),
+unique key uniq_idx4(col4)
+);
+insert into t1 values(null,null,null,null);
+insert into t1 values(6,'abcdef','abde','abc');
+insert into t1 values(1,'def','defg','abcdef');
+insert into t1 values(3,'abd','def','defg');
+insert into t1 values(0,'abde','xyz','def');
+insert into t1 values(5,'xyz','abc','efg');
+insert into t1 values(2,'defg','abd','abd');
+insert into t1 values(4,'abc','abcdef','xyz');
+select * from t1 order by col1;
+select * from t1 order by col2;
+select * from t1 order by col3;
+select * from t1 order by col4;
+
+#不指定order by
+create view v1 as select * from t1 where t1.col1 > 3;
+
+#指定order by为索引字段
+create view v2 as select * from t1 where t1.col1 > 3 order by t1.col1 desc;
+
+#指定order by为非索引字段
+create view v3 as select * from t1 where t1.col1 > 3 order by t1.col3 desc;
+
+#not mergable
+create view v4 as select * from t1 group by col1;
+
+explain select * from v1;
+select * from v1;
+--source include/query_pushdown_condition_sequoiadb.inc
+explain select * from v2;
+select * from v2;
+--source include/query_pushdown_condition_sequoiadb.inc
+explain select * from v3;
+select * from v3;
+--source include/query_pushdown_condition_sequoiadb.inc
+explain select * from v4 where col1 > 3;
+select * from v4 where col1 > 3;
+--source include/query_pushdown_condition_sequoiadb.inc
+
+#with as语句查询
+#不带order by条件
+explain with tmp as (select * from t1 where col2 in('abc','abd','def')) select * from tmp where tmp.col1 > 1;
+with tmp as (select * from t1 where col2 in('abc','abd','def')) select * from tmp where tmp.col1 > 1;
+--source include/query_pushdown_condition_sequoiadb.inc
+
+#带order by条件
+explain with tmp as (select * from t1 where col2 in('abc','abd','def')) select * from tmp where tmp.col1 > 1 order by col2;
+with tmp as (select * from t1 where col2 in('abc','abd','def')) select * from tmp where tmp.col1 > 1 order by col2;
+--source include/query_pushdown_condition_sequoiadb.inc
+drop table t1;
+
+set session sequoiadb_debug_log=off;
+set session optimizer_switch=default;
+drop database explain_direct_sort_27694;
+--source include/uninstall_sequoiadb.inc

@@ -1,0 +1,9 @@
+DROP TABLE IF EXISTS select_sequoiadb_26322;
+create table select_sequoiadb_26322(id int);
+SET SESSION TRANSACTION ISOLATION LEVEL READ COMMITTED;
+select * from select_sequoiadb_26322 ;
+id
+SET SESSION TRANSACTION ISOLATION LEVEL READ UNCOMMITTED;
+select * from select_sequoiadb_26322 ;
+id
+DROP TABLE select_sequoiadb_26322;

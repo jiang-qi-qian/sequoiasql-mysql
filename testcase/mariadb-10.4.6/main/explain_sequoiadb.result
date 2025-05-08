@@ -1,0 +1,23 @@
+CREATE DATABASE test_explain_sequoiadb;
+USE test_explain_sequoiadb;
+CREATE TABLE t1 ( id INT , c CHAR(16), INDEX(id,c) ) ;
+INSERT INTO t1 VALUES (5,'oe'),(9,'st'),(1,'tr'),(-1,'uoos'),(-9,'12'),(12,'hl'),(8,'ie'),(10,'now'),(1,'p7'),(18,'oe'),(-1,'tr'),(0,'tx');
+EXPLAIN SELECT * FROM t1 ORDER BY id DESC, c DESC;
+id	select_type	table	type	possible_keys	key	key_len	ref	rows	Extra
+1	SIMPLE	t1	index	NULL	id	22	NULL	12	Using index
+SELECT * FROM t1 ORDER BY id DESC, c DESC;
+id	c
+18	oe
+12	hl
+10	now
+9	st
+8	ie
+5	oe
+1	tr
+1	p7
+0	tx
+-1	uoos
+-1	tr
+-9	12
+DROP TABLE t1;
+DROP DATABASE test_explain_sequoiadb;

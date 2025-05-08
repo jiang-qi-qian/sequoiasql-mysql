@@ -1,0 +1,80 @@
+# restart
+drop database if exists statistics_trace_sequoiadb_33976;
+create database statistics_trace_sequoiadb_33976;
+drop database statistics_trace_sequoiadb_33976;
+create database statistics_trace_sequoiadb_33976;
+use statistics_trace_sequoiadb_33976;
+set session sequoiadb_debug_log = on;
+set session sequoiadb_secure_log = off;
+set session sequoiadb_share_log_output = on;
+CREATE TABLE t1 (a int,b varchar(4),key (a)) ENGINE=SequoiaDB;
+INSERT INTO t1 values (1,"a"),(2,"b");
+create table t2 (a int);
+insert into t2 values (1),(2);
+prepare stmt1 from 'refresh table t1,t2 stats';
+ERROR HY000: This command is not supported in the prepared statement protocol yet
+prepare stmt2 from 'flush table t1,t2';
+prepare stmt3 from 'select * from t1 join t2 on t1.a = t2.a';
+prepare stmt4 from 'analyze table t1,t2';
+prepare stmt5 from 'update t1 set a=1';
+prepare stmt6 from 'alter table t1 add index idx_ab(a,b)';
+show status like "sdb_share_deleted";
+Variable_name	Value
+sdb_share_deleted	0
+show status like "sdb_share_updated";
+Variable_name	Value
+sdb_share_updated	3
+execute prepare flush
+execute stmt2;
+[Note] Testcase: Operation log begin
+[Note] SequoiaDB: Sdb_share will be removed from the global bucket,Sql_str:flush table t1,t2, table_name:./statistics_trace_sequoiadb_33976/t1
+[Note] SequoiaDB: Sdb_share will be removed from the global bucket,Sql_str:flush table t1,t2, table_name:./statistics_trace_sequoiadb_33976/t2
+show status like "sdb_share_deleted";
+Variable_name	Value
+sdb_share_deleted	2
+execute prepare select
+execute stmt3;
+a	b	a
+1	a	1
+2	b	2
+[Note] Testcase: Operation log begin
+[Note] SequoiaDB: Sdb_share has marked expired in update_stats(),replace the Sdb_share in the bucket with a new one ,sql_str:select * from t1 join t2 on t1.a = t2.a , table_name:./statistics_trace_sequoiadb_33976/t1, current idx stats map:0
+[Note] SequoiaDB: cl get index stat static on ensure_index_stat(),table_name:t1 ,key_name:a, sql_str:select * from t1 join t2 on t1.a = t2.a, rc :40356
+[Note] SequoiaDB: The index stat is invalid. key_name:a, Sdb_share has marked expired in ensure_index_stat(), replace the Sdb_share in the bucket with a new one ,sql_str:select * from t1 join t2 on t1.a = t2.a , table_name:./statistics_trace_sequoiadb_33976/t1, current idx stats map :1.
+[Note] SequoiaDB: Sdb_share has marked expired in update_stats(),replace the Sdb_share in the bucket with a new one ,sql_str:select * from t1 join t2 on t1.a = t2.a , table_name:./statistics_trace_sequoiadb_33976/t2, current idx stats map:0
+[Note] SequoiaDB: Query message: condition[{ "a": { "$isnull": 0 } }], selector[{}], order_by[{}], hint[{}], limit[-1], offset[0], table[statistics_trace_sequoiadb_33976.t2]
+[Note] SequoiaDB: Query message: condition[{ "a": { "$et": 1 } }], selector[{}], order_by[{ "a": 1 }], hint[{ "": "a" }], limit[-1], offset[0], table[statistics_trace_sequoiadb_33976.t1]
+[Note] SequoiaDB: Query message: condition[{ "a": { "$et": 2 } }], selector[{}], order_by[{ "a": 1 }], hint[{ "": "a" }], limit[-1], offset[0], table[statistics_trace_sequoiadb_33976.t1]
+show status like "sdb_share_updated";
+Variable_name	Value
+sdb_share_updated	6
+execute prepare analyze
+execute stmt4;
+Table	Op	Msg_type	Msg_text
+statistics_trace_sequoiadb_33976.t1	analyze	status	OK
+statistics_trace_sequoiadb_33976.t2	analyze	status	OK
+[Note] Testcase: Operation log begin
+[Note] SequoiaDB: Sdb_share will be removed from the global bucket,Sql_str:analyze table t1,t2, table_name:./statistics_trace_sequoiadb_33976/t1
+[Note] SequoiaDB: Sdb_share will be removed from the global bucket,Sql_str:analyze table t1,t2, table_name:./statistics_trace_sequoiadb_33976/t2
+show status like "sdb_share_deleted";
+Variable_name	Value
+sdb_share_deleted	4
+execute prepare DML
+execute stmt5;
+[Note] Testcase: Operation log begin
+[Note] SequoiaDB: Sdb_share has marked expired in update_stats(),replace the Sdb_share in the bucket with a new one ,sql_str:update t1 set a=1 , table_name:./statistics_trace_sequoiadb_33976/t1, current idx stats map:0
+[Note] SequoiaDB: cl get index stat static on ensure_index_stat(),table_name:t1 ,key_name:a, sql_str:update t1 set a=1, rc :0
+[Note] SequoiaDB: The index stat is invalid. key_name:a, Sdb_share has marked expired in ensure_index_stat(), replace the Sdb_share in the bucket with a new one ,sql_str:update t1 set a=1 , table_name:./statistics_trace_sequoiadb_33976/t1, current idx stats map :1.
+[Note] SequoiaDB: optimizer pushdown autocommit: 1
+[Note] SequoiaDB: optimizer update: 1, rule: [{ "$set": { "a": 1 } }], condition: [{}], table: statistics_trace_sequoiadb_33976.t1
+show status like "sdb_share_updated";
+Variable_name	Value
+sdb_share_updated	8
+execute prepare DDL
+execute stmt6;
+[Note] Testcase: Operation log begin
+[Note] SequoiaDB: Sdb_share will be removed from the global bucket,Sql_str:alter table t1 add index idx_ab(a,b), table_name:./statistics_trace_sequoiadb_33976/t1
+show status like "sdb_share_deleted";
+Variable_name	Value
+sdb_share_deleted	5
+drop database statistics_trace_sequoiadb_33976;

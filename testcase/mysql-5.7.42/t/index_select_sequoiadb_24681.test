@@ -1,0 +1,80 @@
+#seqDB-24681
+--source include/have_sequoiadb.inc
+--disable_warnings
+drop database if exists index_select_sequoiadb_24681;
+--enable_warnings
+
+create database index_select_sequoiadb_24681;
+drop database index_select_sequoiadb_24681;
+create database index_select_sequoiadb_24681;
+use index_select_sequoiadb_24681;
+set session sequoiadb_support_mode='';
+CREATE TABLE indoc_info  (
+  INDOC_NO bigint(20) NOT NULL COMMENT '收文编号',
+  DOCRC_UNIT_APLTN varchar(256) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL,
+  DPDC_NO bigint(20) NULL DEFAULT NULL,
+  DPDC_DOCNO varchar(120) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL,
+  DOCRC_TM datetime(0) NULL DEFAULT NULL,
+  OFCDC_HEDLN varchar(512) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL,
+  INDOC_CNT varchar(256) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL,
+  DOCRC_TYP_SPCF varchar(128) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL,
+  INDOC_ORG_ECD varchar(256) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL,
+  INDOC_DOCNO varchar(120) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL,
+  SPSR_UNIT_APLTN varchar(128) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL,
+  JNHDL_UNIT_APLTN varchar(128) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL,
+  PRSOT_EXTT_SPCF varchar(128) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL,
+  ARD_HDL_OPIN varchar(500) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL,
+  DRFT_APLTN varchar(64) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL,
+  DLWTH_RSLT_SPCF varchar(256) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL,
+  FILE_YR varchar(64) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL,
+  REGST_NM varchar(64) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL,
+  REGST_NO varchar(32) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL,
+  REG_TM datetime(0) NULL DEFAULT NULL,
+  DRFT_NO varchar(80) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL,
+  PRUS_STUS_APLTN varchar(500) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL,
+  DRFT_STUS_CD varchar(10) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL,
+  TASK_EXCTR_NM varchar(2000) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL,
+  INDOC_STUS_CD varchar(10) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL,
+  PRMHD_OPIN text CHARACTER SET utf8 COLLATE utf8_general_ci NULL,
+  EXPV_OPIN text CHARACTER SET utf8 COLLATE utf8_general_ci NULL,
+  DEPT_LEDSP_OPIN text CHARACTER SET utf8 COLLATE utf8_general_ci NULL,
+  HDL_RSLT_SPCF text CHARACTER SET utf8 COLLATE utf8_general_ci NULL,
+  HDL_OPIN text CHARACTER SET utf8 COLLATE utf8_general_ci NULL,
+  FRT_STRN_EXTDG_FLD text CHARACTER SET utf8 COLLATE utf8_general_ci NULL,
+  S2ND_STRN_EXTDG_FLD varchar(255) NULL DEFAULT NULL,
+  T3RD_STRN_EXTDG_FLD varchar(255) NULL DEFAULT NULL,
+  F4TH_STRN_EXTDG_FLD varchar(255) NULL DEFAULT NULL,
+  F5TH_STRN_EXTDG_FLD varchar(255) NULL DEFAULT NULL,
+  S6TH_STRN_EXTDG_FLD varchar(255) NULL DEFAULT NULL,
+  S7TH_STRN_EXTDG_FLD varchar(255) NULL DEFAULT NULL,
+  E8TH_STRN_EXTDG_FLD varchar(255) NULL DEFAULT NULL,
+  N9TH_STRN_EXTDG_FLD varchar(255) NULL DEFAULT NULL,
+  T10TH_STRN_EXTDG_FLD varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL,
+  ATCH_APLTN varchar(1024) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL,
+  ATCH_NO varchar(1024) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL,
+  REMRK varchar(512) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL,
+  E11TH_STRN_EXT_FLD varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL,
+  CURNT_APVER_NO text CHARACTER SET utf8 COLLATE utf8_general_ci NULL,
+  ORG_ECD varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL,
+  PRIMARY KEY (INDOC_NO) USING BTREE,
+  INDEX INDOC_ORG_ECD(INDOC_ORG_ECD, INDOC_STUS_CD) USING BTREE
+) ENGINE = SequoiaDB;
+show index from indoc_info;
+#导入测试数据
+source ./std_data/indoc_info_data.sql;
+select count(*) from indoc_info;
+#单个索引字段带有null值查询时，检查结果正确性
+select count(*) from indoc_info where indoc_org_ecd is null;
+select count(*) from indoc_info where indoc_docno is null;
+#联合索引字段带有null值查询时，检查结果正确性
+select count(*) from indoc_info where indoc_org_ecd is null and indoc_docno is null;
+select count(*) from indoc_info where indoc_org_ecd is null or indoc_docno is null;
+#单个索引字段带有空字符串''查询时，检查结果正确性
+select count(*) from indoc_info where indoc_org_ecd = '';
+#联合索引字段同时带有null值和空字符串''查询时，检查结果正确性
+select count(*) from indoc_info where indoc_org_ecd is null or indoc_org_ecd = '';
+select count(*) from indoc_info where indoc_docno is null or indoc_org_ecd = '';
+select count(*) from indoc_info where (indoc_org_ecd is null or indoc_org_ecd = '') AND (indoc_docno = '0' or indoc_docno is null );
+
+drop database index_select_sequoiadb_24681;
+--source include/uninstall_sequoiadb.inc

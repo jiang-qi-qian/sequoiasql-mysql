@@ -1,0 +1,29 @@
+DROP DATABASE IF EXISTS metasync_sql_pushdown;
+SHOW CREATE DATABASE metasync_sql_pushdown;
+ERROR 42000: Unknown database 'metasync_sql_pushdown'
+SET SESSION sequoiadb_sql_push_down = ON;
+CREATE DATABASE metasync_sql_pushdown;
+USE metasync_sql_pushdown;
+CREATE TABLE t1 ( id INT, name CHAR(16) );
+SET SESSION sequoiadb_sql_push_down = ON;
+USE metasync_sql_pushdown;
+/*+sql_pushdown=sdb*/ SELECT * FROM metasync_sql_pushdown.t1 ORDER BY id;
+id	name
+INSERT INTO metasync_sql_pushdown.t1 VALUES (1,'Joe'),(2,'Bob'),(3,'Rose');
+/*+sql_pushdown=sdb*/ SELECT * FROM metasync_sql_pushdown.t1 ORDER BY id;
+id	name
+1	Joe
+2	Bob
+3	Rose
+INSERT INTO metasync_sql_pushdown.t1 VALUES (4,'Mary');
+/*+sql_pushdown=sdb*/ SELECT * FROM metasync_sql_pushdown.t1 ORDER BY id;
+id	name
+1	Joe
+2	Bob
+3	Rose
+4	Mary
+DROP DATABASE metasync_sql_pushdown;
+SET SESSION sequoiadb_sql_push_down = default;
+SHOW CREATE DATABASE metasync_sql_pushdown;
+ERROR 42000: Unknown database 'metasync_sql_pushdown'
+SET SESSION sequoiadb_sql_push_down = default;

@@ -1,0 +1,50 @@
+# seqDB-30080
+--source include/have_sequoiadb.inc
+--source suite/metadata_sync_sequoiadb/inc/insts_connect_sequoiadb.inc
+connection conn1;
+
+--disable_warnings
+drop database if exists ddl_temporary_table_sequoiadb_01;
+drop database if exists ddl_temporary_table_sequoiadb_02;
+--enable_warnings
+
+# 准备表和数据
+create database ddl_temporary_table_sequoiadb_01;
+use ddl_temporary_table_sequoiadb_01;
+create temporary table tmp_t1(a int);
+insert into tmp_t1 values(1);
+create table normal_t1 (a int) engine = innodb;
+insert into normal_t1 values(1);
+
+create database ddl_temporary_table_sequoiadb_02;
+use ddl_temporary_table_sequoiadb_02;
+drop database ddl_temporary_table_sequoiadb_02;
+
+
+set session default_tmp_storage_engine = innodb;
+set session default_storage_engine = innodb;
+--source suite/metadata_sync_sequoiadb/inc/ddl_temporary_table_sequoiadb.inc
+
+set session default_tmp_storage_engine = sequoiadb;
+set session default_storage_engine = sequoiadb;
+--source suite/metadata_sync_sequoiadb/inc/ddl_temporary_table_sequoiadb.inc
+
+set session default_tmp_storage_engine = innodb;
+set session default_storage_engine = sequoiadb;
+--source suite/metadata_sync_sequoiadb/inc/ddl_temporary_table_sequoiadb.inc
+
+set session default_tmp_storage_engine = sequoiadb;
+set session default_storage_engine = innodb;
+--source suite/metadata_sync_sequoiadb/inc/ddl_temporary_table_sequoiadb.inc
+
+set session default_tmp_storage_engine = default;
+set session default_storage_engine = default;
+
+--disable_warnings
+drop database if exists ddl_temporary_table_sequoiadb_01;
+drop database if exists ddl_temporary_table_sequoiadb_02;
+--enable_warnings
+
+--source suite/metadata_sync_sequoiadb/inc/insts_disconnect_sequoiadb.inc
+--source include/uninstall_sequoiadb.inc
+

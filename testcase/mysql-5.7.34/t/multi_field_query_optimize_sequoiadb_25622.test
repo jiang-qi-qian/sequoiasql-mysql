@@ -1,0 +1,227 @@
+#seqDB-25622 多表多字段关联查询,同时带有范围查询
+--source include/have_sequoiadb.inc
+--disable_warnings
+drop database if exists multi_field_query_optimize_25622;
+--enable_warnings
+create database multi_field_query_optimize_25622;
+drop database multi_field_query_optimize_25622;
+create database multi_field_query_optimize_25622;
+
+use multi_field_query_optimize_25622;
+set session optimizer_switch='mrr=on,mrr_cost_based=on,block_nested_loop=on,batched_key_access=on';
+set session sequoiadb_debug_log=on;
+create table t1(a int,b int);
+create table t2(a int,b int,key union_ab4(a,b));
+insert into t1 values(1,1),(2,2),(3,3),(4,4),(5,5),(1,12),(6,3),(10,5),(10,10),(11,4),(11,5),(12,12);
+insert into t2 values(1,1),(2,2),(3,3),(4,4),(5,5),(1,12),(6,3),(10,5),(10,10),(11,4),(11,5),(12,12);
+#a范围:[1,10],b范围:b<=10
+explain select * from t1,t2 where t1.a = t2.a and t1.b = t2.b and t1.a>=1 and t1.a<=10 and t1.b<=10;
+--sorted_result
+select * from t1,t2 where t1.a = t2.a and t1.b = t2.b and t1.a>=1 and t1.a<=10 and t1.b<=10;
+--source include/query_pushdown_condition_sequoiadb.inc
+#a范围:(1,10],b范围:b<=10
+explain select * from t1,t2 where t1.a = t2.a and t1.b = t2.b and t1.a>1 and t1.a<=10 and t1.b<=10;
+--sorted_result
+select * from t1,t2 where t1.a = t2.a and t1.b = t2.b and t1.a>1 and t1.a<=10 and t1.b<=10;
+--source include/query_pushdown_condition_sequoiadb.inc
+#a范围:[1,10),b范围:b<=10
+explain select * from t1,t2 where t1.a = t2.a and t1.b = t2.b and t1.a>=1 and t1.a<10 and t1.b<=10;
+--sorted_result
+select * from t1,t2 where t1.a = t2.a and t1.b = t2.b and t1.a>=1 and t1.a<10 and t1.b<=10;
+--source include/query_pushdown_condition_sequoiadb.inc
+#a范围:(1,10),b范围:b<=10
+explain select * from t1,t2 where t1.a = t2.a and t1.b = t2.b and t1.a>1 and t1.a<10 and t1.b<=10;
+--sorted_result
+select * from t1,t2 where t1.a = t2.a and t1.b = t2.b and t1.a>1 and t1.a<10 and t1.b<=10;
+--source include/query_pushdown_condition_sequoiadb.inc
+#a范围:[1,10],b范围:b<10
+explain select * from t1,t2 where t1.a = t2.a and t1.b = t2.b and t1.a>=1 and t1.a<=10 and t1.b<10;
+--sorted_result
+select * from t1,t2 where t1.a = t2.a and t1.b = t2.b and t1.a>=1 and t1.a<=10 and t1.b<10;
+--source include/query_pushdown_condition_sequoiadb.inc
+#a范围:(1,10],b范围:b<10
+explain select * from t1,t2 where t1.a = t2.a and t1.b = t2.b and t1.a>1 and t1.a<=10 and t1.b<10;
+--sorted_result
+select * from t1,t2 where t1.a = t2.a and t1.b = t2.b and t1.a>1 and t1.a<=10 and t1.b<10;
+--source include/query_pushdown_condition_sequoiadb.inc
+#a范围:[1,10),b范围:b<10
+explain select * from t1,t2 where t1.a = t2.a and t1.b = t2.b and t1.a>=1 and t1.a<10 and t1.b<10;
+--sorted_result
+select * from t1,t2 where t1.a = t2.a and t1.b = t2.b and t1.a>=1 and t1.a<10 and t1.b<10;
+--source include/query_pushdown_condition_sequoiadb.inc
+#a范围:(1,10),b范围:b<10
+explain select * from t1,t2 where t1.a = t2.a and t1.b = t2.b and t1.a>1 and t1.a<10 and t1.b<10;
+--sorted_result
+select * from t1,t2 where t1.a = t2.a and t1.b = t2.b and t1.a>1 and t1.a<10 and t1.b<10;
+--source include/query_pushdown_condition_sequoiadb.inc
+#a范围:[1,10],b范围:[5,10]
+explain select * from t1,t2 where t1.a = t2.a and t1.b = t2.b and t1.a>=1 and t1.a<=10 and t1.b>=5 and t1.b<=10;
+--sorted_result
+select * from t1,t2 where t1.a = t2.a and t1.b = t2.b and t1.a>=1 and t1.a<=10 and t1.b>=5 and t1.b<=10;
+--source include/query_pushdown_condition_sequoiadb.inc
+#a范围:[1,10],b范围:(5,10]
+explain select * from t1,t2 where t1.a = t2.a and t1.b = t2.b and t1.a>=1 and t1.a<=10 and t1.b>5 and t1.b<=10;
+--sorted_result
+select * from t1,t2 where t1.a = t2.a and t1.b = t2.b and t1.a>=1 and t1.a<=10 and t1.b>5 and t1.b<=10;
+--source include/query_pushdown_condition_sequoiadb.inc
+#a范围:[1,10],b范围:[5,10)
+explain select * from t1,t2 where t1.a = t2.a and t1.b = t2.b and t1.a>=1 and t1.a<=10 and t1.b>=5 and t1.b<10;
+--sorted_result
+select * from t1,t2 where t1.a = t2.a and t1.b = t2.b and t1.a>=1 and t1.a<=10 and t1.b>=5 and t1.b<10;
+--source include/query_pushdown_condition_sequoiadb.inc
+#a范围:[1,10],b范围:(5,10)
+explain select * from t1,t2 where t1.a = t2.a and t1.b = t2.b and t1.a>=1 and t1.a<=10 and t1.b>5 and t1.b<10;
+--sorted_result
+select * from t1,t2 where t1.a = t2.a and t1.b = t2.b and t1.a>=1 and t1.a<=10 and t1.b>5 and t1.b<10;
+--source include/query_pushdown_condition_sequoiadb.inc
+#a范围:(1,10],b范围:(5,10]
+explain select * from t1,t2 where t1.a = t2.a and t1.b = t2.b and t1.a>1 and t1.a<=10 and t1.b>5 and t1.b<=10;
+--sorted_result
+select * from t1,t2 where t1.a = t2.a and t1.b = t2.b and t1.a>1 and t1.a<=10 and t1.b>5 and t1.b<=10;
+--source include/query_pushdown_condition_sequoiadb.inc
+#a范围:(1,10],b范围:[5,10)
+explain select * from t1,t2 where t1.a = t2.a and t1.b = t2.b and t1.a>1 and t1.a<=10 and t1.b>=5 and t1.b<10;
+--sorted_result
+select * from t1,t2 where t1.a = t2.a and t1.b = t2.b and t1.a>1 and t1.a<=10 and t1.b>=5 and t1.b<10;
+--source include/query_pushdown_condition_sequoiadb.inc
+#a范围:[1,10),b范围:(5,10]
+explain select * from t1,t2 where t1.a = t2.a and t1.b = t2.b and t1.a>=1 and t1.a<10 and t1.b>5 and t1.b<=10;
+--sorted_result
+select * from t1,t2 where t1.a = t2.a and t1.b = t2.b and t1.a>=1 and t1.a<10 and t1.b>5 and t1.b<=10;
+--source include/query_pushdown_condition_sequoiadb.inc
+#a范围:[1,10),b范围:[5,10)
+explain select * from t1,t2 where t1.a = t2.a and t1.b = t2.b and t1.a>=1 and t1.a<10 and t1.b>=5 and t1.b<10;
+--sorted_result
+select * from t1,t2 where t1.a = t2.a and t1.b = t2.b and t1.a>=1 and t1.a<10 and t1.b>=5 and t1.b<10;
+--source include/query_pushdown_condition_sequoiadb.inc
+#a范围:(1,10),b范围:(5,10]
+explain select * from t1,t2 where t1.a = t2.a and t1.b = t2.b and t1.a>1 and t1.a<10 and t1.b>5 and t1.b<=10;
+--sorted_result
+select * from t1,t2 where t1.a = t2.a and t1.b = t2.b and t1.a>1 and t1.a<10 and t1.b>5 and t1.b<=10;
+--source include/query_pushdown_condition_sequoiadb.inc
+#a范围:(1,10),b范围:[5,10)
+explain select * from t1,t2 where t1.a = t2.a and t1.b = t2.b and t1.a>1 and t1.a<10 and t1.b>=5 and t1.b<10;
+--sorted_result
+select * from t1,t2 where t1.a = t2.a and t1.b = t2.b and t1.a>1 and t1.a<10 and t1.b>=5 and t1.b<10;
+--source include/query_pushdown_condition_sequoiadb.inc
+#a范围:[1,10],b范围:b<=10
+explain select * from t1,t2 where t1.a = t2.a and t1.b = t2.b and (t1.a>=1 and t1.a<=10) or t1.b<=10;
+--sorted_result
+select * from t1,t2 where t1.a = t2.a and t1.b = t2.b and (t1.a>=1 and t1.a<=10) or t1.b<=10;
+--source include/query_pushdown_condition_sequoiadb.inc
+#a范围:(1,10],b范围:b<=10
+explain select * from t1,t2 where t1.a = t2.a and t1.b = t2.b and (t1.a>1 and t1.a<=10) or t1.b<=10;
+--sorted_result
+select * from t1,t2 where t1.a = t2.a and t1.b = t2.b and (t1.a>1 and t1.a<=10) or t1.b<=10;
+--source include/query_pushdown_condition_sequoiadb.inc
+#a范围:(1,10),b范围:b<=10
+explain select * from t1,t2 where t1.a = t2.a and t1.b = t2.b and (t1.a>1 and t1.a<10) or t1.b<=10;
+--sorted_result
+select * from t1,t2 where t1.a = t2.a and t1.b = t2.b and (t1.a>1 and t1.a<10) or t1.b<=10;
+--source include/query_pushdown_condition_sequoiadb.inc
+#a范围:[1,10),b范围:b<=10
+explain select * from t1,t2 where t1.a = t2.a and t1.b = t2.b and (t1.a>=1 and t1.a<10) or t1.b<=10;
+--sorted_result
+select * from t1,t2 where t1.a = t2.a and t1.b = t2.b and (t1.a>=1 and t1.a<10) or t1.b<=10;
+--source include/query_pushdown_condition_sequoiadb.inc
+#a范围:[1,10],b范围:b<10
+explain select * from t1,t2 where t1.a = t2.a and t1.b = t2.b and (t1.a>=1 and t1.a<=10) or t1.b<10;
+--sorted_result
+select * from t1,t2 where t1.a = t2.a and t1.b = t2.b and (t1.a>=1 and t1.a<=10) or t1.b<10;
+--source include/query_pushdown_condition_sequoiadb.inc
+#a范围:(1,10],b范围:b<10
+explain select * from t1,t2 where t1.a = t2.a and t1.b = t2.b and (t1.a>1 and t1.a<=10) or t1.b<10;
+--sorted_result
+select * from t1,t2 where t1.a = t2.a and t1.b = t2.b and (t1.a>1 and t1.a<=10) or t1.b<10;
+--source include/query_pushdown_condition_sequoiadb.inc
+#a范围:(1,10),b范围:b<10
+explain select * from t1,t2 where t1.a = t2.a and t1.b = t2.b and (t1.a>1 and t1.a<10) or t1.b<10;
+--sorted_result
+select * from t1,t2 where t1.a = t2.a and t1.b = t2.b and (t1.a>1 and t1.a<10) or t1.b<10;
+--source include/query_pushdown_condition_sequoiadb.inc
+#a范围:[1,10),b范围:b<=10
+explain select * from t1,t2 where t1.a = t2.a and t1.b = t2.b and (t1.a>=1 and t1.a<10) or t1.b<10;
+--sorted_result
+select * from t1,t2 where t1.a = t2.a and t1.b = t2.b and (t1.a>=1 and t1.a<10) or t1.b<10;
+--source include/query_pushdown_condition_sequoiadb.inc
+#范围：((t1.a>1 and t1.a<5 and t1.b<10) or (t1.a>5 and t1.b>10))
+explain select * from t1,t2 where t1.a = t2.a and t1.b = t2.b and ((t1.a>1 and t1.a<5 and t1.b<10) or (t1.a>5 and t1.b>10));
+--sorted_result
+select * from t1,t2 where t1.a = t2.a and t1.b = t2.b and ((t1.a>1 and t1.a<5 and t1.b<10) or (t1.a>5 and t1.b>10));
+--source include/query_pushdown_condition_sequoiadb.inc
+#范围：((t1.a>=1 and t1.a<5 and t1.b<10) or (t1.a>5 and t1.b>10))
+explain select * from t1,t2 where t1.a = t2.a and t1.b = t2.b and ((t1.a>=1 and t1.a<5 and t1.b<10) or (t1.a>5 and t1.b>10));
+--sorted_result
+select * from t1,t2 where t1.a = t2.a and t1.b = t2.b and ((t1.a>=1 and t1.a<5 and t1.b<10) or (t1.a>5 and t1.b>10));
+--source include/query_pushdown_condition_sequoiadb.inc
+#范围：((t1.a>1 and t1.a<5 and t1.b<10) or (t1.a>=5 and t1.b>10))
+explain select * from t1,t2 where t1.a = t2.a and t1.b = t2.b and ((t1.a>1 and t1.a<5 and t1.b<10) or (t1.a>=5 and t1.b>10));
+--sorted_result
+select * from t1,t2 where t1.a = t2.a and t1.b = t2.b and ((t1.a>1 and t1.a<5 and t1.b<10) or (t1.a>=5 and t1.b>10));
+--source include/query_pushdown_condition_sequoiadb.inc
+#范围：((t1.a>=1 and t1.a<5 and t1.b<=10) or (t1.a>5 and t1.b>10))
+explain select * from t1,t2 where t1.a = t2.a and t1.b = t2.b and ((t1.a>=1 and t1.a<5 and t1.b<=10) or (t1.a>5 and t1.b>10));
+--sorted_result
+select * from t1,t2 where t1.a = t2.a and t1.b = t2.b and ((t1.a>=1 and t1.a<5 and t1.b<=10) or (t1.a>5 and t1.b>10));
+--source include/query_pushdown_condition_sequoiadb.inc
+#范围：((t1.a>1 and t1.a<5 and t1.b<10) or (t1.a>=5 and t1.b>=10))
+explain select * from t1,t2 where t1.a = t2.a and t1.b = t2.b and ((t1.a>1 and t1.a<5 and t1.b<10) or (t1.a>=5 and t1.b>=10));
+--sorted_result
+select * from t1,t2 where t1.a = t2.a and t1.b = t2.b and ((t1.a>1 and t1.a<5 and t1.b<10) or (t1.a>=5 and t1.b>=10));
+--source include/query_pushdown_condition_sequoiadb.inc
+#范围：((t1.a>=1 and t1.a<=5 and t1.b<=10) or (t1.a>=5 and t1.b>=10))
+explain select * from t1,t2 where t1.a = t2.a and t1.b = t2.b and ((t1.a>=1 and t1.a<=5 and t1.b<=10) or (t1.a>=5 and t1.b>=10));
+--sorted_result
+select * from t1,t2 where t1.a = t2.a and t1.b = t2.b and ((t1.a>=1 and t1.a<=5 and t1.b<=10) or (t1.a>=5 and t1.b>=10));
+--source include/query_pushdown_condition_sequoiadb.inc
+#范围：((t1.a>=1 and t1.a<=10) or (t1.b>=5 and t1.b<=10))
+explain select * from t1,t2 where t1.a = t2.a and t1.b = t2.b and ((t1.a>=1 and t1.a<=10) or (t1.b>=5 and t1.b<=10));
+--sorted_result
+select * from t1,t2 where t1.a = t2.a and t1.b = t2.b and (t1.a>=1 and t1.a<=10) or (t1.b>=5 and t1.b<=10);
+--source include/query_pushdown_condition_sequoiadb.inc
+#范围：(t1.a>1 and t1.a<=10) or (t1.b>=5 and t1.b<=10)
+explain select * from t1,t2 where t1.a = t2.a and t1.b = t2.b and (t1.a>1 and t1.a<=10) or (t1.b>=5 and t1.b<=10);
+--sorted_result
+select * from t1,t2 where t1.a = t2.a and t1.b = t2.b and (t1.a>1 and t1.a<=10) or (t1.b>=5 and t1.b<=10);
+--source include/query_pushdown_condition_sequoiadb.inc
+#范围：(t1.a>=1 and t1.a<10) or (t1.b>=5 and t1.b<=10)
+explain select * from t1,t2 where t1.a = t2.a and t1.b = t2.b and (t1.a>=1 and t1.a<10) or (t1.b>=5 and t1.b<=10);
+--sorted_result
+select * from t1,t2 where t1.a = t2.a and t1.b = t2.b and (t1.a>=1 and t1.a<10) or (t1.b>=5 and t1.b<=10);
+--source include/query_pushdown_condition_sequoiadb.inc
+#范围：(t1.a>1 and t1.a<10) or (t1.b>=5 and t1.b<10)
+explain select * from t1,t2 where t1.a = t2.a and t1.b = t2.b and (t1.a>1 and t1.a<10) or (t1.b>5 and t1.b<10);
+--sorted_result
+select * from t1,t2 where t1.a = t2.a and t1.b = t2.b and (t1.a>1 and t1.a<10) or (t1.b>5 and t1.b<10);
+--source include/query_pushdown_condition_sequoiadb.inc
+#范围：(t1.a>=1 and t1.a<=10) or (t1.b>=5 and t1.b<=10)
+explain select * from t1,t2 where t1.a = t2.a and t1.b = t2.b and (t1.a>=1 and t1.a<=10) or (t1.b>=5 and t1.b<=10);
+--sorted_result
+select * from t1,t2 where t1.a = t2.a and t1.b = t2.b and (t1.a>=1 and t1.a<=10) or (t1.b>=5 and t1.b<=10);
+--source include/query_pushdown_condition_sequoiadb.inc
+#范围：((t1.a>=1 and t1.a<=10) or (t1.b>=5 and t1.b<=10))
+explain select * from t1,t2 where t1.a = t2.a and t1.b = t2.b and ((t1.a>=1 and t1.a<=10) or (t1.b>=5 and t1.b<=10));
+--sorted_result
+select * from t1,t2 where t1.a = t2.a and t1.b = t2.b and ((t1.a>=1 and t1.a<=10) or (t1.b>=5 and t1.b<10));
+--source include/query_pushdown_condition_sequoiadb.inc
+#范围：((t1.a>1 and t1.a<=10) or (t1.b>=5 and t1.b<10))
+explain select * from t1,t2 where t1.a = t2.a and t1.b = t2.b and ((t1.a>1 and t1.a<=10) or (t1.b>=5 and t1.b<10));
+--sorted_result
+select * from t1,t2 where t1.a = t2.a and t1.b = t2.b and ((t1.a>1 and t1.a<=10) or (t1.b>=5 and t1.b<10));
+--source include/query_pushdown_condition_sequoiadb.inc
+#范围：((t1.a>=1 and t1.a<10) or (t1.b>=5 and t1.b<10))
+explain select * from t1,t2 where t1.a = t2.a and t1.b = t2.b and ((t1.a>=1 and t1.a<10) or (t1.b>=5 and t1.b<10));
+--sorted_result
+select * from t1,t2 where t1.a = t2.a and t1.b = t2.b and ((t1.a>=1 and t1.a<10) or (t1.b>=5 and t1.b<10));
+--source include/query_pushdown_condition_sequoiadb.inc
+#范围：((t1.a>1 and t1.a<10) or (t1.b>=5 and t1.b<10))
+explain select * from t1,t2 where t1.a = t2.a and t1.b = t2.b and ((t1.a>1 and t1.a<10) or (t1.b>=5 and t1.b<10));
+--sorted_result
+select * from t1,t2 where t1.a = t2.a and t1.b = t2.b and ((t1.a>1 and t1.a<10) or (t1.b>=5 and t1.b<10));
+--source include/query_pushdown_condition_sequoiadb.inc
+drop table t1,t2;
+set session optimizer_switch=default;
+set session sequoiadb_debug_log=off;
+
+drop database multi_field_query_optimize_25622;
+--source include/uninstall_sequoiadb.inc

@@ -1,0 +1,81 @@
+#seqDB-28512:filesort pushdown 访问计划测试
+#seqDB-28513:存储过程中的单表查询测试
+#seqDB-28514:direct_sort 可下压的场景使用其它存储引擎
+
+--source include/have_sequoiadb.inc
+--disable_warnings
+drop database if exists explain_direct_sort_28511;
+--enable_warnings
+create database explain_direct_sort_28511;
+drop database explain_direct_sort_28511;
+create database explain_direct_sort_28511;
+
+use explain_direct_sort_28511;
+set session sequoiadb_debug_log=on;
+set session optimizer_switch='mrr=on';
+--disable_warnings
+drop table if exists t1;
+--enable_warnings
+create table t1(
+col1 int,
+col2 varchar(10),
+col3 varchar(10),
+col4 varchar(10),
+key idx_col1(col1),
+key idx_col2(col2),
+key idx_col12(col1,col2),
+unique key uniq_idx4(col4)
+);
+insert into t1 values(6,'abcdef','abde','abc');
+insert into t1 values(1,'def','defg','abcdef');
+insert into t1 values(4,'abc','abcdef','xyz');
+insert into t1 values(0,'abde','xyz','def');
+insert into t1 values(5,'xyz','abc','efg');
+insert into t1 values(2,'defg','abd','abd');
+insert into t1 values(3,'abd','def','defg');
+insert into t1 values(null,null,null,null);
+select * from t1 order by col1;
+select * from t1 order by col2;
+select * from t1 order by col3;
+select * from t1 order by col4;
+
+#
+#seqDB-28512:filesort pushdown 访问计划测试
+#
+# explain && analyze
+# optimizer_switch
+explain select * from t1 where col1 > 1 and col1 < 3 or col1 = 5 order by col4;
+select * from t1 where col1 > 1 and col1 < 3 or col1 = 5 order by col4;
+explain format = json select * from t1 where col1 > 1 and col1 < 3 or col1 = 5 order by col4;
+analyze table t1;
+select * from t1 where col1 > 1 and col1 < 3 or col1 = 5 order by col4;
+# "r_total_time_ms" is hard to test
+# analyze format = json select * from t1 where col1 > 1 and col1 < 3 or col1 = 5 order by col4;
+set session optimizer_switch='optimizer_sort_pushdown=off';
+--replace_column 10 #
+explain select * from t1 where col1 > 1 and col1 < 3 or col1 = 5 order by col4;
+select * from t1 where col1 > 1 and col1 < 3 or col1 = 5 order by col4;
+
+#
+#seqDB-28513:存储过程中的单表查询测试
+#
+# procedure
+delimiter $;
+create procedure p1()
+begin
+select * from t1 where col1 > 1 and col1 < 3 or col1 = 5 order by col4;
+end $
+delimiter ;$
+call p1();
+--source include/query_pushdown_condition_sequoiadb.inc
+drop procedure p1;
+
+#
+#seqDB-28514:direct_sort 可下压的场景使用其它存储引擎
+#
+# others engines
+alter table t1 engine = memory;
+explain select * from t1 where col1 > 1 and col1 < 3 or col1 = 5 order by col4;
+
+drop table t1;
+drop database explain_direct_sort_28511;

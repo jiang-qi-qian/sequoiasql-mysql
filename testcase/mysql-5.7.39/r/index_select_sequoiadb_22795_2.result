@@ -1,0 +1,276 @@
+CREATE DATABASE index_select_sequoiadb_22795_2;
+use index_select_sequoiadb_22795_2;
+CREATE TABLE t1 (
+a INT,
+b CHAR(64)
+);
+CREATE TABLE t2 (
+a INT,
+b CHAR(64)
+);
+LOAD DATA INFILE '../../std_data/index_select_sequoiadb_1.dat' INTO TABLE t1(a,b);
+INSERT INTO t2 VALUES(6420,'pasdfghjklzxcvbnmQWERTYUIOPASDFGHJKLZXCVBN'),(48767,'a'),(2,'fghjklzxcvbnmQWERTYUIOPASDFGHJKLZXCVBNM'),(3,'b'),(4,'c'),(5,'d'),(6,'e'),(7,'f'),(8,'g'),(9,'h'),(10,'i'),(11,'ja'),(12,'y'),(13,'y'),(14,'t'),(15,'g');
+alter table t1 add PRIMARY KEY(a);
+alter table t1 add index b(b);
+alter table t1 add index ab(a,b);
+alter table t1 add index ba(b,a);
+SHOW CREATE TABLE t1;
+Table	Create Table
+t1	CREATE TABLE `t1` (
+  `a` int(11) NOT NULL,
+  `b` char(64) DEFAULT NULL,
+  PRIMARY KEY (`a`),
+  KEY `b` (`b`),
+  KEY `ab` (`a`,`b`),
+  KEY `ba` (`b`,`a`)
+) ENGINE=SequoiaDB DEFAULT CHARSET=latin1
+alter table t2 add PRIMARY KEY(a);
+alter table t2 add index b(b);
+alter table t2 add index ab(a,b);
+alter table t2 add index ba(b,a);
+SHOW CREATE TABLE t2;
+Table	Create Table
+t2	CREATE TABLE `t2` (
+  `a` int(11) NOT NULL,
+  `b` char(64) DEFAULT NULL,
+  PRIMARY KEY (`a`),
+  KEY `b` (`b`),
+  KEY `ab` (`a`,`b`),
+  KEY `ba` (`b`,`a`)
+) ENGINE=SequoiaDB DEFAULT CHARSET=latin1
+EXPLAIN SELECT * FROM t1,t2 where t1.a=t2.a;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t2	NULL	index	PRIMARY,ab	ab	69	NULL	#	100.00	Using index
+1	SIMPLE	t1	NULL	eq_ref	PRIMARY,ab	PRIMARY	4	index_select_sequoiadb_22795_2.t2.a	#	100.00	NULL
+Warnings:
+Note	1003	/* select#1 */ select `index_select_sequoiadb_22795_2`.`t1`.`a` AS `a`,`index_select_sequoiadb_22795_2`.`t1`.`b` AS `b`,`index_select_sequoiadb_22795_2`.`t2`.`a` AS `a`,`index_select_sequoiadb_22795_2`.`t2`.`b` AS `b` from `index_select_sequoiadb_22795_2`.`t1` join `index_select_sequoiadb_22795_2`.`t2` where (`index_select_sequoiadb_22795_2`.`t1`.`a` = `index_select_sequoiadb_22795_2`.`t2`.`a`)
+SELECT COUNT(*) FROM t1,t2 where t1.a=t2.a;
+COUNT(*)
+9
+[Note] SequoiaDB: Query message: condition[{ "a": { "$et": 48767 } }], selector[{}], order_by[{ "a": 1 }], hint[{ "": "PRIMARY" }], limit[-1], offset[0], table[index_select_sequoiadb_22795_2.t1]
+EXPLAIN SELECT * FROM t1,t2 where t1.b=t2.b;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t2	NULL	index	b,ba	ab	69	NULL	#	100.00	Using where with pushed condition (`index_select_sequoiadb_22795_2`.`t2`.`b` is not null); Using index
+1	SIMPLE	t1	NULL	ref	b,ba	ba	65	index_select_sequoiadb_22795_2.t2.b	#	100.00	Using index
+Warnings:
+Note	1003	/* select#1 */ select `index_select_sequoiadb_22795_2`.`t1`.`a` AS `a`,`index_select_sequoiadb_22795_2`.`t1`.`b` AS `b`,`index_select_sequoiadb_22795_2`.`t2`.`a` AS `a`,`index_select_sequoiadb_22795_2`.`t2`.`b` AS `b` from `index_select_sequoiadb_22795_2`.`t1` join `index_select_sequoiadb_22795_2`.`t2` where (`index_select_sequoiadb_22795_2`.`t1`.`b` = `index_select_sequoiadb_22795_2`.`t2`.`b`)
+SELECT COUNT(*) FROM t1,t2 where t1.b=t2.b;
+COUNT(*)
+1504
+[Note] SequoiaDB: Query message: condition[{ "b": { "$et": "y" } }], selector[{}], order_by[{ "b": 1, "a": 1 }], hint[{ "": "ba" }], limit[-1], offset[0], table[index_select_sequoiadb_22795_2.t1]
+EXPLAIN SELECT * FROM t1,t2 where t1.b=t2.b and t1.a=t2.a;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t2	NULL	index	PRIMARY,b,ab,ba	ab	69	NULL	#	100.00	Using index
+1	SIMPLE	t1	NULL	eq_ref	PRIMARY,b,ab,ba	PRIMARY	4	index_select_sequoiadb_22795_2.t2.a	#	10.00	Using where
+Warnings:
+Note	1003	/* select#1 */ select `index_select_sequoiadb_22795_2`.`t1`.`a` AS `a`,`index_select_sequoiadb_22795_2`.`t1`.`b` AS `b`,`index_select_sequoiadb_22795_2`.`t2`.`a` AS `a`,`index_select_sequoiadb_22795_2`.`t2`.`b` AS `b` from `index_select_sequoiadb_22795_2`.`t1` join `index_select_sequoiadb_22795_2`.`t2` where ((`index_select_sequoiadb_22795_2`.`t1`.`a` = `index_select_sequoiadb_22795_2`.`t2`.`a`) and (`index_select_sequoiadb_22795_2`.`t1`.`b` = `index_select_sequoiadb_22795_2`.`t2`.`b`))
+SELECT * FROM t1,t2 where t1.b=t2.b and t1.a=t2.a;
+a	b	a	b
+[Note] SequoiaDB: Query message: condition[{ "a": { "$et": 48767 } }], selector[{}], order_by[{ "a": 1 }], hint[{ "": "PRIMARY" }], limit[-1], offset[0], table[index_select_sequoiadb_22795_2.t1]
+DROP TABLE t1,t2;
+CREATE TABLE t1 (
+a CHAR(10),
+b FLOAT,
+c DATE
+);
+CREATE TABLE t2 (
+a CHAR(10),
+b FLOAT,
+c DATE
+);
+LOAD DATA INFILE '../../std_data/index_select_sequoiadb_5.dat' INTO TABLE t1 FIELDS TERMINATED BY ';';
+INSERT INTO t2 VALUES ('aa',11.1,'2021-9-8'),('ba',21.1,'2008-9-18'),('ca',31.1,'2008-9-19'),('da',41.1,'2008-9-18'),('ea',51.1,'2008-9-18'),('4ab272c58',16832.6,'1994-07-13'),('ga',71.1,'2008-9-12'),('58e694554',18220.3,'2008-9-21'),('ia',9.81,'2008-9-30'),('ja',10.61,'2008-9-27'),('ka',11.71,'2008-9-18'),('la',12.2,'2009-2-12'),('ma',18220.3,'2009-2-12'),('na',14.2,'2001-1-9'),('oa',15.2,'2017-9-8'),('pa',16.1,'2008-9-18'),('qa',17.1,'2012-1-18'),('ra',18.0,'2018-7-18'),('sa',19.1,'2011-11-11');
+alter table t1 add PRIMARY KEY(a);
+alter table t1 add index b(b);
+alter table t1 add index ab(a,b);
+alter table t1 add index bc(b,c);
+alter table t1 add index abc(a,b,c);
+SHOW CREATE TABLE t1;
+Table	Create Table
+t1	CREATE TABLE `t1` (
+  `a` char(10) NOT NULL,
+  `b` float DEFAULT NULL,
+  `c` date DEFAULT NULL,
+  PRIMARY KEY (`a`),
+  KEY `b` (`b`),
+  KEY `ab` (`a`,`b`),
+  KEY `bc` (`b`,`c`),
+  KEY `abc` (`a`,`b`,`c`)
+) ENGINE=SequoiaDB DEFAULT CHARSET=latin1
+alter table t2 add PRIMARY KEY(a);
+alter table t2 add index b(b);
+alter table t2 add index ab(a,b);
+alter table t2 add index bc(b,c);
+alter table t2 add index abc(a,b,c);
+SHOW CREATE TABLE t2;
+Table	Create Table
+t2	CREATE TABLE `t2` (
+  `a` char(10) NOT NULL,
+  `b` float DEFAULT NULL,
+  `c` date DEFAULT NULL,
+  PRIMARY KEY (`a`),
+  KEY `b` (`b`),
+  KEY `ab` (`a`,`b`),
+  KEY `bc` (`b`,`c`),
+  KEY `abc` (`a`,`b`,`c`)
+) ENGINE=SequoiaDB DEFAULT CHARSET=latin1
+EXPLAIN SELECT * FROM t1,t2 where t1.a=t2.a;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t2	NULL	index	PRIMARY,ab,abc	abc	19	NULL	#	100.00	Using index
+1	SIMPLE	t1	NULL	eq_ref	PRIMARY,ab,abc	PRIMARY	10	index_select_sequoiadb_22795_2.t2.a	#	100.00	NULL
+Warnings:
+Note	1003	/* select#1 */ select `index_select_sequoiadb_22795_2`.`t1`.`a` AS `a`,`index_select_sequoiadb_22795_2`.`t1`.`b` AS `b`,`index_select_sequoiadb_22795_2`.`t1`.`c` AS `c`,`index_select_sequoiadb_22795_2`.`t2`.`a` AS `a`,`index_select_sequoiadb_22795_2`.`t2`.`b` AS `b`,`index_select_sequoiadb_22795_2`.`t2`.`c` AS `c` from `index_select_sequoiadb_22795_2`.`t1` join `index_select_sequoiadb_22795_2`.`t2` where (`index_select_sequoiadb_22795_2`.`t1`.`a` = `index_select_sequoiadb_22795_2`.`t2`.`a`)
+SELECT * FROM t1,t2 where t1.a=t2.a;
+a	b	c	a	b	c
+4ab272c58	16832.6	1994-07-13	4ab272c58	16832.6	1994-07-13
+58e694554	18220.3	1990-12-09	58e694554	18220.3	2008-09-21
+[Note] SequoiaDB: Query message: condition[{ "a": { "$et": "sa" } }], selector[{}], order_by[{ "a": 1 }], hint[{ "": "PRIMARY" }], limit[-1], offset[0], table[index_select_sequoiadb_22795_2.t1]
+EXPLAIN SELECT * FROM t1,t2 where t1.b=t2.b;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t2	NULL	index	b,bc	abc	19	NULL	#	100.00	Using where with pushed condition (`index_select_sequoiadb_22795_2`.`t2`.`b` is not null); Using index
+1	SIMPLE	t1	NULL	ref	b,bc	bc	5	index_select_sequoiadb_22795_2.t2.b	#	100.00	NULL
+Warnings:
+Note	1003	/* select#1 */ select `index_select_sequoiadb_22795_2`.`t1`.`a` AS `a`,`index_select_sequoiadb_22795_2`.`t1`.`b` AS `b`,`index_select_sequoiadb_22795_2`.`t1`.`c` AS `c`,`index_select_sequoiadb_22795_2`.`t2`.`a` AS `a`,`index_select_sequoiadb_22795_2`.`t2`.`b` AS `b`,`index_select_sequoiadb_22795_2`.`t2`.`c` AS `c` from `index_select_sequoiadb_22795_2`.`t1` join `index_select_sequoiadb_22795_2`.`t2` where (`index_select_sequoiadb_22795_2`.`t1`.`b` = `index_select_sequoiadb_22795_2`.`t2`.`b`)
+SELECT * FROM t1,t2 where t1.b=t2.b;
+a	b	c	a	b	c
+1420933c3	17.1	2054-08-01	qa	17.1	2012-01-18
+4ab272c58	16832.6	1994-07-13	4ab272c58	16832.6	1994-07-13
+58e694554	18220.3	1990-12-09	58e694554	18220.3	2008-09-21
+58e694554	18220.3	1990-12-09	ma	18220.3	2009-02-12
+70c08b568	16832.6	2218-10-16	4ab272c58	16832.6	1994-07-13
+8ce7bbcb2	16832.6	2230-03-08	4ab272c58	16832.6	1994-07-13
+911f72ff6	21.1	2136-09-05	ba	21.1	2008-09-18
+e45f834a5	17.1	2059-11-27	qa	17.1	2012-01-18
+[Note] SequoiaDB: Query message: condition[{ "b": { "$et": 19.10000038146973 } }], selector[{}], order_by[{ "b": 1, "c": 1 }], hint[{ "": "bc" }], limit[-1], offset[0], table[index_select_sequoiadb_22795_2.t1]
+EXPLAIN SELECT * FROM t1,t2 where t1.a=t2.a and t1.b=t2.b;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t2	NULL	index	PRIMARY,b,ab,bc,abc	abc	19	NULL	#	100.00	Using index
+1	SIMPLE	t1	NULL	eq_ref	PRIMARY,b,ab,bc,abc	PRIMARY	10	index_select_sequoiadb_22795_2.t2.a	#	10.00	Using where
+Warnings:
+Note	1003	/* select#1 */ select `index_select_sequoiadb_22795_2`.`t1`.`a` AS `a`,`index_select_sequoiadb_22795_2`.`t1`.`b` AS `b`,`index_select_sequoiadb_22795_2`.`t1`.`c` AS `c`,`index_select_sequoiadb_22795_2`.`t2`.`a` AS `a`,`index_select_sequoiadb_22795_2`.`t2`.`b` AS `b`,`index_select_sequoiadb_22795_2`.`t2`.`c` AS `c` from `index_select_sequoiadb_22795_2`.`t1` join `index_select_sequoiadb_22795_2`.`t2` where ((`index_select_sequoiadb_22795_2`.`t1`.`b` = `index_select_sequoiadb_22795_2`.`t2`.`b`) and (`index_select_sequoiadb_22795_2`.`t1`.`a` = `index_select_sequoiadb_22795_2`.`t2`.`a`))
+SELECT * FROM t1,t2 where t1.a=t2.a and t1.b=t2.b;
+a	b	c	a	b	c
+4ab272c58	16832.6	1994-07-13	4ab272c58	16832.6	1994-07-13
+58e694554	18220.3	1990-12-09	58e694554	18220.3	2008-09-21
+[Note] SequoiaDB: Query message: condition[{ "a": { "$et": "sa" } }], selector[{}], order_by[{ "a": 1 }], hint[{ "": "PRIMARY" }], limit[-1], offset[0], table[index_select_sequoiadb_22795_2.t1]
+EXPLAIN SELECT * FROM t1,t2 where t1.b=t2.b and t1.c=t2.c;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t2	NULL	index	b,bc	abc	19	NULL	#	100.00	Using where with pushed condition ((`index_select_sequoiadb_22795_2`.`t2`.`b` is not null) and (`index_select_sequoiadb_22795_2`.`t2`.`c` is not null)); Using index
+1	SIMPLE	t1	NULL	ref	b,bc	bc	9	index_select_sequoiadb_22795_2.t2.b,index_select_sequoiadb_22795_2.t2.c	#	100.00	NULL
+Warnings:
+Note	1003	/* select#1 */ select `index_select_sequoiadb_22795_2`.`t1`.`a` AS `a`,`index_select_sequoiadb_22795_2`.`t1`.`b` AS `b`,`index_select_sequoiadb_22795_2`.`t1`.`c` AS `c`,`index_select_sequoiadb_22795_2`.`t2`.`a` AS `a`,`index_select_sequoiadb_22795_2`.`t2`.`b` AS `b`,`index_select_sequoiadb_22795_2`.`t2`.`c` AS `c` from `index_select_sequoiadb_22795_2`.`t1` join `index_select_sequoiadb_22795_2`.`t2` where ((`index_select_sequoiadb_22795_2`.`t1`.`c` = `index_select_sequoiadb_22795_2`.`t2`.`c`) and (`index_select_sequoiadb_22795_2`.`t1`.`b` = `index_select_sequoiadb_22795_2`.`t2`.`b`))
+SELECT * FROM t1,t2 where t1.b=t2.b and t1.c=t2.c;
+a	b	c	a	b	c
+4ab272c58	16832.6	1994-07-13	4ab272c58	16832.6	1994-07-13
+[Note] SequoiaDB: Query message: condition[{ "b": { "$et": 19.10000038146973 }, "c": { "$et": {"$date": "2011-11-11"} } }], selector[{}], order_by[{ "b": 1, "c": 1 }], hint[{ "": "bc" }], limit[-1], offset[0], table[index_select_sequoiadb_22795_2.t1]
+EXPLAIN SELECT * FROM t1,t2 where t1.a=t2.a and t1.b=t2.b and t1.c=t2.c;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t2	NULL	index	PRIMARY,b,ab,bc,abc	abc	19	NULL	#	100.00	Using index
+1	SIMPLE	t1	NULL	eq_ref	PRIMARY,b,ab,bc,abc	PRIMARY	10	index_select_sequoiadb_22795_2.t2.a	#	5.00	Using where
+Warnings:
+Note	1003	/* select#1 */ select `index_select_sequoiadb_22795_2`.`t1`.`a` AS `a`,`index_select_sequoiadb_22795_2`.`t1`.`b` AS `b`,`index_select_sequoiadb_22795_2`.`t1`.`c` AS `c`,`index_select_sequoiadb_22795_2`.`t2`.`a` AS `a`,`index_select_sequoiadb_22795_2`.`t2`.`b` AS `b`,`index_select_sequoiadb_22795_2`.`t2`.`c` AS `c` from `index_select_sequoiadb_22795_2`.`t1` join `index_select_sequoiadb_22795_2`.`t2` where ((`index_select_sequoiadb_22795_2`.`t1`.`c` = `index_select_sequoiadb_22795_2`.`t2`.`c`) and (`index_select_sequoiadb_22795_2`.`t1`.`b` = `index_select_sequoiadb_22795_2`.`t2`.`b`) and (`index_select_sequoiadb_22795_2`.`t1`.`a` = `index_select_sequoiadb_22795_2`.`t2`.`a`))
+SELECT * FROM t1,t2 where t1.a=t2.a and t1.b=t2.b and t1.c=t2.c;
+a	b	c	a	b	c
+4ab272c58	16832.6	1994-07-13	4ab272c58	16832.6	1994-07-13
+[Note] SequoiaDB: Query message: condition[{ "a": { "$et": "sa" } }], selector[{}], order_by[{ "a": 1 }], hint[{ "": "PRIMARY" }], limit[-1], offset[0], table[index_select_sequoiadb_22795_2.t1]
+DROP TABLE t1,t2;
+CREATE TABLE t1 (
+a INT,
+b ENUM('1','2','3','4','5'),
+c SET('a','b','c')
+);
+CREATE TABLE t2 (
+a INT,
+b ENUM('1','2','3','4','5'),
+c SET('a','b','c')
+);
+LOAD DATA INFILE '../../std_data/index_select_sequoiadb_2.dat' INTO TABLE t1 fields terminated by ';';
+INSERT INTO t2 VALUES (452528,1,'a,c'),(111,2,'a,b'),(222,5,'a,b,c'),(492926,3,'b'),(2,3,'a,b');
+alter table t1 add PRIMARY KEY(a);
+alter table t1 add index b(b);
+alter table t1 add index ab(a,b);
+alter table t1 add index bc(b,c);
+alter table t1 add index abc(a,b,c);
+SHOW CREATE TABLE t1;
+Table	Create Table
+t1	CREATE TABLE `t1` (
+  `a` int(11) NOT NULL,
+  `b` enum('1','2','3','4','5') DEFAULT NULL,
+  `c` set('a','b','c') DEFAULT NULL,
+  PRIMARY KEY (`a`),
+  KEY `b` (`b`),
+  KEY `ab` (`a`,`b`),
+  KEY `bc` (`b`,`c`),
+  KEY `abc` (`a`,`b`,`c`)
+) ENGINE=SequoiaDB DEFAULT CHARSET=latin1
+alter table t2 add PRIMARY KEY(a);
+alter table t2 add index b(b);
+alter table t2 add index ab(a,b);
+alter table t2 add index bc(b,c);
+alter table t2 add index abc(a,b,c);
+SHOW CREATE TABLE t2;
+Table	Create Table
+t2	CREATE TABLE `t2` (
+  `a` int(11) NOT NULL,
+  `b` enum('1','2','3','4','5') DEFAULT NULL,
+  `c` set('a','b','c') DEFAULT NULL,
+  PRIMARY KEY (`a`),
+  KEY `b` (`b`),
+  KEY `ab` (`a`,`b`),
+  KEY `bc` (`b`,`c`),
+  KEY `abc` (`a`,`b`,`c`)
+) ENGINE=SequoiaDB DEFAULT CHARSET=latin1
+EXPLAIN SELECT * FROM t1,t2 where t1.a=t2.a;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t2	NULL	index	PRIMARY,ab,abc	abc	8	NULL	#	100.00	Using index
+1	SIMPLE	t1	NULL	eq_ref	PRIMARY,ab,abc	PRIMARY	4	index_select_sequoiadb_22795_2.t2.a	#	100.00	NULL
+Warnings:
+Note	1003	/* select#1 */ select `index_select_sequoiadb_22795_2`.`t1`.`a` AS `a`,`index_select_sequoiadb_22795_2`.`t1`.`b` AS `b`,`index_select_sequoiadb_22795_2`.`t1`.`c` AS `c`,`index_select_sequoiadb_22795_2`.`t2`.`a` AS `a`,`index_select_sequoiadb_22795_2`.`t2`.`b` AS `b`,`index_select_sequoiadb_22795_2`.`t2`.`c` AS `c` from `index_select_sequoiadb_22795_2`.`t1` join `index_select_sequoiadb_22795_2`.`t2` where (`index_select_sequoiadb_22795_2`.`t1`.`a` = `index_select_sequoiadb_22795_2`.`t2`.`a`)
+SELECT * FROM t1,t2 where t1.a=t2.a;
+a	b	c	a	b	c
+452528	1	b,c	452528	1	a,c
+492926	3	b	492926	3	b
+[Note] SequoiaDB: Query message: condition[{ "a": { "$et": 492926 } }], selector[{}], order_by[{ "a": 1 }], hint[{ "": "PRIMARY" }], limit[-1], offset[0], table[index_select_sequoiadb_22795_2.t1]
+EXPLAIN SELECT * FROM t1,t2 where t1.b=t2.b;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t2	NULL	index	b,bc	abc	8	NULL	#	100.00	Using where with pushed condition (`index_select_sequoiadb_22795_2`.`t2`.`b` is not null); Using index
+1	SIMPLE	t1	NULL	ref	b,bc	bc	2	index_select_sequoiadb_22795_2.t2.b	#	100.00	NULL
+Warnings:
+Note	1003	/* select#1 */ select `index_select_sequoiadb_22795_2`.`t1`.`a` AS `a`,`index_select_sequoiadb_22795_2`.`t1`.`b` AS `b`,`index_select_sequoiadb_22795_2`.`t1`.`c` AS `c`,`index_select_sequoiadb_22795_2`.`t2`.`a` AS `a`,`index_select_sequoiadb_22795_2`.`t2`.`b` AS `b`,`index_select_sequoiadb_22795_2`.`t2`.`c` AS `c` from `index_select_sequoiadb_22795_2`.`t1` join `index_select_sequoiadb_22795_2`.`t2` where (`index_select_sequoiadb_22795_2`.`t1`.`b` = `index_select_sequoiadb_22795_2`.`t2`.`b`)
+SELECT COUNT(*) FROM t1,t2 where t1.b=t2.b;
+COUNT(*)
+52792
+[Note] SequoiaDB: Query message: condition[{ "b": { "$et": 5 } }], selector[{}], order_by[{ "b": 1, "c": 1 }], hint[{ "": "bc" }], limit[-1], offset[0], table[index_select_sequoiadb_22795_2.t1]
+EXPLAIN SELECT * FROM t1,t2 where t1.a=t2.a and t1.b=t2.b;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t2	NULL	index	PRIMARY,b,ab,bc,abc	abc	8	NULL	#	100.00	Using index
+1	SIMPLE	t1	NULL	eq_ref	PRIMARY,b,ab,bc,abc	PRIMARY	4	index_select_sequoiadb_22795_2.t2.a	#	20.00	Using where
+Warnings:
+Note	1003	/* select#1 */ select `index_select_sequoiadb_22795_2`.`t1`.`a` AS `a`,`index_select_sequoiadb_22795_2`.`t1`.`b` AS `b`,`index_select_sequoiadb_22795_2`.`t1`.`c` AS `c`,`index_select_sequoiadb_22795_2`.`t2`.`a` AS `a`,`index_select_sequoiadb_22795_2`.`t2`.`b` AS `b`,`index_select_sequoiadb_22795_2`.`t2`.`c` AS `c` from `index_select_sequoiadb_22795_2`.`t1` join `index_select_sequoiadb_22795_2`.`t2` where ((`index_select_sequoiadb_22795_2`.`t1`.`b` = `index_select_sequoiadb_22795_2`.`t2`.`b`) and (`index_select_sequoiadb_22795_2`.`t1`.`a` = `index_select_sequoiadb_22795_2`.`t2`.`a`))
+SELECT * FROM t1,t2 where t1.a=t2.a and t1.b=t2.b;
+a	b	c	a	b	c
+452528	1	b,c	452528	1	a,c
+492926	3	b	492926	3	b
+[Note] SequoiaDB: Query message: condition[{ "a": { "$et": 492926 } }], selector[{}], order_by[{ "a": 1 }], hint[{ "": "PRIMARY" }], limit[-1], offset[0], table[index_select_sequoiadb_22795_2.t1]
+EXPLAIN SELECT * FROM t1,t2 where t1.b=t2.b and t1.c=t2.c;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t2	NULL	index	b,bc	abc	8	NULL	#	100.00	Using where with pushed condition ((`index_select_sequoiadb_22795_2`.`t2`.`b` is not null) and (`index_select_sequoiadb_22795_2`.`t2`.`c` is not null)); Using index
+1	SIMPLE	t1	NULL	ref	b,bc	bc	4	index_select_sequoiadb_22795_2.t2.b,index_select_sequoiadb_22795_2.t2.c	#	100.00	NULL
+Warnings:
+Note	1003	/* select#1 */ select `index_select_sequoiadb_22795_2`.`t1`.`a` AS `a`,`index_select_sequoiadb_22795_2`.`t1`.`b` AS `b`,`index_select_sequoiadb_22795_2`.`t1`.`c` AS `c`,`index_select_sequoiadb_22795_2`.`t2`.`a` AS `a`,`index_select_sequoiadb_22795_2`.`t2`.`b` AS `b`,`index_select_sequoiadb_22795_2`.`t2`.`c` AS `c` from `index_select_sequoiadb_22795_2`.`t1` join `index_select_sequoiadb_22795_2`.`t2` where ((`index_select_sequoiadb_22795_2`.`t1`.`c` = `index_select_sequoiadb_22795_2`.`t2`.`c`) and (`index_select_sequoiadb_22795_2`.`t1`.`b` = `index_select_sequoiadb_22795_2`.`t2`.`b`))
+SELECT COUNT(*) FROM t1,t2 where t1.b=t2.b and t1.c=t2.c;
+COUNT(*)
+7246
+[Note] SequoiaDB: Query message: condition[{ "b": { "$et": 5 }, "c": { "$et": 7 } }], selector[{}], order_by[{ "b": 1, "c": 1 }], hint[{ "": "bc" }], limit[-1], offset[0], table[index_select_sequoiadb_22795_2.t1]
+EXPLAIN SELECT * FROM t1,t2 where t1.a=t2.a and t1.b=t2.b and t1.c=t2.c;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t2	NULL	index	PRIMARY,b,ab,bc,abc	abc	8	NULL	#	100.00	Using index
+1	SIMPLE	t1	NULL	eq_ref	PRIMARY,b,ab,bc,abc	PRIMARY	4	index_select_sequoiadb_22795_2.t2.a	#	5.00	Using where
+Warnings:
+Note	1003	/* select#1 */ select `index_select_sequoiadb_22795_2`.`t1`.`a` AS `a`,`index_select_sequoiadb_22795_2`.`t1`.`b` AS `b`,`index_select_sequoiadb_22795_2`.`t1`.`c` AS `c`,`index_select_sequoiadb_22795_2`.`t2`.`a` AS `a`,`index_select_sequoiadb_22795_2`.`t2`.`b` AS `b`,`index_select_sequoiadb_22795_2`.`t2`.`c` AS `c` from `index_select_sequoiadb_22795_2`.`t1` join `index_select_sequoiadb_22795_2`.`t2` where ((`index_select_sequoiadb_22795_2`.`t1`.`c` = `index_select_sequoiadb_22795_2`.`t2`.`c`) and (`index_select_sequoiadb_22795_2`.`t1`.`b` = `index_select_sequoiadb_22795_2`.`t2`.`b`) and (`index_select_sequoiadb_22795_2`.`t1`.`a` = `index_select_sequoiadb_22795_2`.`t2`.`a`))
+SELECT * FROM t1,t2 where t1.a=t2.a and t1.b=t2.b and t1.c=t2.c;
+a	b	c	a	b	c
+492926	3	b	492926	3	b
+[Note] SequoiaDB: Query message: condition[{ "a": { "$et": 492926 } }], selector[{}], order_by[{ "a": 1 }], hint[{ "": "PRIMARY" }], limit[-1], offset[0], table[index_select_sequoiadb_22795_2.t1]
+DROP TABLE t1,t2;
+DROP DATABASE index_select_sequoiadb_22795_2;

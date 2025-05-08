@@ -1,0 +1,54 @@
+CREATE DATABASE pushdown_sequoiadb_24901;
+USE pushdown_sequoiadb_24901;
+CREATE TABLE t1 (a INT, b BIGINT, c BIT, d BINARY, e TINYBLOB, f BLOB, g FLOAT, h DOUBLE,i CHAR(10),
+j TEXT, k DATE, l DATETIME, m TIMESTAMP, n ENUM('1','2'), o SET('1','2'));
+INSERT INTO t1 values(1,1,1,1,1,1,1,1,'1','1','2022-01-01','2022-01-01','2021-01-01','1','1');
+SELECT * FROM t1  WHERE a = a;
+a	b	c	d	e	f	g	h	i	j	k	l	m	n	o
+1	1		1	1	1	1	1	1	1	2022-01-01	2022-01-01 00:00:00	2021-01-01 00:00:00	1	1
+[Note] SequoiaDB: Query message: condition[{ "a": { "$et": { "$field": "a" } } }], selector[{}], order_by[{}], hint[{}], limit[-1], offset[0], table[pushdown_sequoiadb_24901.t1]
+SELECT * FROM t1  WHERE k = k;
+a	b	c	d	e	f	g	h	i	j	k	l	m	n	o
+1	1		1	1	1	1	1	1	1	2022-01-01	2022-01-01 00:00:00	2021-01-01 00:00:00	1	1
+[Note] SequoiaDB: Query message: condition[{ "k": { "$et": { "$field": "k" } } }], selector[{}], order_by[{}], hint[{}], limit[-1], offset[0], table[pushdown_sequoiadb_24901.t1]
+SELECT * FROM t1  WHERE a = b;
+a	b	c	d	e	f	g	h	i	j	k	l	m	n	o
+1	1		1	1	1	1	1	1	1	2022-01-01	2022-01-01 00:00:00	2021-01-01 00:00:00	1	1
+[Note] SequoiaDB: Query message: condition[{ "a": { "$et": { "$field": "b" } } }], selector[{}], order_by[{}], hint[{}], limit[-1], offset[0], table[pushdown_sequoiadb_24901.t1]
+SELECT * FROM t1  WHERE i = j;
+a	b	c	d	e	f	g	h	i	j	k	l	m	n	o
+1	1		1	1	1	1	1	1	1	2022-01-01	2022-01-01 00:00:00	2021-01-01 00:00:00	1	1
+[Note] SequoiaDB: Query message: condition[{ "i": { "$et": { "$field": "j" } } }], selector[{}], order_by[{}], hint[{}], limit[-1], offset[0], table[pushdown_sequoiadb_24901.t1]
+SELECT * FROM t1  WHERE d = e;
+a	b	c	d	e	f	g	h	i	j	k	l	m	n	o
+1	1		1	1	1	1	1	1	1	2022-01-01	2022-01-01 00:00:00	2021-01-01 00:00:00	1	1
+[Note] SequoiaDB: Query message: condition[{ "d": { "$et": { "$field": "e" } } }], selector[{}], order_by[{}], hint[{}], limit[-1], offset[0], table[pushdown_sequoiadb_24901.t1]
+SELECT * FROM t1  WHERE a = d;
+a	b	c	d	e	f	g	h	i	j	k	l	m	n	o
+1	1		1	1	1	1	1	1	1	2022-01-01	2022-01-01 00:00:00	2021-01-01 00:00:00	1	1
+[Note] SequoiaDB: Query message: condition[{}], selector[{}], order_by[{}], hint[{}], limit[-1], offset[0], table[pushdown_sequoiadb_24901.t1]
+SELECT * FROM t1  WHERE a = c;
+a	b	c	d	e	f	g	h	i	j	k	l	m	n	o
+1	1		1	1	1	1	1	1	1	2022-01-01	2022-01-01 00:00:00	2021-01-01 00:00:00	1	1
+[Note] SequoiaDB: Query message: condition[{}], selector[{}], order_by[{}], hint[{}], limit[-1], offset[0], table[pushdown_sequoiadb_24901.t1]
+SELECT * FROM t1  WHERE h = g;
+a	b	c	d	e	f	g	h	i	j	k	l	m	n	o
+1	1		1	1	1	1	1	1	1	2022-01-01	2022-01-01 00:00:00	2021-01-01 00:00:00	1	1
+[Note] SequoiaDB: Query message: condition[{}], selector[{}], order_by[{}], hint[{}], limit[-1], offset[0], table[pushdown_sequoiadb_24901.t1]
+SELECT * FROM t1  WHERE l = m;
+a	b	c	d	e	f	g	h	i	j	k	l	m	n	o
+[Note] SequoiaDB: Query message: condition[{}], selector[{}], order_by[{}], hint[{}], limit[-1], offset[0], table[pushdown_sequoiadb_24901.t1]
+SELECT * FROM t1  WHERE i = f;
+a	b	c	d	e	f	g	h	i	j	k	l	m	n	o
+1	1		1	1	1	1	1	1	1	2022-01-01	2022-01-01 00:00:00	2021-01-01 00:00:00	1	1
+[Note] SequoiaDB: Query message: condition[{}], selector[{}], order_by[{}], hint[{}], limit[-1], offset[0], table[pushdown_sequoiadb_24901.t1]
+SELECT * FROM t1  WHERE i = n;
+a	b	c	d	e	f	g	h	i	j	k	l	m	n	o
+1	1		1	1	1	1	1	1	1	2022-01-01	2022-01-01 00:00:00	2021-01-01 00:00:00	1	1
+[Note] SequoiaDB: Query message: condition[{}], selector[{}], order_by[{}], hint[{}], limit[-1], offset[0], table[pushdown_sequoiadb_24901.t1]
+SELECT * FROM t1  WHERE i = o;
+a	b	c	d	e	f	g	h	i	j	k	l	m	n	o
+1	1		1	1	1	1	1	1	1	2022-01-01	2022-01-01 00:00:00	2021-01-01 00:00:00	1	1
+[Note] SequoiaDB: Query message: condition[{}], selector[{}], order_by[{}], hint[{}], limit[-1], offset[0], table[pushdown_sequoiadb_24901.t1]
+DROP TABLE t1;
+DROP DATABASE pushdown_sequoiadb_24901;

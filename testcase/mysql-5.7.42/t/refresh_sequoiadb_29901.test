@@ -1,0 +1,47 @@
+#Case 29901
+--source include/have_sequoiadb.inc
+
+--disable_warnings
+drop database if exists refresh_sequoiadb_29901;
+--enable_warnings
+
+create database refresh_sequoiadb_29901;
+use refresh_sequoiadb_29901;
+
+--disable_warnings
+drop table if exists refresh_sequoiadb_29901_1;
+drop table if exists refresh_sequoiadb_29901_2;
+--enable_warnings
+
+create table refresh_sequoiadb_29901_1(a int,b int,key(a));
+
+insert into refresh_sequoiadb_29901_1 values(1,1),(2,2),(3,3);
+
+create table refresh_sequoiadb_29901_2 like refresh_sequoiadb_29901_1;
+
+analyze table refresh_sequoiadb_29901_1;
+analyze table refresh_sequoiadb_29901_2;
+
+insert into refresh_sequoiadb_29901_1 values (4,4),(5,5),(6,6);
+insert into refresh_sequoiadb_29901_2 values (7,7),(8,8),(9,9);
+
+--error 1064
+refresh tables;
+--error 1064
+refresh stats;
+--error 1064
+refresh tables stat;
+
+--error 1064
+refresh tables refresh_sequoiadb_29901_1;
+--error 1064
+refresh refresh_sequoiadb_29901_1 stats;
+--error 1064
+refresh tables refresh_sql_syntax_29901_1 stat;
+
+drop table refresh_sequoiadb_29901_1;
+drop table refresh_sequoiadb_29901_2;
+
+drop database refresh_sequoiadb_29901;
+
+--source include/uninstall_sequoiadb.inc

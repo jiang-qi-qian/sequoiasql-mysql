@@ -1,0 +1,25 @@
+CREATE DATABASE index_merge_select_sequoiadb;
+use index_merge_select_sequoiadb;
+CREATE TABLE t1 (
+a smallint,
+b smallint,
+c smallint primary key,
+KEY a (a),
+KEY b (b)
+) ENGINE=sequoiadb;
+set @@sequoiadb_debug_log=on;
+INSERT INTO t1 VALUES (1,2,13), (2,2,17), (2,2,20), (2,2,25);
+SELECT a,b,c FROM t1 force index(a,b) WHERE (b = 2 or a = 2) order by c;
+a	b	c
+1	2	13
+2	2	17
+2	2	20
+2	2	25
+[Note] SequoiaDB: Query message: condition[{ "a": { "$et": 2 } }], selector[{}], order_by[{ "a": 1 }], hint[{ "": "a" }], limit[-1], offset[0], table[index_merge_select_sequoiadb.t1]
+EXPLAIN SELECT a,b,c FROM t1 force index(a,b) WHERE (b = 2 or a = 2) order by c;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	index_merge	a,b	b,a	3,3	NULL	4	100.00	Using sdb_union(b,a); Using where with pushed condition ((`index_merge_select_sequoiadb`.`t1`.`b` = 2) or (`index_merge_select_sequoiadb`.`t1`.`a` = 2)); Using filesort
+Warnings:
+Note	1003	/* select#1 */ select `index_merge_select_sequoiadb`.`t1`.`a` AS `a`,`index_merge_select_sequoiadb`.`t1`.`b` AS `b`,`index_merge_select_sequoiadb`.`t1`.`c` AS `c` from `index_merge_select_sequoiadb`.`t1` FORCE INDEX (`b`) FORCE INDEX (`a`) where ((`index_merge_select_sequoiadb`.`t1`.`b` = 2) or (`index_merge_select_sequoiadb`.`t1`.`a` = 2)) order by `index_merge_select_sequoiadb`.`t1`.`c`
+DROP TABLE t1;
+DROP DATABASE index_merge_select_sequoiadb;

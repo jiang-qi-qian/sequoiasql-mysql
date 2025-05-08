@@ -1,0 +1,32 @@
+# seqDB-29809
+--source include/have_partition.inc
+--source include/have_sequoiadb.inc
+
+SET SESSION sequoiadb_debug_log=on;
+SET SESSION optimizer_index_sort_prune=on;
+
+--disable_warnings
+DROP DATABASE IF EXISTS explain_direct_sort_29809;
+--enable_warnings
+CREATE DATABASE explain_direct_sort_29809;
+DROP DATABASE explain_direct_sort_29809;
+CREATE DATABASE explain_direct_sort_29809;
+USE explain_direct_sort_29809;
+
+
+SET SESSION optimizer_switch = 'optimizer_sort_pushdown=ON';
+--source include/explain_direct_sort_sequoiadb_29809.inc
+
+
+SET SESSION optimizer_switch = 'optimizer_sort_pushdown=OFF';
+--source include/explain_direct_sort_sequoiadb_29809.inc
+
+
+DROP DATABASE explain_direct_sort_29809;
+
+SET SESSION optimizer_switch = 'optimizer_sort_pushdown=default';
+SET SESSION sequoiadb_debug_log=default;
+SET SESSION optimizer_index_sort_prune=default;
+
+--source include/uninstall_sequoiadb.inc
+

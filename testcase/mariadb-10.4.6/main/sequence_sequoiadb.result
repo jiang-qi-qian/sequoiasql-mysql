@@ -1,0 +1,308 @@
+CREATE SEQUENCE seq1;
+CREATE SEQUENCE seq2 increment by 0;
+ERROR 0A000: Increment of sequence can't be 0
+CREATE SEQUENCE seq2 increment by 1;
+CREATE OR REPLACE SEQUENCE seq3
+increment by -10 
+minvalue = 0 
+maxvalue 50 
+start with 10
+cache 5 cycle
+comment "create or replace sequence, sequoiadb:{ table_options: { ShardingKey: { next_not_cached_value: 1 } } }";
+CREATE TABLE seq4 (
+`next_not_cached_value` bigint(21) NOT NULL,
+`minimum_value` bigint(21) NOT NULL,
+`maximum_value` bigint(21) NOT NULL,
+`start_value` bigint(21) NOT NULL,
+`increment` bigint(21) NOT NULL,
+`cache_size` bigint(21) unsigned NOT NULL,
+`cycle_option` tinyint(1) unsigned NOT NULL,
+`cycle_count` bigint(21) NOT NULL
+) sequence=1;
+SHOW CREATE SEQUENCE seq1;
+Table	Create Table
+seq1	CREATE SEQUENCE `seq1` start with 1 minvalue 1 maxvalue 9223372036854775806 increment by 1 cache 1000 nocycle ENGINE=SequoiaDB
+SHOW CREATE SEQUENCE seq2;
+Table	Create Table
+seq2	CREATE SEQUENCE `seq2` start with 1 minvalue 1 maxvalue 9223372036854775806 increment by 1 cache 1000 nocycle ENGINE=SequoiaDB
+SHOW CREATE SEQUENCE seq3;
+Table	Create Table
+seq3	CREATE SEQUENCE `seq3` start with 10 minvalue 0 maxvalue 50 increment by -10 cache 5 cycle ENGINE=SequoiaDB COMMENT='create or replace sequence, sequoiadb:{ table_options: { ShardingKey: { next_not_cached_value: 1 } } }'
+SHOW CREATE SEQUENCE seq4;
+Table	Create Table
+seq4	CREATE SEQUENCE `seq4` start with 1 minvalue 1 maxvalue 9223372036854775806 increment by 1 cache 1000 nocycle ENGINE=SequoiaDB
+SET sql_mode = ORACLE;
+SELECT next value for seq1;
+next value for seq1
+1
+SELECT nextval(seq2);
+nextval(seq2)
+1
+SELECT seq3.nextval;
+seq3.nextval
+10
+CREATE TABLE t1 ( id int primary key default (next value for seq4), name char(16) );
+INSERT INTO t1(name) VALUES ('Jack'),('Bob'),('Zhangsan'),('Tom');
+SELECT previous value for seq1;
+previous value for seq1
+1
+SELECT lastval(seq2);
+lastval(seq2)
+1
+SELECT seq3.currval;
+seq3.currval
+10
+SELECT seq4.currval;
+seq4.currval
+4
+SELECT * FROM seq1;
+next_not_cached_value	minimum_value	maximum_value	start_value	increment	cache_size	cycle_option	cycle_count
+1001	1	9223372036854775806	1	1	1000	0	0
+SELECT * FROM seq2;
+next_not_cached_value	minimum_value	maximum_value	start_value	increment	cache_size	cycle_option	cycle_count
+1001	1	9223372036854775806	1	1	1000	0	0
+SELECT * FROM seq3;
+next_not_cached_value	minimum_value	maximum_value	start_value	increment	cache_size	cycle_option	cycle_count
+-1	0	50	10	-10	5	1	0
+SELECT * FROM seq4;
+next_not_cached_value	minimum_value	maximum_value	start_value	increment	cache_size	cycle_option	cycle_count
+1001	1	9223372036854775806	1	1	1000	0	0
+SELECT * FROM t1 ORDER BY id;
+id	name
+1	Jack
+2	Bob
+3	Zhangsan
+4	Tom
+SELECT setval( seq1,100 );
+setval( seq1,100 )
+100
+SELECT next value for seq1;
+next value for seq1
+101
+SELECT setval( seq2,1000 );
+setval( seq2,1000 )
+1000
+SELECT next value for seq2;
+next value for seq2
+1001
+SELECT nextval(seq3);
+nextval(seq3)
+0
+ALTER SEQUENCE seq3 RESTART 25;
+SELECT nextval(seq3);
+nextval(seq3)
+25
+SELECT nextval(seq3);
+nextval(seq3)
+15
+SELECT setval( seq4,3 );
+setval( seq4,3 )
+NULL
+SELECT seq4.nextval;
+seq4.nextval
+5
+ALTER SEQUENCE seq4 RESTART 2000;
+SELECT next value for seq4;
+next value for seq4
+2000
+INSERT INTO t1(name) VALUES ('Lisi');
+ALTER SEQUENCE seq4 RESTART 1;
+SELECT nextval(seq4);
+nextval(seq4)
+1
+SELECT nextval(seq4);
+nextval(seq4)
+2
+SELECT previous value for seq1;
+previous value for seq1
+101
+SELECT lastval(seq2);
+lastval(seq2)
+1001
+SELECT seq3.currval;
+seq3.currval
+15
+SELECT seq4.currval;
+seq4.currval
+2
+SELECT * FROM seq1;
+next_not_cached_value	minimum_value	maximum_value	start_value	increment	cache_size	cycle_option	cycle_count
+1001	1	9223372036854775806	1	1	1000	0	0
+SELECT * FROM seq2;
+next_not_cached_value	minimum_value	maximum_value	start_value	increment	cache_size	cycle_option	cycle_count
+2001	1	9223372036854775806	1	1	1000	0	0
+SELECT * FROM seq3;
+next_not_cached_value	minimum_value	maximum_value	start_value	increment	cache_size	cycle_option	cycle_count
+-1	0	50	10	-10	5	1	0
+SELECT * FROM seq4;
+next_not_cached_value	minimum_value	maximum_value	start_value	increment	cache_size	cycle_option	cycle_count
+1001	1	9223372036854775806	1	1	1000	0	0
+SELECT * FROM t1 ORDER BY id;
+id	name
+1	Jack
+2	Bob
+3	Zhangsan
+4	Tom
+2001	Lisi
+drop table t1;
+ALTER SEQUENCE seq1 
+increment by 50
+minvalue = 5
+maxvalue 10000
+start with 5
+cache 10 cycle;
+ALTER SEQUENCE seq3
+increment by 50
+minvalue = -100
+maxvalue = 50000
+start with -50
+cache 1001 cycle;
+ALTER SEQUENCE seq2 INCREMENT BY 0;
+ERROR 0A000: Increment of sequence can't be 0
+INSERT INTO seq2 VALUES (1,1,1000,1,0,1000,0,0);
+ERROR 0A000: Increment of sequence can't be 0
+INSERT INTO seq4 VALUES (1500,100,15000,101,10,999,1,2);
+SHOW CREATE SEQUENCE seq1;
+Table	Create Table
+seq1	CREATE SEQUENCE "seq1" start with 5 minvalue 5 maxvalue 10000 increment by 50 cache 10 cycle
+SHOW CREATE SEQUENCE seq3;
+Table	Create Table
+seq3	CREATE SEQUENCE "seq3" start with -50 minvalue -100 maxvalue 50000 increment by 50 cache 1001 cycle
+SHOW CREATE SEQUENCE seq4;
+Table	Create Table
+seq4	CREATE SEQUENCE "seq4" start with 101 minvalue 100 maxvalue 15000 increment by 10 cache 999 cycle
+SELECT * FROM seq1;
+next_not_cached_value	minimum_value	maximum_value	start_value	increment	cache_size	cycle_option	cycle_count
+1050	5	10000	5	50	10	1	0
+SELECT * FROM seq2;
+next_not_cached_value	minimum_value	maximum_value	start_value	increment	cache_size	cycle_option	cycle_count
+2001	1	9223372036854775806	1	1	1000	0	0
+SELECT * FROM seq3;
+next_not_cached_value	minimum_value	maximum_value	start_value	increment	cache_size	cycle_option	cycle_count
+55	-100	50000	-50	50	1001	1	0
+SELECT * FROM seq4;
+next_not_cached_value	minimum_value	maximum_value	start_value	increment	cache_size	cycle_option	cycle_count
+1500	100	15000	101	10	999	1	0
+SELECT nextval(seq1);
+nextval(seq1)
+1005
+SELECT next value for seq3;
+next value for seq3
+10055
+SELECT seq4.nextval;
+seq4.nextval
+1500
+SELECT * FROM seq1;
+next_not_cached_value	minimum_value	maximum_value	start_value	increment	cache_size	cycle_option	cycle_count
+1505	5	10000	5	50	10	1	1
+SELECT * FROM seq3;
+next_not_cached_value	minimum_value	maximum_value	start_value	increment	cache_size	cycle_option	cycle_count
+50001	-100	50000	-50	50	1001	1	0
+SELECT * FROM seq4;
+next_not_cached_value	minimum_value	maximum_value	start_value	increment	cache_size	cycle_option	cycle_count
+11490	100	15000	101	10	999	1	0
+ALTER TABLE seq1 RENAME TO seq1_new;
+RENAME TABLE seq2 TO seq2_new;
+SELECT nextval(seq1_new);
+nextval(seq1_new)
+1505
+SELECT nextval(seq2_new);
+nextval(seq2_new)
+2001
+SHOW CREATE SEQUENCE seq1_new;
+Table	Create Table
+seq1_new	CREATE SEQUENCE "seq1_new" start with 5 minvalue 5 maxvalue 10000 increment by 50 cache 10 cycle
+SHOW CREATE SEQUENCE seq2_new;
+Table	Create Table
+seq2_new	CREATE SEQUENCE "seq2_new" start with 1 minvalue 1 maxvalue 9223372036854775806 increment by 1 cache 1000 nocycle
+SELECT * FROM seq1_new;
+next_not_cached_value	minimum_value	maximum_value	start_value	increment	cache_size	cycle_option	cycle_count
+2005	5	10000	5	50	10	1	1
+SELECT * FROM seq2_new;
+next_not_cached_value	minimum_value	maximum_value	start_value	increment	cache_size	cycle_option	cycle_count
+3001	1	9223372036854775806	1	1	1000	0	0
+SHOW CREATE SEQUENCE seq1;
+ERROR 42S02: Table 'X.seq1' doesn't exist
+SHOW CREATE SEQUENCE seq2;
+ERROR 42S02: Table 'X.seq2' doesn't exist
+DROP SEQUENCE seq1_new;
+DROP SEQUENCE seq2_new;
+DROP TABLE seq3;
+DROP TABLE seq4;
+SHOW CREATE SEQUENCE seq1_new;
+ERROR 42S02: Table 'X.seq1_new' doesn't exist
+SHOW CREATE SEQUENCE seq2_new;
+ERROR 42S02: Table 'X.seq2_new' doesn't exist
+SHOW CREATE SEQUENCE seq3;
+ERROR 42S02: Table 'X.seq3' doesn't exist
+SHOW CREATE SEQUENCE seq4;
+ERROR 42S02: Table 'X.seq4' doesn't exist
+SET sql_mode = DEFAULT;
+CREATE TEMPORARY SEQUENCE seq_tmp INCREMENT BY 10 MAXVALUE 20000 cycle;
+SHOW CREATE SEQUENCE seq_tmp;
+Table	Create Table
+seq_tmp	CREATE SEQUENCE `seq_tmp` start with 1 minvalue 1 maxvalue 20000 increment by 10 cache 1000 cycle ENGINE=SequoiaDB
+SELECT next value for seq_tmp;
+next value for seq_tmp
+1
+SELECT previous value for seq_tmp;
+previous value for seq_tmp
+1
+SELECT setval( seq_tmp, 100 );
+setval( seq_tmp, 100 )
+100
+SELECT next value for seq_tmp;
+next value for seq_tmp
+110
+SELECT * FROM seq_tmp;
+next_not_cached_value	minimum_value	maximum_value	start_value	increment	cache_size	cycle_option	cycle_count
+10001	1	20000	1	10	1000	1	0
+SELECT nextval(seq_tmp);
+nextval(seq_tmp)
+111
+ALTER TABLE seq_tmp RENAME TO seq_tmp_new;
+SELECT nextval(seq_tmp_new);
+nextval(seq_tmp_new)
+121
+SHOW CREATE SEQUENCE seq_tmp_new;
+Table	Create Table
+seq_tmp_new	CREATE SEQUENCE `seq_tmp_new` start with 1 minvalue 1 maxvalue 20000 increment by 10 cache 1000 cycle ENGINE=SequoiaDB
+SELECT * FROM seq_tmp_new;
+next_not_cached_value	minimum_value	maximum_value	start_value	increment	cache_size	cycle_option	cycle_count
+10001	1	20000	1	10	1000	1	1
+SHOW CREATE SEQUENCE seq_tmp;
+ERROR 42S02: Table 'X.seq_tmp' doesn't exist
+DROP SEQUENCE seq_tmp_new;
+SHOW CREATE SEQUENCE seq_tmp_new;
+ERROR 42S02: Table 'X.seq_tmp_new' doesn't exist
+CREATE SEQUENCE seq1;
+CREATE VIEW v1 AS SELECT next value for seq1;
+CREATE VIEW v2 AS SELECT previous value for seq1;
+CREATE VIEW v3 AS SELECT setval(seq1, 2);
+CREATE VIEW v4 AS SELECT setval(seq1, 100);
+SELECT * FROM v1;
+next value for seq1
+1
+SELECT * FROM v1;
+next value for seq1
+2
+SELECT * FROM v1;
+next value for seq1
+3
+SELECT * FROM v2;
+previous value for seq1
+3
+SELECT * FROM v3;
+setval(seq1, 2)
+NULL
+SELECT * FROM v4;
+setval(seq1, 100)
+100
+SELECT * FROM v2;
+previous value for seq1
+3
+SELECT * FROM v1;
+next value for seq1
+101
+DROP SEQUENCE seq1;
+DROP VIEW v1,v2,v3,v4;

@@ -1,0 +1,45 @@
+set sql_mode='';
+drop table if exists t1;
+CREATE TABLE t1( a VARCHAR(6), b VARCHAR(6), c VARCHAR(6), d VARCHAR(6), e VARCHAR(6))DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin;
+INSERT INTO t1 VALUES('一二三四五六', '一二三四五', '一二三四', '一二三四五六', '一二三四五六');
+Warnings:
+Warning	1265	Data truncated for column 'a' at row 1
+Warning	1265	Data truncated for column 'b' at row 1
+Warning	1265	Data truncated for column 'c' at row 1
+Warning	1265	Data truncated for column 'd' at row 1
+Warning	1265	Data truncated for column 'e' at row 1
+select length(a),length(b),length(c),length(d),length(e) from (SELECT * FROM t1) t2;
+length(a)	length(b)	length(c)	length(d)	length(e)
+13	13	13	13	13
+ALTER TABLE t1 MODIFY COLUMN a VARCHAR(5);
+Warnings:
+Warning	1265	Data truncated for column 'a' at row 1
+ALTER TABLE t1 MODIFY COLUMN b VARCHAR(5);
+Warnings:
+Warning	1265	Data truncated for column 'b' at row 1
+ALTER TABLE t1 MODIFY COLUMN c VARCHAR(5);
+Warnings:
+Warning	1265	Data truncated for column 'c' at row 1
+ALTER TABLE t1 MODIFY COLUMN d VARCHAR(7);
+ALTER TABLE t1 MODIFY COLUMN e VARCHAR(6);
+SHOW CREATE TABLE t1;
+Table	Create Table
+t1	CREATE TABLE `t1` (
+  `a` varchar(5) COLLATE utf8mb4_bin DEFAULT NULL,
+  `b` varchar(5) COLLATE utf8mb4_bin DEFAULT NULL,
+  `c` varchar(5) COLLATE utf8mb4_bin DEFAULT NULL,
+  `d` varchar(7) COLLATE utf8mb4_bin DEFAULT NULL,
+  `e` varchar(6) COLLATE utf8mb4_bin DEFAULT NULL
+) ENGINE=SequoiaDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin
+INSERT INTO t1 VALUES('一二三四五六', '一二三四五', '一二三四五', '一二三四五六七', '一二三四五六');
+Warnings:
+Warning	1265	Data truncated for column 'a' at row 1
+Warning	1265	Data truncated for column 'b' at row 1
+Warning	1265	Data truncated for column 'c' at row 1
+Warning	1265	Data truncated for column 'd' at row 1
+Warning	1265	Data truncated for column 'e' at row 1
+select length(a),length(b),length(c),length(d),length(e) from (SELECT * FROM t1) t2;
+length(a)	length(b)	length(c)	length(d)	length(e)
+11	11	11	13	13
+11	11	11	15	13
+DROP TABLE t1;

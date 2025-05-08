@@ -1,0 +1,16 @@
+#seqDB-25412
+--source include/have_sequoiadb.inc
+
+--disable_warnings
+drop table if exists share_lock_select_sequoiadb_25412;
+--enable_warnings
+
+CREATE TABLE share_lock_select_sequoiadb_25412 ( id INT, num INT ) ENGINE = SEQUOIADB;
+INSERT INTO share_lock_select_sequoiadb_25412 VALUES (1,1), (2,2);
+BEGIN;
+SELECT * FROM share_lock_select_sequoiadb_25412 WHERE id = 1 LOCK IN SHARE MODE;
+BEGIN;
+SELECT * FROM share_lock_select_sequoiadb_25412 WHERE id = 1 LOCK IN SHARE MODE;
+
+DROP TABLE share_lock_select_sequoiadb_25412;
+--source include/uninstall_sequoiadb.inc

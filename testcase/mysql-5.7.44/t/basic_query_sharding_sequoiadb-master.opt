@@ -1,0 +1,1 @@
+--sequoiadb_auto_partition=ON --character_set_server=utf8mb4 --collation_server=utf8mb4_bin

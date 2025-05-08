@@ -1,0 +1,189 @@
+create database delete_test_sequoiadb;
+use delete_test_sequoiadb;
+create table t1(id int auto_increment key, a int, b varchar(255), c varbinary(255));
+insert into t1(a,b,c) values(1000, 'sa', 'sa'), (1, 'ss', 'ss'),(100, 'sq', 'q'),(10, 'sz', 'sz');
+delete from t1 where a=10;
+affected rows: 1
+[Note] SequoiaDB: optimizer delete: 1, condition: { "a": { "$et": 10 } }, table: delete_test_sequoiadb.t1
+delete from t1 where c='ss';
+affected rows: 1
+[Note] SequoiaDB: Query message: condition[{}], selector[{}], order_by[{}], hint[{}], limit[-1], offset[0], table[delete_test_sequoiadb.t1]
+delete from t1 where a=1000 or c='q';
+affected rows: 2
+[Note] SequoiaDB: Query message: condition[{}], selector[{}], order_by[{}], hint[{}], limit[-1], offset[0], table[delete_test_sequoiadb.t1]
+select * from t1 order by id;
+id	a	b	c
+drop table t1;
+create table t1(id int auto_increment key, a int, b varchar(255) not null default 'test', c varbinary(255))comment="sequoiadb:{ auto_partition: false }";
+insert into t1(a,b,c) values(10, 'sa', 'sa'), (1000, 'ss', 'ss'),(100, 'sq', 'q'),(1, 'sz', 'sz');
+insert into t1(a,b,c) values(11, 'sb', 'sb'), (1001, 'st', 'st'),(102, 'sr', 'r'),(2, 'sy', 'sy');
+delete from t1 where id=1 order by id;
+affected rows: 1
+[Note] SequoiaDB: Query message: condition[{ "id": { "$et": 1 } }], selector[{}], order_by[{ "id": 1 }], hint[{ "": "PRIMARY" }], limit[-1], offset[0], table[delete_test_sequoiadb.t1]
+delete from t1 where id=2 order by a;
+affected rows: 1
+[Note] SequoiaDB: Query message: condition[{ "id": { "$et": 2 } }], selector[{}], order_by[{ "id": 1 }], hint[{ "": "PRIMARY" }], limit[-1], offset[0], table[delete_test_sequoiadb.t1]
+delete from t1 where a=100 order by id;
+affected rows: 1
+[Note] SequoiaDB: Query message: condition[{}], selector[{}], order_by[{}], hint[{}], limit[-1], offset[0], table[delete_test_sequoiadb.t1]
+delete from t1 where a=1000 order by a;
+affected rows: 0
+[Note] SequoiaDB: Query message: condition[{ "a": { "$et": 1000 } }], selector[{}], order_by[{}], hint[{}], limit[-1], offset[0], table[delete_test_sequoiadb.t1]
+delete from t1 order by id;
+affected rows: 5
+[Note] SequoiaDB: optimizer pushdown autocommit: 1
+select * from t1 order by id;
+id	a	b	c
+insert into t1(a,b,c) values(10, 'sa', 'sa'), (1000, 'ss', 'ss'),(100, 'sq', 'q'),(1, 'sz', 'sz');
+insert into t1(a,b,c) values(11, 'sb', 'sb'), (1001, 'st', 'st'),(102, 'sr', 'r'),(2, 'sy', 'sy');
+delete from t1 where c='sa' order by id;
+affected rows: 1
+[Note] SequoiaDB: Query message: condition[{}], selector[{}], order_by[{}], hint[{}], limit[-1], offset[0], table[delete_test_sequoiadb.t1]
+delete from t1 order by id limit 2;
+affected rows: 2
+[Note] SequoiaDB: Query message: condition[{}], selector[{}], order_by[{ "id": 1 }], hint[{ "": "PRIMARY" }], limit[-1], offset[0], table[delete_test_sequoiadb.t1]
+delete from t1 where a=1001 order by id limit 1;
+affected rows: 1
+[Note] SequoiaDB: Query message: condition[{}], selector[{}], order_by[{ "id": 1 }], hint[{ "": "PRIMARY" }], limit[-1], offset[0], table[delete_test_sequoiadb.t1]
+select * from t1 order by id;
+id	a	b	c
+12	1	sz	sz
+13	11	sb	sb
+15	102	sr	r
+16	2	sy	sy
+delete from t1 where a>2 limit 1;
+affected rows: 1
+[Note] SequoiaDB: Query message: condition[{ "a": { "$gt": 2 } }], selector[{}], order_by[{}], hint[{}], limit[-1], offset[0], table[delete_test_sequoiadb.t1]
+delete from t1 where c in('sz', 'r', 'sy') limit 1;
+affected rows: 1
+[Note] SequoiaDB: Query message: condition[{}], selector[{}], order_by[{}], hint[{}], limit[-1], offset[0], table[delete_test_sequoiadb.t1]
+select * from t1 order by id;
+id	a	b	c
+15	102	sr	r
+16	2	sy	sy
+drop table t1;
+create table t1(id int auto_increment key)comment="sequoiadb:{ auto_partition: false }";
+insert into t1 values(),(),(),();
+delete ignore from t1 where id>2;
+affected rows: 2
+[Note] SequoiaDB: optimizer delete: 1, condition: { "id": { "$gt": 2 } }, table: delete_test_sequoiadb.t1
+select * from t1 order by id;
+id
+1
+2
+delete low_priority from t1 where id>1;
+affected rows: 1
+[Note] SequoiaDB: optimizer delete: 1, condition: { "id": { "$gt": 1 } }, table: delete_test_sequoiadb.t1
+drop table t1;
+create temporary table t1(id int auto_increment key, a int, b varchar(255), c varbinary(255))engine=sequoiadb;
+insert into t1(a,b,c) values(1000, 'sa', 'sa'), (1, 'ss', 'ss'),(100, 'sq', 'q'),(10, 'sz', 'sz');
+delete from t1 where a=10;
+affected rows: 1
+delete from t1 where c='ss';
+affected rows: 1
+select * from t1 order by id;
+id	a	b	c
+1	1000	sa	sa
+3	100	sq	q
+drop table t1;
+create table t1 (i int, j int default 10, k int not null, key (k));
+create table t2 (i int);
+insert into t1 (i, k) values (1, 1);
+insert into t2 values (1);
+create trigger trg3 before delete on t1 for each row set @c:= @c + old.j;
+create trigger trg4 before delete on t2 for each row set @d:= @d + old.i;
+create trigger trg5 after delete on t1 for each row set @e:= "After delete t1 fired";
+create trigger trg6 after delete on t2 for each row set @f:= "After delete t2 fired";
+set @c:= 0, @d:= 0, @e:= "", @f:= "";
+delete t1, t2 from t1, t2 where t1.i = t2.i;
+affected rows: 2
+[Note] SequoiaDB: Query message: condition[{}], selector[{}], order_by[{}], hint[{}], limit[-1], offset[0], table[delete_test_sequoiadb.t2]
+select * from t1;
+i	j	k
+drop table t1,t2;
+CREATE TABLE t1(a1 INT NOT NULL, a2 INT);
+CREATE TABLE t2(a1 INT NOT NULL, a2 INT);
+INSERT INTO t1 VALUES (1, 1);
+INSERT INTO t2 VALUES (1, 1);
+delete t1,t2 from t1,t2 where t1.a2=1;
+affected rows: 2
+[Note] SequoiaDB: Query message: condition[{}], selector[{}], order_by[{}], hint[{}], limit[-1], offset[0], table[delete_test_sequoiadb.t2]
+select * from t1;
+a1	a2
+select * from t2;
+a1	a2
+drop table t1,t2;
+create table t1(c1 int);
+create table t2(c2 int);
+insert into t1 values (1),(2),(3);
+insert into t2 values (1);
+delete from t1 WHERE c1 IN (SELECT c2 FROM t2);
+affected rows: 1
+[Note] SequoiaDB: Query message: condition[{}], selector[{}], order_by[{}], hint[{}], limit[-1], offset[0], table[delete_test_sequoiadb.t2]
+select *from t1;
+c1
+2
+3
+select *from t2;
+c2
+1
+delete quick from t1 where c1=2;
+affected rows: 1
+[Note] SequoiaDB: optimizer delete: 1, condition: { "c1": { "$et": 2 } }, table: delete_test_sequoiadb.t1
+select * from t1;
+c1
+3
+drop table t1,t2;
+CREATE TABLE t1 (a int, t timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP);
+insert into t1 (a) values(4);
+delete from t1;
+affected rows: 1
+[Note] SequoiaDB: optimizer pushdown autocommit: 1
+select * from t1;
+a	t
+drop table t1;
+create table t1(id int auto_increment key, a int);
+insert into t1(a) values (1),(2),(3);
+delete from t1;
+affected rows: 3
+[Note] SequoiaDB: optimizer pushdown autocommit: 1
+select *from t1;
+id	a
+insert into t1(a) values (1),(2),(3);
+begin;
+delete from t1;
+affected rows: 3
+rollback;
+select *from t1 order by id;
+id	a
+4	1
+5	2
+6	3
+begin;
+delete from t1;
+affected rows: 3
+commit;
+select *from t1;
+id	a
+drop table t1;
+CREATE TABLE t1 ( a CHAR(10), KEY(a) );
+INSERT INTO t1 VALUES ('1'),('2'),('3'),('4');
+DELETE FROM t1 WHERE a <> '4';
+affected rows: 3
+[Note] SequoiaDB: optimizer delete: 1, condition: { "$and": [ { "a": { "$ne": "4" } }, { "a": { "$lt": "4" } } ] }, table: delete_test_sequoiadb.t1
+[Note] SequoiaDB: optimizer delete: 1, condition: { "$and": [ { "a": { "$ne": "4" } }, { "a": { "$gt": "4" } } ] }, table: delete_test_sequoiadb.t1
+SELECT * FROM t1;
+a
+4
+DROP TABLE t1;
+CREATE TABLE t1 ( a CHAR(10), b CHAR(10), KEY(a), KEY(b) );
+INSERT INTO t1 VALUES ('1','1'),('2','2'),('3','3'),('4','4');
+DELETE FROM t1 WHERE a <> '4' AND b <> '4';
+affected rows: 3
+[Note] SequoiaDB: optimizer delete: 1, condition: { "$and": [ { "$and": [ { "a": { "$ne": "4" } }, { "b": { "$ne": "4" } } ] }, { "a": { "$lt": "4" } } ] }, table: delete_test_sequoiadb.t1
+[Note] SequoiaDB: optimizer delete: 1, condition: { "$and": [ { "$and": [ { "a": { "$ne": "4" } }, { "b": { "$ne": "4" } } ] }, { "a": { "$gt": "4" } } ] }, table: delete_test_sequoiadb.t1
+SELECT * FROM t1;
+a	b
+4	4
+DROP TABLE t1;
+drop database delete_test_sequoiadb;

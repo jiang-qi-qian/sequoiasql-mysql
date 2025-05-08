@@ -1,0 +1,156 @@
+drop database if exists explain_direct_sort_28511;
+create database explain_direct_sort_28511;
+drop database explain_direct_sort_28511;
+create database explain_direct_sort_28511;
+use explain_direct_sort_28511;
+set session sequoiadb_debug_log=on;
+set session optimizer_switch='mrr=on';
+drop table if exists t1;
+create table t1(
+col1 int,
+col2 varchar(10),
+col3 varchar(10),
+col4 varchar(10),
+key idx_col1(col1),
+key idx_col2(col2),
+key idx_col12(col1,col2),
+unique key uniq_idx4(col4)
+);
+insert into t1 values(6,'abcdef','abde','abc');
+insert into t1 values(1,'def','defg','abcdef');
+insert into t1 values(4,'abc','abcdef','xyz');
+insert into t1 values(0,'abde','xyz','def');
+insert into t1 values(5,'xyz','abc','efg');
+insert into t1 values(2,'defg','abd','abd');
+insert into t1 values(3,'abd','def','defg');
+insert into t1 values(null,null,null,null);
+select * from t1 order by col1;
+col1	col2	col3	col4
+NULL	NULL	NULL	NULL
+0	abde	xyz	def
+1	def	defg	abcdef
+2	defg	abd	abd
+3	abd	def	defg
+4	abc	abcdef	xyz
+5	xyz	abc	efg
+6	abcdef	abde	abc
+select * from t1 order by col2;
+col1	col2	col3	col4
+NULL	NULL	NULL	NULL
+4	abc	abcdef	xyz
+6	abcdef	abde	abc
+3	abd	def	defg
+0	abde	xyz	def
+1	def	defg	abcdef
+2	defg	abd	abd
+5	xyz	abc	efg
+select * from t1 order by col3;
+col1	col2	col3	col4
+NULL	NULL	NULL	NULL
+5	xyz	abc	efg
+4	abc	abcdef	xyz
+2	defg	abd	abd
+6	abcdef	abde	abc
+3	abd	def	defg
+1	def	defg	abcdef
+0	abde	xyz	def
+select * from t1 order by col4;
+col1	col2	col3	col4
+NULL	NULL	NULL	NULL
+6	abcdef	abde	abc
+1	def	defg	abcdef
+2	defg	abd	abd
+0	abde	xyz	def
+3	abd	def	defg
+5	xyz	abc	efg
+4	abc	abcdef	xyz
+explain select col2, col1, sum(col1) over() as total_sum_col1, sum(col1) over(partition by substr(col2, 1, 2)) as group_sum_col1 from t1 order by col2, col1;
+id	select_type	table	type	possible_keys	key	key_len	ref	rows	Extra
+1	SIMPLE	t1	index	NULL	idx_col12	18	NULL	8	Using index; Using temporary; Using filesort
+select col2, col1, sum(col1) over() as total_sum_col1, sum(col1) over(partition by substr(col2, 1, 2)) as group_sum_col1 from t1 order by col2, col1;
+col2	col1	total_sum_col1	group_sum_col1
+NULL	NULL	21	NULL
+abc	4	21	13
+abcdef	6	21	13
+abd	3	21	13
+abde	0	21	13
+def	1	21	3
+defg	2	21	3
+xyz	5	21	5
+[Note] SequoiaDB: Query message: condition[{}], selector[{ "col1": null, "col2": null }], order_by[{ "col1": 1, "col2": 1 }], hint[{ "": "idx_col12" }], limit[-1], offset[0], table[explain_direct_sort_28511.t1]
+explain select col1, row_number() over w as 'row_number', rank() over w as 'rank' from t1 window w as (order by col1);
+id	select_type	table	type	possible_keys	key	key_len	ref	rows	Extra
+1	SIMPLE	t1	index	NULL	idx_col1	5	NULL	8	Using index; Using temporary
+select col1, row_number() over w as 'row_number', rank() over w as 'rank' from t1 window w as (order by col1);
+col1	row_number	rank
+NULL	1	1
+0	2	2
+1	3	3
+2	4	4
+3	5	5
+4	6	6
+5	7	7
+6	8	8
+[Note] SequoiaDB: Query message: condition[{}], selector[{ "_id": null, "col1": null }], order_by[{ "col1": 1 }], hint[{ "": "idx_col1" }], limit[-1], offset[0], table[explain_direct_sort_28511.t1]
+explain select * from t1 where col1 > 1 and col1 < 3 or col1 = 5 order by col4;
+id	select_type	table	type	possible_keys	key	key_len	ref	rows	Extra
+1	SIMPLE	t1	range	idx_col1,idx_col12	idx_col1	5	NULL	4	Using where with pushed condition; Using MRR; Using filesort
+select * from t1 where col1 > 1 and col1 < 3 or col1 = 5 order by col4;
+col1	col2	col3	col4
+2	defg	abd	abd
+5	xyz	abc	efg
+explain format = json select * from t1 where col1 > 1 and col1 < 3 or col1 = 5 order by col4;
+EXPLAIN
+{
+  "query_block": {
+    "select_id": 1,
+    "read_sorted_file": {
+      "filesort": {
+        "sort_key": "t1.col4",
+        "table": {
+          "table_name": "t1",
+          "access_type": "range",
+          "possible_keys": ["idx_col1", "idx_col12"],
+          "key": "idx_col1",
+          "key_length": "5",
+          "used_key_parts": ["col1"],
+          "rows": 4,
+          "filtered": 100,
+          "pushed_condition": true,
+          "mrr_type": "Using MRR"
+        }
+      }
+    }
+  }
+}
+analyze select * from t1 where col1 > 1 and col1 < 3 or col1 = 5 order by col4;
+id	select_type	table	type	possible_keys	key	key_len	ref	rows	r_rows	filtered	r_filtered	Extra
+1	SIMPLE	t1	range	idx_col1,idx_col12	idx_col1	5	NULL	4	2.00	100.00	100.00	Using where with pushed condition; Using MRR; Using filesort
+select * from t1 where col1 > 1 and col1 < 3 or col1 = 5 order by col4;
+col1	col2	col3	col4
+2	defg	abd	abd
+5	xyz	abc	efg
+set session optimizer_switch='optimizer_sort_pushdown=off';
+explain select * from t1 where col1 > 1 and col1 < 3 or col1 = 5 order by col4;
+id	select_type	table	type	possible_keys	key	key_len	ref	rows	Extra
+1	SIMPLE	t1	NULL	NULL	NULL	NULL	NULL	#	Using where with pushed condition; Using pushed ORDER BY; Storage engine handles access type
+select * from t1 where col1 > 1 and col1 < 3 or col1 = 5 order by col4;
+col1	col2	col3	col4
+2	defg	abd	abd
+5	xyz	abc	efg
+create procedure p1()
+begin
+select * from t1 where col1 > 1 and col1 < 3 or col1 = 5 order by col4;
+end $
+call p1();
+col1	col2	col3	col4
+2	defg	abd	abd
+5	xyz	abc	efg
+[Note] SequoiaDB: Query message: condition[{ "$or": [ { "$and": [ { "col1": { "$gt": 1 } }, { "col1": { "$lt": 3 } } ] }, { "col1": { "$et": 5 } } ] }], selector[{}], order_by[{ "col4": 1 }], hint[{}], limit[-1], offset[0], table[explain_direct_sort_28511.t1]
+drop procedure p1;
+alter table t1 engine = memory;
+explain select * from t1 where col1 > 1 and col1 < 3 or col1 = 5 order by col4;
+id	select_type	table	type	possible_keys	key	key_len	ref	rows	Extra
+1	SIMPLE	t1	ALL	idx_col1,idx_col12	NULL	NULL	NULL	8	Using where; Using filesort
+drop table t1;
+drop database explain_direct_sort_28511;

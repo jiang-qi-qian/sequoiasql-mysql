@@ -1,0 +1,85 @@
+#BUG #SEQUOIASQLMAINSTREAM-826
+#case 22948
+
+--source include/have_sequoiadb.inc
+--source suite/metadata_sync_sequoiadb/inc/insts_connect_sequoiadb.inc
+
+# connect to conn1, clear databases in the beginning
+connection conn1;
+--disable_warnings
+DROP DATABASE IF EXISTS metaSync_mix_seq_table;
+--enable_warnings
+
+# connect to conn2, check databases are cleaned in the beginning
+connection conn2;
+--error ER_BAD_DB_ERROR
+SHOW CREATE DATABASE metaSync_mix_seq_table;
+
+# seqDB-22948
+# begin testing
+#
+# create sequence 
+connection conn1;
+CREATE DATABASE metaSync_mix_seq_table;
+USE metaSync_mix_seq_table;
+CREATE SEQUENCE IF NOT EXISTS seq1 MAX_ROWS 10 MIN_ROWS 1 ROW_FORMAT = REDUNDANT SEQUENCE = 1 COMMENT 'create sequence';
+# create table
+connection conn2;
+USE metaSync_mix_seq_table;
+CREATE TABLE t1 ( id INT PRIMARY KEY DEFAULT ( next value for seq1 ) );
+INSERT INTO t1 VALUES (),(),();
+# check metadatas after create
+connection conn1;
+SHOW CREATE TABLE t1;
+connection conn2;
+SELECT * FROM seq1;
+SELECT * FROM t1 ORDER BY id;
+SELECT PREVIOUS VALUE FOR seq1;
+SELECT NEXT VALUE FOR seq1;
+# alter sequence
+#SEQUOIASQLMAINSTREAM-949
+set server_ha_wait_sync_timeout = 10;
+ALTER SEQUENCE seq1 START = 10 RESTART MINVALUE = 10 MAXVALUE = 4000 CYCLE;
+# alter table
+connection conn1;
+#SEQUOIASQLMAINSTREAM-949
+set server_ha_wait_sync_timeout = 10;
+ALTER TABLE t1 DROP PRIMARY KEY, CHANGE id id1 BIGINT DEFAULT ( next value for seq1 );
+# check metadatas after alter
+SELECT * FROM seq1;
+SELECT NEXT VALUE FOR seq1;
+connection conn2;
+SHOW CREATE TABLE t1;
+INSERT INTO t1 VALUES (),(),();
+SELECT * FROM t1 ORDER BY id1;
+# drop sequence
+DROP SEQUENCE /* drop sequence */ seq1;
+# drop table
+connection conn1;
+#BUG #SEQUOIASQLMAINSTREAM-870
+#BUG #SEQUOIASQLMAINSTREAM-830
+--error ER_NO_SUCH_TABLE
+INSERT INTO t1 VALUES ();
+DROP TABLE t1;
+# check metadatas after drop
+--error ER_NO_SUCH_TABLE
+SHOW CREATE TABLE seq1;
+--error ER_NO_SUCH_TABLE
+SHOW CREATE TABLE t1;
+connection conn2;
+--error ER_NO_SUCH_TABLE
+SHOW CREATE TABLE seq1;
+--error ER_NO_SUCH_TABLE
+SHOW CREATE TABLE t1;
+# clear databases in the ending
+connection conn1;
+DROP DATABASE metaSync_mix_seq_table;
+set server_ha_wait_sync_timeout = 0;
+# check databases are cleaned in the ending
+connection conn2;
+set server_ha_wait_sync_timeout = 0;
+--error ER_BAD_DB_ERROR
+SHOW CREATE DATABASE metaSync_mix_seq_table;
+
+--source include/uninstall_sequoiadb.inc
+--source suite/metadata_sync_sequoiadb/inc/insts_disconnect_sequoiadb.inc

@@ -1,0 +1,2242 @@
+# Testcase: 
+# seqDB-29564# seqDB-29565# seqDB-29566# seqDB-29567# seqDB-29568# seqDB-29569# seqDB-29570# seqDB-29571# seqDB-29572# seqDB-29573# seqDB-29574# seqDB-29575# seqDB-29576
+# seqDB-29577# seqDB-29578# seqDB-29579# seqDB-29580# seqDB-29581# seqDB-29582# seqDB-29583# seqDB-29584# seqDB-29585# seqDB-29586# seqDB-29587# seqDB-29588# seqDB-29589
+# seqDB-29590# seqDB-29591# seqDB-29592# seqDB-29593# seqDB-29594# seqDB-29595# seqDB-29593# seqDB-29594# seqDB-29595# seqDB-29596# seqDB-29598# seqDB-29599# seqDB-29672
+# seqDB-29673# seqDB-29674# seqDB-29675# seqDB-29785# seqDB-29676# seqDB-29677# seqDB-29786# seqDB-29678# seqDB-29679# seqDB-29680# seqDB-29681# seqDB-29682
+
+--source include/have_sequoiadb.inc
+--source include/have_partition.inc
+
+--disable_warnings
+drop database if exists count_limit_sort_pushdown_sequoiadb;
+--enable_warnings
+create database count_limit_sort_pushdown_sequoiadb;
+use count_limit_sort_pushdown_sequoiadb;
+--disable_warnings
+drop table if exists t1,t2,t3,t4,t5,t1_partition,t2_partition;
+--enable_warnings
+
+create table t1(
+  col1 int,
+  col2 varchar(10),
+  col3 datetime,
+  col4 varchar(10),
+  key idx_col1(col1),
+  key idx_col2(col2),
+  key idx_col12(col1,col2),
+  key idx_col3(col3)
+);
+
+insert into t1 values(0,'abc','20221115114010','abc');
+insert into t1 values(null,'abc','20221115114010','abc');
+insert into t1 values(5,'abcdef','20221115114015','abcdef');
+insert into t1 values(3,null,'20221115114015','abcdef');
+insert into t1 values(7,'def','20221115114020','def');
+insert into t1 values(2,'def',null,'def');
+insert into t1 values(4,'abcde','20221115114020','efg');
+insert into t1 values(0,'abcde','20221115114020',null);
+insert into t1 values(6,'def','20221115114210','def');
+insert into t1 values(1,'defg ','20221115114510','defg');
+insert into t1 values(3,'xyz','20221115114510','xyz ');
+insert into t1 values(2,'xyzz ','20221115114510','xyzz ');
+insert into t1 values(null,null,null,null);
+insert into t1 values(null,null,null,null);
+
+create table t2 like t1;
+insert into t2 select * from t1;
+
+create table t3(
+col1 int primary key,
+col2 varchar(10),
+col3 varchar(10)
+);
+
+insert into t3 values(3,'user01 ','abc');
+insert into t3 values(1,'user02','def ');
+insert into t3 values(2,'user03 ','ghi ');
+insert into t3 values(6,null,'def ');
+insert into t3 values(4,'user02',null);
+
+create table t4 select * from t3;
+create table t5 select * from t1;
+
+create table t1_partition(
+  col1 int,
+  col2 varchar(10),
+  col3 datetime,
+  col4 varchar(10),
+  col5 int,
+  key idx_col1(col1),
+  key idx_col2(col2),
+  key idx_col12(col1,col2),
+  key idx_col3(col3)
+)
+partition by range columns (col5)
+subpartition by key (col1)
+subpartitions 2 (
+    partition p0 values less than (4),
+    partition p1 values less than (7),
+    partition p2 values less than (11)
+);
+
+
+insert into t1_partition values(0,'abc','20221115114010','abc',3);
+insert into t1_partition values(null,'abc','20221115114010','abc',2);
+insert into t1_partition values(5,'abcdef','20221115114015','abcdef',5);
+insert into t1_partition values(3,null,'20221115114015','abcdef',3);
+insert into t1_partition values(7,'def','20221115114020','def',4);
+insert into t1_partition values(2,'def',null,'def',1);
+insert into t1_partition values(4,'abcde','20221115114020','efg',5);
+insert into t1_partition values(1,'abcde','20221115114020',null,3);
+insert into t1_partition values(6,'def','20221115114210','def',1);
+insert into t1_partition values(1,'defg ','20221115114510','defg',5);
+insert into t1_partition values(3,'xyz','20221115114510','xyz ',4);
+insert into t1_partition values(2,'xyz ','20221115114510','xyz ',1);
+insert into t1_partition values(8,'xyz ','20221115114510','xyz ',3);
+insert into t1_partition values(11,'abcde','20221115114020','efg',2);
+insert into t1_partition values(9,'def','20221115114020','def',2);
+insert into t1_partition values(10,'abcdef','20221115114015','abcdef',4);
+insert into t1_partition values(null,null,null,null,null);
+insert into t1_partition values(null,null,null,null,null);
+
+create table t2_partition like t1_partition;
+insert into t2_partition select * from t1_partition;
+
+create view v1 as select * from t1 where col1 > 2 limit 1,10;
+create view v2 as select * from t1 where col1 > 2 order by col2 limit 5;
+create view v3 as select * from t1 where col1 > 2 group by col3 limit 4;
+create view v4 as select *,count(*) from t1 where col1 > 2 group by col4 order by col4 limit 6;
+create view v5 as select * from t1 where col1 > 2 group by col4 order by col4 limit 6;
+create view v6 as select *,count(*) from t1 where col1 > 2 order by col1 limit 6;
+
+create view v7 as  (select count(*) from t1, t2 where t1.col1>=2 and t2.col1 <=6  ) UNION (select count(*) from t1 where col4<"zzz") limit 8;
+create view v8 as  (select t1.* from t1, t2 where t1.col1>=2 and t2.col1 <=6  group by t1.col1 order by t1.col1 limit 10 ) UNION (select * from t1 where col4<"zzz"  group by col2 order by col3 limit 3 ) limit 8;
+
+analyze table t1,t2,t3,t4,t5,t1_partition,t2_partition;
+set session sequoiadb_debug_log=on;
+set session sql_mode='';
+
+set session sequoiadb_optimizer_options='direct_count,direct_sort,direct_limit';
+set session sequoiadb_cls_pushdown_expand=on;
+set session optimizer_switch='optimizer_sort_pushdown=on';
+set session optimizer_index_sort_prune=on;
+
+# seqDB-29564
+--replace_column 10 #  11 #
+explain  select count(1) from t1 where col1>=1;
+--sorted_result
+select count(1) from t1 where col1>=1;
+--source include/query_pushdown_condition_sequoiadb_3.inc
+
+--replace_column 10 #  11 #
+explain  select * from t1 where col1>=1 limit 2,3;
+--sorted_result
+select * from t1 where col1>=1 limit 2,3;
+--source include/query_pushdown_condition_sequoiadb.inc
+
+--replace_column 10 #  11 #
+explain  select * from t1 where col2>"def" order by col4 desc;
+--sorted_result
+select * from t1 where col2>"def" order by col4 desc;
+--source include/query_pushdown_condition_sequoiadb.inc
+
+--replace_column 10 #  11 #
+explain  select * from t1 where col1>1 group by col1 desc;
+--sorted_result
+select * from t1 where col1>1 group by col1 desc;
+--source include/query_pushdown_condition_sequoiadb.inc
+
+--replace_column 10 #  11 #
+explain  select * from t1 where col3>="20221115114210" order by col4 limit 2,3;
+--sorted_result
+select * from t1 where col3>="20221115114210" order by col4 limit 2,3;
+--source include/query_pushdown_condition_sequoiadb.inc
+
+--replace_column 10 #  11 #
+explain  select * from t1 where col3>="20221115114210" group by col3 limit 2;
+--sorted_result
+select * from t1 where col3>="20221115114210" group by col3 limit 2;
+--source include/query_pushdown_condition_sequoiadb.inc
+
+--replace_column 10 #  11 #
+explain  select * from t1 where col4>"bcd" group by col3 order by col3;
+--sorted_result
+select * from t1 where col4>"bcd" group by col3 order by col3;
+--source include/query_pushdown_condition_sequoiadb.inc
+
+--replace_column 10 #  11 #
+explain  select * from t1 where col2>="def" group by col1 order by col4 limit 2,3;
+--sorted_result
+select col2,col3,col4 from t1 where col2>="def" group by col2 order by col4 limit 2,3;
+--source include/query_pushdown_condition_sequoiadb.inc
+
+# partition table
+--replace_column 10 #  11 #
+explain  select * from t1_partition where col2>="def" group by col1 order by col4 limit 2,3;
+--sorted_result
+select * from t1_partition where col2>="def" group by col2 order by col4 limit 2,3;
+--source include/query_pushdown_condition_sequoiadb.inc
+
+# seqDB-29565
+--replace_column 10 #  11 #
+explain  select count(1) from t1 where col1>1 group by col1 desc;
+--sorted_result
+select count(1) from t1 where col1>1 group by col1 desc;
+--source include/query_pushdown_condition_sequoiadb_2.inc
+
+--replace_column 10 #  11 #
+explain  select count(1) from t1 where col3>="20221115114210" group by col3 limit 1,1;
+--sorted_result
+select count(1) from t1 where col3>="20221115114210" group by col3 limit 1,1;
+--source include/query_pushdown_condition_sequoiadb_2.inc
+
+--replace_column 10 #  11 #
+explain  select count(1) from t1 where col4>"bcd" group by col3 order by col3;
+--sorted_result
+select count(1) from t1 where col4>"bcd" group by col3 order by col3;
+--source include/query_pushdown_condition_sequoiadb_2.inc
+
+--replace_column 10 #  11 #
+explain  select count(col1) from t1 where col2>="def" group by col1 order by col1 limit 1;
+--sorted_result
+select count(col1) from t1 where col2>="def" group by col1 order by col1 limit 1;
+--source include/query_pushdown_condition_sequoiadb_2.inc
+
+# seqDB-29566
+--replace_column 10 #  11 #
+explain  select count(1) from t1 where col2>="def" limit 1;
+--sorted_result
+select count(1) from t1 where col2>="def" limit 1;
+--source include/query_pushdown_condition_sequoiadb_3.inc
+
+--replace_column 10 #  11 #
+explain  select count(1) from t1 where col2>="bcd" order by col4 desc;
+--sorted_result
+select count(1) from t1 where col2>="bcd" order by col4 desc;
+--source include/query_pushdown_condition_sequoiadb_3.inc
+
+--replace_column 10 #  11 #
+explain  select count(1) from t1 where col3>="20221115114210" order by col4 limit 1;
+--sorted_result
+select count(1) from t1 where col3>="20221115114210" order by col4 limit 1;
+--source include/query_pushdown_condition_sequoiadb_3.inc
+
+# seqDB-29567
+--replace_column 10 #  11 #
+explain (select count(1) from t1 where col1>1) union ALL (select count(1) from t2 where col4<"zzz") limit 1,1;
+--sorted_result
+(select count(1) from t1 where col1>1) union ALL (select count(1) from t2 where col4<"zzz") limit 1,1;
+--source include/query_pushdown_condition_sequoiadb_6.inc
+
+--replace_column 10 #  11 #
+explain (select * from t1 where col1>=1 limit 2,4) union ALL (select *  from t2 where col2>"def" limit 2,3) limit 1,3;
+--sorted_result
+(select * from t1 where col1>=1 limit 2,4) union ALL (select *  from t2 where col2>"def" limit 2,3) limit 1,3;
+--source include/query_pushdown_condition_sequoiadb_2.inc
+
+--replace_column 10 #  11 #
+explain (select * from t1 where col1>=1 group by col1 desc) union ALL (select * from t2 where col2>"def" group by col2 desc) limit 1,3;
+--sorted_result
+(select * from t1 where col1>=1 group by col1 desc) union ALL (select * from t2 where col2>"def" group by col2 desc) limit 1,3;
+--source include/query_pushdown_condition_sequoiadb_2.inc
+
+--replace_column 10 #  11 #
+explain (select col4 from t1 where col1>1 order by col4 desc) union ALL (select col4 from t2 where col3>="20221115114210" order by col4 limit 1) order by col4 limit 1,3;
+--sorted_result
+(select col4 from t1 where col1>1 order by col4 desc) union ALL (select col4 from t2 where col3>="20221115114210" order by col4 limit 1) order by col4 limit 1,3;
+--source include/query_pushdown_condition_sequoiadb_2.inc
+
+--replace_column 10 #  11 #
+explain (select * from t1 where col1>1 group by col1 limit 2,4 ) union ALL (select * from t2 where col3>="20221115114210" group by col4 limit 2,3) order by col1  limit 1,3;
+--sorted_result
+(select * from t1 where col1>1 group by col1 limit 2,4 ) union ALL (select * from t2 where col3>="20221115114210" group by col4 limit 2,3) order by col1  limit 1,3;
+--source include/query_pushdown_condition_sequoiadb_2.inc
+
+--replace_column 10 #  11 #
+explain (select * from t1 where col4>"bcd" group by col3 order by col3) union ALL (select * from t2 where col3>="20221115114210" group by col3 order by col3) order by col1  limit 1,3;
+--sorted_result
+(select * from t1 where col4>"bcd" group by col3 order by col3) union ALL (select * from t2 where col3>="20221115114210" group by col3 order by col3) order by col1  limit 1,3;
+--source include/query_pushdown_condition_sequoiadb_2.inc
+
+--replace_column 10 #  11 #
+explain (select * from t1 where col4>"bcd" group by col3 order by col3  limit 0,3) union ALL (select * from t2 where col3>="20221115114210" group by col3 order by col3  limit 0,2) order by col1  limit 1,3;
+--sorted_result
+(select * from t1 where col4>"bcd" group by col3 order by col3  limit 0,3) union ALL (select * from t2 where col3>="20221115114210" group by col3 order by col3  limit 0,2) order by col1  limit 1,3;
+--source include/query_pushdown_condition_sequoiadb_2.inc
+
+--replace_column 10 #  11 #
+explain (select * from t1 where col1>=1 limit 2,3) union ALL (select * from t2 where col2>"def" order by col4 desc) limit 1,3;
+--sorted_result
+(select * from t1 where col1>=1 limit 2,3) union ALL (select * from t2 where col2>"def" order by col4 desc) limit 1,3;
+--source include/query_pushdown_condition_sequoiadb_2.inc
+
+--replace_column 10 #  11 #
+explain (select col3 from t1 where col1>1 group by col3 desc) union ALL (select col3 from t2 where col3>="20221115114210" order by col3 limit 1) order by col3 limit 1;
+--sorted_result
+(select col3 from t1 where col1>1 group by col3 desc) union ALL (select col3 from t2 where col3>="20221115114210" order by col3 limit 1) order by col3 limit 1;
+--source include/query_pushdown_condition_sequoiadb_2.inc
+
+--replace_column 10 #  11 #
+explain (select col1 from t1 where col1>1 group by col1 desc  limit 1) union ALL (select col1 from t2 where col3>="20221115114210" order by col1 limit 1) order by col1 limit 1;
+--sorted_result
+(select col1 from t1 where col1>1 group by col1 desc  limit 1) union ALL (select col1 from t2 where col3>="20221115114210" order by col1 limit 1) order by col1 limit 1;
+--source include/query_pushdown_condition_sequoiadb_2.inc
+
+--replace_column 10 #  11 #
+explain (select * from t1 where col4>="def" order by col4 limit 2,3) union ALL(select * from t2 where col1>=1 group by col2 order by col2 limit 2,1) order by col3 limit 2,3;
+--sorted_result
+(select * from t1 where col4>="def" order by col4 limit 2,3) union (select * from t2 where col1>=1 group by col2 order by col2 limit 2,1) order by col3 limit 2,3;
+--source include/query_pushdown_condition_sequoiadb_2.inc
+
+--replace_column 10 #  11 #
+explain  (select col2 from t1 where col1>=1 limit 1)  UNION ALL (select col2 from t1 where col2>="def" order by col4 desc limit 1) UNION ALL (select col2 from t2 where col1>=1 group by col2 order by col2 desc limit 1) order by col2 desc limit 1;
+--sorted_result
+(select col2 from t1 where col1>=1 limit 1)  UNION ALL (select col2 from t1 where col2>="def" order by col4 desc limit 1) UNION ALL (select col2 from t2 where col1>=1 group by col2 order by col2 desc limit 1) order by col2 desc limit 1;
+--source include/query_pushdown_condition_sequoiadb_4.inc
+
+--replace_column 10 #  11 #
+explain (select col4 from t1 where col1>=1 limit 2,3) UNION ALL (select col4 from t2 where col2>"defg" order by col4 desc) UNION ALL (select col4 from t1 where col2>"defg" order by col4 desc limit 2,3) UNION ALL (select col2 from t2 where col1>=1 group by col2 order by col2 desc limit 2,1) order by col4 desc limit 1;
+--sorted_result
+(select col4 from t1 where col1>=1 limit 2,3) UNION ALL (select col4 from t2 where col2>"defg" order by col4 desc) UNION ALL (select col4 from t1 where col2>"defg" order by col4 desc limit 2,3) UNION ALL (select col2 from t2 where col1>=1 group by col2 order by col2 desc limit 2,1) order by col4 desc limit 1;
+ --source include/query_pushdown_condition_sequoiadb_4.inc
+
+# partition table 
+--replace_column 10 #  11 #
+explain (select col4 from t1_partition where col1>=1 limit 1) UNION ALL (select col4 from t2_partition where col4>"defg" order by col4 desc) UNION ALL (select col4 from t1_partition where col4>"defg" order by col4 desc limit 1) UNION ALL (select col4 from t2_partition where col1>=1 group by col4 order by col4 desc limit 1) order by col4 desc limit 1;
+--sorted_result
+(select col4 from t1_partition where col1>=1 limit 1) UNION ALL (select col4 from t2_partition where col4>"defg" order by col4 desc) UNION ALL (select col4 from t1_partition where col4>"defg" order by col4 desc limit 1) UNION ALL (select col4 from t2_partition where col1>=1 group by col4 order by col4 desc limit 1) order by col4 desc limit 1;
+ --source include/query_pushdown_condition_sequoiadb_6.inc
+
+# seqDB-29568
+--replace_column 10 #  11 #
+explain (select * from t1 where col1>=1 order by col1 desc) union ALL (select * from t2 where col2>"def" order by col4 desc) limit 1,3;
+--sorted_result
+(select * from t1 where col1>=1 order by col1 desc) union ALL (select * from t2 where col2>"def" order by col4 desc) limit 1,3;
+--source include/query_pushdown_condition_sequoiadb_2.inc
+
+--replace_column 10 #  11 #
+explain (select count(*) from t1 where col1>=1 group by col1 desc) union ALL (select count(*) from t2 where col2>"def" group by col2 desc) limit 1,3;
+--sorted_result
+(select count(*) from t1 where col1>=1 group by col1 desc) union ALL (select count(*) from t2 where col2>"def" group by col2 desc) limit 1,3;
+--source include/query_pushdown_condition_sequoiadb_2.inc
+
+--replace_column 10 #  11 #
+explain (select count(*) from t1 where col1>1 group by col1 limit 2,4 ) union ALL (select count(*) from t2 where col3>="20221115114210" group by col4 limit 2,3)   limit 1,3;
+--sorted_result
+(select count(*) from t1 where col1>1 group by col1 limit 2,4 ) union ALL (select count(*) from t2 where col3>="20221115114210" group by col4 limit 2,3)  limit 1,3;
+--source include/query_pushdown_condition_sequoiadb_2.inc
+
+--replace_column 10 #  11 #
+explain (select count(*) from t1 where col4>"bcd" group by col3 order by col3) union ALL (select count(*) from t2 where col3>="20221115114210" group by col3 order by col3)  limit 1,3;
+--sorted_result
+(select count(*) from t1 where col4>"bcd" group by col3 order by col3) union ALL (select count(*) from t2 where col3>="20221115114210" group by col3 order by col3)  limit 1,3;
+--source include/query_pushdown_condition_sequoiadb_2.inc
+
+--replace_column 10 #  11 #
+explain (select count(*) from t1 where col4>"bcd" group by col3 order by col3  limit 0,3) union ALL (select count(*) from t2 where col3>="20221115114210" group by col3 order by col3  limit 0,2)  limit 1,3;
+--sorted_result
+(select count(*) from t1 where col4>"bcd" group by col3 order by col3  limit 0,3) union ALL (select count(*) from t2 where col3>="20221115114210" group by col3 order by col3  limit 0,2)  limit 1,3;
+--source include/query_pushdown_condition_sequoiadb_2.inc
+
+# seqDB-29569
+--replace_column 10 #  11 #
+explain (select count(*) from t1 where col1>=1 limit 0,4) union ALL (select count(*)  from t2 where col2>"def" limit 0,3) limit 1,3;
+--sorted_result
+(select count(*) from t1 where col1>=1 limit 0,4) union ALL (select count(*)  from t2 where col2>"def" limit 0,3) limit 1,3;
+--source include/query_pushdown_condition_sequoiadb_6.inc
+
+--replace_column 10 #  11 #
+explain (select count(1) from t1 where col1>=1 order by col1 desc) union ALL (select count(1) from t2 where col2>"def" order by col4 desc) limit 1,3;
+--sorted_result
+(select count(1) from t1 where col1>=1 order by col1 desc) union ALL (select count(1) from t2 where col2>"def" order by col4 desc) limit 1,3;
+--source include/query_pushdown_condition_sequoiadb_2.inc
+
+--replace_column 10 #  11 #
+explain (select count(col4) from t1 where col1>1 order by col4 desc) union ALL (select count(col4) from t2 where col3>="20221115114210" order by col4 limit 1)  limit 1,3;
+--sorted_result
+(select count(col4) from t1 where col1>1 order by col4 desc) union ALL (select count(col4) from t2 where col3>="20221115114210" order by col4 limit 1)  limit 1,3;
+--source include/query_pushdown_condition_sequoiadb_2.inc
+
+
+# seqDB-29570
+--replace_column 10 #  11 #
+explain (select count(1) from t1 where col1>1) UNION (select count(1) from t2 where col4<"zzz") limit 1,1;
+--sorted_result
+(select count(1) from t1 where col1>1) UNION (select count(1) from t2 where col4<"zzz") limit 1,1;
+--source include/query_pushdown_condition_sequoiadb_6.inc
+
+--replace_column 10 #  11 #
+explain (select * from t1 where col1>=1 limit 2,4) UNION (select *  from t2 where col2>"def" limit 2,3) limit 1,3;
+--sorted_result
+(select * from t1 where col1>=1 limit 2,4) UNION (select *  from t2 where col2>"def" limit 2,3) limit 1,3;
+--source include/query_pushdown_condition_sequoiadb_2.inc
+
+--replace_column 10 #  11 #
+explain (select * from t1 where col1>=1 group by col1 desc) UNION (select * from t2 where col2>"def" group by col2 desc) limit 1,3;
+--sorted_result
+(select * from t1 where col1>=1 group by col1 desc) UNION (select * from t2 where col2>"def" group by col2 desc) limit 1,3;
+--source include/query_pushdown_condition_sequoiadb_2.inc
+
+--replace_column 10 #  11 #
+explain (select col1 from t1 where col1>1 order by col1 desc) UNION (select col1 from t2 where col3>="20221115114210" order by col1 limit 1) order by col1 limit 1;
+--sorted_result
+(select col1 from t1 where col1>1 order by col1 desc) UNION (select col1 from t2 where col3>="20221115114210" order by col1 limit 1) order by col1 limit 1;
+--source include/query_pushdown_condition_sequoiadb_2.inc
+
+--replace_column 10 #  11 #
+explain (select * from t1 where col1>1 group by col1 limit 2,4 ) UNION (select * from t2 where col3>="20221115114210" group by col4 limit 2,3) order by col1  limit 1,3;
+--sorted_result
+(select * from t1 where col1>1 group by col1 limit 2,4 ) UNION (select * from t2 where col3>="20221115114210" group by col4 limit 2,3) order by col1  limit 1,3;
+--source include/query_pushdown_condition_sequoiadb_2.inc
+
+--replace_column 10 #  11 #
+explain (select * from t1 where col4>"bcd" group by col3 order by col3) UNION (select * from t2 where col3>="20221115114210" group by col3 order by col3) order by col1  limit 1,3;
+--sorted_result
+(select * from t1 where col4>"bcd" group by col3 order by col3) UNION (select * from t2 where col3>="20221115114210" group by col3 order by col3) order by col1  limit 1,3;
+--source include/query_pushdown_condition_sequoiadb_2.inc
+
+--replace_column 10 #  11 #
+explain (select * from t1 where col4>"bcd" group by col3 order by col3  limit 0,3) UNION (select * from t2 where col3>="20221115114210" group by col3 order by col3  limit 0,2) order by col1  limit 1,3;
+--sorted_result
+(select * from t1 where col4>"bcd" group by col3 order by col3  limit 0,3) UNION (select * from t2 where col3>="20221115114210" group by col3 order by col3  limit 0,2) order by col1  limit 1,3;
+--source include/query_pushdown_condition_sequoiadb_2.inc
+
+--replace_column 10 #  11 #
+explain (select * from t1 where col1>=1 limit 2,3) UNION (select * from t2 where col2>"def" order by col4 desc) limit 1,3;
+--sorted_result
+(select * from t1 where col1>=1 limit 2,3) UNION (select * from t2 where col2>"def" order by col4 desc) limit 1,3;
+--source include/query_pushdown_condition_sequoiadb_2.inc
+
+--replace_column 10 #  11 #
+explain (select col4 from t1 where col1>1 group by col4 desc) UNION (select col4 from t2 where col3>="20221115114210" order by col4 limit 1) order by col4 limit 1;
+--sorted_result
+(select col4 from t1 where col1>1 group by col4 desc) UNION (select col4 from t2 where col3>="20221115114210" order by col4 limit 1) order by col4 limit 1;
+--source include/query_pushdown_condition_sequoiadb_2.inc
+
+--replace_column 10 #  11 #
+explain (select col1 from t1 where col1>1 group by col1 desc  limit 1) UNION (select col1 from t2 where col3>="20221115114210" order by col1 limit 1) order by col1 limit 1;
+--sorted_result
+(select col1 from t1 where col1>1 group by col1 desc  limit 1) UNION (select col1 from t2 where col3>="20221115114210" order by col1 limit 1) order by col1 limit 1;
+--source include/query_pushdown_condition_sequoiadb_2.inc
+
+--replace_column 10 #  11 #
+explain (select * from t1 where col4>="def" order by col4 limit 2,3) UNION (select * from t2 where col1>=1 group by col2 order by col2 limit 2,1) order by col3 limit 2,3;
+--sorted_result
+(select * from t1 where col4>="def" order by col4 limit 2,3) UNION (select * from t2 where col1>=1 group by col2 order by col2 limit 2,1) order by col3 limit 2,3;
+--source include/query_pushdown_condition_sequoiadb_2.inc
+
+--replace_column 10 #  11 #
+explain  (select * from t1 where col1>=1 limit 2,3)  UNION (select * from t1 where col2>="def" order by col4  limit 2,3) UNION (select * from t2 where col1>=1 group by col2 order by col2  limit 2,1) order by col3  limit 2;
+--sorted_result
+(select * from t1 where col1>=1 limit 2,3)  UNION (select * from t1 where col2>="def" order by col4  limit 2,3) UNION (select * from t2 where col1>=1 group by col2 order by col2  limit 2,1) order by col3  limit 2;
+--source include/query_pushdown_condition_sequoiadb_3.inc
+
+--replace_column 10 #  11 #
+explain  (select * from t1 where col1>=1 limit 2,3) UNION (select * from t2 where col2>"def" order by col4 ) UNION (select * from t1 where col2>="def" order by col4  limit 2,3) UNION (select * from t2 where col1>=1 group by col2 order by col2  limit 2,1) order by col3  limit 2;
+--sorted_result
+(select * from t1 where col1>=1 limit 2,3) UNION (select * from t2 where col2>"def" order by col4 ) UNION (select * from t1 where col2>="def" order by col4  limit 2,3) UNION (select * from t2 where col1>=1 group by col2 order by col2  limit 2,1) order by col3  limit 2;
+--source include/query_pushdown_condition_sequoiadb_4.inc
+
+# partition table
+--replace_column 10 #  11 #
+explain  (select col4 from t1_partition where col1>=1 limit 1) UNION (select col4 from t2_partition where col4>"def" order by col4 ) UNION (select col4 from t1_partition where col4>="def" order by col4  limit 1) UNION (select col4 from t2_partition where col1>=1 group by col4 order by col4  limit 1) order by col4  limit 1;
+--sorted_result
+(select col4 from t1_partition where col1>=1 limit 1) UNION (select col4 from t2_partition where col4>"def" order by col4 ) UNION (select col4 from t1_partition where col4>="def" order by col4  limit 1) UNION (select col4 from t2_partition where col1>=1 group by col4 order by col4  limit 1) order by col4  limit 1;
+--source include/query_pushdown_condition_sequoiadb_6.inc
+
+# seqDB-29571
+--replace_column 10 #  11 #
+explain (select * from t1 where col1>=1 order by col1 desc) UNION (select * from t2 where col2>"def" order by col4 desc) limit 1,3;
+--sorted_result
+(select * from t1 where col1>=1 order by col1 desc) UNION (select * from t2 where col2>"def" order by col4 desc) limit 1,3;
+--source include/query_pushdown_condition_sequoiadb_2.inc
+
+--replace_column 10 #  11 #
+explain (select count(*) from t1 where col1>=1 group by col1 desc) UNION (select count(*) from t2 where col2>"def" group by col2 desc) limit 1,3;
+--sorted_result
+(select count(*) from t1 where col1>=1 group by col1 desc) UNION (select count(*) from t2 where col2>"def" group by col2 desc) limit 1,3;
+--source include/query_pushdown_condition_sequoiadb_2.inc
+
+--replace_column 10 #  11 #
+explain (select count(*) from t1 where col1>1 group by col1 limit 2,4 ) UNION (select count(*) from t2 where col3>="20221115114210" group by col4 limit 2,3)   limit 1,3;
+--sorted_result
+(select count(*) from t1 where col1>1 group by col1 limit 2,4 ) UNION (select count(*) from t2 where col3>="20221115114210" group by col4 limit 2,3)  limit 1,3;
+--source include/query_pushdown_condition_sequoiadb_2.inc
+
+--replace_column 10 #  11 #
+explain (select count(*) from t1 where col4>"bcd" group by col3 order by col3) UNION (select count(*) from t2 where col3>="20221115114210" group by col3 order by col3)  limit 1,3;
+--sorted_result
+(select count(*) from t1 where col4>"bcd" group by col3 order by col3) UNION (select count(*) from t2 where col3>="20221115114210" group by col3 order by col3)  limit 1,3;
+--source include/query_pushdown_condition_sequoiadb_2.inc
+
+--replace_column 10 #  11 #
+explain (select count(*) from t1 where col4>"bcd" group by col3 order by col3  limit 0,3) UNION (select count(*) from t2 where col3>="20221115114210" group by col3 order by col3  limit 0,2)  limit 1,3;
+--sorted_result
+(select count(*) from t1 where col4>"bcd" group by col3 order by col3  limit 0,3) UNION (select count(*) from t2 where col3>="20221115114210" group by col3 order by col3  limit 0,2)  limit 1,3;
+--source include/query_pushdown_condition_sequoiadb_2.inc
+
+# seqDB-29572
+--replace_column 10 #  11 #
+explain (select count(*) from t1 where col1>=1 limit 0,4) UNION (select count(*)  from t2 where col2>"def" limit 0,3) limit 1,3;
+--sorted_result
+(select count(*) from t1 where col1>=1 limit 0,4) UNION (select count(*)  from t2 where col2>"def" limit 0,3) limit 1,3;
+--source include/query_pushdown_condition_sequoiadb_6.inc
+
+--replace_column 10 #  11 #
+explain (select count(1) from t1 where col1>=1 order by col1 desc) UNION (select count(1) from t2 where col2>"def" order by col4 desc) limit 1,3;
+--sorted_result
+(select count(1) from t1 where col1>=1 order by col1 desc) UNION (select count(1) from t2 where col2>"def" order by col4 desc) limit 1,3;
+--source include/query_pushdown_condition_sequoiadb_2.inc
+
+--replace_column 10 #  11 #
+explain (select count(1) from t1 where col1>1 order by col1 desc) UNION (select count(1) from t2 where col3>="20221115114210" order by col4 limit 2,3) limit 1,3;
+--sorted_result
+(select count(1) from t1 where col1>1 order by col1 desc) UNION (select count(1) from t2 where col3>="20221115114210" order by col4 limit 2,3) limit 1,3;
+--source include/query_pushdown_condition_sequoiadb_2.inc
+
+# seqDB-29573
+--replace_column 10 #  11 #
+explain (select count(1) from t1, t2 where t1.col1>=4 and t2.col1 <=6 ) UNION (select count(1) from t1 where col4<"zzz") limit 0,3;
+--sorted_result
+(select count(1) from t1, t2 where t1.col1>=4 and t2.col1 <=6 ) UNION (select count(1) from t1 where col4<"zzz") limit 0,3;
+--source include/query_pushdown_condition_sequoiadb_7.inc
+
+--replace_column 10 #  11 #
+explain (select count(1) from t1, t2 where t1.col1>=4 and t2.col1 <=6 ) UNION (select count(1) from t1,t2  where t1.col4 >='def' and t2.col4<"zzz") UNION (select count(1) from t1 where col4<"zzz") limit 0,3;
+--sorted_result
+(select count(1) from t1, t2 where t1.col1>=4 and t2.col1 <=6 ) UNION (select count(1) from t1,t2  where t1.col4 >='def' and t2.col4<"zzz") UNION (select count(1) from t1 where col4<"zzz") limit 0,3;
+--source include/query_pushdown_condition_sequoiadb_11.inc
+
+--replace_column 10 #  11 #
+explain (select t1.* from t1, t2 where t1.col1>=2 and t2.col1 <=6 group by t1.col3 order by t1.col3  limit 1,4) UNION (select * from t1 where col3>="20221115114210" group by col3 order by col3  limit 0,2) limit 0,3;
+--sorted_result
+(select t1.* from t1, t2 where t1.col1>=2 and t2.col1 <=6 group by t1.col3 order by t1.col3  limit 1,4) UNION (select * from t1 where col3>="20221115114210" group by col3 order by col3  limit 0,2) limit 0,3;
+--source include/query_pushdown_condition_sequoiadb_4.inc
+
+--replace_column 10 #  11 #
+explain (select t1.* from t1, t2 where t1.col1>=2 and t2.col1 <=6 group by t1.col3 order by t1.col3  limit 1,4) UNION (select t2.*  from t1,t2  where t1.col4 >='def' and t2.col4<"zzz" group by col3 order by col3  limit 0,2) UNION (select * from t1 where col3>="20221115114210" group by col3 order by col3  limit 0,2) limit 0,3;
+--sorted_result
+(select t1.* from t1, t2 where t1.col1>=2 and t2.col1 <=6 group by t1.col3 order by t1.col3  limit 1,4) UNION (select t2.*  from t1,t2  where t1.col4 >='def' and t2.col4<"zzz" group by col3 order by col3  limit 0,2) UNION (select * from t1 where col3>="20221115114210" group by col3 order by col3  limit 0,2) limit 0,3;
+--source include/query_pushdown_condition_sequoiadb_6.inc
+
+# seqDB-29574
+--replace_column 10 #  11 #
+explain  select count(*),(select count(col1) from t1 where col1>=1) from t2 where col3>"20221115114210";
+--sorted_result
+select count(*),(select count(col1) from t1 where col1>=1) from t2 where col3>"20221115114210";
+--source include/query_pushdown_condition_sequoiadb_6.inc
+
+--replace_column 10 #  11 #
+explain  select *,(select col1 from t1 where col1>=1 limit 2,1) from t2 where col3>"20221115114210"  limit 1,3;
+--sorted_result
+select *,(select col1 from t1 where col1>=1 limit 2,1) from t2 where col3>"20221115114210"  limit 1,3;
+--source include/query_pushdown_condition_sequoiadb_3.inc
+
+--replace_column 10 #  11 #
+explain  select *,(select col2 from t1 where col3>="20221215114210" group by col4) from t2 where t2.col1 <6 group by col1;
+--sorted_result
+select *,(select col2 from t1 where col3>="20221215114210" group by col4) from t2 where t2.col1 <6 group by col1;
+--source include/query_pushdown_condition_sequoiadb_2.inc
+
+--replace_column 10 #  11 #
+explain  select *,(select col1 from t1 where col2>="bcd" order by col3 limit 2,1) from t2 where col3>"20221115114210" order by col4 limit 1,3;
+--sorted_result
+select *,(select col1 from t1 where col2>="bcd" order by col3 limit 2,1) from t2 where col3>"20221115114210" order by col4 limit 1,3;
+--source include/query_pushdown_condition_sequoiadb_2.inc
+
+--replace_column 10 #  11 #
+explain  select *,(select col2 from t1 where col3<"20221215114210" group by col4 limit 2,1) from t2 where t2.col1 <6 group by col1 limit 3;
+--sorted_result
+select *,(select col2 from t1 where col3<"20221215114210" group by col4 limit 2,1) from t2 where t2.col1 <6 group by col1 limit 3;
+--source include/query_pushdown_condition_sequoiadb_2.inc
+
+--replace_column 10 #  11 #
+explain  select *,(select col2 from t1 where col3>="20221215114210" group by col4 order by col1) from t2 where t2.col1 <6 group by col1 order by col3;
+--sorted_result
+select *,(select col2 from t1 where col3>="20221215114210" group by col4 order by col1) from t2 where t2.col1 <6 group by col1 order by col3;
+--source include/query_pushdown_condition_sequoiadb_2.inc
+
+--replace_column 10 #  11 #
+explain  select col2,(select col2 from t1 where col3<"20221215114210" group by col2 order by col2 limit 1) from t2 where t2.col1 <6 group by col2 order by col2 limit 1;
+--sorted_result
+select col2,(select col2 from t1 where col3<"20221215114210" group by col2 order by col2 limit 1) from t2 where t2.col1 <6 group by col2 order by col2 limit 1;
+--source include/query_pushdown_condition_sequoiadb_2.inc
+
+--replace_column 10 #  11 #
+explain  select *,(select col1 from t1 where col2>="bcd" order by col1 limit 0,1) from t2 where t2.col4 >"def" group by col1 limit 1;
+--sorted_result
+select *,(select col1 from t1 where col2>="bcd" order by col1 limit 0,1) from t2 where t2.col4 >"def" group by col1 limit 1;
+--source include/query_pushdown_condition_sequoiadb_2.inc
+
+--replace_column 10 #  11 #
+explain  select *,(select col2 from t1 where col3>="20221215114210" order by col2) from t2 where t2.col1 < 6 group by col1 order by col3 limit 1;
+--sorted_result
+select *,(select col2 from t1 where col3>="20221215114210" order by col2) from t2 where t2.col1 < 6 group by col1 order by col3 limit 1;
+--source include/query_pushdown_condition_sequoiadb_2.inc
+
+--replace_column 10 #  11 #
+explain  select *,(select col2 from t1 where col3>="20221215114210" order by col2) from t2 where t2.col1 < 6 order by col3 limit 1;
+--sorted_result
+select *,(select col2 from t1 where col3>="20221215114210" order by col2) from t2 where t2.col1 < 6 order by col3 limit 1;
+--source include/query_pushdown_condition_sequoiadb_2.inc
+
+--replace_column 10 #  11 #
+explain  select count(*),(select col2 from t1 where col3<"20221215114210" group by col2 order by col2 limit 1) from t2 where t2.col1 < 6;
+--sorted_result
+select count(*),(select col2 from t1 where col3<"20221215114210" group by col2 order by col2 limit 1) from t2 where t2.col1 < 6;
+--source include/query_pushdown_condition_sequoiadb_5.inc
+
+--replace_column 10 #  11 #
+explain  select *,(select col2 from t1 where col3<"20221215114210" group by col2 order by col2 limit 1) from t2 where t2.col1 < 6 limit 3;
+--sorted_result
+select *,(select col2 from t1 where col3<"20221215114210" group by col2 order by col2 limit 1) from t2 where t2.col1 < 6 limit 3;
+--source include/query_pushdown_condition_sequoiadb_2.inc
+
+--replace_column 10 #  11 #
+explain  select *,(select col2 from t1 where col3<"20221215114210" group by col2 order by col2 limit 1) from t2 where t2.col1 < 6 order by col3;
+--sorted_result
+select *,(select col2 from t1 where col3<"20221215114210" group by col2 order by col2 limit 1) from t2 where t2.col1 < 6 order by col3;
+--source include/query_pushdown_condition_sequoiadb_2.inc
+
+# partition table
+--replace_column 10 #  11 #
+explain  select col1,(select col4 from t1_partition where col3<"20221215114210" group by col4 order by col4 limit 1) from t2_partition where t2_partition.col1 < 6 order by col4;
+--sorted_result
+select col1,(select col4 from t1_partition where col3<"20221215114210" group by col4 order by col4 limit 1) from t2_partition where t2_partition.col1 < 6 order by col4;
+--source include/query_pushdown_condition_sequoiadb_2.inc
+
+# seqDB-29575
+--replace_column 10 #  11 #
+explain  select *,(select col1 from t1 where col2="bcd" order by col3) from t2 where col3>"20221115114210" order by col4;
+--sorted_result
+select *,(select col1 from t1 where col2="bcd" order by col3) from t2 where col3>"20221115114210" order by col4;
+--source include/query_pushdown_condition_sequoiadb_2.inc
+
+--replace_column 10 #  11 #
+explain  select count(*),(select count(col2) from t1 where col3>="20221215114210" group by col4) from t2 where t2.col1 <6 group by col1;
+--sorted_result
+select count(*),(select count(col2) from t1 where col3>="20221215114210" group by col4) from t2 where t2.col1 <6 group by col1;
+--source include/query_pushdown_condition_sequoiadb_3.inc
+
+--replace_column 10 #  11 #
+explain  select count(*),(select count(col2) from t1 where col3<"20221215114210" group by col4 limit 2,1) from t2 where t2.col1 <6 group by col1 limit 3;
+--sorted_result
+select count(*),(select count(col2) from t1 where col3<"20221215114210" group by col4 limit 2,1) from t2 where t2.col1 <6 group by col1 limit 3;
+--source include/query_pushdown_condition_sequoiadb_3.inc
+
+--replace_column 10 #  11 #
+explain  select count(*),(select count(col2) from t1 where col3>="20221215114210" group by col4 order by col1) from t2 where t2.col1 <6 group by col1 order by col3;
+--sorted_result
+select count(*),(select count(col2) from t1 where col3>="20221215114210" group by col4 order by col1) from t2 where t2.col1 <6 group by col1 order by col3;
+--source include/query_pushdown_condition_sequoiadb_2.inc
+
+--replace_column 10 #  11 #
+explain  select count(col1),(select count(col1) from t1 where col3<"20221215114210" group by col1 order by col1 limit 1) from t2 where t2.col1 <6 group by col1 order by col1 limit 1;
+--sorted_result
+select count(col1),(select count(col1) from t1 where col3<"20221215114210" group by col1 order by col1 limit 1) from t2 where t2.col1 <6 group by col1 order by col1 limit 1;
+--source include/query_pushdown_condition_sequoiadb_2.inc
+
+# seqDB-29576
+--replace_column 10 #  11 #
+explain  select count(*),(select count(col1) from t1 where col1>=1 limit 1,3) from t2 where col3>"20221115114210" limit 3;
+--sorted_result
+select count(*),(select count(col1) from t1 where col1>=1 limit 1,3) from t2 where col3>"20221115114210" limit 3;
+--source include/query_pushdown_condition_sequoiadb_6.inc
+
+--replace_column 10 #  11 #
+explain  select count(1),(select col1 from t1 where col2="bcd" order by col3) from t2 where col3>"20221115114210" order by col4;
+--sorted_result
+select count(1),(select col1 from t1 where col2="bcd" order by col3) from t2 where col3>"20221115114210" order by col4;
+--source include/query_pushdown_condition_sequoiadb_2.inc
+
+--replace_column 10 #  11 #
+explain  select count(1),(select col1 from t1 where col2>="bcd" order by col3 limit 2,1) from t2 where col3>"20221115114210" order by col4 limit 1,3;
+--sorted_result
+select count(1),(select col1 from t1 where col2>="bcd" order by col3 limit 2,1) from t2 where col3>"20221115114210" order by col4 limit 1,3;
+--source include/query_pushdown_condition_sequoiadb_2.inc
+
+# seqDB-29577
+--replace_column 10 #  11 #
+explain  select count(*) from t2 where t2.col1 < (select count(col4) from t1 where col3>="20221115114210" ) ;
+--sorted_result
+select count(*) from t2 where t2.col1 < (select count(col4) from t1 where col3>="20221115114210" ) ;
+--source include/query_pushdown_condition_sequoiadb_5.inc
+
+--replace_column 10 #  11 #
+explain  select * from t2 where t2.col1 < (select col1 from t1 where col1>=5 limit 0,1)  limit 3;
+--sorted_result
+select * from t2 where t2.col1 < (select col1 from t1 where col1>=5 limit 0,1)  limit 3;
+--source include/query_pushdown_condition_sequoiadb_3.inc
+
+--replace_column 10 #  11 #
+explain  select * from t2 where t2.col2 in(select col4 from t1 where col3>="20221115114010" group by col4 having col4 < "zzz") group by col3 desc;
+--sorted_result 
+select * from t2 where t2.col2 in(select col4 from t1 where col3>="20221115114010" group by col4 having col4 < "zzz") group by col3 desc;
+--source include/query_pushdown_condition_sequoiadb_2.inc
+
+--replace_column 10 #  11 #
+explain  select * from t2 where t2.col1 < (select col1 from t1 where col1>=5 order by col4 limit 0,1)  order by col3 desc limit 3;
+--sorted_result
+select * from t2 where t2.col1 < (select col1 from t1 where col1>=5 order by col4 limit 0,1)  order by col3 desc limit 3;
+--source include/query_pushdown_condition_sequoiadb_2.inc
+
+--replace_column 10 #  11 #
+explain  select * from t2 where t2.col1 < (select col1 from t1 where col1>=5 group by col4 limit 0,1) group by col3 desc limit 3;
+--sorted_result
+select * from t2 where t2.col1 < (select col1 from t1 where col1>=5 group by col4 limit 0,1) group by col3 desc limit 3;
+--source include/query_pushdown_condition_sequoiadb_2.inc
+
+--replace_column 10 #  11 #
+explain  select * from t2 where t2.col2 < (select col4 from t1 where col3>="20221115114210" group by col4 desc limit 1) group by col3 desc limit 3;
+--sorted_result
+select * from t2 where t2.col2 < (select col4 from t1 where col3>="20221115114210" group by col4 desc limit 1) group by col3 desc limit 3;
+--source include/query_pushdown_condition_sequoiadb_2.inc
+
+--replace_column 10 #  11 #
+explain  select * from t2 where t2.col2 in(select col4 from t1 where col3>"20221115114210" group by col4 having col4 < "zzz"   order by col1 desc) group by col3 order by col2 desc;
+--sorted_result
+select * from t2 where t2.col2 in(select col4 from t1 where col3>"20221115114210" group by col4 having col4 < "zzz"   order by col1 desc) group by col3 order by col2 desc;
+--source include/query_pushdown_condition_sequoiadb_2.inc
+
+--replace_column 10 #  11 #
+explain  select * from t2 where t2.col1 < (select col1 from t1 where col1>=5 group by col4 order by col1 limit 0,1) group by col3 order by col2 desc limit 3;
+--sorted_result
+select * from t2 where t2.col1 < (select col1 from t1 where col1>=5 group by col4 order by col1 limit 0,1) group by col3 order by col2 desc limit 3;
+--source include/query_pushdown_condition_sequoiadb_2.inc
+
+--replace_column 10 #  11 #
+explain  select * from t2 where t2.col2 in(select col4 from t1 where col3>"20221115114210" group by col2 desc having col2 < "zzz") group by col3 desc limit 3;
+--sorted_result
+select * from t2 where t2.col2 in(select col4 from t1 where col3>"20221115114210" group by col2 desc having col2 < "zzz") group by col3 desc limit 3;
+--source include/query_pushdown_condition_sequoiadb_2.inc
+
+--replace_column 10 #  11 #
+explain  select * from t2 where t2.col2 < (select col4 from t1 where col1>="7" group by col4 desc) group by col3 desc limit 3;
+--sorted_result
+select * from t2 where t2.col2 < (select col4 from t1 where col1>="7" group by col4 desc) group by col3 desc limit 3;
+--source include/query_pushdown_condition_sequoiadb_2.inc
+
+--replace_column 10 #  11 #
+explain  select * from t2 where t2.col2 in(select col4 from t1 where col3>"20221115114210" group by col4 having col4 < "zzz"   order by col1 desc) group by col3 order by col2 desc limit 3;
+--sorted_result
+select * from t2 where t2.col2 in(select col4 from t1 where col3>"20221115114210" group by col4 having col4 < "zzz"   order by col1 desc) group by col3 order by col2 desc limit 3;
+--source include/query_pushdown_condition_sequoiadb_2.inc
+
+--replace_column 10 #  11 #
+explain  select * from t2 where t2.col4 in(select col2 from t1 where col2>"def" order by col1 desc) group by col1 limit 3;
+--sorted_result
+select * from t2 where t2.col4 in(select col2 from t1 where col2>"def" order by col1 desc) group by col1 limit 3;
+--source include/query_pushdown_condition_sequoiadb_2.inc
+
+--replace_column 10 #  11 #
+explain  select col1 from t2 where t2.col1 <(select count(1) from t1 where col1>=1 limit 0,1) group by col1 order by col1 limit 1;
+--sorted_result
+select col1 from t2 where t2.col1 <(select count(1) from t1 where col1>=1 limit 0,1) group by col1 order by col1 limit 1;
+--source include/query_pushdown_condition_sequoiadb_4.inc
+
+--replace_column 10 #  11 #
+explain  select * from t2 where t2.col1 <(select count(col1) from t1 where col1>=1 limit 0,1)  group by col1 limit 3;
+--sorted_result
+select * from t2 where t2.col1 <(select count(col1) from t1 where col1>=1 limit 0,1)  group by col1 limit 3;
+--source include/query_pushdown_condition_sequoiadb_4.inc
+
+--replace_column 10 #  11 #
+explain  select * from t2 where t2.col1 <(select col1 from t1 where col1>=1 limit 0,1)  group by col1 limit 3;
+--sorted_result
+select * from t2 where t2.col1 <(select col1 from t1 where col1>=1 limit 0,1)  group by col1 limit 3;
+--source include/query_pushdown_condition_sequoiadb_3.inc
+
+--replace_column 10 #  11 #
+explain  select * from t2 where t2.col1 <(select col1 from t1 where col1=1 order by col3 desc)  group by col1 limit 3;
+--sorted_result
+select * from t2 where t2.col1 <(select col1 from t1 where col1=1 order by col3 desc)  group by col1 limit 3;
+--source include/query_pushdown_condition_sequoiadb_3.inc
+
+--replace_column 10 #  11 #
+explain  select count(*) from t2 where t2.col2 in(select col4 from t1 where col3>"20221115114210" group by col4 having col4 < "zzz"  order by col1 desc);
+--sorted_result 
+select count(*) from t2 where t2.col2 in(select col4 from t1 where col3>"20221115114210" group by col4 having col4 < "zzz"  order by col1 desc);
+--source include/query_pushdown_condition_sequoiadb_4.inc
+
+--replace_column 10 #  11 #
+explain  select * from t2 where t2.col2 in(select col4 from t1 where col3>"20221115114210" group by col4 having col4 < "zzz"   order by col1 desc)  limit 3;
+--sorted_result
+select * from t2 where t2.col2 in(select col4 from t1 where col3>"20221115114210" group by col4 having col4 < "zzz"   order by col1 desc)  limit 3;
+--source include/query_pushdown_condition_sequoiadb_2.inc
+
+--replace_column 10 #  11 #
+explain  select * from t2 where t2.col2 in(select col4 from t1 where col3>"20221115114210" group by col4 having col4 < "zzz"   order by col1 desc) order by col3 desc limit 3;
+--sorted_result
+select * from t2 where t2.col2 in(select col4 from t1 where col3>"20221115114210" group by col4 having col4 < "zzz"   order by col1 desc) order by col3 desc limit 3;
+--source include/query_pushdown_condition_sequoiadb_2.inc
+
+--replace_column 10 #  11 #
+explain  select * from t2 where t2.col2 in(select col4 from t1 where col3>"20221115114210" group by col4 having col4 < "zzz"  order by col1 desc) order by col3 desc;
+--sorted_result
+select * from t2 where t2.col2 in(select col4 from t1 where col3>"20221115114210" group by col4 having col4 < "zzz"  order by col1 desc) order by col3 desc;
+--source include/query_pushdown_condition_sequoiadb_2.inc
+
+--replace_column 10 #  11 #
+explain  select * from t2 where t2.col2 in(select col4 from t1 where col3>"20221115114210" order by col1 desc)  order by col3 desc limit 3;
+--sorted_result
+select * from t2 where t2.col2 in(select col4 from t1 where col3>"20221115114210" order by col1 desc)  order by col3 desc limit 3;
+--source include/query_pushdown_condition_sequoiadb_3.inc
+
+--replace_column 10 #  11 #
+explain  select * from t2 where t2.col1 < (select col1 from t1 where col1>=5 order by col2 limit 0,1) order by col3 desc;
+--sorted_result
+select * from t2 where t2.col1 < (select col1 from t1 where col1>=5 order by col2 limit 0,1) order by col3 desc;
+--source include/query_pushdown_condition_sequoiadb_3.inc
+
+# partition table
+--replace_column 10 #  11 #
+explain  select col4 from t2_partition where t2_partition.col1 < (select col1 from t1_partition where col1>=5 order by col4 limit 0,1) order by col4 desc;
+--sorted_result
+select col4 from t2_partition where t2_partition.col1 < (select col1 from t1_partition where col1>=5 order by col4 limit 0,1) order by col4 desc;
+--source include/query_pushdown_condition_sequoiadb_3.inc
+
+# seqDB-29578
+--replace_column 10 #  11 #
+explain  select * from t2 where t2.col2 in(select col4 from t1 where col3>"20221115114210" order by col4 desc) order by col3 desc;
+--sorted_result
+select * from t2 where t2.col2 in(select col4 from t1 where col3>"20221115114210" order by col4 desc) order by col3 desc;
+--source include/query_pushdown_condition_sequoiadb_3.inc
+
+--replace_column 10 #  11 #
+explain  select count(*) from t2 where t2.col1 in(select count(col4) from t1 where col3>"20221115114210" group by col4 desc) group by col3 desc;
+--sorted_result 
+select count(*) from t2 where t2.col1 in(select count(col4) from t1 where col3>"20221115114210" group by col4 desc) group by col3 desc;
+--source include/query_pushdown_condition_sequoiadb_3.inc
+
+--replace_column 10 #  11 #
+explain  select count(*) from t2 where  t2.col1 < (select count(col1) from t1 where col1>=5 group by col4 limit 0,1)group by col3 desc limit 3;
+--sorted_result 
+select count(*) from t2 where  t2.col1 < (select count(col1) from t1 where col1>=5 group by col4 limit 0,1)group by col3 desc limit 3;
+--source include/query_pushdown_condition_sequoiadb_2.inc
+
+--replace_column 10 #  11 #
+explain  select count(*) from t2 where t2.col1 in(select count(col4) from t1 where col3>"20221115114210" group by col4  order by col1 desc)  group by col3 order by col2 desc;
+--sorted_result
+select count(*) from t2 where t2.col1 in(select count(col4) from t1 where col3>"20221115114210" group by col4  order by col1 desc)  group by col3 order by col2 desc;
+--source include/query_pushdown_condition_sequoiadb_2.inc
+
+--replace_column 10 #  11 #
+explain  select count(*) from t2 where t2.col1 < (select count(col1) from t1 where col1>=5 group by col4 order by col1 limit 0,1) group by col3 order by col2 desc limit 3;
+--sorted_result
+select count(*) from t2 where t2.col1 < (select count(col1) from t1 where col1>=5 group by col4 order by col1 limit 0,1) group by col3 order by col2 desc limit 3;
+--source include/query_pushdown_condition_sequoiadb_2.inc
+
+# seqDB-29579
+--replace_column 10 #  11 #
+explain  select count(1) from t2 where t2.col1 < (select col1 from t1 where col1>=5 limit 0,1)  limit 3;
+--sorted_result
+select count(1) from t2 where t2.col1 < (select col1 from t1 where col1>=5 limit 0,1)  limit 3;
+--source include/query_pushdown_condition_sequoiadb_3.inc
+
+--replace_column 10 #  11 #
+explain  select count(1) from t2 where t2.col2 in(select col4 from t1 where col3>"20221115114210" order by col4 desc) order by col3 desc;
+--sorted_result
+select count(1) from t2 where t2.col2 in(select col4 from t1 where col3>"20221115114210" order by col4 desc) order by col3 desc;
+--source include/query_pushdown_condition_sequoiadb_3.inc
+
+--replace_column 10 #  11 #
+explain  select count(1) from t2 where t2.col1 < (select col1 from t1 where col1>=5 order by col4 limit 0,1)  order by col3 desc limit 3;
+--sorted_result
+select count(1) from t2 where t2.col1 < (select col1 from t1 where col1>=5 order by col4 limit 0,1)  order by col3 desc limit 3;
+--source include/query_pushdown_condition_sequoiadb_2.inc
+
+# seqDB-29580
+--replace_column 10 #  11 #
+explain  select count(*) from t2 where col1>4 group by col1 having col1> (select count(1) from t1 where col4>"def") ;
+--sorted_result
+select count(*) from t2 where col1>4 group by col1 having col1> (select count(1) from t1 where col4>"def") ;
+--source include/query_pushdown_condition_sequoiadb_5.inc
+
+--replace_column 10 #  11 #
+explain  select * from t2 where col1>4 group by col1 having col1> (select col1 from t1 where col4>"def" limit 1) limit 2;
+--sorted_result
+select * from t2 where col1>4 group by col1 having col1> (select col1 from t1 where col4>"def" limit 1) limit 2;
+--source include/query_pushdown_condition_sequoiadb_2.inc
+
+--replace_column 10 #  11 #
+explain  select * from t2 where col1>4 group by col1 having col2 in (select col4 from t1 where col2>"def" group by col2 desc having col2 < "zzz");
+--sorted_result
+select * from t2 where col1>4 group by col1 having col2 in (select col4 from t1 where col2>"def" group by col2 desc having col2 < "zzz");
+--source include/query_pushdown_condition_sequoiadb_2.inc
+
+--replace_column 10 #  11 #
+explain  select col2 from t2 where col1>1 group by col1 having col2< (select col4 from t1 where col2<"abcdef" order by col4 desc limit 1) order by col2 desc limit 1;
+--sorted_result
+select col2 from t2 where col1>1 group by col1 having col2< (select col4 from t1 where col2<"abcdef" order by col4 desc limit 1) order by col2 desc limit 1;
+--source include/query_pushdown_condition_sequoiadb_2.inc
+
+--replace_column 10 #  11 #
+explain  select col4 from t2 where col1>1 group by col4 having col4< (select col4 from t1 where col2="abcdef" group by col4 desc limit 1) limit 1;
+--sorted_result
+select col4 from t2 where col1>1 group by col4 having col4< (select col4 from t1 where col2="abcdef" group by col4 desc limit 1) limit 1;
+--source include/query_pushdown_condition_sequoiadb_2.inc
+
+--replace_column 10 #  11 #
+explain  select * from t2 where col1>1 group by col1 having col2< (select col4 from t1 where col2="abcdef" group by col3 order by col4 desc) order by col3;
+--sorted_result 
+select * from t2 where col1>1 group by col1 having col2< (select col4 from t1 where col2="abcdef" group by col3 order by col4 desc) order by col3;
+--source include/query_pushdown_condition_sequoiadb_2.inc
+
+--replace_column 10 #  11 #
+explain  select * from t2 where col1>4 group by col1 having col2< (select col4 from t1 where col2<"abcdef" group by col3 order by col4 desc limit 1 ) order by col2 desc limit 2;
+--sorted_result
+select * from t2 where col1>4 group by col1 having col2< (select col4 from t1 where col2<"abcdef" group by col3 order by col4 desc limit 1 ) order by col2 desc limit 2;
+--source include/query_pushdown_condition_sequoiadb_2.inc
+
+--replace_column 10 #  11 #
+explain  select count(*) from t2 where col1>1 group by col2 having col2< (select col4 from t1 where col2="abcdef" order by col4 desc );
+--sorted_result
+select count(*) from t2 where col1>1 group by col2 having col2< (select col4 from t1 where col2="abcdef" order by col4 desc );
+--source include/query_pushdown_condition_sequoiadb_2.inc
+
+--replace_column 10 #  11 #
+explain  select count(*) from t2 where col1>4 group by col2 having col2< (select col4 from t1 where col2<"abcdef" order by col4 desc limit 1 );
+--sorted_result
+select count(*) from t2 where col1>4 group by col2 having col2< (select col4 from t1 where col2<"abcdef" order by col4 desc limit 1 );
+--source include/query_pushdown_condition_sequoiadb_2.inc
+
+--replace_column 10 #  11 #
+explain  select count(*) from t2 where col1>4 group by col2 having col2< (select col4 from t1 where col2<"abcdef" group by col3 order by col4 desc limit 1 );
+--sorted_result
+select count(*) from t2 where col1>4 group by col2 having col2< (select col4 from t1 where col2<"abcdef" group by col3 order by col4 desc limit 1 );
+--source include/query_pushdown_condition_sequoiadb_2.inc
+
+--replace_column 10 #  11 #
+explain  select * from t2 where col1>4 group by col2 having col2< (select col4 from t1 where col2<"abcdef" group by col3 order by col4 desc limit 1 ) limit 2;
+--sorted_result
+select * from t2 where col1>4 group by col2 having col2< (select col4 from t1 where col2<"abcdef" group by col3 order by col4 desc limit 1 ) limit 2;
+--source include/query_pushdown_condition_sequoiadb_2.inc
+
+# partition table
+--replace_column 10 #  11 #
+explain  select col4 from t2_partition where col1>4 group by col4 having col4< (select col4 from t1_partition where col2<"abcdef" group by col4 order by col4 desc limit 1 ) limit 1;
+--sorted_result
+select col4 from t2_partition where col1>4 group by col4 having col4< (select col4 from t1_partition where col2<"abcdef" group by col4 order by col4 desc limit 1 ) limit 1;
+--source include/query_pushdown_condition_sequoiadb_2.inc
+
+# seqDB-29581
+--replace_column 10 #  11 #
+explain  select * from t2 where col1>1 group by col1 having col2< (select col4 from t1 where col2="abcdef" order by col1 desc);
+--sorted_result
+select * from t2 where col1>1 group by col1 having col2< (select col4 from t1 where col2="abcdef" order by col1 desc);
+--source include/query_pushdown_condition_sequoiadb_2.inc
+
+--replace_column 10 #  11 #
+explain  select count(*) from t2 where col1>1 group by col1 having col1 > (select count(col4) from t1 where col2="abcdef" group by col3 desc);
+--sorted_result
+select count(*) from t2 where col1>1 group by col1 having col1 > (select count(col4) from t1 where col2="abcdef" group by col3 desc);
+--source include/query_pushdown_condition_sequoiadb_2.inc
+
+--replace_column 10 #  11 #
+explain  select count(*) from t2 where col1>1 group by col1 having col1 > (select count(col4)  from t1 where col2="abcdef" group by col3 order by col4 desc) order by col3 desc;
+--sorted_result
+select count(*) from t2 where col1>1 group by col1 having col1 > (select count(col4)  from t1 where col2="abcdef" group by col3 order by col4 desc) order by col3 desc;
+--source include/query_pushdown_condition_sequoiadb_2.inc
+
+--replace_column 10 #  11 #
+explain  select count(*) from t2 where col1>1 group by col1 having col1 > (select count(col4)  from t1 where col2="abcdef" group by col3 order by col4 desc) order by col3 desc;
+--sorted_result
+select count(*) from t2 where col1>1 group by col1 having col1 > (select count(col4)  from t1 where col2="abcdef" group by col3 order by col4 desc) order by col3 desc;
+--source include/query_pushdown_condition_sequoiadb_2.inc
+
+--replace_column 10 #  11 #
+explain  select count(*) from t2 where col1>4 group by col1 having col1 > (select count(col4)  from t1 where col2<"abcdef" group by col3 order by col4 desc limit 1 ) order by col2 desc limit 2;
+--sorted_result
+select count(*) from t2 where col1>4 group by col1 having col1 > (select count(col4)  from t1 where col2<"abcdef" group by col3 order by col4 desc limit 1 ) order by col2 desc limit 2;
+--source include/query_pushdown_condition_sequoiadb_2.inc
+
+# seqDB-29582
+--replace_column 10 #  11 #
+explain  select count(1) from t2 where col1>4 group by col1 having col1> (select col1 from t1 where col4>"def" limit 1) limit 2;
+--sorted_result
+select count(1) from t2 where col1>4 group by col1 having col1> (select col1 from t1 where col4>"def" limit 1) limit 2;
+--source include/query_pushdown_condition_sequoiadb_2.inc
+
+--replace_column 10 #  11 #
+explain  select count(1) from t2 where col1>1 group by col2 having col2< (select col4 from t1 where col2="abcdef" order by col1 desc);
+--sorted_result
+select count(1) from t2 where col1>1 group by col2 having col2< (select col4 from t1 where col2="abcdef" order by col1 desc);
+--source include/query_pushdown_condition_sequoiadb_2.inc
+
+--replace_column 10 #  11 #
+explain  select count(1) from t2 where col1>1 group by col2 having col2< (select col4 from t1 where col2<"abcdef" order by col4 desc limit 1) order by col2 desc limit 1;
+--sorted_result
+select count(1) from t2 where col1>1 group by col2 having col2< (select col4 from t1 where col2<"abcdef" order by col4 desc limit 1) order by col2 desc limit 1;
+--source include/query_pushdown_condition_sequoiadb_2.inc
+
+
+# seqDB-29583
+--replace_column 10 #  11 #
+explain  select count(*),(select count(col1) from t1 where col1>=1)  from t2 where t2.col1 in(select count(col4) from t1 where col3>"20221115114210" ) group by col2 having col2< (select col4 from t1 where col2<"abcdef" group by col3 order by col4 desc limit 1 )   limit 3;
+--sorted_result
+select count(*),(select count(col1) from t1 where col1>=1)  from t2 where t2.col1 in(select count(col4) from t1 where col3>"20221115114210" ) group by col2 having col2< (select col4 from t1 where col2<"abcdef" group by col3 order by col4 desc limit 1 )   limit 3;
+--source include/query_pushdown_condition_sequoiadb_7.inc
+
+--replace_column 10 #  11 #
+explain  select *,(select col1 from t1 where col1>=1 limit 2,1)  from t2 where t2.col1 < (select col1 from t1 where col1>=5 limit 0,1) group by col2 having col2< (select col4 from t1 where col2<"abcdef" group by col3 order by col4 desc limit 1 )   limit 3;
+--sorted_result
+select *,(select col1 from t1 where col1>=1 limit 2,1)  from t2 where t2.col1 < (select col1 from t1 where col1>=5 limit 0,1) group by col2 having col2< (select col4 from t1 where col2<"abcdef" group by col3 order by col4 desc limit 1 )   limit 3;
+--source include/query_pushdown_condition_sequoiadb_8.inc
+
+--replace_column 10 #  11 #
+explain  select *,(select col1 from t1 where col1>=7 group by col1)  from t2 where t2.col2 in(select col4 from t1 where col3>"20221115114210" group by col4 desc having col4 < "zzz" ) group by col2 having col2< (select col4 from t1 where col2<"abcdef" group by col3 order by col4 desc limit 1 )   limit 3;
+--sorted_result
+select *,(select col1 from t1 where col1>=7 group by col1)  from t2 where t2.col2 in(select col4 from t1 where col3>"20221115114210" group by col4 desc having col4 < "zzz" ) group by col2 having col2< (select col4 from t1 where col2<"abcdef" group by col3 order by col4 desc limit 1 )   limit 3;
+--source include/query_pushdown_condition_sequoiadb_5.inc
+
+--replace_column 10 #  11 #
+explain  select *,(select col1 from t1 where col1>=1 order by col3 desc limit 2,1)  from t2 where t2.col1 < (select col1 from t1 where col1>=5 order by col4 limit 0,1) group by col2 having col2< (select col4 from t1 where col2<"abcdef" group by col3 order by col4 desc limit 1 )   limit 3;
+--sorted_result
+select *,(select col1 from t1 where col1>=1 order by col3 desc limit 2,1)  from t2 where t2.col1 < (select col1 from t1 where col1>=5 order by col4 limit 0,1) group by col2 having col2< (select col4 from t1 where col2<"abcdef" group by col3 order by col4 desc limit 1 )   limit 3;
+--source include/query_pushdown_condition_sequoiadb_5.inc
+
+--replace_column 10 #  11 #
+explain  select *,(select col1 from t1 where col1>=1 group by col1 limit 2,1)  from t2 where t2.col1 < (select col1 from t1 where col1>=5 group by col4 limit 0,1) group by col2 having col2< (select col4 from t1 where col2<"abcdef" group by col3 order by col4 desc limit 1 )   limit 3;
+--sorted_result
+select *,(select col1 from t1 where col1>=1 group by col1 limit 2,1)  from t2 where t2.col1 < (select col1 from t1 where col1>=5 group by col4 limit 0,1) group by col2 having col2< (select col4 from t1 where col2<"abcdef" group by col3 order by col4 desc limit 1 )   limit 3;
+--source include/query_pushdown_condition_sequoiadb_6.inc
+
+--replace_column 10 #  11 #
+explain  select *,(select col1 from t1 where col1>=7 group by col1 order by col3 desc)  from t2 where t2.col2 in(select col4 from t1 where col3>"20221115114210" group by col4 having col4 < "zzz"   order by col1 desc) group by col2 having col2< (select col4 from t1 where col2<"abcdef" group by col3 order by col4 desc limit 1 )   limit 3;
+--sorted_result
+select *,(select col1 from t1 where col1>=7 group by col1 order by col3 desc)  from t2 where t2.col2 in(select col4 from t1 where col3>"20221115114210" group by col4 having col4 < "zzz"   order by col1 desc) group by col2 having col2< (select col4 from t1 where col2<"abcdef" group by col3 order by col4 desc limit 1 )   limit 3;
+--source include/query_pushdown_condition_sequoiadb_4.inc
+
+--replace_column 10 #  11 #
+explain  select *,(select col1 from t1 where col1>=1 group by col1 order by col1 desc limit 1)  from t2 where t2.col1 < (select col1 from t1 where col1>=5 group by col4 order by col1 limit 0,1) group by col2 having col2< (select col4 from t1 where col2<"abcdef" group by col3 order by col4 desc limit 1 )   limit 3;
+--sorted_result
+select *,(select col1 from t1 where col1>=1 group by col1 order by col1 desc limit 1)  from t2 where t2.col1 < (select col1 from t1 where col1>=5 group by col4 order by col1 limit 0,1) group by col2 having col2< (select col4 from t1 where col2<"abcdef" group by col3 order by col4 desc limit 1 )   limit 3;
+--source include/query_pushdown_condition_sequoiadb_4.inc
+
+--replace_column 10 #  11 #
+explain  select *,(select col1 from t1 where col1>=1 limit 2,1) from t2 where t2.col2 in(select col4 from t1 where col3<"20221115114210" order by col4 desc)  group by col2 having col2< (select col4 from t1 where col2<"abcdef" group by col3 order by col4 desc limit 1 )   order by col3 desc;
+--sorted_result
+select *,(select col1 from t1 where col1>=1 limit 2,1) from t2 where t2.col2 in(select col4 from t1 where col3<"20221115114210" order by col4 desc)  group by col2 having col2< (select col4 from t1 where col2<"abcdef" group by col3 order by col4 desc limit 1 )   order by col3 desc;
+--source include/query_pushdown_condition_sequoiadb_6.inc
+
+--replace_column 10 #  11 #
+explain  select *,(select col1 from t1 where col1>=1 limit 2,1) from t2 where t2.col2 in(select col4 from t1 where col3<"20221115114210" order by col4 desc)  group by col2 having col2< (select col4 from t1 where col2<"abcdef" order by col4 desc limit 1 )   order by col3 desc;
+--sorted_result
+select *,(select col1 from t1 where col1>=1 limit 2,1) from t2 where t2.col2 in(select col4 from t1 where col3<"20221115114210" order by col4 desc)  group by col2 having col2< (select col4 from t1 where col2<"abcdef" order by col4 desc limit 1 )   order by col3 desc;
+--source include/query_pushdown_condition_sequoiadb_6.inc
+
+--replace_column 10 #  11 #
+explain  select *,(select col1 from t1 where col1>=1 limit 2,1) from t2 where t2.col2 in(select col4 from t1 where col3<"20221115114210" order by col4 desc)  group by col2 having col2< (select col4 from t1 where col2="abcdef" order by col4 desc )   order by col3 desc;
+--sorted_result
+select *,(select col1 from t1 where col1>=1 limit 2,1) from t2 where t2.col2 in(select col4 from t1 where col3<"20221115114210" order by col4 desc)  group by col2 having col2< (select col4 from t1 where col2="abcdef" order by col4 desc )   order by col3 desc;
+--source include/query_pushdown_condition_sequoiadb_6.inc
+
+--replace_column 10 #  11 #
+explain  select *,(select col1 from t1 where col2>="bcd" order by col3 limit 0,1) from t2 where t2.col4 in(select col2 from t1 where col2>"def" group by col1 desc having col1 < 10) group by col4 having col2< (select col4 from t1 where col2<"abcdef" group by col3 order by col4 desc limit 1 )   limit 3;
+--sorted_result
+select *,(select col1 from t1 where col2>="bcd" order by col3 limit 0,1) from t2 where t2.col4 in(select col2 from t1 where col2>"def" group by col1 desc having col1 < 10) group by col4 having col2< (select col4 from t1 where col2<"abcdef" group by col3 order by col4 desc limit 1 )   limit 3;
+--source include/query_pushdown_condition_sequoiadb_4.inc
+
+--replace_column 10 #  11 #
+explain  select *,(select col2 from t1 where col3<"20221215114210" group by col2 order by col2 limit 1) from t2 where t2.col1 <(select count(1) from t1 where col1>=1 limit 0,1) group by col1 having col1< (select col1 from t1 where col2<"abcdef" group by col3 order by col4 desc limit 1) order by col3 limit 3;
+--sorted_result
+select *,(select col2 from t1 where col3<"20221215114210" group by col2 order by col2 limit 1) from t2 where t2.col1 <(select count(1) from t1 where col1>=1 limit 0,1) group by col1 having col1< (select col1 from t1 where col2<"abcdef" group by col3 order by col4 desc limit 1) order by col3 limit 3;
+--source include/query_pushdown_condition_sequoiadb_6.inc
+
+# partition table
+--replace_column 10 #  11 #
+explain  select col1,(select col4 from t1_partition where col3<"20221215114210" group by col4 order by col4 limit 1) from t2_partition where t2_partition.col1 <(select count(1) from t1_partition where col1>=1 limit 0,1) group by col1 having col1< (select col1 from t1_partition where col2<"abcdef" group by col4 order by col4 desc limit 1) order by col4 limit 1;
+--sorted_result
+select col1,(select col4 from t1_partition where col3<"20221215114210" group by col4 order by col4 limit 1) from t2_partition where t2_partition.col1 <(select count(1) from t1_partition where col1>=1 limit 0,1) group by col1 having col1< (select col1 from t1_partition where col2<"abcdef" group by col4 order by col4 desc limit 1) order by col4 limit 1;
+--source include/query_pushdown_condition_sequoiadb_6.inc
+
+# seqDB-29584
+--replace_column 10 #  11 #
+explain  select *,(select col1 from t1 where col1>=7 order by col3 desc)  from t2 where t2.col2 in(select col4 from t1 where col3>"20221115114210" order by col4 desc) group by col2 having col2> (select col4 from t1 where col2>"abcdef" group by col3 order by col4 desc limit 1 )   limit 3;
+--sorted_result
+select *,(select col1 from t1 where col1>=7 order by col3 desc)  from t2 where t2.col2 in(select col4 from t1 where col3>"20221115114210" order by col4 desc) group by col2 having col2> (select col4 from t1 where col2>"abcdef" group by col3 order by col4 desc limit 1 )   limit 3;
+--source include/query_pushdown_condition_sequoiadb_5.inc
+
+--replace_column 10 #  11 #
+explain  select count(*),(select count(col1)  from t1 where col1>=7 group by col1)  from t2 where t2.col1 in(select count(col4) from t1 where col3>"20221115114210" group by col4 desc) group by col2 having col2< (select col4 from t1 where col2<"abcdef" group by col3 order by col4 desc limit 1 )   limit 3;
+--sorted_result
+select count(*),(select count(col1)  from t1 where col1>=7 group by col1)  from t2 where t2.col1 in(select count(col4) from t1 where col3>"20221115114210" group by col4 desc) group by col2 having col2< (select col4 from t1 where col2<"abcdef" group by col3 order by col4 desc limit 1 )   limit 3;
+--source include/query_pushdown_condition_sequoiadb_6.inc
+
+--replace_column 10 #  11 #
+explain  select count(*),(select count(col1)  from t1 where col1>=1 group by col1 limit 2,1)  from t2 where  t2.col1 < (select count(col1) from t1 where col1>=5 group by col4 limit 0,1) group by col2 having col2< (select col4 from t1 where col2<"abcdef" group by col3 order by col4 desc limit 1 )   limit 3;
+--sorted_result
+select count(*),(select count(col1)  from t1 where col1>=1 group by col1 limit 2,1)  from t2 where  t2.col1 < (select count(col1) from t1 where col1>=5 group by col4 limit 0,1) group by col2 having col2< (select col4 from t1 where col2<"abcdef" group by col3 order by col4 desc limit 1 )   limit 3;
+--source include/query_pushdown_condition_sequoiadb_6.inc
+
+--replace_column 10 #  11 #
+explain  select count(*),(select count(col1)  from t1 where col1>=7 group by col1 order by col3 desc)  from t2 where t2.col1 in(select count(col4) from t1 where col3>"20221115114210" group by col4  order by col1 desc) group by col2 having col2< (select col4 from t1 where col2<"abcdef" group by col3 order by col4 desc limit 1 )   limit 3;
+--sorted_result
+select count(*),(select count(col1)  from t1 where col1>=7 group by col1 order by col3 desc)  from t2 where t2.col1 in(select count(col4) from t1 where col3>"20221115114210" group by col4  order by col1 desc) group by col2 having col2< (select col4 from t1 where col2<"abcdef" group by col3 order by col4 desc limit 1 )   limit 3;
+--source include/query_pushdown_condition_sequoiadb_5.inc
+
+--replace_column 10 #  11 #
+explain  select count(*),(select count(col1)  from t1 where col1>=1 group by col1 order by col3 desc limit 2,1)  from t2 where t2.col1 < (select count(col1) from t1 where col1>=5 group by col4 order by col1 limit 0,1) group by col2 having col2< (select col4 from t1 where col2<"abcdef" group by col3 order by col4 desc limit 1 )   limit 3;
+--sorted_result
+select count(*),(select count(col1)  from t1 where col1>=1 group by col1 order by col3 desc limit 2,1)  from t2 where t2.col1 < (select count(col1) from t1 where col1>=5 group by col4 order by col1 limit 0,1) group by col2 having col2< (select col4 from t1 where col2<"abcdef" group by col3 order by col4 desc limit 1 )   limit 3;
+--source include/query_pushdown_condition_sequoiadb_5.inc
+
+# seqDB-29585
+--replace_column 10 #  11 #
+explain  select count(1),(select count(col1)  from t1 where col1>=1 limit 2,1)  from t2 where t2.col1 < (select count(col1)  from t1 where col1>=5 limit 0,1) group by col2 having col2< (select count(col4)  from t1 where col2<"abcdef" group by col3 order by col4 desc limit 1 )   limit 3;
+--sorted_result
+select *,(select count(col1)  from t1 where col1>=1 limit 2,1)  from t2 where t2.col1 < (select count(col1)  from t1 where col1>=5 limit 0,1) group by col2 having col2< (select count(col4)  from t1 where col2<"abcdef" group by col3 order by col4 desc limit 1 )   limit 3;
+--source include/query_pushdown_condition_sequoiadb_8.inc
+
+--replace_column 10 #  11 #
+explain  select count(1),(select count(col1) from t1 where col1>=7 order by col3 desc)  from t2 where t2.col2 in(select count(col4) from t1 where col3>"20221115114210" order by col4 desc) group by col2 having col2> (select count(col4) from t1 where col2>"abcdef" group by col3 order by col4 desc limit 1 )   limit 3;
+--sorted_result
+select count(1),(select count(col1) from t1 where col1>=7 order by col3 desc)  from t2 where t2.col2 in(select count(col4) from t1 where col3>"20221115114210" order by col4 desc) group by col2 having col2> (select count(col4) from t1 where col2>"abcdef" group by col3 order by col4 desc limit 1 )   limit 3;
+--source include/query_pushdown_condition_sequoiadb_5.inc
+
+--replace_column 10 #  11 #
+explain  select count(1),(select count(col1) from t1 where col1>=1 order by col3 desc limit 2,1)  from t2 where t2.col1 < (select count(col1) from t1 where col1>=5 order by col4 limit 0,1) group by col2 having col2< (select count(col4) from t1 where col2<"abcdef" group by col3 order by col4 desc limit 1 )   limit 3;
+--sorted_result
+select count(1),(select count(col1) from t1 where col1>=1 order by col3 desc limit 2,1)  from t2 where t2.col1 < (select count(col1) from t1 where col1>=5 order by col4 limit 0,1) group by col2 having col2< (select count(col4) from t1 where col2<"abcdef" group by col3 order by col4 desc limit 1 )   limit 3;
+--source include/query_pushdown_condition_sequoiadb_5.inc
+
+
+# seqDB-29586
+--replace_column 10 #  11 #
+explain  select count(*),(select count(1) from t1, t2 where t1.col1>=4 and t2.col1 <=6 ) from t2 where t2.col1 < (select count(col4) from t1 where col3>="20221115114210" ) ;
+--sorted_result
+select count(*),(select count(1) from t1, t2 where t1.col1>=4 and t2.col1 <=6 ) from t2 where t2.col1 < (select count(col4) from t1 where col3>="20221115114210" ) ;
+--source include/query_pushdown_condition_sequoiadb_9.inc
+
+--replace_column 10 #  11 #
+explain  select *, (select t1.col4 from t1, t2 where t1.col1>=2 and t2.col1 <=6 group by t1.col3 order by t1.col3  limit 1) from t2 where t2.col1 < (select col1 from t1 where col1>=5 group by col4 order by col1 limit 0,1) group by col3 order by col2 desc limit 3;
+--sorted_result
+select *, (select t1.col4 from t1, t2 where t1.col1>=2 and t2.col1 <=6 group by t1.col3 order by t1.col3  limit 1) from t2 where t2.col1 < (select col1 from t1 where col1>=5 group by col4 order by col1 limit 0,1) group by col3 order by col2 desc limit 3;
+--source include/query_pushdown_condition_sequoiadb_5.inc
+
+# seqDB-29587
+--replace_column 10 #  11 #
+explain  select * from (select count(*) from t1 where col3>="20221115114310") dt;
+--sorted_result
+select * from (select count(*) from t1 where col3>="20221115114310") dt;
+--source include/query_pushdown_condition_sequoiadb_3.inc
+
+--replace_column 10 #  11 #
+explain  select * from (select * from t1 where col3>="20221115114310" limit 2,1) dt where col2>"bcd" limit 3;
+--sorted_result
+select * from (select * from t1 where col3>="20221115114310" limit 2,1) dt where col2>"bcd" limit 3;
+--source include/query_pushdown_condition_sequoiadb.inc
+
+--replace_column 10 #  11 #
+explain  select * from (select * from t1 where col3>="20221115114310" group by col1) dt where col2>"bcd" group by col2;
+--sorted_result
+select * from (select * from t1 where col3>="20221115114310" group by col1) dt where col2>"bcd" group by col2;
+--source include/query_pushdown_condition_sequoiadb.inc
+
+--replace_column 10 #  11 #
+explain  select * from (select * from t1 where col3>="20221115114310" order by col1 limit 2,1) dt where col2>"bcd" order by col3 limit 3;
+--sorted_result
+select * from (select * from t1 where col3>="20221115114310" order by col1 limit 2,1) dt where col2>"bcd" order by col3 limit 3;
+--source include/query_pushdown_condition_sequoiadb.inc
+
+--replace_column 10 #  11 #
+explain  select * from (select * from t1 where col3>="20221115114310" group by col1 limit 2,1) dt where col2>"bcd" group by col2 limit 3;
+--sorted_result
+select * from (select * from t1 where col3>="20221115114310" group by col1 limit 2,1) dt where col2>"bcd" group by col2 limit 3;
+--source include/query_pushdown_condition_sequoiadb.inc
+
+--replace_column 10 #  11 #
+explain  select * from (select * from t1 where col3>="20221115114310" group by col1 order by col1) dt where col2>"defg" group by col2 order by col3;
+--sorted_result
+select * from (select * from t1 where col3>="20221115114310" group by col1 order by col1) dt where col2>"defg" group by col2 order by col3;
+--source include/query_pushdown_condition_sequoiadb.inc
+
+--replace_column 10 #  11 #
+explain  select * from (select * from t1 where col3>="20221115114310" group by col1 order by col1 limit 2,1) dt where col2>"bcd" group by col2 order by col3 limit 3;
+--sorted_result
+select * from (select * from t1 where col3>="20221115114310" group by col1 order by col1 limit 2,1) dt where col2>"bcd" group by col2 order by col3 limit 3;
+--source include/query_pushdown_condition_sequoiadb.inc
+
+--replace_column 10 #  11 #
+explain  select * from (select * from t1 where col2>"def" order by col4 desc limit 5) dt where col1>=1 limit 2,3;
+--sorted_result
+select * from (select * from t1 where col2>"def" order by col4 desc limit 5) dt where col1>=1 limit 2,3;
+--source include/query_pushdown_condition_sequoiadb.inc
+
+--replace_column 10 #  11 #
+explain  select * from (select * from t1 where col1>1 group by col4 desc limit 4) dt where col4>"aef" order by col4 desc limit 2,2;
+--sorted_result
+select * from (select * from t1 where col1>1 group by col4 desc limit 4) dt where col4>"aef" order by col4 desc limit 2,2;
+--source include/query_pushdown_condition_sequoiadb.inc
+
+--replace_column 10 #  11 #
+explain  select count(1) from (select * from t1 where col3>="20221115114310" group by col1 order by col1 limit 2,1) dt where col2>"bcd" group by col2 order by col3;
+--sorted_result
+select count(1) from (select * from t1 where col3>="20221115114310" group by col1 order by col1 limit 2,1) dt where col2>"bcd" group by col2 order by col3;
+--source include/query_pushdown_condition_sequoiadb.inc
+
+# partition table
+--replace_column 10 #  11 #
+explain  select count(1) from (select col2 from t1_partition where col3>="20221115114310" group by col1 order by col1 limit 1) dt where col2>"bcd" group by col2 order by col2;
+--sorted_result
+select count(1) from (select col2 from t1_partition where col3>="20221115114310" group by col1 order by col1 limit 1) dt where col2>"bcd" group by col2 order by col2;
+--source include/query_pushdown_condition_sequoiadb.inc
+
+# seqDB-29588
+--replace_column 10 #  11 #
+explain  select * from (select * from t1 where col3>="20221115114310" order by col1) dt where col2>"bcd" order by col3;
+--sorted_result
+select * from (select * from t1 where col3>="20221115114310" order by col1) dt where col2>"bcd" order by col3;
+--source include/query_pushdown_condition_sequoiadb.inc
+
+--replace_column 10 #  11 #
+explain  select count(*) from (select count(*) from t1 where col3>="20221115114010" group by col1) dt limit 1;
+--sorted_result
+select count(*) from (select count(*) from t1 where col3>="20221115114010" group by col1) dt limit 1;
+--source include/query_pushdown_condition_sequoiadb.inc
+
+--replace_column 10 #  11 #
+explain  select count(*) from (select count(*) from t1 where col3>="20221115114010" group by col1 limit 8) dt limit 1;
+--sorted_result
+select count(*) from (select count(*) from t1 where col3>="20221115114010" group by col1 limit 8) dt limit 1;
+--source include/query_pushdown_condition_sequoiadb.inc
+
+--replace_column 10 #  11 #
+explain  select count(*) from (select count(*) from t1 where col3>="20221115114010" group by col1 order by col1) dt limit 1;
+--sorted_result
+select count(*) from (select count(*) from t1 where col3>="20221115114010" group by col1 order by col1) dt limit 1;
+--source include/query_pushdown_condition_sequoiadb_2.inc
+
+--replace_column 10 #  11 #
+explain  select count(*) from (select count(*) from t1 where col3>="20221115114010" group by col1 order by col1 limit 8) dt limit 1;
+--sorted_result
+select count(*) from (select count(*) from t1 where col3>="20221115114010" group by col1 order by col1 limit 8) dt limit 1;
+--source include/query_pushdown_condition_sequoiadb.inc
+
+# seqDB-29589
+--replace_column 10 #  11 #
+explain  select count(*) from (select count(*) from t1 where col3>="20221115114010" limit 8) dt limit 1;
+--sorted_result
+select count(*) from (select count(*) from t1 where col3>="20221115114010" limit 8) dt limit 1;
+--source include/query_pushdown_condition_sequoiadb_3.inc
+
+--replace_column 10 #  11 #
+explain  select count(1) from (select count(1) from t1 where col3>="20221115114310" order by col1) dt;
+--sorted_result
+select count(1) from (select count(1) from t1 where col3>="20221115114310" order by col1) dt;
+--source include/query_pushdown_condition_sequoiadb.inc
+
+--replace_column 10 #  11 #
+explain  select count(1) from (select count(1) from t1 where col3>="20221115114310" order by col1 limit 2,1) dt;
+--sorted_result
+select count(1) from (select count(1) from t1 where col3>="20221115114310" order by col1 limit 2,1) dt;
+--source include/query_pushdown_condition_sequoiadb.inc
+
+# seqDB-29590
+--replace_column 10 #  11 #
+explain  select count(1) from v4 where col3<"20221115114310";
+--sorted_result
+select count(1) from v4 where col3<"20221115114310";
+--source include/query_pushdown_condition_sequoiadb.inc
+
+--replace_column 10 #  11 #
+explain  select * from v5 where col1>=1  limit 2,4;
+--sorted_result
+select * from v5 where col1>=1 limit 2,4;
+--source include/query_pushdown_condition_sequoiadb.inc
+
+--replace_column 10 #  11 #
+explain  select * from v6 where col2<="dd" group by col3;
+--sorted_result
+select * from v6 where col2<="dd" group by col3;
+--source include/query_pushdown_condition_sequoiadb_2.inc
+
+--replace_column 10 #  11 #
+explain  select * from v5 where col1>=1 order by col1 limit 2,4;
+--sorted_result
+select * from v5 where col1>=1 order by col1 limit 2,4;
+--source include/query_pushdown_condition_sequoiadb.inc
+
+--replace_column 10 #  11 #
+explain  select * from v6 where col2<="dd" group by col3 limit 1;
+--sorted_result
+select * from v6 where col2<="dd" group by col3 limit 1;
+--source include/query_pushdown_condition_sequoiadb_2.inc
+
+--replace_column 10 #  11 #
+explain  select * from v6 where col2<="dd" group by col3 order by col3;
+--sorted_result
+select * from v6 where col2<="dd" group by col3 order by col3;
+--source include/query_pushdown_condition_sequoiadb_2.inc
+
+--replace_column 10 #  11 #
+explain  select * from v6 where col2<="dd" group by col3 order by col3 limit 1;
+--sorted_result
+select * from v6 where col2<="dd" group by col3 order by col3 limit 1;
+--source include/query_pushdown_condition_sequoiadb_2.inc
+
+# seqDB-29591
+--replace_column 10 #  11 #
+explain  select * from v5 where col1>=1 order by col1;
+--sorted_result
+select * from v5 where col1>=1 order by col1;
+--source include/query_pushdown_condition_sequoiadb.inc
+
+--replace_column 10 #  11 #
+explain  select count(1) from v6 where col2<="dd" group by col3;
+--sorted_result
+select count(1) from v6 where col2<="dd" group by col3;
+--source include/query_pushdown_condition_sequoiadb_2.inc
+
+--replace_column 10 #  11 #
+explain  select count(1) from v6 where col2<="dd" group by col3 limit 1;
+--sorted_result
+select count(1) from v6 where col2<="dd" group by col3 limit 1;
+--source include/query_pushdown_condition_sequoiadb_2.inc
+
+--replace_column 10 #  11 #
+explain  select count(1) from v6 where col2<="dd" group by col3 order by col3;
+--sorted_result
+select count(1) from v6 where col2<="dd" group by col3 order by col3;
+--source include/query_pushdown_condition_sequoiadb_2.inc
+
+--replace_column 10 #  11 #
+explain  select count(1) from v6 where col2<="dd" group by col3 order by col3 limit 1;
+--sorted_result
+select count(1) from v6 where col2<="dd" group by col3 order by col3 limit 1;
+--source include/query_pushdown_condition_sequoiadb_2.inc
+
+# seqDB-29592
+--replace_column 10 #  11 #
+explain  select count(1) from v5 where col1>=1  limit 2,4;
+--sorted_result
+select count(1) from v5 where col1>=1 limit 2,4;
+--source include/query_pushdown_condition_sequoiadb.inc
+
+--replace_column 10 #  11 #
+explain  select count(1) from v5 where col1>=1 order by col1;
+--sorted_result
+select count(1) from v5 where col1>=1 order by col1;
+--source include/query_pushdown_condition_sequoiadb.inc
+
+--replace_column 10 #  11 #
+explain  select count(1) from v5 where col1>=1 order by col1 limit 2,4;
+--sorted_result
+select count(1) from v5 where col1>=1 order by col1 limit 2,4;
+--source include/query_pushdown_condition_sequoiadb.inc
+
+# seqDB-29593
+--replace_column 10 #  11 #
+explain  select * from (select count(*) from v1 where col3>="20221115114310") dt;
+--sorted_result
+select * from (select count(*) from v1 where col3>="20221115114310") dt;
+--source include/query_pushdown_condition_sequoiadb.inc
+
+--replace_column 10 #  11 #
+explain  select * from (select * from v1 where col3>="20221115114310" limit 2,1) dt where col2>"bcd" limit 3;
+--sorted_result
+select * from (select * from v1 where col3>="20221115114310" limit 2,1) dt where col2>"bcd" limit 3;
+--source include/query_pushdown_condition_sequoiadb.inc
+
+--replace_column 10 #  11 #
+explain  select * from (select * from v1 where col3>"20221115114310" group by col1) dt where col2>"defg" group by col2;
+--sorted_result
+select * from (select * from v1 where col3>"20221115114310" group by col1) dt where col2>"defg" group by col2;
+--source include/query_pushdown_condition_sequoiadb.inc
+
+--replace_column 10 #  11 #
+explain  select * from (select * from v1 where col3>="20221115114310" order by col1 limit 2,1) dt where col2>"defg" order by col3 limit 3;
+--sorted_result
+select * from (select * from v1 where col3>="20221115114310" order by col1 limit 2,1) dt where col2>"defg" order by col3 limit 3;
+--source include/query_pushdown_condition_sequoiadb.inc
+
+--replace_column 10 #  11 #
+explain  select * from (select * from v1 where col3>="20221115114310" group by col1 limit 2,1) dt where col2>"defg" group by col2 limit 3;
+--sorted_result
+select * from (select * from v1 where col3>="20221115114310" group by col1 limit 2,1) dt where col2>"defg" group by col2 limit 3;
+--source include/query_pushdown_condition_sequoiadb.inc
+
+--replace_column 10 #  11 #
+explain  select * from (select * from v1 where col3>="20221115114310" group by col1 order by col1) dt where col2>"defg" group by col2 order by col3;
+--sorted_result
+select * from (select * from v1 where col3>="20221115114310" group by col1 order by col1) dt where col2>"defg" group by col2 order by col3;
+--source include/query_pushdown_condition_sequoiadb.inc
+
+--replace_column 10 #  11 #
+explain  select * from (select * from v1 where col3>="20221115114310" group by col1 order by col1 limit 2,1) dt where col2>"defg" group by col2 order by col3 limit 3;
+--sorted_result
+select * from (select * from v1 where col3>="20221115114310" group by col1 order by col1 limit 2,1) dt where col2>"defg" group by col2 order by col3 limit 3;
+--source include/query_pushdown_condition_sequoiadb.inc
+
+--replace_column 10 #  11 #
+explain  select * from (select * from v1 where col2>"def" order by col4 desc limit 5) dt where col1>=1 limit 2,3;
+--sorted_result
+select * from (select * from v1 where col2>"def" order by col4 desc limit 5) dt where col1>=1 limit 2,3;
+--source include/query_pushdown_condition_sequoiadb.inc
+
+--replace_column 10 #  11 #
+explain  select * from (select * from v1 where col1>1 group by col4 desc limit 4) dt where col4>"aef" order by col4 desc limit 2,2;
+--sorted_result
+select * from (select * from v1 where col1>1 group by col4 desc limit 4) dt where col4>"aef" order by col4 desc limit 2,2;
+--source include/query_pushdown_condition_sequoiadb.inc
+
+--replace_column 10 #  11 #
+explain  select count(1) from (select * from v1 where col3>="20221115114310" group by col1 order by col1 limit 2,1) dt where col2>"bcd" group by col2 order by col3;
+--sorted_result
+select count(1) from (select * from v1 where col3>="20221115114310" group by col1 order by col1 limit 2,1) dt where col2>"bcd" group by col2 order by col3;
+--source include/query_pushdown_condition_sequoiadb.inc
+
+# seqDB-29594
+--replace_column 10 #  11 #
+explain  select * from (select * from v1 where col3>"20221115114310" order by col1) dt where col2>"defg" order by col3 desc;
+--sorted_result
+select * from (select * from v1 where col3>"20221115114310" order by col1) dt where col2>"defg" order by col3 desc;
+--source include/query_pushdown_condition_sequoiadb.inc
+
+--replace_column 10 #  11 #
+explain  select count(*) from (select count(*) from v1 where col3>="20221115114010" group by col3) dt limit 1;
+--sorted_result
+select count(*) from (select count(*) from v1 where col3>="20221115114010" group by col3) dt limit 1;
+--source include/query_pushdown_condition_sequoiadb.inc
+
+--replace_column 10 #  11 #
+explain  select count(*) from (select count(*) from v1 where col3>="20221115114010" group by col1 limit 8) dt limit 1;
+--sorted_result
+select count(*) from (select count(*) from v1 where col3>="20221115114010" group by col1 limit 8) dt limit 1;
+--source include/query_pushdown_condition_sequoiadb.inc
+
+--replace_column 10 #  11 #
+explain  select count(*) from (select count(*) from v1 where col3>="20221115114010" order by col1 limit 8) dt limit 1;
+--sorted_result
+select count(*) from (select count(*) from v1 where col3>="20221115114010" order by col1 limit 8) dt limit 1;
+--source include/query_pushdown_condition_sequoiadb.inc
+
+--replace_column 10 #  11 #
+explain  select count(*) from (select count(*) from v1 where col3>="20221115114010" group by col1 order by col1 limit 8) dt limit 1;
+--sorted_result
+select count(*) from (select count(*) from v1 where col3>="20221115114010" group by col1 order by col1 limit 8) dt limit 1;
+--source include/query_pushdown_condition_sequoiadb.inc
+
+# seqDB-29595
+--replace_column 10 #  11 #
+explain  select count(*) from (select * from v1 where col3>="20221115114310" limit 2,1) dt where col2>"bcd" limit 3;
+--sorted_result
+select count(*)  from (select * from v1 where col3>="20221115114310" limit 2,1) dt where col2>"bcd" limit 3;
+--source include/query_pushdown_condition_sequoiadb.inc
+
+--replace_column 10 #  11 #
+explain  select count(*) from (select * from v1 where col3>="20221115114310" order by col1) dt where col2>"defg" order by col3;
+--sorted_result
+select count(*)  from (select * from v1 where col3>="20221115114310" order by col1) dt where col2>"defg" order by col3;
+--source include/query_pushdown_condition_sequoiadb.inc
+
+--replace_column 10 #  11 #
+explain  select count(*) from (select * from v1 where col3>="20221115114310" order by col1 limit 2,1) dt where col2>"defg" order by col3 limit 3;
+--sorted_result
+select count(*)  from (select * from v1 where col3>="20221115114310" order by col1 limit 2,1) dt where col2>"defg" order by col3 limit 3;
+--source include/query_pushdown_condition_sequoiadb.inc
+
+# seqDB-29596
+--replace_column 10 #  11 #
+explain  select * from (select count(*) from v7) dt;
+--sorted_result
+select * from (select count(*) from v7) dt;
+--source include/query_pushdown_condition_sequoiadb_7.inc
+
+--replace_column 10 #  11 #
+explain  select count(*) from t1,t2, (select count(*) from v7) dt;
+--sorted_result
+select count(*) from t1,t2, (select count(*) from v7) dt;
+--source include/query_pushdown_condition_sequoiadb_11.inc
+
+--replace_column 10 #  11 #
+explain  select count(*),(select count(1) from t1, t2 where t1.col1>=4 and t2.col1 <=6 ) from t2 where t2.col1 < (select count(*) from v7 ) ;
+--sorted_result
+select count(*),(select count(1) from t1, t2 where t1.col1>=4 and t2.col1 <=6 ) from t2 where t2.col1 < (select count(*) from v7 ) ;
+--source include/query_pushdown_condition_sequoiadb_14.inc
+
+--replace_column 10 #  11 #
+explain  select * from (select * from v8 where col2>"defg" group by col1 order by col1 limit 7) dt where col3>="20221115112010" group by col2 order by col3 limit 6;
+--sorted_result
+select * from (select * from v8 where col2>"defg" group by col1 order by col1 limit 7) dt where col3>="20221115112010" group by col2 order by col3 limit 6;
+--source include/query_pushdown_condition_sequoiadb_4.inc
+
+--replace_column 10 #  11 #
+explain  select t1.col2 from t1,t2, (select * from v8 where col2>="def" group by col1 order by col1 limit 7) dt where t1.col3>="20221115112010" group by t1.col2 order by t1.col2 limit 1;
+--sorted_result
+select t1.col2 from t1,t2, (select * from v8 where col2>="def" group by col1 order by col1 limit 7) dt where t1.col3>="20221115112010" group by t1.col2 order by t1.col2 limit 1;
+--source include/query_pushdown_condition_sequoiadb_6.inc
+
+--replace_column 10 #  11 #
+explain  select *, (select t1.col4 from t1, t2 where t1.col1>=2 and t2.col1 <=6 group by t1.col3 order by t1.col3  limit 1) from t2 where t2.col1 < (select col1 from v8 where col1>=5 group by col4 order by col1 limit 0,1) group by col3 order by col2 desc limit 3;
+--sorted_result
+select *, (select t1.col4 from t1, t2 where t1.col1>=2 and t2.col1 <=6 group by t1.col3 order by t1.col3  limit 1) from t2 where t2.col1 < (select col1 from v8 where col1>=5 group by col4 order by col1 limit 0,1) group by col3 order by col2 desc limit 3;
+--source include/query_pushdown_condition_sequoiadb_8.inc
+
+# partition table
+--replace_column 10 #  11 #
+explain select t2_partition.col1, (select t1_partition.col2 from t1_partition, t2_partition where t1_partition.col1>=2 and t2_partition.col1 <=6 group by t1_partition.col2 order by t1_partition.col2  limit 1) from t2_partition where t2_partition.col1 < (select col1 from v8 where col1>=5 group by col2 order by col2 limit 0,1) group by t2_partition.col2 order by t2_partition.col2 desc limit 1;
+--sorted_result
+select t2_partition.col1, (select t1_partition.col2 from t1_partition, t2_partition where t1_partition.col1>=2 and t2_partition.col1 <=6 group by t1_partition.col2 order by t1_partition.col2  limit 1) from t2_partition where t2_partition.col1 < (select col1 from v8 where col1>=5 group by col2 order by col2 limit 0,1) group by t2_partition.col2 order by t2_partition.col2 desc limit 1;
+--source include/query_pushdown_condition_sequoiadb_8.inc
+
+# seqDB-29598
+--replace_column 10 #  11 #
+explain (select * from t1 where col1<(select count(1) from t2 where col1<5) limit 1) 
+union
+(select * from (select * from t1 where col2>(select col4 from t2 where col3>"20221115114210" limit 0,1) order by col1 desc) dt where col1>0  group by col2 order by col2 limit 1);
+--sorted_result
+(select * from t1 where col1<(select count(1) from t2 where col1<5) limit 1) 
+union
+(select * from (select * from t1 where col2>(select col4 from t2 where col3>"20221115114210" limit 0,1) order by col1 desc) dt where col1>0  group by col2 order by col2 limit 1);
+--source include/query_pushdown_condition_sequoiadb_10.inc
+
+--replace_column 10 #  11 #
+explain (select * from t1 where col1<(select count(1) from t2 where col1<5) limit 1) 
+union
+(select * from (select * from t1 where col2>(select col4 from t2 where col3>"20221115114210" order by col4 limit 0,1) order by col1 desc) dt where col1>0  group by col2 order by col1 limit 1);
+--sorted_result
+(select * from t1 where col1<(select count(1) from t2 where col1<5) limit 1) 
+union
+(select * from (select * from t1 where col2>(select col4 from t2 where col3>"20221115114210" order by col4 limit 0,1) order by col1 desc) dt where col1>0  group by col2 order by col1 limit 1);
+--source include/query_pushdown_condition_sequoiadb_10.inc
+
+--replace_column 10 #  11 #
+explain (select * from t1 where col1<(select count(1) from t2 where col1<5) limit 1) 
+union
+(select * from (select * from t1 where col2>(select col4 from t2 where col3>"20221115114210" group by col4 limit 0,1) order by col1 desc) dt where col1>0  group by col2 order by col2 limit 1);
+--sorted_result
+(select * from t1 where col1<(select count(1) from t2 where col1<5) limit 1) 
+union
+(select * from (select * from t1 where col2>(select col4 from t2 where col3>"20221115114210" group by col4 limit 0,1) order by col1 desc) dt where col1>0  group by col2 order by col2 limit 1);
+--source include/query_pushdown_condition_sequoiadb_6.inc
+
+--replace_column 10 #  11 #
+explain (select * from t1 where col1<(select count(1) from t2 where col1<5) limit 1) 
+union
+(select * from (select * from t1 where col2>(select col4 from t2 where col3>"20221115114210" limit 0,1) order by col1 desc) dt where col1>0  group by col2 order by col1);
+--sorted_result
+(select * from t1 where col1<(select count(1) from t2 where col1<5) limit 1) 
+union
+(select * from (select * from t1 where col2>(select col4 from t2 where col3>"20221115114210" limit 0,1) order by col1 desc) dt where col1>0  group by col2 order by col1);
+--source include/query_pushdown_condition_sequoiadb_10.inc
+
+--replace_column 10 #  11 #
+explain (select * from t1 where col1<(select count(1) from t2 where col1<5) limit 1) 
+union 
+(select * from (select * from t1 where col2>(select col4 from t2 where col3>"20221115114210" limit 0,1) order by col1 desc) dt where col1>0  group by col2);
+--sorted_result
+(select * from t1 where col1<(select count(1) from t2 where col1<5) limit 1) 
+union 
+(select * from (select * from t1 where col2>(select col4 from t2 where col3>"20221115114210" limit 0,1) order by col1 desc) dt where col1>0  group by col2);
+--source include/query_pushdown_condition_sequoiadb_10.inc
+
+--replace_column 10 #  11 #
+explain (select * from t1 where col1<(select count(1) from (select * from  t2 where col1<5 union ALL (select * from t1 where col2<(select col4 from t1 where col4>"aa" group by col3 order by col3 limit 3,1)) )ct))
+union
+(select * from (select * from t1 where col2>(select col4 from t2 where col3>"20221115114210" limit 2,1) order by col1 desc) dt where col1>0  group by col2 order by col2 limit 1);
+--sorted_result
+(select * from t1 where col1<(select count(1) from (select * from  t2 where col1<5 union ALL (select * from t1 where col2<(select col4 from t1 where col4>"aa" group by col3 order by col3 limit 3,1)) )ct))
+union
+(select * from (select * from t1 where col2>(select col4 from t2 where col3>"20221115114210" limit 2,1) order by col1 desc) dt where col1>0  group by col2 order by col2 limit 1);
+--replace_regex /^([^s]*)\[Note\]/[Note]/
+--exec grep -w "Query message" $MYSQLTEST_VARDIR/log/mysqld.1.err | tail -6 | sed 's/\<condition\[{ "col2".*, selector/condition\[{""}\], selector/'
+
+# partiton table
+--replace_column 10 #  11 #
+explain (select * from t1_partition where col1<(select count(1) from (select * from  t1_partition where col1<5 union ALL (select * from t1_partition where col2<(select col4 from t1_partition where col4>"aa" group by col3 order by col3 limit 3,1)) )ct))
+union
+(select * from (select * from t1_partition where col2>(select col4 from t1_partition where col3>"20221115114210" limit 2,1) order by col1 desc) dt where col1>0  group by col2 order by col2 limit 1);
+--sorted_result
+(select * from t1_partition where col1<(select count(1) from (select * from  t1_partition where col1<5 union ALL (select * from t1_partition where col2<(select col4 from t1_partition where col4>"aa" group by col3 order by col3 limit 3,1)) )ct))
+union
+(select * from (select * from t1_partition where col2>(select col4 from t1_partition where col3>"20221115114210" limit 2,1) order by col1 desc) dt where col1>0  group by col2 order by col2 limit 1);
+--replace_regex /^([^s]*)\[Note\]/[Note]/
+--exec grep -w "Query message" $MYSQLTEST_VARDIR/log/mysqld.1.err | tail -6 | sed 's/\<condition\[{ "col2".*, selector/condition\[{""}\], selector/'
+
+--replace_column 10 #  11 #
+explain (select * from t1 where col1<(select count(1) from ((select * from  t1 where col1<5 limit 9)
+union ALL 
+(select * from t2 where col2>
+(select col4 from t1 where col4<(select col2 from (select * from t2 where col2>(select col4 from t1 where col2>"aa" limit 2,1) order by col1 desc limit 10) bt where col2>"aaa" group by col2 order by col2 limit 1) group by col2 order by col2 limit 1) limit 8
+) )ct) limit 4)
+union
+(select * from (select * from t1 where col2>(select col4 from t2 where col3>"20221115114210" limit 2,1) order by col1 desc) dt where col1>0  group by col2 order by col2 limit 1);
+--sorted_result
+(select * from t1 where col1<(select count(1) from ((select * from  t1 where col1<5 limit 9)
+union ALL 
+(select * from t2 where col2>
+(select col4 from t1 where col4<(select col2 from (select * from t2 where col2>(select col4 from t1 where col2>"aa" limit 2,1) order by col1 desc limit 10) bt where col2>"aaa" group by col2 order by col2 limit 1) group by col2 order by col2 limit 1) limit 8
+) )ct) limit 4)
+union
+(select * from (select * from t1 where col2>(select col4 from t2 where col3>"20221115114210" limit 2,1) order by col1 desc) dt where col1>0  group by col2 order by col2 limit 1);
+--source include/query_pushdown_condition_sequoiadb_8.inc
+
+# seqDB-29599
+--replace_column 10 #  11 #
+explain (select count(*) from t1 where col1<(select count(1) from t2 where col1<5) limit 1) 
+union
+(select count(*)  from (select * from t1 where col2>(select col4 from t2 where col3>"20221115114210" group by col4 limit 0,1) order by col1 desc) dt where col1>0  group by col2 order by col1 limit 1);
+--sorted_result
+(select count(*) from t1 where col1<(select count(1) from t2 where col1<5) limit 1) 
+union
+(select count(*)  from (select * from t1 where col2>(select col4 from t2 where col3>"20221115114210" group by col4 limit 0,1) order by col1 desc) dt where col1>0  group by col2 order by col1 limit 1);
+--source include/query_pushdown_condition_sequoiadb_12.inc
+
+--replace_column 10 #  11 #
+explain (select count(*)  from t1 where col1<(select count(1) from t2 where col1<5) limit 1) 
+union
+(select count(*)  from (select * from t1 where col2>(select col4 from t2 where col3<"20221115114210" group by col4 limit 1) order by col1 desc) dt where col1>0  group by col2 limit 1);
+--sorted_result
+(select count(*)  from t1 where col1<(select count(1) from t2 where col1<5) limit 1) 
+union
+(select count(*)  from (select * from t1 where col2>(select col4 from t2 where col3<"20221115114210" group by col4 limit 1) order by col1 desc) dt where col1>0  group by col2 limit 1);
+--source include/query_pushdown_condition_sequoiadb_11.inc
+
+--replace_column 10 #  11 #
+explain (select count(*)  from t1 where col1<(select count(1) from t2 where col1<5) limit 1) 
+union
+(select count(*)  from (select * from t1 where col2>(select col4 from t2 where col3>"20221115114210" limit 0,1) order by col1 desc) dt where col1>0  group by col2 order by col1);
+--sorted_result
+(select count(*)  from t1 where col1<(select count(1) from t2 where col1<5) limit 1) 
+union
+(select count(*)  from (select * from t1 where col2>(select col4 from t2 where col3>"20221115114210" limit 0,1) order by col1 desc) dt where col1>0  group by col2 order by col1);
+--source include/query_pushdown_condition_sequoiadb_12.inc
+
+--replace_column 10 #  11 #
+explain (select count(*)  from t1 where col1<(select count(1) from t2 where col1<5) limit 1) 
+union 
+(select count(*)  from (select * from t1 where col2>(select col4 from t2 where col3>"20221115114210" limit 0,1) order by col1 desc) dt where col1>0  group by col2);
+--sorted_result
+(select count(*)  from t1 where col1<(select count(1) from t2 where col1<5) limit 1) 
+union 
+(select count(*)  from (select * from t1 where col2>(select col4 from t2 where col3>"20221115114210" limit 0,1) order by col1 desc) dt where col1>0  group by col2);
+--source include/query_pushdown_condition_sequoiadb_12.inc
+
+--replace_column 10 #  11 #
+explain (select count(*)  from t1 where col1<(select count(1) from t2 where col1<5) limit 1) 
+union 
+(select count(*)  from (select * from t1 where col2>(select col4 from t2 where col3>"20221115114210" limit 0,1) order by col1 desc limit 9) dt where col1>0  group by col2);
+--sorted_result
+(select count(*)  from t1 where col1<(select count(1) from t2 where col1<5) limit 1) 
+union 
+(select count(*)  from (select * from t1 where col2>(select col4 from t2 where col3>"20221115114210" limit 0,1) order by col1 desc limit 9) dt where col1>0  group by col2);
+--source include/query_pushdown_condition_sequoiadb_12.inc
+
+# seqDB-29672
+--replace_column 10 #  11 #
+explain select * from t1,t2 where t1.col1>=1 limit 2,1;
+--sorted_result
+select * from t1,t2 where t1.col1>=1 limit 2,1;
+--source include/query_pushdown_condition_sequoiadb_2.inc
+
+--replace_column 10 #  11 #
+explain select t1.col1 from t1,t2 where t1.col2>"def" order by t1.col1 desc;
+--sorted_result
+select t1.col1 from t1,t2 where t1.col2>"def" order by t1.col1 desc;
+--source include/query_pushdown_condition_sequoiadb_4.inc
+
+--replace_column 10 #  11 #
+explain select * from t1,t2 where t1.col4>"abc" group by t2.col4 desc;
+--sorted_result                      
+select * from t1,t2 where t1.col4>"abc" group by t2.col4 desc;
+--sorted_result                      
+--source include/query_pushdown_condition_sequoiadb_2.inc
+
+--replace_column 10 #  11 #
+explain select t1.col1 from t1,t2 where t1.col2>"def" order by t1.col1 desc limit 5;
+--sorted_result
+select t1.col1 from t1,t2 where t1.col2>"def" order by t1.col1 desc limit 5;
+--source include/query_pushdown_condition_sequoiadb_4.inc
+
+--replace_column 10 #  11 #
+explain select * from t1,t2 where t1.col4>"abc" group by t2.col4 desc limit 5;
+--sorted_result                      
+select * from t1,t2 where t1.col4>"abc" group by t2.col4 desc limit 5;
+--sorted_result                      
+--source include/query_pushdown_condition_sequoiadb_2.inc
+
+--replace_column 10 #  11 #
+explain select count(1) from t1,t2 where t1.col2>"def";
+--sorted_result   
+select count(1) from t1,t2 where t1.col2>"def";
+--source include/query_pushdown_condition_sequoiadb_4.inc
+
+--replace_column 10 #  11 #
+explain select count(1) from t1,(t2,t3) where t2.col3>"20221115114210" group by t2.col2 order by t3.col2 desc limit 3;
+--sorted_result
+select count(1) from t1,(t2,t3) where t2.col3>"20221115114210" group by t2.col2 order by t3.col2 desc limit 3;
+--source include/query_pushdown_condition_sequoiadb_4.inc
+
+# seqDB-29673
+--replace_column 10 #  11 #
+explain select * from t1 cross join t2 where t1.col1>=1 limit 2,1;
+--sorted_result
+select * from t1 cross join t2 where t1.col1>=1 limit 2,1;
+--source include/query_pushdown_condition_sequoiadb_2.inc
+
+--replace_column 10 #  11 #
+explain select t1.col1 from t1 cross join t2 where t1.col2>"def" order by t1.col1 desc;
+--sorted_result
+select t1.col1 from t1 cross join t2 where t1.col2>"def" order by t1.col1 desc;
+--source include/query_pushdown_condition_sequoiadb_4.inc
+
+--replace_column 10 #  11 #
+explain select * from t1 cross join t2 where t1.col4>"abc" group by t2.col4 desc;
+--sorted_result                      
+select * from t1 cross join t2 where t1.col4>"abc" group by t2.col4 desc;
+--sorted_result                      
+--source include/query_pushdown_condition_sequoiadb_2.inc
+
+--replace_column 10 #  11 #
+explain select t1.col1 from t1 cross join t2 where t1.col2>"def" order by t1.col1 desc limit 5;
+--sorted_result
+select t1.col1 from t1 cross join t2 where t1.col2>"def" order by t1.col1 desc limit 5;
+--source include/query_pushdown_condition_sequoiadb_4.inc
+
+--replace_column 10 #  11 #
+explain select * from t1 cross join t2 where t1.col4>"abc" group by t2.col4 desc limit 5;
+--sorted_result                      
+select * from t1 cross join t2 where t1.col4>"abc" group by t2.col4 desc limit 5;                  
+--source include/query_pushdown_condition_sequoiadb_2.inc
+
+--replace_column 10 #  11 #
+explain select count(1) from t1 cross join t2 where t1.col2>"def";
+--sorted_result   
+select count(1) from t1 cross join t2 where t1.col2>"def";
+--source include/query_pushdown_condition_sequoiadb_4.inc
+
+--replace_column 10 #  11 #
+explain select count(1) from t1  cross join (t2 cross join t3) where t2.col3>"20221115114210" group by t2.col2 order by t3.col2 desc limit 3;
+--sorted_result
+select count(1) from t1  cross join (t2 cross join t3) where t2.col3>"20221115114210" group by t2.col2 order by t3.col2 desc limit 3;
+--source include/query_pushdown_condition_sequoiadb_4.inc
+
+# seqDB-29674
+--replace_column 10 #  11 #
+explain select * from t1 left outer join t2 on t1.col1=t2.col1 limit 2,1;
+--sorted_result
+select * from t1 left outer join t2 on t1.col1=t2.col1 limit 2,1;
+--source include/query_pushdown_condition_sequoiadb_3.inc
+
+--replace_column 10 #  11 #
+explain select * from t1 left outer join t2 on t1.col2=t2.col2 order by t1.col2 desc;
+--sorted_result
+select * from t1 left outer join t2 on t1.col2=t2.col2 order by t1.col2 desc;
+--source include/query_pushdown_condition_sequoiadb_3.inc
+
+--replace_column 10 #  11 #
+explain select * from t1 left outer join t2 on t1.col3=t2.col3 group by t1.col3 desc;
+--sorted_result
+select * from t1 left outer join t2 on t1.col3=t2.col3 group by t1.col3 desc;
+--source include/query_pushdown_condition_sequoiadb_3.inc
+
+--replace_column 10 #  11 #
+explain select * from t1 left outer join t2 on t1.col2=t2.col2 order by t1.col2 desc limit 3;
+--sorted_result
+select * from t1 left outer join t2 on t1.col2=t2.col2 order by t1.col2 desc limit 3;
+--source include/query_pushdown_condition_sequoiadb_3.inc
+
+--replace_column 10 #  11 #
+explain select * from t1 left outer join t2 on t1.col3=t2.col3 group by t1.col3 desc limit 5;
+--sorted_result
+select * from t1 left outer join t2 on t1.col3=t2.col3 group by t1.col3 desc limit 5;
+--source include/query_pushdown_condition_sequoiadb_3.inc
+
+--replace_column 10 #  11 #
+explain select count(1) from t1 left outer join t2 on t1.col4=t2.col4;
+--sorted_result
+select count(1) from t1 left outer join t2 on t1.col4=t2.col4;
+--source include/query_pushdown_condition_sequoiadb_4.inc
+
+# seqDB-29675
+--replace_column 10 #  11 #
+explain select * from t1 right outer join t2 on t1.col1=t2.col1 limit 2,1;
+--sorted_result
+select * from t1 right outer join t2 on t1.col1=t2.col1 limit 2,1;
+--source include/query_pushdown_condition_sequoiadb_3.inc
+
+--replace_column 10 #  11 #
+explain select * from t1 right outer join t2 on t1.col2=t2.col2 order by t1.col3 desc;
+--sorted_result
+select * from t1 right outer join t2 on t1.col2=t2.col2 order by t1.col3 desc;
+--source include/query_pushdown_condition_sequoiadb_3.inc
+
+--replace_column 10 #  11 #
+explain select * from t1 right outer join t2 on t1.col3=t2.col3 group by t1.col3 desc;
+--sorted_result
+select * from t1 right outer join t2 on t1.col3=t2.col3 group by t1.col3 desc;
+--source include/query_pushdown_condition_sequoiadb_3.inc
+
+--replace_column 10 #  11 #
+explain select t1.col2 from t1 right outer join t2 on t1.col2=t2.col2 order by t1.col2 desc limit 1;
+--sorted_result
+select t1.col2 from t1 right outer join t2 on t1.col2=t2.col2 order by t1.col2 desc limit 1;
+--source include/query_pushdown_condition_sequoiadb_3.inc
+
+--replace_column 10 #  11 #
+explain select * from t1 right outer join t2 on t1.col3=t2.col3 group by t1.col3 desc limit 5;
+--sorted_result
+select * from t1 right outer join t2 on t1.col3=t2.col3 group by t1.col3 desc limit 5;
+--source include/query_pushdown_condition_sequoiadb_3.inc
+
+--replace_column 10 #  11 #
+explain select count(1) from t1 right outer join t2 on t1.col4=t2.col4;
+--sorted_result
+select count(1) from t1 right outer join t2 on t1.col4=t2.col4;
+--source include/query_pushdown_condition_sequoiadb_4.inc
+
+# partition table
+--replace_column 10 #  11 #
+explain select count(1) from t1_partition right outer join t2_partition on t1_partition.col4=t2_partition.col4;
+--sorted_result
+select count(1) from t1_partition right outer join t2_partition on t1_partition.col4=t2_partition.col4;
+--source include/query_pushdown_condition_sequoiadb_4.inc
+
+# seqDB-29785
+--replace_column 10 #  11 #
+explain select * from t1 natural join t2 where t1.col1>=1 limit 2,1;
+--sorted_result
+select * from t1 natural join t2 where t1.col1>=1 limit 2,1;
+--source include/query_pushdown_condition_sequoiadb_3.inc
+
+--replace_column 10 #  11 #
+explain select t1.col1 from t1 natural join t2 where t1.col2>"def" order by t1.col3 desc;
+--sorted_result
+select t1.col1 from t1 natural join t2 where t1.col2>"def" order by t1.col3 desc;
+--source include/query_pushdown_condition_sequoiadb_3.inc
+
+--replace_column 10 #  11 #
+explain select * from t1 natural join t2 where t1.col4>"abc" group by t2.col4 desc;
+--sorted_result                      
+select * from t1 natural join t2 where t1.col4>"abc" group by t2.col4 desc;
+--sorted_result                      
+--source include/query_pushdown_condition_sequoiadb_3.inc
+
+--replace_column 10 #  11 #
+explain select t1.col1 from t1 natural join t2 where t1.col2>"def" order by t1.col1 desc limit 5;
+--sorted_result
+select t1.col1 from t1 natural join t2 where t1.col2>"def" order by t1.col1 desc limit 5;
+--source include/query_pushdown_condition_sequoiadb_3.inc
+
+--replace_column 10 #  11 #
+explain select * from t1 natural join t2 where t1.col4>"abc" group by t2.col4 desc limit 5;
+--sorted_result                      
+select * from t1 natural join t2 where t1.col4>"abc" group by t2.col4 desc limit 5;
+--sorted_result                      
+--source include/query_pushdown_condition_sequoiadb_3.inc
+
+--replace_column 10 #  11 #
+explain select count(1) from t1 natural join t2 where t1.col2>"def";
+--sorted_result   
+select count(1) from t1 natural join t2 where t1.col2>"def";
+--source include/query_pushdown_condition_sequoiadb_3.inc
+
+--replace_column 10 #  11 #
+explain select count(t2.col2) from t1  natural join (t2 natural join t3) where t2.col3>"20221115114210" group by t2.col2 order by t2.col2 desc limit 1;
+--sorted_result
+select count(t2.col2) from t1  natural join (t2 natural join t3) where t2.col3>"20221115114210" group by t2.col2 order by t2.col2 desc limit 1;
+--source include/query_pushdown_condition_sequoiadb_5.inc
+
+# seqDB-29676
+--replace_column 10 #  11 #
+explain select * from t1 natural left join t2 where t1.col1>=1 limit 2,1;
+--sorted_result
+select * from t1 natural left join t2 where t1.col1>=1 limit 2,1;
+--source include/query_pushdown_condition_sequoiadb_3.inc
+
+--replace_column 10 #  11 #
+explain select t1.col1 from t1 natural left join t2 where t1.col2>"def" order by t1.col1 desc;
+--sorted_result
+select t1.col1 from t1 natural left join t2 where t1.col2>"def" order by t1.col1 desc;
+--source include/query_pushdown_condition_sequoiadb_3.inc
+
+--replace_column 10 #  11 #
+explain select * from t1 natural left join t2 where t1.col4>"abc" group by t2.col4 desc;
+--sorted_result                      
+select * from t1 natural left join t2 where t1.col4>"abc" group by t2.col4 desc;
+--sorted_result                      
+--source include/query_pushdown_condition_sequoiadb_3.inc
+
+--replace_column 10 #  11 #
+explain select t1.col1 from t1 natural left join t2 where t1.col2>"def" order by t1.col1 desc limit 5;
+--sorted_result
+select t1.col1 from t1 natural left join t2 where t1.col2>"def" order by t1.col1 desc limit 5;
+--source include/query_pushdown_condition_sequoiadb_3.inc
+
+--replace_column 10 #  11 #
+explain select * from t1 natural left join t2 where t1.col4>"abc" group by t2.col4 desc limit 5;
+--sorted_result                      
+select * from t1 natural left join t2 where t1.col4>"abc" group by t2.col4 desc limit 5;
+--sorted_result                      
+--source include/query_pushdown_condition_sequoiadb_3.inc
+
+--replace_column 10 #  11 #
+explain select count(1) from t1 natural left join t2 where t1.col2>"def";
+--sorted_result   
+select count(1) from t1 natural left join t2 where t1.col2>"def";
+--source include/query_pushdown_condition_sequoiadb_3.inc
+
+--replace_column 10 #  11 #
+explain select count(1) from t1  natural left join (t2 natural left join t3) where t2.col3>"20221115114210" group by t2.col2 order by t3.col2 desc limit 1;
+--sorted_result
+select count(1) from t1  natural left join (t2 natural left join t3) where t2.col3>"20221115114210" group by t2.col2 order by t3.col2 desc limit 1;
+--source include/query_pushdown_condition_sequoiadb_5.inc
+
+# seqDB-29677
+--replace_column 10 #  11 #
+explain select * from t1 natural right join t2 where t1.col1>=1 limit 2,1;
+--sorted_result
+select * from t1 natural right join t2 where t1.col1>=1 limit 2,1;
+--source include/query_pushdown_condition_sequoiadb_3.inc
+
+--replace_column 10 #  11 #
+explain select t1.col1 from t1 natural right join t2 where t1.col2>"def" order by t1.col1 desc;
+--sorted_result
+select t1.col1 from t1 natural right join t2 where t1.col2>"def" order by t1.col1 desc;
+--source include/query_pushdown_condition_sequoiadb_3.inc
+
+--replace_column 10 #  11 #
+explain select * from t1 natural right join t2 where t1.col4>"abc" group by t2.col4 desc;
+--sorted_result                      
+select * from t1 natural right join t2 where t1.col4>"abc" group by t2.col4 desc;
+--sorted_result                      
+--source include/query_pushdown_condition_sequoiadb_3.inc
+
+--replace_column 10 #  11 #
+explain select t1.col1 from t1 natural right join t2 where t1.col2>"def" order by t1.col1 desc limit 5;
+--sorted_result
+select t1.col1 from t1 natural right join t2 where t1.col2>"def" order by t1.col1 desc limit 5;
+--source include/query_pushdown_condition_sequoiadb_3.inc
+
+--replace_column 10 #  11 #
+explain select * from t1 natural right join t2 where t1.col4>"abc" group by t2.col4 desc limit 5;
+--sorted_result                      
+select * from t1 natural right join t2 where t1.col4>"abc" group by t2.col4 desc limit 5;
+--sorted_result                      
+--source include/query_pushdown_condition_sequoiadb_3.inc
+
+--replace_column 10 #  11 #
+explain select count(1) from t1 natural right join t2 where t1.col2>"def";
+--sorted_result   
+select count(1) from t1 natural right join t2 where t1.col2>"def";
+--source include/query_pushdown_condition_sequoiadb_3.inc
+
+--replace_column 10 #  11 #
+explain select count(t2.col2) from t1  natural right join (t2 natural right join t3) where t2.col3>"20221115114210" group by t2.col2 order by t2.col2 desc limit 1;
+--sorted_result
+select count(t2.col2) from t1  natural right join (t2 natural right join t3) where t2.col3>"20221115114210" group by t2.col2 order by t2.col2 desc limit 1;
+--source include/query_pushdown_condition_sequoiadb_3.inc
+
+# seqDB-29786
+--replace_column 10 #  11 #
+explain select col1 from t1 join t2 using(col1) limit 3;
+--sorted_result
+select col1 from t1 join t2 using(col1) limit 1;
+--source include/query_pushdown_condition_sequoiadb_3.inc
+
+--replace_column 10 #  11 #
+explain select col2 from t1 join t2 using(col2) order by col2 desc;
+--sorted_result
+select col2 from t1 join t2 using(col2) order by col2 desc;
+--source include/query_pushdown_condition_sequoiadb_4.inc
+
+--replace_column 10 #  11 #
+explain select * from t1 join t2 using(col3) group by col3 desc;
+--sorted_result
+select * from t1 join t2 using(col3) group by col3 desc;
+--source include/query_pushdown_condition_sequoiadb_2.inc
+
+--replace_column 10 #  11 #
+explain select col2 from t1 join t2 using(col2) order by col2 desc limit 4;
+--sorted_result
+select col2 from t1 join t2 using(col2) order by col2 desc limit 4;
+--source include/query_pushdown_condition_sequoiadb_4.inc
+
+--replace_column 10 #  11 #
+explain select * from t1 join t2 using(col3) group by col3 desc limit 6;
+--sorted_result
+select * from t1 join t2 using(col3) group by col3 desc limit 6;
+--source include/query_pushdown_condition_sequoiadb_2.inc
+
+--replace_column 10 #  11 #
+explain select * from t1 join t2 using(col2) group by col2 desc limit 6;
+--sorted_result
+select * from t1 join t2 using(col2) group by col2 desc limit 6;
+--source include/query_pushdown_condition_sequoiadb_3.inc
+
+--replace_column 10 #  11 #
+explain select count(1) from t1 join t2 using(col4) limit 3;
+--sorted_result
+select count(1) from t1 join t2 using(col4) limit 3;
+--source include/query_pushdown_condition_sequoiadb_4.inc
+
+# seqDB-29678
+--replace_column 10 #  11 #
+explain select t2.col2 from t2,t4 where t2.col1 > (select t1.col1 from t1,t3 where t1.col1=t3.col1 order by t3.col2 limit 1)  group by t2.col2 limit 1;
+--sorted_result
+select t2.col2 from t2,t4 where t2.col1 > (select t1.col1 from t1,t3 where t1.col1=t3.col1 order by t3.col2 limit 1)  group by t2.col2 limit 1;
+--source include/query_pushdown_condition_sequoiadb_10.inc
+
+--replace_column 10 #  11 #
+explain select count(*) from t2 where t2.col1 > (select count(1) from t1,t3 where t1.col1=t3.col1);
+--sorted_result
+select count(*) from t2 where t2.col1 > (select count(1) from t1,t3 where t1.col1=t3.col1);
+--source include/query_pushdown_condition_sequoiadb_11.inc
+
+--replace_column 10 #  11 #
+explain select * from t2 where t2.col1 >= (select t1.col1 from t1,t3 where t1.col1=t3.col1 limit 2,1)limit 3;
+--sorted_result
+select * from t2 where t2.col1 >= (select t1.col1 from t1,t3 where t1.col1=t3.col1 limit 2,1) limit 3;
+--source include/query_pushdown_condition_sequoiadb_11.inc
+
+--replace_column 10 #  11 #
+explain select * from t2,t4 where t2.col1 > (select t1.col1 from t1,t3 where t1.col1=t3.col1  and t1.col1<2 order by t3.col2)  order by t2.col2 desc;
+--sorted_result
+select * from t2,t4 where t2.col1 > (select t1.col1 from t1,t3 where t1.col1=t3.col1  and t1.col1<2 order by t3.col2)  order by t2.col2 desc;
+--source include/query_pushdown_condition_sequoiadb_8.inc
+
+--replace_column 10 #  11 #
+explain select t2.col2 from t2,t4 where t2.col1 > (select t1.col1 from t1,t3 where t1.col1=t3.col1  and t1.col1<2 group by t3.col2)  group by t2.col2;
+--sorted_result
+select t2.col2 from t2,t4 where t2.col1 > (select t1.col1 from t1,t3 where t1.col1=t3.col1  and t1.col1<2 group by t3.col2)  group by t2.col2;
+--source include/query_pushdown_condition_sequoiadb_8.inc
+
+--replace_column 10 #  11 #
+explain select t2.col1 from t2,t4 where t2.col1 > (select t1.col1 from t1,t3 where t1.col1=t3.col1 order by t1.col1 desc limit 1)  order by t2.col1 desc limit 0,1;
+--sorted_result
+select t2.col1 from t2,t4 where t2.col1 > (select t1.col1 from t1,t3 where t1.col1=t3.col1 order by t1.col1 desc limit 1)  order by t2.col1 desc limit 0,1;
+--source include/query_pushdown_condition_sequoiadb_10.inc
+
+--replace_column 10 #  11 #
+explain select t2.col1 from t2,t4 where t2.col1 > (select t1.col1 from t1,t3 where t1.col1=t3.col1 group by t1.col1 desc limit 1)  group by t2.col1 desc limit 0,1;
+--sorted_result
+select t2.col1 from t2,t4 where t2.col1 > (select t1.col1 from t1,t3 where t1.col1=t3.col1 group by t1.col1 desc limit 1)  group by t2.col1 desc limit 0,1;
+--source include/query_pushdown_condition_sequoiadb_10.inc
+
+# partition table
+--replace_column 10 #  11 #
+explain select t2.col1 from t2,t4 where t2.col1 > (select t1_partition.col1 from t1_partition,t3 where t1_partition.col1=t3.col1 group by t1_partition.col1 desc limit 1)  group by t2.col1 desc limit 0,1;
+--sorted_result
+select t2.col1 from t2,t4 where t2.col1 > (select t1_partition.col1 from t1_partition,t3 where t1_partition.col1=t3.col1 group by t1_partition.col1 desc limit 1)  group by t2.col1 desc limit 0,1;
+--source include/query_pushdown_condition_sequoiadb_10.inc
+
+# seqDB-29679
+--replace_column 10 #  11 #
+explain select count(*) from (select count(1) from t1,t2 where t1.col2>t2.col2) dt,t3;
+--sorted_result
+select count(*) from (select count(1) from t1,t2 where t1.col2>t2.col2) dt,t3;
+--source include/query_pushdown_condition_sequoiadb_23.inc
+
+--replace_column 10 #  11 #
+explain select dt.col4 from (select t1.col1,t1.col2,t2.col3,t2.col4 from t1,t2 where t1.col2=t2.col2 limit 3) dt,t3 where dt.col4>"ee" limit 1;
+--sorted_result
+select dt.col4 from (select t1.col1,t1.col2,t2.col3,t2.col4 from t1,t2 where t1.col2=t2.col2 limit 3) dt,t3 where dt.col4>"ee" limit 1;
+--source include/query_pushdown_condition_sequoiadb_5.inc
+
+--replace_column 10 #  11 #
+explain select t3.col3 from (select t1.col1,t1.col2,t2.col3,t2.col4 from t1,t2 where t1.col2=t2.col2 order by t1.col3 desc) dt,t3 where dt.col4>"defg" order by t3.col3 desc;
+--sorted_result
+select t3.col3 from (select t1.col1,t1.col2,t2.col3,t2.col4 from t1,t2 where t1.col2=t2.col2 order by t1.col3 desc) dt,t3 where dt.col4>"defg" order by t3.col3 desc;
+--source include/query_pushdown_condition_sequoiadb_5.inc
+
+--replace_column 10 #  11 #
+explain select t3.col3 from (select t1.col1,t1.col2,t2.col3,t2.col4 from t1,t2 where t1.col2=t2.col2 group by t1.col3 desc) dt,t3 where dt.col4>"ee" group by t3.col3 desc;
+--sorted_result
+select t3.col3 from (select t1.col1,t1.col2,t2.col3,t2.col4 from t1,t2 where t1.col2=t2.col2 group by t1.col3 desc) dt,t3 where dt.col4>"ee" group by t3.col3 desc;
+--source include/query_pushdown_condition_sequoiadb_4.inc
+
+--replace_column 10 #  11 #
+explain select t3.col3 from (select t1.col1,t1.col2,t2.col3,t2.col4 from t1,t2 where t1.col2=t2.col2 order by t1.col3 desc limit 5) dt,t3 where dt.col4>"defg" order by t3.col3 desc limit 1;
+--sorted_result
+select t3.col3 from (select t1.col1,t1.col2,t2.col3,t2.col4 from t1,t2 where t1.col2=t2.col2 order by t1.col3 desc limit 5) dt,t3 where dt.col4>"defg" order by t3.col3 desc limit 1;
+--source include/query_pushdown_condition_sequoiadb_4.inc
+
+--replace_column 10 #  11 #
+explain select * from (select t1.col1,t1.col2,t2.col3,t2.col4 from t1,t2 where t1.col2=t2.col2 group by t1.col3 desc limit 10) dt,t3 where dt.col4>"ee" group by t3.col3 desc limit 1;
+--sorted_result
+select * from (select t1.col1,t1.col2,t2.col3,t2.col4 from t1,t2 where t1.col2=t2.col2 group by t1.col3 desc limit 10) dt,t3 where dt.col4>"ee" group by t3.col3 desc limit 1;
+--source include/query_pushdown_condition_sequoiadb_4.inc
+
+--replace_column 10 #  11 #
+explain select * from (select t1.col1,t1.col2,t2.col3,t2.col4 from t1,t2 where t1.col2=t2.col2 order by t1.col3 desc limit 10) dt,t3 where dt.col4>"ee" group by t3.col3 desc limit 1;
+--sorted_result
+select * from (select t1.col1,t1.col2,t2.col3,t2.col4 from t1,t2 where t1.col2=t2.col2 order by t1.col3 desc limit 10) dt,t3 where dt.col4>"ee" group by t3.col3 desc limit 1;
+--source include/query_pushdown_condition_sequoiadb_4.inc
+
+--replace_column 10 #  11 #
+explain select * from (select count(1) from t1,t2 where t1.col2>t2.col2) dt,t3 group by col2;
+--sorted_result
+select * from (select count(1) from t1,t2 where t1.col2>t2.col2) dt,t3 group by col2;
+--source include/query_pushdown_condition_sequoiadb_23.inc
+
+# seqDB-29680
+
+--replace_column 10 #  11 #
+explain select count(*),(select count(t1.col1) from t1,t2 where t1.col1=t2.col1 and t1.col1>=1) from t2 where col3>"20221115114210";
+--sorted_result
+select count(*),(select count(t1.col1) from t1,t2 where t1.col1=t2.col1 and t1.col1>=1) from t2 where col3>"20221115114210";
+--source include/query_pushdown_condition_sequoiadb_8.inc
+
+--replace_column 10 #  11 #
+explain select *,(select t1.col1 from t1,t2 where t1.col1>=1 limit 2,1) from t2 where col3>"20221115114210"  limit 1,3;
+--sorted_result
+select *,(select t1.col1 from t1,t2 where t1.col1>=1 limit 2,1) from t2 where col3>"20221115114210"  limit 1,3;
+--source include/query_pushdown_condition_sequoiadb_5.inc
+
+--replace_column 10 #  11 #
+explain select *,(select t1.col1 from t1,t2 where t1.col2="bcd" order by t1.col3) from t2 where col3>"20221115114210" order by col4;
+--sorted_result
+select *,(select t1.col1 from t1,t2 where t1.col2="bcd" order by t1.col3) from t2 where col3>"20221115114210" order by col4;
+--source include/query_pushdown_condition_sequoiadb_2.inc
+
+--replace_column 10 #  11 #
+explain select *,(select t1.col2 from t1,t2 where t1.col3>="20221215114210" group by t1.col4) from t2 where t2.col1 <6 group by col1;
+--sorted_result
+select *,(select t1.col2 from t1,t2 where t1.col3>="20221215114210" group by t1.col4) from t2 where t2.col1 <6 group by col1;
+--source include/query_pushdown_condition_sequoiadb_2.inc
+
+--replace_column 10 #  11 #
+explain select *,(select t1.col1 from t1,t2 where t1.col2>="bcd" order by t1.col3 limit 2,1) from t2 where col3>"20221115114210" order by col4 limit 1,3;
+--sorted_result
+select *,(select t1.col1 from t1,t2 where t1.col2>="bcd" order by t1.col3 limit 2,1) from t2 where col3>"20221115114210" order by col4 limit 1,3;
+--source include/query_pushdown_condition_sequoiadb_4.inc
+
+--replace_column 10 #  11 #
+explain select count(*) from t2 where t2.col1 < (select count(t1.col4) from t1,t2 where t1.col3>="20221115114210" ) ;
+--sorted_result
+select count(*) from t2 where t2.col1 < (select count(t1.col4) from t1,t2 where t1.col3>="20221115114210" ) ;
+--source include/query_pushdown_condition_sequoiadb_6.inc
+
+--replace_column 10 #  11 #
+explain select * from t2 where t2.col1 < (select t1.col1 from t1,t2 where t1.col1>=5 limit 0,1)  limit 3;
+--sorted_result
+select * from t2 where t2.col1 < (select t1.col1 from t1,t2 where t1.col1>=5 limit 0,1)  limit 3;
+--source include/query_pushdown_condition_sequoiadb_5.inc
+
+--replace_column 10 #  11 #
+explain select * from t2 where t2.col2 in(select t1.col4 from t1,t2 where t1.col3>"20221115114210" order by t1.col4 desc) order by col3 desc;
+--sorted_result
+select * from t2 where t2.col2 in(select t1.col4 from t1,t2 where t1.col3>"20221115114210" order by t1.col4 desc) order by col3 desc;
+--source include/query_pushdown_condition_sequoiadb_5.inc
+
+--replace_column 10 #  11 #
+explain select * from t2 where t2.col2 in(select t1.col4 from t1,t2 where t1.col3>="20221115114010" group by t1.col4 having t1.col4 < "zzz") group by col3 desc;
+--sorted_result 
+select * from t2 where t2.col2 in(select t1.col4 from t1,t2 where t1.col3>="20221115114010" group by t1.col4 having t1.col4 < "zzz") group by col3 desc;
+--source include/query_pushdown_condition_sequoiadb_5.inc
+
+select * from t2 where t2.col2 >=(select t1.col4 from t1,t2 where t1.col3>"20221115114210" order by t1.col4 desc limit 1) order by col3 desc limit 3;
+--source include/query_pushdown_condition_sequoiadb_4.inc
+
+--replace_column 10 #  11 #
+explain select * from t2 where t2.col2 >(select t1.col4 from t1,t2 where t1.col3>="20221115114010" group by t1.col4 having t1.col4 < "zzz" limit 1) group by col3 desc;
+--sorted_result 
+select * from t2 where t2.col2 >(select t1.col4 from t1,t2 where t1.col3>="20221115114010" group by t1.col4 having t1.col4 < "zzz" limit 1) group by col3 desc;
+--source include/query_pushdown_condition_sequoiadb_4.inc
+
+--replace_column 10 #  11 #
+explain select * from t1 where t1.col1>(select count(1) from t1,t2 where t1.col1=t2.col1) limit 1;
+--sorted_result
+select * from t1 where t1.col1>(select count(1) from t1,t2 where t1.col1=t2.col1) limit 1;
+--source include/query_pushdown_condition_sequoiadb_6.inc
+
+--replace_column 10 #  11 #
+explain select * from t1 where t1.col2 >=(select t1.col2 from t1,t2 where t1.col3=t2.col3 order by t1.col3 limit 1) order by col4 limit 5;
+--sorted_result
+select * from t1 where t1.col2 >=(select t1.col2 from t1,t2 where t1.col3=t2.col3 order by t1.col3 limit 1) order by col4 limit 5;
+--source include/query_pushdown_condition_sequoiadb_5.inc
+
+--replace_column 10 #  11 #
+explain select * from t1 where t1.col3 >=(select t1.col3 from t1,t2 where t1.col2=t2.col4 order by t1.col4 limit 1) group by col4;
+--sorted_result
+select * from t1 where t1.col3 >=(select t1.col3 from t1,t2 where t1.col2=t2.col4 order by t1.col4 limit 1) group by col4;
+--source include/query_pushdown_condition_sequoiadb_5.inc
+
+--replace_column 10 #  11 #
+explain select * from t1 where t1.col3 >=(select t1.col3 from t1,t2 where t1.col2=t2.col4 group by t1.col4 limit 1) group by col4;
+--sorted_result
+select * from t1 where t1.col3 >=(select t1.col3 from t1,t2 where t1.col2=t2.col4 order by t1.col4 limit 1) group by col4;
+--source include/query_pushdown_condition_sequoiadb_5.inc
+
+--replace_column 10 #  11 #
+explain select count(*) from t2 where col1>4 group by col1 having col1< (select count(1) from t1,t2 where t1.col4>"def") ;
+--sorted_result
+select count(*) from t2 where col1>4 group by col1 having col1<(select count(1) from t1,t2 where t1.col4>"def") ;
+--source include/query_pushdown_condition_sequoiadb_6.inc
+
+--replace_column 10 #  11 #
+explain select * from t2 where col1>4 group by col1 having col1> (select t1.col1 from t1,t2 where t1.col4>"def" limit 1) limit 2;
+--sorted_result
+select * from t2 where col1>4 group by col1 having col1> (select t1.col1 from t1,t2 where t1.col4>"def" limit 1) limit 2;
+--source include/query_pushdown_condition_sequoiadb_4.inc
+
+--replace_column 10 #  11 #
+explain select * from t2 where col1>1 group by col1 having col2< (select distinct t1.col4 from t1,t2 where t1.col2="abcdef" order by t1.col1 desc);
+--sorted_result
+select * from t2 where col1>1 group by col1 having col2< (select distinct t1.col4 from t1,t2 where t1.col2="abcdef" order by t1.col1 desc);
+--source include/query_pushdown_condition_sequoiadb_4.inc
+
+--replace_column 10 #  11 #
+explain select * from t2 where col1>4 group by col1 having col2 in (select t1.col4 from t1,t2 where t1.col2>"def" group by t1.col2 desc having t1.col2 < "zzz");
+--sorted_result
+select * from t2 where col1>4 group by col1 having col2 in (select t1.col4 from t1,t2 where t1.col2>"def" group by t1.col2 desc having t1.col2 < "zzz");
+--source include/query_pushdown_condition_sequoiadb_4.inc
+
+--replace_column 10 #  11 #
+explain select * from t2 where col1>1 group by col1 having col2< (select t1.col4 from t1,t2 where t1.col2="abcdef" order by t1.col1 desc limit 1);
+--sorted_result
+select * from t2 where col1>1 group by col1 having col2< (select t1.col4 from t1,t2 where t1.col2="abcdef" order by t1.col1 desc limit 1);
+--source include/query_pushdown_condition_sequoiadb_4.inc
+
+--replace_column 10 #  11 #
+explain select count(*) from t2 where exists (select *  from t1,t2 where t1.col3>"20221115114210" ) ;
+--sorted_result
+select count(*) from t2 where exists (select *  from t1,t2 where t1.col3>"20221115114210" ) ;
+--source include/query_pushdown_condition_sequoiadb_7.inc
+
+--replace_column 10 #  11 #
+explain select * from t2 where exists (select *  from t1,t2 where t1.col1>=5 limit 0,1)  limit 3;
+--sorted_result
+select * from t2 where exists (select * from t1,t2 where t1.col1>=5 limit 0,1)  limit 3;
+--source include/query_pushdown_condition_sequoiadb_5.inc
+
+--replace_column 10 #  11 #
+explain select * from t2 where exists (select *  from t1,t2 where t1.col3>"20221115114210" order by t1.col4 desc) order by col3 desc;
+--sorted_result
+select * from t2 where exists (select * from t1,t2 where t1.col3>"20221115114210" order by t1.col4 desc) order by col3 desc;
+--source include/query_pushdown_condition_sequoiadb_4.inc
+
+--replace_column 10 #  11 #
+explain select * from t2 where exists (select *  from t1,t2 where t1.col3>="20221115114010" group by t1.col4 having t1.col4 < "zzz") group by col3 desc;
+--sorted_result 
+select * from t2 where exists (select *  from t1,t2 where t1.col3>="20221115114010" group by t1.col4 having t1.col4 < "zzz") group by col3 desc;
+--source include/query_pushdown_condition_sequoiadb_4.inc
+
+# partition table
+--replace_column 10 #  11 #
+explain select col3 from t2_partition where exists (select *  from t1_partition,t2_partition where t1_partition.col3>="20221115114010" group by t1_partition.col4 having t1_partition.col4 < "zzz") group by col3 desc;
+--sorted_result 
+select col3 from t2_partition where exists (select *  from t1_partition,t2_partition where t1_partition.col3>="20221115114010" group by t1_partition.col4 having t1_partition.col4 < "zzz") group by col3 desc;
+--source include/query_pushdown_condition_sequoiadb_4.inc
+
+# seqDB-29681
+--replace_column 10 #  11 #
+explain  select * from t1 where col2 >"def" order by col1 desc;
+--sorted_result
+select * from t1 where col2 >"def" order by col1 desc;
+--source include/query_pushdown_condition_sequoiadb.inc
+
+# seqDB-29682
+--replace_column 10 #  11 #
+explain select distinct col1 from t1 where col2 >"def";
+--sorted_result
+select distinct col1 from t1 where col2 >"def";
+--source include/query_pushdown_condition_sequoiadb_3.inc
+
+
+--disable_warnings
+drop database if exists count_limit_sort_pushdown_sequoiadb;
+--enable_warnings
+set session sql_mode=default;
+--source include/uninstall_sequoiadb.inc

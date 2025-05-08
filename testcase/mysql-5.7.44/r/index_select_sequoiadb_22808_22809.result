@@ -1,0 +1,501 @@
+drop database if exists index_select_sequoiadb_22808_22809;
+create database index_select_sequoiadb_22808_22809;
+drop database index_select_sequoiadb_22808_22809;
+create database index_select_sequoiadb_22808_22809;
+use index_select_sequoiadb_22808_22809;
+CREATE TABLE t1 (
+a INT,
+b CHAR(64),
+c INT
+);
+LOAD DATA INFILE '../../std_data/index_select_sequoiadb_4.dat' INTO TABLE t1 fields terminated by ';';
+alter table t1 add PRIMARY KEY(a);
+alter table t1 add index b(b);
+alter table t1 add index ab(a,b);
+alter table t1 add index ba(b,a);
+SHOW CREATE TABLE t1;
+Table	Create Table
+t1	CREATE TABLE `t1` (
+  `a` int(11) NOT NULL,
+  `b` char(64) DEFAULT NULL,
+  `c` int(11) DEFAULT NULL,
+  PRIMARY KEY (`a`),
+  KEY `b` (`b`),
+  KEY `ab` (`a`,`b`),
+  KEY `ba` (`b`,`a`)
+) ENGINE=SequoiaDB DEFAULT CHARSET=latin1
+EXPLAIN SELECT * FROM t1 WHERE c IN (1,2) ORDER BY a;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	ALL	NULL	NULL	NULL	NULL	#	20.00	Using where with pushed condition (`index_select_sequoiadb_22808_22809`.`t1`.`c` in (1,2)); Using pushed sort (`index_select_sequoiadb_22808_22809`.`t1`.`a`)
+Warnings:
+Note	1003	/* select#1 */ select `index_select_sequoiadb_22808_22809`.`t1`.`a` AS `a`,`index_select_sequoiadb_22808_22809`.`t1`.`b` AS `b`,`index_select_sequoiadb_22808_22809`.`t1`.`c` AS `c` from `index_select_sequoiadb_22808_22809`.`t1` where (`index_select_sequoiadb_22808_22809`.`t1`.`c` in (1,2)) order by `index_select_sequoiadb_22808_22809`.`t1`.`a`
+SELECT * FROM t1 WHERE c IN (1,2) ORDER BY a;
+a	b	c
+105137	GtHIJfgh	1
+108924	yzEKLMNASO	2
+142018	vwxyzEKLMNASOPT	2
+221736	xyzEKLMNASOPTQB	1
+28229	jmklnopqvwxyzEKLMNASOPTQBRCVDUWXYZ	2
+38269	vwxyzEK	2
+390842	ASOPTQBRCVDUWXYZ	2
+422739	QBRCVDUWXYZ	1
+463626	pqvwxyzEKLMNASOPTQBRCVDUWXYZ	2
+630511	JfghiujmklnopqvwxyzEKLMNASOPTQBRCVDUWXYZ	2
+768764	opqvwxyzEKLMNASOPTQBRCVDUWXYZ	1
+7943	HIJfghiujmklnopqvwxyzE	1
+[Note] Testcase: Operation log begin
+[Note] SequoiaDB: optimizer pushdown autocommit: 1
+[Note] SequoiaDB: Query message: condition[{ "c": { "$in": [ 1, 2 ] } }], selector[{}], order_by[{ "a": 1 }], hint[{}], limit[-1], offset[0], table[index_select_sequoiadb_22808_22809.t1]
+EXPLAIN SELECT * FROM t1 WHERE a IN (108339,2293) ORDER BY c;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	range	PRIMARY,ab	PRIMARY	4	NULL	#	100.00	Using where with pushed condition (`index_select_sequoiadb_22808_22809`.`t1`.`a` in (108339,2293)); Using MRR; Using pushed sort (`index_select_sequoiadb_22808_22809`.`t1`.`c`)
+Warnings:
+Note	1003	/* select#1 */ select `index_select_sequoiadb_22808_22809`.`t1`.`a` AS `a`,`index_select_sequoiadb_22808_22809`.`t1`.`b` AS `b`,`index_select_sequoiadb_22808_22809`.`t1`.`c` AS `c` from `index_select_sequoiadb_22808_22809`.`t1` where (`index_select_sequoiadb_22808_22809`.`t1`.`a` in (108339,2293)) order by `index_select_sequoiadb_22808_22809`.`t1`.`c`
+SELECT * FROM t1 WHERE a IN (108339,2293) ORDER BY c;
+a	b	c
+108339	FGtHIJfghiujmklnopqvwxyzEKLMNA	20547
+2293	yzEKLMNASOPTQBRCVDUWX	138
+[Note] Testcase: Operation log begin
+[Note] SequoiaDB: optimizer pushdown autocommit: 1
+[Note] SequoiaDB: Query message: condition[{ "$and": [ { "a": { "$in": [ 108339, 2293 ] } }, { "a": { "$in": [ 2293, 108339 ] } } ] }], selector[{}], order_by[{ "c": 1 }], hint[{ "": "PRIMARY" }], limit[-1], offset[0], table[index_select_sequoiadb_22808_22809.t1]
+EXPLAIN SELECT * FROM t1 WHERE b IN ('klnopqvwx','ujmklnopq') ORDER BY a;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	range	b,ba	b	65	NULL	#	100.00	Using where with pushed condition (`index_select_sequoiadb_22808_22809`.`t1`.`b` in ('klnopqvwx','ujmklnopq')); Using MRR; Using pushed sort (`index_select_sequoiadb_22808_22809`.`t1`.`a`)
+Warnings:
+Note	1003	/* select#1 */ select `index_select_sequoiadb_22808_22809`.`t1`.`a` AS `a`,`index_select_sequoiadb_22808_22809`.`t1`.`b` AS `b`,`index_select_sequoiadb_22808_22809`.`t1`.`c` AS `c` from `index_select_sequoiadb_22808_22809`.`t1` where (`index_select_sequoiadb_22808_22809`.`t1`.`b` in ('klnopqvwx','ujmklnopq')) order by `index_select_sequoiadb_22808_22809`.`t1`.`a`
+SELECT * FROM t1 WHERE b IN ('klnopqvwx','ujmklnopq') ORDER BY a;
+a	b	c
+10356	ujmklnopq	14990
+10368	ujmklnopq	24469
+103720	ujmklnopq	888
+103875	ujmklnopq	4927
+104943	klnopqvwx	23242
+108541	klnopqvwx	22506
+108666	klnopqvwx	24930
+114818	ujmklnopq	22866
+115844	ujmklnopq	7164
+116994	klnopqvwx	3046
+117857	ujmklnopq	14676
+118552	klnopqvwx	7114
+118760	klnopqvwx	28546
+119690	ujmklnopq	22758
+121703	ujmklnopq	22416
+126203	ujmklnopq	20508
+128048	ujmklnopq	30684
+129929	ujmklnopq	27593
+132944	ujmklnopq	4637
+133736	ujmklnopq	2247
+134507	ujmklnopq	17515
+136681	ujmklnopq	21543
+139075	ujmklnopq	8270
+140861	ujmklnopq	23585
+14141	klnopqvwx	28794
+14223	klnopqvwx	15064
+143127	ujmklnopq	27881
+143314	ujmklnopq	6146
+144687	klnopqvwx	13112
+145733	ujmklnopq	31969
+14848	klnopqvwx	6194
+2050	klnopqvwx	27236
+22297	ujmklnopq	23495
+224185	klnopqvwx	14216
+22533	ujmklnopq	4439
+226263	klnopqvwx	13279
+226630	klnopqvwx	19558
+228361	klnopqvwx	16422
+232770	klnopqvwx	14062
+23297	ujmklnopq	10513
+233827	klnopqvwx	30116
+236756	klnopqvwx	2679
+250332	klnopqvwx	9801
+250381	klnopqvwx	24078
+251778	klnopqvwx	3754
+252491	klnopqvwx	16032
+252618	klnopqvwx	25344
+257392	klnopqvwx	24142
+258537	klnopqvwx	951
+27297	klnopqvwx	25685
+27408	klnopqvwx	12825
+27666	klnopqvwx	4973
+28056	klnopqvwx	24886
+28315	klnopqvwx	5996
+3480	klnopqvwx	20514
+35423	ujmklnopq	27210
+35930	ujmklnopq	8875
+36473	ujmklnopq	4521
+39922	klnopqvwx	17968
+40287	klnopqvwx	29775
+40514	klnopqvwx	11970
+40613	klnopqvwx	5205
+412676	ujmklnopq	13019
+413560	ujmklnopq	29475
+415160	ujmklnopq	16532
+417380	ujmklnopq	18215
+419212	ujmklnopq	3628
+420926	ujmklnopq	22508
+421614	ujmklnopq	24732
+430247	ujmklnopq	16110
+431027	ujmklnopq	8432
+433654	ujmklnopq	16114
+437825	ujmklnopq	28873
+440085	ujmklnopq	32069
+441714	ujmklnopq	12233
+443328	ujmklnopq	2138
+443349	ujmklnopq	3859
+445637	ujmklnopq	16010
+446871	ujmklnopq	16079
+449703	ujmklnopq	477
+450277	ujmklnopq	12388
+50752	ujmklnopq	3748
+50854	ujmklnopq	30371
+50907	ujmklnopq	16836
+52349	ujmklnopq	9913
+52605	ujmklnopq	30334
+527181	klnopqvwx	12814
+529112	klnopqvwx	4523
+531297	klnopqvwx	28256
+531754	klnopqvwx	27940
+531856	klnopqvwx	8381
+533740	klnopqvwx	28789
+534393	klnopqvwx	9300
+534840	klnopqvwx	8178
+535263	klnopqvwx	23061
+536919	klnopqvwx	29144
+541537	klnopqvwx	3655
+541849	klnopqvwx	12557
+541996	klnopqvwx	14185
+542210	klnopqvwx	6392
+548111	klnopqvwx	9033
+548794	klnopqvwx	8769
+550903	klnopqvwx	15921
+552144	klnopqvwx	17455
+552536	klnopqvwx	27311
+553588	klnopqvwx	3363
+555863	klnopqvwx	2133
+556772	klnopqvwx	9177
+563585	klnopqvwx	20908
+58393	klnopqvwx	23737
+60585	ujmklnopq	24257
+60656	ujmklnopq	27764
+61093	klnopqvwx	17264
+61124	klnopqvwx	28489
+66065	klnopqvwx	28258
+715748	ujmklnopq	7295
+716441	ujmklnopq	16024
+725695	ujmklnopq	15950
+727014	ujmklnopq	23139
+731243	ujmklnopq	16315
+732028	ujmklnopq	32169
+732951	ujmklnopq	19322
+733712	ujmklnopq	1870
+736290	ujmklnopq	779
+738685	ujmklnopq	22523
+743313	ujmklnopq	13436
+746141	ujmklnopq	19084
+74723	ujmklnopq	10906
+749243	ujmklnopq	900
+77308	klnopqvwx	11953
+81361	ujmklnopq	25906
+81404	ujmklnopq	5532
+832492	klnopqvwx	11209
+833100	klnopqvwx	23941
+83387	klnopqvwx	11824
+83458	klnopqvwx	12009
+842687	klnopqvwx	32765
+846830	klnopqvwx	5352
+854659	klnopqvwx	13233
+855545	klnopqvwx	13032
+858849	klnopqvwx	30810
+858954	klnopqvwx	22248
+859535	klnopqvwx	5352
+859564	klnopqvwx	25673
+87255	ujmklnopq	32731
+87466	ujmklnopq	10080
+88465	klnopqvwx	2445
+8979	ujmklnopq	19583
+91036	klnopqvwx	18399
+9326	ujmklnopq	2972
+97319	ujmklnopq	1538
+9765	ujmklnopq	6088
+98196	ujmklnopq	27908
+98198	ujmklnopq	10865
+[Note] Testcase: Operation log begin
+[Note] SequoiaDB: optimizer pushdown autocommit: 1
+[Note] SequoiaDB: Query message: condition[{ "b": { "$in": [ "klnopqvwx", "ujmklnopq" ] } }], selector[{}], order_by[{ "a": 1 }], hint[{ "": "b" }], limit[-1], offset[0], table[index_select_sequoiadb_22808_22809.t1]
+ANALYZE TABLE t1;
+Table	Op	Msg_type	Msg_text
+index_select_sequoiadb_22808_22809.t1	analyze	status	OK
+EXPLAIN SELECT * FROM t1 WHERE c IN (1,2) ORDER BY a;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	ALL	NULL	NULL	NULL	NULL	#	20.00	Using where with pushed condition (`index_select_sequoiadb_22808_22809`.`t1`.`c` in (1,2)); Using pushed sort (`index_select_sequoiadb_22808_22809`.`t1`.`a`)
+Warnings:
+Note	1003	/* select#1 */ select `index_select_sequoiadb_22808_22809`.`t1`.`a` AS `a`,`index_select_sequoiadb_22808_22809`.`t1`.`b` AS `b`,`index_select_sequoiadb_22808_22809`.`t1`.`c` AS `c` from `index_select_sequoiadb_22808_22809`.`t1` where (`index_select_sequoiadb_22808_22809`.`t1`.`c` in (1,2)) order by `index_select_sequoiadb_22808_22809`.`t1`.`a`
+SELECT * FROM t1 WHERE c IN (1,2) ORDER BY a;
+a	b	c
+105137	GtHIJfgh	1
+108924	yzEKLMNASO	2
+142018	vwxyzEKLMNASOPT	2
+221736	xyzEKLMNASOPTQB	1
+28229	jmklnopqvwxyzEKLMNASOPTQBRCVDUWXYZ	2
+38269	vwxyzEK	2
+390842	ASOPTQBRCVDUWXYZ	2
+422739	QBRCVDUWXYZ	1
+463626	pqvwxyzEKLMNASOPTQBRCVDUWXYZ	2
+630511	JfghiujmklnopqvwxyzEKLMNASOPTQBRCVDUWXYZ	2
+768764	opqvwxyzEKLMNASOPTQBRCVDUWXYZ	1
+7943	HIJfghiujmklnopqvwxyzE	1
+[Note] Testcase: Operation log begin
+[Note] SequoiaDB: optimizer pushdown autocommit: 1
+[Note] SequoiaDB: Query message: condition[{ "c": { "$in": [ 1, 2 ] } }], selector[{}], order_by[{ "a": 1 }], hint[{}], limit[-1], offset[0], table[index_select_sequoiadb_22808_22809.t1]
+EXPLAIN SELECT * FROM t1 WHERE a IN (108339,2293) ORDER BY c;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	range	PRIMARY,ab	PRIMARY	4	NULL	#	100.00	Using where with pushed condition (`index_select_sequoiadb_22808_22809`.`t1`.`a` in (108339,2293)); Using MRR; Using pushed sort (`index_select_sequoiadb_22808_22809`.`t1`.`c`)
+Warnings:
+Note	1003	/* select#1 */ select `index_select_sequoiadb_22808_22809`.`t1`.`a` AS `a`,`index_select_sequoiadb_22808_22809`.`t1`.`b` AS `b`,`index_select_sequoiadb_22808_22809`.`t1`.`c` AS `c` from `index_select_sequoiadb_22808_22809`.`t1` where (`index_select_sequoiadb_22808_22809`.`t1`.`a` in (108339,2293)) order by `index_select_sequoiadb_22808_22809`.`t1`.`c`
+SELECT * FROM t1 WHERE a IN (108339,2293) ORDER BY c;
+a	b	c
+108339	FGtHIJfghiujmklnopqvwxyzEKLMNA	20547
+2293	yzEKLMNASOPTQBRCVDUWX	138
+[Note] Testcase: Operation log begin
+[Note] SequoiaDB: optimizer pushdown autocommit: 1
+[Note] SequoiaDB: Query message: condition[{ "$and": [ { "a": { "$in": [ 108339, 2293 ] } }, { "a": { "$in": [ 2293, 108339 ] } } ] }], selector[{}], order_by[{ "c": 1 }], hint[{ "": "PRIMARY" }], limit[-1], offset[0], table[index_select_sequoiadb_22808_22809.t1]
+EXPLAIN SELECT * FROM t1 WHERE b IN ('klnopqvwx','ujmklnopq') ORDER BY a;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	range	b,ba	b	65	NULL	#	100.00	Using where with pushed condition (`index_select_sequoiadb_22808_22809`.`t1`.`b` in ('klnopqvwx','ujmklnopq')); Using MRR; Using pushed sort (`index_select_sequoiadb_22808_22809`.`t1`.`a`)
+Warnings:
+Note	1003	/* select#1 */ select `index_select_sequoiadb_22808_22809`.`t1`.`a` AS `a`,`index_select_sequoiadb_22808_22809`.`t1`.`b` AS `b`,`index_select_sequoiadb_22808_22809`.`t1`.`c` AS `c` from `index_select_sequoiadb_22808_22809`.`t1` where (`index_select_sequoiadb_22808_22809`.`t1`.`b` in ('klnopqvwx','ujmklnopq')) order by `index_select_sequoiadb_22808_22809`.`t1`.`a`
+SELECT * FROM t1 WHERE b IN ('klnopqvwx','ujmklnopq') ORDER BY a;
+a	b	c
+10356	ujmklnopq	14990
+10368	ujmklnopq	24469
+103720	ujmklnopq	888
+103875	ujmklnopq	4927
+104943	klnopqvwx	23242
+108541	klnopqvwx	22506
+108666	klnopqvwx	24930
+114818	ujmklnopq	22866
+115844	ujmklnopq	7164
+116994	klnopqvwx	3046
+117857	ujmklnopq	14676
+118552	klnopqvwx	7114
+118760	klnopqvwx	28546
+119690	ujmklnopq	22758
+121703	ujmklnopq	22416
+126203	ujmklnopq	20508
+128048	ujmklnopq	30684
+129929	ujmklnopq	27593
+132944	ujmklnopq	4637
+133736	ujmklnopq	2247
+134507	ujmklnopq	17515
+136681	ujmklnopq	21543
+139075	ujmklnopq	8270
+140861	ujmklnopq	23585
+14141	klnopqvwx	28794
+14223	klnopqvwx	15064
+143127	ujmklnopq	27881
+143314	ujmklnopq	6146
+144687	klnopqvwx	13112
+145733	ujmklnopq	31969
+14848	klnopqvwx	6194
+2050	klnopqvwx	27236
+22297	ujmklnopq	23495
+224185	klnopqvwx	14216
+22533	ujmklnopq	4439
+226263	klnopqvwx	13279
+226630	klnopqvwx	19558
+228361	klnopqvwx	16422
+232770	klnopqvwx	14062
+23297	ujmklnopq	10513
+233827	klnopqvwx	30116
+236756	klnopqvwx	2679
+250332	klnopqvwx	9801
+250381	klnopqvwx	24078
+251778	klnopqvwx	3754
+252491	klnopqvwx	16032
+252618	klnopqvwx	25344
+257392	klnopqvwx	24142
+258537	klnopqvwx	951
+27297	klnopqvwx	25685
+27408	klnopqvwx	12825
+27666	klnopqvwx	4973
+28056	klnopqvwx	24886
+28315	klnopqvwx	5996
+3480	klnopqvwx	20514
+35423	ujmklnopq	27210
+35930	ujmklnopq	8875
+36473	ujmklnopq	4521
+39922	klnopqvwx	17968
+40287	klnopqvwx	29775
+40514	klnopqvwx	11970
+40613	klnopqvwx	5205
+412676	ujmklnopq	13019
+413560	ujmklnopq	29475
+415160	ujmklnopq	16532
+417380	ujmklnopq	18215
+419212	ujmklnopq	3628
+420926	ujmklnopq	22508
+421614	ujmklnopq	24732
+430247	ujmklnopq	16110
+431027	ujmklnopq	8432
+433654	ujmklnopq	16114
+437825	ujmklnopq	28873
+440085	ujmklnopq	32069
+441714	ujmklnopq	12233
+443328	ujmklnopq	2138
+443349	ujmklnopq	3859
+445637	ujmklnopq	16010
+446871	ujmklnopq	16079
+449703	ujmklnopq	477
+450277	ujmklnopq	12388
+50752	ujmklnopq	3748
+50854	ujmklnopq	30371
+50907	ujmklnopq	16836
+52349	ujmklnopq	9913
+52605	ujmklnopq	30334
+527181	klnopqvwx	12814
+529112	klnopqvwx	4523
+531297	klnopqvwx	28256
+531754	klnopqvwx	27940
+531856	klnopqvwx	8381
+533740	klnopqvwx	28789
+534393	klnopqvwx	9300
+534840	klnopqvwx	8178
+535263	klnopqvwx	23061
+536919	klnopqvwx	29144
+541537	klnopqvwx	3655
+541849	klnopqvwx	12557
+541996	klnopqvwx	14185
+542210	klnopqvwx	6392
+548111	klnopqvwx	9033
+548794	klnopqvwx	8769
+550903	klnopqvwx	15921
+552144	klnopqvwx	17455
+552536	klnopqvwx	27311
+553588	klnopqvwx	3363
+555863	klnopqvwx	2133
+556772	klnopqvwx	9177
+563585	klnopqvwx	20908
+58393	klnopqvwx	23737
+60585	ujmklnopq	24257
+60656	ujmklnopq	27764
+61093	klnopqvwx	17264
+61124	klnopqvwx	28489
+66065	klnopqvwx	28258
+715748	ujmklnopq	7295
+716441	ujmklnopq	16024
+725695	ujmklnopq	15950
+727014	ujmklnopq	23139
+731243	ujmklnopq	16315
+732028	ujmklnopq	32169
+732951	ujmklnopq	19322
+733712	ujmklnopq	1870
+736290	ujmklnopq	779
+738685	ujmklnopq	22523
+743313	ujmklnopq	13436
+746141	ujmklnopq	19084
+74723	ujmklnopq	10906
+749243	ujmklnopq	900
+77308	klnopqvwx	11953
+81361	ujmklnopq	25906
+81404	ujmklnopq	5532
+832492	klnopqvwx	11209
+833100	klnopqvwx	23941
+83387	klnopqvwx	11824
+83458	klnopqvwx	12009
+842687	klnopqvwx	32765
+846830	klnopqvwx	5352
+854659	klnopqvwx	13233
+855545	klnopqvwx	13032
+858849	klnopqvwx	30810
+858954	klnopqvwx	22248
+859535	klnopqvwx	5352
+859564	klnopqvwx	25673
+87255	ujmklnopq	32731
+87466	ujmklnopq	10080
+88465	klnopqvwx	2445
+8979	ujmklnopq	19583
+91036	klnopqvwx	18399
+9326	ujmklnopq	2972
+97319	ujmklnopq	1538
+9765	ujmklnopq	6088
+98196	ujmklnopq	27908
+98198	ujmklnopq	10865
+[Note] Testcase: Operation log begin
+[Note] SequoiaDB: optimizer pushdown autocommit: 1
+[Note] SequoiaDB: Query message: condition[{ "b": { "$in": [ "klnopqvwx", "ujmklnopq" ] } }], selector[{}], order_by[{ "a": 1 }], hint[{ "": "b" }], limit[-1], offset[0], table[index_select_sequoiadb_22808_22809.t1]
+DROP TABLE t1;
+CREATE TABLE t1 (
+a INT,
+b CHAR(64)
+);
+INSERT INTO t1 VALUES (4, 'b'),(2, 'c'),(1, 'e'),(7,'aaa'),(9,'daa'),(8,'aca'),(12,'aca'),(11,'aca'),(13,'aca'),(15,'ca');
+alter table t1 add PRIMARY KEY(a);
+alter table t1 add index b(b);
+alter table t1 add index ab(a,b);
+alter table t1 add index ba(b,a);
+SHOW CREATE TABLE t1;
+Table	Create Table
+t1	CREATE TABLE `t1` (
+  `a` int(11) NOT NULL,
+  `b` char(64) DEFAULT NULL,
+  PRIMARY KEY (`a`),
+  KEY `b` (`b`),
+  KEY `ab` (`a`,`b`),
+  KEY `ba` (`b`,`a`)
+) ENGINE=SequoiaDB DEFAULT CHARSET=latin1
+EXPLAIN SELECT * FROM t1 WHERE a=1 and b='e';
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	const	PRIMARY,b,ab,ba	PRIMARY	4	const	#	100.00	NULL
+Warnings:
+Note	1003	/* select#1 */ select '1' AS `a`,'e' AS `b` from `index_select_sequoiadb_22808_22809`.`t1` where 1
+SELECT * FROM information_schema.statistics WHERE table_name='t1';
+TABLE_CATALOG	TABLE_SCHEMA	TABLE_NAME	NON_UNIQUE	INDEX_SCHEMA	INDEX_NAME	SEQ_IN_INDEX	COLUMN_NAME	COLLATION	CARDINALITY	SUB_PART	PACKED	NULLABLE	INDEX_TYPE	COMMENT	INDEX_COMMENT
+def	index_select_sequoiadb_22808_22809	t1	0	index_select_sequoiadb_22808_22809	PRIMARY	1	a	A	#	NULL	NULL		BTREE		
+def	index_select_sequoiadb_22808_22809	t1	1	index_select_sequoiadb_22808_22809	ab	1	a	A	#	NULL	NULL		BTREE		
+def	index_select_sequoiadb_22808_22809	t1	1	index_select_sequoiadb_22808_22809	ab	2	b	A	#	NULL	NULL	YES	BTREE		
+def	index_select_sequoiadb_22808_22809	t1	1	index_select_sequoiadb_22808_22809	b	1	b	A	#	NULL	NULL	YES	BTREE		
+def	index_select_sequoiadb_22808_22809	t1	1	index_select_sequoiadb_22808_22809	ba	1	b	A	#	NULL	NULL	YES	BTREE		
+def	index_select_sequoiadb_22808_22809	t1	1	index_select_sequoiadb_22808_22809	ba	2	a	A	#	NULL	NULL		BTREE		
+ANALYZE TABLE t1;
+Table	Op	Msg_type	Msg_text
+index_select_sequoiadb_22808_22809.t1	analyze	status	OK
+EXPLAIN SELECT * FROM t1 WHERE a=1 and b='e';
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	const	PRIMARY,b,ab,ba	PRIMARY	4	const	#	100.00	NULL
+Warnings:
+Note	1003	/* select#1 */ select '1' AS `a`,'e' AS `b` from `index_select_sequoiadb_22808_22809`.`t1` where 1
+SELECT * FROM information_schema.statistics WHERE table_name='t1';
+TABLE_CATALOG	TABLE_SCHEMA	TABLE_NAME	NON_UNIQUE	INDEX_SCHEMA	INDEX_NAME	SEQ_IN_INDEX	COLUMN_NAME	COLLATION	CARDINALITY	SUB_PART	PACKED	NULLABLE	INDEX_TYPE	COMMENT	INDEX_COMMENT
+def	index_select_sequoiadb_22808_22809	t1	0	index_select_sequoiadb_22808_22809	PRIMARY	1	a	A	#	NULL	NULL		BTREE		
+def	index_select_sequoiadb_22808_22809	t1	1	index_select_sequoiadb_22808_22809	ab	1	a	A	#	NULL	NULL		BTREE		
+def	index_select_sequoiadb_22808_22809	t1	1	index_select_sequoiadb_22808_22809	ab	2	b	A	#	NULL	NULL	YES	BTREE		
+def	index_select_sequoiadb_22808_22809	t1	1	index_select_sequoiadb_22808_22809	b	1	b	A	#	NULL	NULL	YES	BTREE		
+def	index_select_sequoiadb_22808_22809	t1	1	index_select_sequoiadb_22808_22809	ba	1	b	A	#	NULL	NULL	YES	BTREE		
+def	index_select_sequoiadb_22808_22809	t1	1	index_select_sequoiadb_22808_22809	ba	2	a	A	#	NULL	NULL		BTREE		
+LOAD DATA INFILE '../../std_data/loaddata_5w_sequoiadb.dat' INTO TABLE t1(a,b);
+SELECT * FROM information_schema.statistics WHERE table_name='t1';
+TABLE_CATALOG	TABLE_SCHEMA	TABLE_NAME	NON_UNIQUE	INDEX_SCHEMA	INDEX_NAME	SEQ_IN_INDEX	COLUMN_NAME	COLLATION	CARDINALITY	SUB_PART	PACKED	NULLABLE	INDEX_TYPE	COMMENT	INDEX_COMMENT
+def	index_select_sequoiadb_22808_22809	t1	0	index_select_sequoiadb_22808_22809	PRIMARY	1	a	A	#	NULL	NULL		BTREE		
+def	index_select_sequoiadb_22808_22809	t1	1	index_select_sequoiadb_22808_22809	ab	1	a	A	#	NULL	NULL		BTREE		
+def	index_select_sequoiadb_22808_22809	t1	1	index_select_sequoiadb_22808_22809	ab	2	b	A	#	NULL	NULL	YES	BTREE		
+def	index_select_sequoiadb_22808_22809	t1	1	index_select_sequoiadb_22808_22809	b	1	b	A	#	NULL	NULL	YES	BTREE		
+def	index_select_sequoiadb_22808_22809	t1	1	index_select_sequoiadb_22808_22809	ba	1	b	A	#	NULL	NULL	YES	BTREE		
+def	index_select_sequoiadb_22808_22809	t1	1	index_select_sequoiadb_22808_22809	ba	2	a	A	#	NULL	NULL		BTREE		
+ANALYZE TABLE t1;
+Table	Op	Msg_type	Msg_text
+index_select_sequoiadb_22808_22809.t1	analyze	status	OK
+EXPLAIN SELECT * FROM t1 WHERE a=1 and b='e';
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	const	PRIMARY,b,ab,ba	PRIMARY	4	const	#	100.00	NULL
+Warnings:
+Note	1003	/* select#1 */ select '1' AS `a`,'e' AS `b` from `index_select_sequoiadb_22808_22809`.`t1` where 1
+SELECT * FROM information_schema.statistics WHERE table_name='t1';
+TABLE_CATALOG	TABLE_SCHEMA	TABLE_NAME	NON_UNIQUE	INDEX_SCHEMA	INDEX_NAME	SEQ_IN_INDEX	COLUMN_NAME	COLLATION	CARDINALITY	SUB_PART	PACKED	NULLABLE	INDEX_TYPE	COMMENT	INDEX_COMMENT
+def	index_select_sequoiadb_22808_22809	t1	0	index_select_sequoiadb_22808_22809	PRIMARY	1	a	A	52763	NULL	NULL		BTREE		
+def	index_select_sequoiadb_22808_22809	t1	1	index_select_sequoiadb_22808_22809	ab	1	a	A	52763	NULL	NULL		BTREE		
+def	index_select_sequoiadb_22808_22809	t1	1	index_select_sequoiadb_22808_22809	ab	2	b	A	52763	NULL	NULL	YES	BTREE		
+def	index_select_sequoiadb_22808_22809	t1	1	index_select_sequoiadb_22808_22809	b	1	b	A	52763	NULL	NULL	YES	BTREE		
+def	index_select_sequoiadb_22808_22809	t1	1	index_select_sequoiadb_22808_22809	ba	1	b	A	52763	NULL	NULL	YES	BTREE		
+def	index_select_sequoiadb_22808_22809	t1	1	index_select_sequoiadb_22808_22809	ba	2	a	A	52763	NULL	NULL		BTREE		
+DROP TABLE t1;
+DROP DATABASE index_select_sequoiadb_22808_22809;

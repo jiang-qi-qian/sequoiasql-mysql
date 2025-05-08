@@ -1,0 +1,60 @@
+set local sql_mode="";
+set global sql_mode="";
+drop table if exists t1;
+create table t1 (n int);
+create view  v1 as select * from t1;
+insert delayed into v1 values (1);
+ERROR HY000: 'X.v1' is not of type 'BASE TABLE'
+drop table t1;
+drop view  v1;
+CREATE DATABASE meow;
+connect  root,localhost,root,,meow;
+connection root;
+CREATE TABLE table_target   ( mexs_id CHAR(8), messzeit TIMESTAMP, PRIMARY KEY (mexs_id));
+CREATE TABLE table_target2  ( mexs_id CHAR(8), messzeit TIMESTAMP, PRIMARY KEY (mexs_id));
+CREATE TABLE table_target3  ( mexs_id CHAR(8), messzeit TIMESTAMP, PRIMARY KEY (mexs_id));
+CREATE VIEW view_target2 AS SELECT mexs_id,messzeit FROM table_target2;
+CREATE SQL SECURITY INVOKER VIEW view_target3 AS SELECT mexs_id,messzeit FROM table_target3;
+CREATE TABLE table_countries ( country CHAR(2), iso_short_en VARCHAR(64), PRIMARY KEY (country));
+INSERT INTO table_countries VALUES ('YY','Entenhausen');
+CREATE TABLE table_source ( id varchar(4), datetime TIMESTAMP, PRIMARY KEY (id));
+INSERT INTO  table_source VALUES ('XXXX','2006-07-12 07:50:00');
+GRANT  SELECT                ON table_source    TO   user20989@localhost;
+GRANT  SELECT                ON table_countries TO   user20989@localhost;
+GRANT  SELECT                ON table_target    TO   user20989@localhost;
+GRANT  SELECT                ON table_target2   TO   user20989@localhost;
+GRANT  INSERT,DELETE,SELECT  ON view_target3    TO   user20989@localhost;
+connect  user20989,localhost,user20989,,meow;
+connection user20989;
+connection root;
+disconnect user20989;
+GRANT  INSERT,DELETE         ON table_target    TO   user20989@localhost;
+GRANT  INSERT,DELETE,SELECT  ON view_target2    TO   user20989@localhost;
+GRANT  INSERT,DELETE,SELECT  ON table_target3   TO   user20989@localhost;
+connect  user20989,localhost,user20989,,meow;
+connection user20989;
+REPLACE INTO    table_target2 VALUES ('00X45Y78','2006-07-12 07:50:00');
+ERROR 42000: INSERT, DELETE command denied to user 'user20989'@'localhost' for table 'table_target2'
+REPLACE INTO    view_target2  VALUES ('12X45Y78','2006-07-12 07:50:00');
+connection root;
+disconnect user20989;
+SELECT * FROM table_target;
+mexs_id	messzeit
+SELECT * FROM view_target2;
+mexs_id	messzeit
+12X45Y78	2006-07-12 07:50:00
+SELECT * FROM view_target3;
+mexs_id	messzeit
+DROP TABLE table_source;
+DROP TABLE table_countries;
+DROP TABLE table_target;
+DROP TABLE table_target2;
+DROP TABLE table_target3;
+DROP VIEW  view_target2;
+DROP VIEW  view_target3;
+DROP USER  user20989@localhost;
+disconnect root;
+connection default;
+DROP DATABASE meow;
+set local sql_mode=default;
+set global sql_mode=default;

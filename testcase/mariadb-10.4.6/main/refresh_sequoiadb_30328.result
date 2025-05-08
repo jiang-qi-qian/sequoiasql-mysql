@@ -1,0 +1,24 @@
+drop database if exists refresh_sequoiadb_30328;
+set session refresh_all_cached_tables_supported=on;
+flush tables;
+create database refresh_sequoiadb_30328;
+drop database refresh_sequoiadb_30328;
+create database refresh_sequoiadb_30328;
+use refresh_sequoiadb_30328;
+set session sequoiadb_execute_only_in_mysql = on;
+Warnings:
+Warning	1287	'sequoiadb_execute_only_in_mysql' is deprecated and will be removed in a future release. Please use 'sequoiadb_execution_mode' instead
+create table t1(a int);
+set session sequoiadb_execute_only_in_mysql = off;
+Warnings:
+Warning	1287	'sequoiadb_execute_only_in_mysql' is deprecated and will be removed in a future release. Please use 'sequoiadb_execution_mode' instead
+refresh table t1 stats;
+ERROR HY000: Collection space does not exist
+refresh table stats;
+ERROR HY000: Collection space does not exist
+drop table t1;
+create table t2(a int);
+insert into t2 values (1),(2);
+refresh table stats;
+refresh table t2 stats;
+drop database refresh_sequoiadb_30328;

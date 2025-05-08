@@ -1,0 +1,690 @@
+connection default;
+SET @old_slow_query_log = @@global.slow_query_log;
+SET @old_long_query_time = @@global.long_query_time;
+SET @old_log_output = @@global.log_output;
+SET @old_general_log = @@global.general_log;
+SELECT @old_slow_query_log, @old_long_query_time, @old_log_output, @old_general_log;
+@old_slow_query_log	@old_long_query_time	@old_log_output	@old_general_log
+1	10	FILE	1
+create database if not exists log_table;
+use log_table;
+create table if not exists t1(a int) engine = sequoiadb;
+drop database log_table;
+create database if not exists log_table;
+set global slow_query_log = off;
+set global general_log = off;
+use mysql;
+set global slow_query_log = on;
+set global general_log=on;
+set global slow_query_log=off;
+set global general_log=off;
+select @@slow_query_log;
+@@slow_query_log
+1
+select @@general_log;
+@@general_log
+0
+select @slow_query_log;
+@slow_query_log
+NULL
+select @general_log;
+@general_log
+NULL
+drop table if exists mysql.slow_log;
+drop table if exists mysql.general_log;
+create table if not exists mysql.slow_log (a int not null, b int not null)
+engine = SequoiaDB DEFAULT CHARSET=utf8
+COMMENT='Slow log, sequoiadb:{table_options: {NoTrans: true}}';
+create table if not exists mysql.general_log (a int not null, b int not null) 
+engine = SequoiaDB DEFAULT CHARSET=utf8
+COMMENT='Slow log, sequoiadb:{table_options: {NoTrans: true}}';
+drop table if exists mysql.slow_log;
+drop table if exists mysql.general_log;
+use mysql;
+drop table if exists slow_log;
+drop table if exists general_log;
+set @save_sequoiadb_support_mode= @@global.sequoiadb_support_mode;
+set sequoiadb_support_mode='';
+CREATE TABLE IF NOT EXISTS `slow_log` (
+`start_time` timestamp(6) NOT NULL DEFAULT current_timestamp(6) ON UPDATE current_timestamp(6),
+`user_host` mediumtext NOT NULL,
+`query_time` time(6) NOT NULL,
+`lock_time` time(6) NOT NULL,
+`rows_sent` int(11) NOT NULL,
+`rows_examined` int(11) NOT NULL,
+`db` varchar(512) NOT NULL,
+`last_insert_id` int(11) NOT NULL,
+`insert_id` int(11) NOT NULL,
+`server_id` int(10) unsigned NOT NULL,
+`sql_text` mediumtext NOT NULL,
+`thread_id` bigint(21) unsigned NOT NULL,
+`rows_affected` int(11) NOT NULL
+) ENGINE=SequoiaDB DEFAULT CHARSET=utf8 COMMENT='Slow log, sequoiadb:{table_options: {NoTrans: true}}';
+CREATE TABLE IF NOT EXISTS `general_log` (
+`event_time` timestamp(6) NOT NULL DEFAULT current_timestamp(6) ON UPDATE current_timestamp(6),
+`user_host` mediumtext NOT NULL,
+`thread_id` bigint(21) unsigned NOT NULL,
+`server_id` int(10) unsigned NOT NULL,
+`command_type` varchar(64) NOT NULL,
+`argument` mediumtext NOT NULL
+) ENGINE=SequoiaDB DEFAULT CHARSET=utf8 COMMENT='General log, sequoiadb:{table_options: {NoTrans: true}}';
+set sequoiadb_support_mode = @save_sequoiadb_support_mode;
+use mysql;
+truncate table general_log;
+select * from general_log;
+event_time	user_host	thread_id	server_id	command_type	argument
+truncate table slow_log;
+select * from slow_log;
+start_time	user_host	query_time	lock_time	rows_sent	rows_examined	db	last_insert_id	insert_id	server_id	sql_text	thread_id	rows_affected
+use log_table;
+create table if not exists t1(a int) engine = sequoiadb;
+insert into t1 values(1),(2);
+set global log_output='TABLE';
+set global long_query_time = 1;
+set global slow_query_log = on;
+set global general_log=on;
+connect  con1, localhost, root;
+connection con1;
+use log_table;
+select * from t1 where sleep(1);
+a
+select * from mysql.slow_log;
+start_time	user_host	query_time	lock_time	rows_sent	rows_examined	db	last_insert_id	insert_id	server_id	sql_text	thread_id	rows_affected
+TIMESTAMP	USER_HOST	QUERY_TIME	LOCK_TIME	0	2	log_table	0	0	1	select * from t1 where sleep(1)	THREAD_ID	ROWS_AFFECTED
+select * from mysql.general_log;
+event_time	user_host	thread_id	server_id	command_type	argument
+TIMESTAMP	USER_HOST	THREAD_ID	1	Connect	root@localhost as anonymous on x
+TIMESTAMP	USER_HOST	THREAD_ID	1	Query	use log_table
+TIMESTAMP	USER_HOST	THREAD_ID	1	Query	select * from t1 where sleep(1)
+TIMESTAMP	USER_HOST	THREAD_ID	1	Query	select * from mysql.slow_log
+TIMESTAMP	USER_HOST	THREAD_ID	1	Query	select * from mysql.general_log
+set global slow_query_log=off;
+set global general_log=off;
+select * from t1 where sleep(1);
+a
+select * from mysql.slow_log;
+start_time	user_host	query_time	lock_time	rows_sent	rows_examined	db	last_insert_id	insert_id	server_id	sql_text	thread_id	rows_affected
+TIMESTAMP	USER_HOST	QUERY_TIME	LOCK_TIME	0	2	log_table	0	0	1	select * from t1 where sleep(1)	THREAD_ID	ROWS_AFFECTED
+select * from mysql.general_log;
+event_time	user_host	thread_id	server_id	command_type	argument
+TIMESTAMP	USER_HOST	THREAD_ID	1	Connect	root@localhost as anonymous on x
+TIMESTAMP	USER_HOST	THREAD_ID	1	Query	use log_table
+TIMESTAMP	USER_HOST	THREAD_ID	1	Query	select * from t1 where sleep(1)
+TIMESTAMP	USER_HOST	THREAD_ID	1	Query	select * from mysql.slow_log
+TIMESTAMP	USER_HOST	THREAD_ID	1	Query	select * from mysql.general_log
+TIMESTAMP	USER_HOST	THREAD_ID	1	Query	set global slow_query_log=off
+TIMESTAMP	USER_HOST	THREAD_ID	1	Query	set global general_log=off
+set global slow_query_log = on;
+set global general_log=on;
+select * from t1 where sleep(1);
+a
+select * from mysql.slow_log;
+start_time	user_host	query_time	lock_time	rows_sent	rows_examined	db	last_insert_id	insert_id	server_id	sql_text	thread_id	rows_affected
+TIMESTAMP	USER_HOST	QUERY_TIME	LOCK_TIME	0	2	log_table	0	0	1	select * from t1 where sleep(1)	THREAD_ID	ROWS_AFFECTED
+TIMESTAMP	USER_HOST	QUERY_TIME	LOCK_TIME	0	2	log_table	0	0	1	select * from t1 where sleep(1)	THREAD_ID	ROWS_AFFECTED
+select * from mysql.general_log;
+event_time	user_host	thread_id	server_id	command_type	argument
+TIMESTAMP	USER_HOST	THREAD_ID	1	Connect	root@localhost as anonymous on x
+TIMESTAMP	USER_HOST	THREAD_ID	1	Query	use log_table
+TIMESTAMP	USER_HOST	THREAD_ID	1	Query	select * from t1 where sleep(1)
+TIMESTAMP	USER_HOST	THREAD_ID	1	Query	select * from mysql.slow_log
+TIMESTAMP	USER_HOST	THREAD_ID	1	Query	select * from mysql.general_log
+TIMESTAMP	USER_HOST	THREAD_ID	1	Query	set global slow_query_log=off
+TIMESTAMP	USER_HOST	THREAD_ID	1	Query	set global general_log=off
+TIMESTAMP	USER_HOST	THREAD_ID	1	Query	select * from t1 where sleep(1)
+TIMESTAMP	USER_HOST	THREAD_ID	1	Query	select * from mysql.slow_log
+TIMESTAMP	USER_HOST	THREAD_ID	1	Query	select * from mysql.general_log
+use mysql;
+set global slow_query_log=off;
+set global general_log=off;
+alter table mysql.slow_log engine = csv;
+alter table mysql.general_log engine = csv;
+set global slow_query_log = on;
+set global general_log=on;
+select * from log_table.t1 where sleep(1);
+a
+select * from mysql.slow_log;
+start_time	user_host	query_time	lock_time	rows_sent	rows_examined	db	last_insert_id	insert_id	server_id	sql_text	thread_id	rows_affected
+TIMESTAMP	USER_HOST	QUERY_TIME	LOCK_TIME	0	2	log_table	0	0	1	select * from t1 where sleep(1)	THREAD_ID	ROWS_AFFECTED
+TIMESTAMP	USER_HOST	QUERY_TIME	LOCK_TIME	0	2	log_table	0	0	1	select * from t1 where sleep(1)	THREAD_ID	ROWS_AFFECTED
+TIMESTAMP	USER_HOST	QUERY_TIME	LOCK_TIME	0	2	mysql	0	0	1	select * from log_table.t1 where sleep(1)	THREAD_ID	ROWS_AFFECTED
+select * from mysql.general_log;
+event_time	user_host	thread_id	server_id	command_type	argument
+TIMESTAMP	USER_HOST	THREAD_ID	1	Connect	root@localhost as anonymous on x
+TIMESTAMP	USER_HOST	THREAD_ID	1	Query	use log_table
+TIMESTAMP	USER_HOST	THREAD_ID	1	Query	select * from t1 where sleep(1)
+TIMESTAMP	USER_HOST	THREAD_ID	1	Query	select * from mysql.slow_log
+TIMESTAMP	USER_HOST	THREAD_ID	1	Query	select * from mysql.general_log
+TIMESTAMP	USER_HOST	THREAD_ID	1	Query	set global slow_query_log=off
+TIMESTAMP	USER_HOST	THREAD_ID	1	Query	set global general_log=off
+TIMESTAMP	USER_HOST	THREAD_ID	1	Query	select * from t1 where sleep(1)
+TIMESTAMP	USER_HOST	THREAD_ID	1	Query	select * from mysql.slow_log
+TIMESTAMP	USER_HOST	THREAD_ID	1	Query	select * from mysql.general_log
+TIMESTAMP	USER_HOST	THREAD_ID	1	Query	use mysql
+TIMESTAMP	USER_HOST	THREAD_ID	1	Query	set global slow_query_log=off
+TIMESTAMP	USER_HOST	THREAD_ID	1	Query	set global general_log=off
+TIMESTAMP	USER_HOST	THREAD_ID	1	Query	select * from log_table.t1 where sleep(1)
+TIMESTAMP	USER_HOST	THREAD_ID	1	Query	select * from mysql.slow_log
+TIMESTAMP	USER_HOST	THREAD_ID	1	Query	select * from mysql.general_log
+set global slow_query_log=off;
+set global general_log=off;
+alter table mysql.slow_log engine = sequoiadb;
+alter table mysql.general_log engine = sequoiadb;
+set global slow_query_log = on;
+set global general_log=on;
+select * from log_table.t1 where sleep(1);
+a
+select * from mysql.slow_log;
+start_time	user_host	query_time	lock_time	rows_sent	rows_examined	db	last_insert_id	insert_id	server_id	sql_text	thread_id	rows_affected
+TIMESTAMP	USER_HOST	QUERY_TIME	LOCK_TIME	0	2	log_table	0	0	1	select * from t1 where sleep(1)	THREAD_ID	ROWS_AFFECTED
+TIMESTAMP	USER_HOST	QUERY_TIME	LOCK_TIME	0	2	log_table	0	0	1	select * from t1 where sleep(1)	THREAD_ID	ROWS_AFFECTED
+TIMESTAMP	USER_HOST	QUERY_TIME	LOCK_TIME	0	2	mysql	0	0	1	select * from log_table.t1 where sleep(1)	THREAD_ID	ROWS_AFFECTED
+TIMESTAMP	USER_HOST	QUERY_TIME	LOCK_TIME	0	2	mysql	0	0	1	select * from log_table.t1 where sleep(1)	THREAD_ID	ROWS_AFFECTED
+select * from mysql.general_log;
+event_time	user_host	thread_id	server_id	command_type	argument
+TIMESTAMP	USER_HOST	THREAD_ID	1	Connect	root@localhost as anonymous on x
+TIMESTAMP	USER_HOST	THREAD_ID	1	Query	use log_table
+TIMESTAMP	USER_HOST	THREAD_ID	1	Query	select * from t1 where sleep(1)
+TIMESTAMP	USER_HOST	THREAD_ID	1	Query	select * from mysql.slow_log
+TIMESTAMP	USER_HOST	THREAD_ID	1	Query	select * from mysql.general_log
+TIMESTAMP	USER_HOST	THREAD_ID	1	Query	set global slow_query_log=off
+TIMESTAMP	USER_HOST	THREAD_ID	1	Query	set global general_log=off
+TIMESTAMP	USER_HOST	THREAD_ID	1	Query	select * from t1 where sleep(1)
+TIMESTAMP	USER_HOST	THREAD_ID	1	Query	select * from mysql.slow_log
+TIMESTAMP	USER_HOST	THREAD_ID	1	Query	select * from mysql.general_log
+TIMESTAMP	USER_HOST	THREAD_ID	1	Query	use mysql
+TIMESTAMP	USER_HOST	THREAD_ID	1	Query	set global slow_query_log=off
+TIMESTAMP	USER_HOST	THREAD_ID	1	Query	set global general_log=off
+TIMESTAMP	USER_HOST	THREAD_ID	1	Query	select * from log_table.t1 where sleep(1)
+TIMESTAMP	USER_HOST	THREAD_ID	1	Query	select * from mysql.slow_log
+TIMESTAMP	USER_HOST	THREAD_ID	1	Query	select * from mysql.general_log
+TIMESTAMP	USER_HOST	THREAD_ID	1	Query	set global slow_query_log=off
+TIMESTAMP	USER_HOST	THREAD_ID	1	Query	set global general_log=off
+TIMESTAMP	USER_HOST	THREAD_ID	1	Query	select * from log_table.t1 where sleep(1)
+TIMESTAMP	USER_HOST	THREAD_ID	1	Query	select * from mysql.slow_log
+TIMESTAMP	USER_HOST	THREAD_ID	1	Query	select * from mysql.general_log
+set global slow_query_log=off;
+set global general_log=off;
+alter table mysql.slow_log engine = csv;
+alter table mysql.general_log engine = csv;
+set global slow_query_log = on;
+set global general_log=on;
+select * from log_table.t1 where sleep(1);
+a
+select * from mysql.slow_log;
+start_time	user_host	query_time	lock_time	rows_sent	rows_examined	db	last_insert_id	insert_id	server_id	sql_text	thread_id	rows_affected
+TIMESTAMP	USER_HOST	QUERY_TIME	LOCK_TIME	0	2	log_table	0	0	1	select * from t1 where sleep(1)	THREAD_ID	ROWS_AFFECTED
+TIMESTAMP	USER_HOST	QUERY_TIME	LOCK_TIME	0	2	log_table	0	0	1	select * from t1 where sleep(1)	THREAD_ID	ROWS_AFFECTED
+TIMESTAMP	USER_HOST	QUERY_TIME	LOCK_TIME	0	2	mysql	0	0	1	select * from log_table.t1 where sleep(1)	THREAD_ID	ROWS_AFFECTED
+TIMESTAMP	USER_HOST	QUERY_TIME	LOCK_TIME	0	2	mysql	0	0	1	select * from log_table.t1 where sleep(1)	THREAD_ID	ROWS_AFFECTED
+TIMESTAMP	USER_HOST	QUERY_TIME	LOCK_TIME	0	2	mysql	0	0	1	select * from log_table.t1 where sleep(1)	THREAD_ID	ROWS_AFFECTED
+select * from mysql.general_log;
+event_time	user_host	thread_id	server_id	command_type	argument
+TIMESTAMP	USER_HOST	THREAD_ID	1	Connect	root@localhost as anonymous on x
+TIMESTAMP	USER_HOST	THREAD_ID	1	Query	use log_table
+TIMESTAMP	USER_HOST	THREAD_ID	1	Query	select * from t1 where sleep(1)
+TIMESTAMP	USER_HOST	THREAD_ID	1	Query	select * from mysql.slow_log
+TIMESTAMP	USER_HOST	THREAD_ID	1	Query	select * from mysql.general_log
+TIMESTAMP	USER_HOST	THREAD_ID	1	Query	set global slow_query_log=off
+TIMESTAMP	USER_HOST	THREAD_ID	1	Query	set global general_log=off
+TIMESTAMP	USER_HOST	THREAD_ID	1	Query	select * from t1 where sleep(1)
+TIMESTAMP	USER_HOST	THREAD_ID	1	Query	select * from mysql.slow_log
+TIMESTAMP	USER_HOST	THREAD_ID	1	Query	select * from mysql.general_log
+TIMESTAMP	USER_HOST	THREAD_ID	1	Query	use mysql
+TIMESTAMP	USER_HOST	THREAD_ID	1	Query	set global slow_query_log=off
+TIMESTAMP	USER_HOST	THREAD_ID	1	Query	set global general_log=off
+TIMESTAMP	USER_HOST	THREAD_ID	1	Query	select * from log_table.t1 where sleep(1)
+TIMESTAMP	USER_HOST	THREAD_ID	1	Query	select * from mysql.slow_log
+TIMESTAMP	USER_HOST	THREAD_ID	1	Query	select * from mysql.general_log
+TIMESTAMP	USER_HOST	THREAD_ID	1	Query	set global slow_query_log=off
+TIMESTAMP	USER_HOST	THREAD_ID	1	Query	set global general_log=off
+TIMESTAMP	USER_HOST	THREAD_ID	1	Query	select * from log_table.t1 where sleep(1)
+TIMESTAMP	USER_HOST	THREAD_ID	1	Query	select * from mysql.slow_log
+TIMESTAMP	USER_HOST	THREAD_ID	1	Query	select * from mysql.general_log
+TIMESTAMP	USER_HOST	THREAD_ID	1	Query	set global slow_query_log=off
+TIMESTAMP	USER_HOST	THREAD_ID	1	Query	set global general_log=off
+TIMESTAMP	USER_HOST	THREAD_ID	1	Query	select * from log_table.t1 where sleep(1)
+TIMESTAMP	USER_HOST	THREAD_ID	1	Query	select * from mysql.slow_log
+TIMESTAMP	USER_HOST	THREAD_ID	1	Query	select * from mysql.general_log
+select @@general_log;
+@@general_log
+1
+select @@log_output;
+@@log_output
+TABLE
+set global slow_query_log=off;
+set global general_log=off;
+alter table mysql.slow_log engine = sequoiadb;
+alter table mysql.general_log engine = sequoiadb;
+set global long_query_time=1;
+set global slow_query_log = on;
+select sleep(1);
+sleep(1)
+0
+select * from slow_log;
+start_time	user_host	query_time	lock_time	rows_sent	rows_examined	db	last_insert_id	insert_id	server_id	sql_text	thread_id	rows_affected
+TIMESTAMP	USER_HOST	QUERY_TIME	LOCK_TIME	0	2	log_table	0	0	1	select * from t1 where sleep(1)	THREAD_ID	ROWS_AFFECTED
+TIMESTAMP	USER_HOST	QUERY_TIME	LOCK_TIME	0	2	log_table	0	0	1	select * from t1 where sleep(1)	THREAD_ID	ROWS_AFFECTED
+TIMESTAMP	USER_HOST	QUERY_TIME	LOCK_TIME	0	2	mysql	0	0	1	select * from log_table.t1 where sleep(1)	THREAD_ID	ROWS_AFFECTED
+TIMESTAMP	USER_HOST	QUERY_TIME	LOCK_TIME	0	2	mysql	0	0	1	select * from log_table.t1 where sleep(1)	THREAD_ID	ROWS_AFFECTED
+TIMESTAMP	USER_HOST	QUERY_TIME	LOCK_TIME	0	2	mysql	0	0	1	select * from log_table.t1 where sleep(1)	THREAD_ID	ROWS_AFFECTED
+TIMESTAMP	USER_HOST	QUERY_TIME	LOCK_TIME	1	0	mysql	0	0	1	select sleep(1)	THREAD_ID	ROWS_AFFECTED
+set global slow_query_log=off;
+set global general_log=on;
+select * from general_log;
+event_time	user_host	thread_id	server_id	command_type	argument
+TIMESTAMP	USER_HOST	THREAD_ID	1	Connect	root@localhost as anonymous on x
+TIMESTAMP	USER_HOST	THREAD_ID	1	Query	use log_table
+TIMESTAMP	USER_HOST	THREAD_ID	1	Query	select * from t1 where sleep(1)
+TIMESTAMP	USER_HOST	THREAD_ID	1	Query	select * from mysql.slow_log
+TIMESTAMP	USER_HOST	THREAD_ID	1	Query	select * from mysql.general_log
+TIMESTAMP	USER_HOST	THREAD_ID	1	Query	set global slow_query_log=off
+TIMESTAMP	USER_HOST	THREAD_ID	1	Query	set global general_log=off
+TIMESTAMP	USER_HOST	THREAD_ID	1	Query	select * from t1 where sleep(1)
+TIMESTAMP	USER_HOST	THREAD_ID	1	Query	select * from mysql.slow_log
+TIMESTAMP	USER_HOST	THREAD_ID	1	Query	select * from mysql.general_log
+TIMESTAMP	USER_HOST	THREAD_ID	1	Query	use mysql
+TIMESTAMP	USER_HOST	THREAD_ID	1	Query	set global slow_query_log=off
+TIMESTAMP	USER_HOST	THREAD_ID	1	Query	set global general_log=off
+TIMESTAMP	USER_HOST	THREAD_ID	1	Query	select * from log_table.t1 where sleep(1)
+TIMESTAMP	USER_HOST	THREAD_ID	1	Query	select * from mysql.slow_log
+TIMESTAMP	USER_HOST	THREAD_ID	1	Query	select * from mysql.general_log
+TIMESTAMP	USER_HOST	THREAD_ID	1	Query	set global slow_query_log=off
+TIMESTAMP	USER_HOST	THREAD_ID	1	Query	set global general_log=off
+TIMESTAMP	USER_HOST	THREAD_ID	1	Query	select * from log_table.t1 where sleep(1)
+TIMESTAMP	USER_HOST	THREAD_ID	1	Query	select * from mysql.slow_log
+TIMESTAMP	USER_HOST	THREAD_ID	1	Query	select * from mysql.general_log
+TIMESTAMP	USER_HOST	THREAD_ID	1	Query	set global slow_query_log=off
+TIMESTAMP	USER_HOST	THREAD_ID	1	Query	set global general_log=off
+TIMESTAMP	USER_HOST	THREAD_ID	1	Query	select * from log_table.t1 where sleep(1)
+TIMESTAMP	USER_HOST	THREAD_ID	1	Query	select * from mysql.slow_log
+TIMESTAMP	USER_HOST	THREAD_ID	1	Query	select * from mysql.general_log
+TIMESTAMP	USER_HOST	THREAD_ID	1	Query	select @@general_log
+TIMESTAMP	USER_HOST	THREAD_ID	1	Query	select @@log_output
+TIMESTAMP	USER_HOST	THREAD_ID	1	Query	set global slow_query_log=off
+TIMESTAMP	USER_HOST	THREAD_ID	1	Query	set global general_log=off
+TIMESTAMP	USER_HOST	THREAD_ID	1	Query	select * from general_log
+set global general_log=off;
+set @save_server_id = @@global.server_id;
+set global server_id = 15;
+set global long_query_time=1;
+set global slow_query_log = on;
+set global general_log=on;
+select sleep(1);
+sleep(1)
+0
+set global slow_query_log=off;
+set global general_log=off;
+select * from slow_log;
+start_time	user_host	query_time	lock_time	rows_sent	rows_examined	db	last_insert_id	insert_id	server_id	sql_text	thread_id	rows_affected
+TIMESTAMP	USER_HOST	QUERY_TIME	LOCK_TIME	0	2	log_table	0	0	1	select * from t1 where sleep(1)	THREAD_ID	ROWS_AFFECTED
+TIMESTAMP	USER_HOST	QUERY_TIME	LOCK_TIME	0	2	log_table	0	0	1	select * from t1 where sleep(1)	THREAD_ID	ROWS_AFFECTED
+TIMESTAMP	USER_HOST	QUERY_TIME	LOCK_TIME	0	2	mysql	0	0	1	select * from log_table.t1 where sleep(1)	THREAD_ID	ROWS_AFFECTED
+TIMESTAMP	USER_HOST	QUERY_TIME	LOCK_TIME	0	2	mysql	0	0	1	select * from log_table.t1 where sleep(1)	THREAD_ID	ROWS_AFFECTED
+TIMESTAMP	USER_HOST	QUERY_TIME	LOCK_TIME	0	2	mysql	0	0	1	select * from log_table.t1 where sleep(1)	THREAD_ID	ROWS_AFFECTED
+TIMESTAMP	USER_HOST	QUERY_TIME	LOCK_TIME	1	0	mysql	0	0	1	select sleep(1)	THREAD_ID	ROWS_AFFECTED
+TIMESTAMP	USER_HOST	QUERY_TIME	LOCK_TIME	1	0	mysql	0	0	15	select sleep(1)	THREAD_ID	ROWS_AFFECTED
+select * from general_log;
+event_time	user_host	thread_id	server_id	command_type	argument
+TIMESTAMP	USER_HOST	THREAD_ID	1	Connect	root@localhost as anonymous on x
+TIMESTAMP	USER_HOST	THREAD_ID	1	Query	use log_table
+TIMESTAMP	USER_HOST	THREAD_ID	1	Query	select * from t1 where sleep(1)
+TIMESTAMP	USER_HOST	THREAD_ID	1	Query	select * from mysql.slow_log
+TIMESTAMP	USER_HOST	THREAD_ID	1	Query	select * from mysql.general_log
+TIMESTAMP	USER_HOST	THREAD_ID	1	Query	set global slow_query_log=off
+TIMESTAMP	USER_HOST	THREAD_ID	1	Query	set global general_log=off
+TIMESTAMP	USER_HOST	THREAD_ID	1	Query	select * from t1 where sleep(1)
+TIMESTAMP	USER_HOST	THREAD_ID	1	Query	select * from mysql.slow_log
+TIMESTAMP	USER_HOST	THREAD_ID	1	Query	select * from mysql.general_log
+TIMESTAMP	USER_HOST	THREAD_ID	1	Query	use mysql
+TIMESTAMP	USER_HOST	THREAD_ID	1	Query	set global slow_query_log=off
+TIMESTAMP	USER_HOST	THREAD_ID	1	Query	set global general_log=off
+TIMESTAMP	USER_HOST	THREAD_ID	1	Query	select * from log_table.t1 where sleep(1)
+TIMESTAMP	USER_HOST	THREAD_ID	1	Query	select * from mysql.slow_log
+TIMESTAMP	USER_HOST	THREAD_ID	1	Query	select * from mysql.general_log
+TIMESTAMP	USER_HOST	THREAD_ID	1	Query	set global slow_query_log=off
+TIMESTAMP	USER_HOST	THREAD_ID	1	Query	set global general_log=off
+TIMESTAMP	USER_HOST	THREAD_ID	1	Query	select * from log_table.t1 where sleep(1)
+TIMESTAMP	USER_HOST	THREAD_ID	1	Query	select * from mysql.slow_log
+TIMESTAMP	USER_HOST	THREAD_ID	1	Query	select * from mysql.general_log
+TIMESTAMP	USER_HOST	THREAD_ID	1	Query	set global slow_query_log=off
+TIMESTAMP	USER_HOST	THREAD_ID	1	Query	set global general_log=off
+TIMESTAMP	USER_HOST	THREAD_ID	1	Query	select * from log_table.t1 where sleep(1)
+TIMESTAMP	USER_HOST	THREAD_ID	1	Query	select * from mysql.slow_log
+TIMESTAMP	USER_HOST	THREAD_ID	1	Query	select * from mysql.general_log
+TIMESTAMP	USER_HOST	THREAD_ID	1	Query	select @@general_log
+TIMESTAMP	USER_HOST	THREAD_ID	1	Query	select @@log_output
+TIMESTAMP	USER_HOST	THREAD_ID	1	Query	set global slow_query_log=off
+TIMESTAMP	USER_HOST	THREAD_ID	1	Query	set global general_log=off
+TIMESTAMP	USER_HOST	THREAD_ID	1	Query	select * from general_log
+TIMESTAMP	USER_HOST	THREAD_ID	1	Query	set global general_log=off
+TIMESTAMP	USER_HOST	THREAD_ID	15	Query	select sleep(1)
+TIMESTAMP	USER_HOST	THREAD_ID	15	Query	set global slow_query_log=off
+TIMESTAMP	USER_HOST	THREAD_ID	15	Query	set global general_log=off
+set global server_id = @save_server_id;
+set @save_autocommit= @@autocommit;
+set autocommit = 1;
+use log_table;
+drop table if exists t1;
+create table if not exists t1(a int, b int) engine = sequoiadb;
+insert into t1 values(1,2),(2,3);
+set global long_query_time=1;
+set global slow_query_log = on;
+select *, sleep(1) from t1;
+a	b	sleep(1)
+1	2	0
+2	3	0
+select *, sleep(1) from t1;
+a	b	sleep(1)
+1	2	0
+2	3	0
+set global slow_query_log=off;
+set autocommit = @save_autocommit;
+select * from mysql.slow_log;
+start_time	user_host	query_time	lock_time	rows_sent	rows_examined	db	last_insert_id	insert_id	server_id	sql_text	thread_id	rows_affected
+TIMESTAMP	USER_HOST	QUERY_TIME	LOCK_TIME	0	2	log_table	0	0	1	select * from t1 where sleep(1)	THREAD_ID	ROWS_AFFECTED
+TIMESTAMP	USER_HOST	QUERY_TIME	LOCK_TIME	0	2	log_table	0	0	1	select * from t1 where sleep(1)	THREAD_ID	ROWS_AFFECTED
+TIMESTAMP	USER_HOST	QUERY_TIME	LOCK_TIME	0	2	mysql	0	0	1	select * from log_table.t1 where sleep(1)	THREAD_ID	ROWS_AFFECTED
+TIMESTAMP	USER_HOST	QUERY_TIME	LOCK_TIME	0	2	mysql	0	0	1	select * from log_table.t1 where sleep(1)	THREAD_ID	ROWS_AFFECTED
+TIMESTAMP	USER_HOST	QUERY_TIME	LOCK_TIME	0	2	mysql	0	0	1	select * from log_table.t1 where sleep(1)	THREAD_ID	ROWS_AFFECTED
+TIMESTAMP	USER_HOST	QUERY_TIME	LOCK_TIME	1	0	mysql	0	0	1	select sleep(1)	THREAD_ID	ROWS_AFFECTED
+TIMESTAMP	USER_HOST	QUERY_TIME	LOCK_TIME	1	0	mysql	0	0	15	select sleep(1)	THREAD_ID	ROWS_AFFECTED
+TIMESTAMP	USER_HOST	QUERY_TIME	LOCK_TIME	2	2	log_table	0	0	1	select *, sleep(1) from t1	THREAD_ID	ROWS_AFFECTED
+TIMESTAMP	USER_HOST	QUERY_TIME	LOCK_TIME	2	2	log_table	0	0	1	select *, sleep(1) from t1	THREAD_ID	ROWS_AFFECTED
+create table if not exists t2(a int, b int) engine = sequoiadb;
+insert into t2 values(1,2),(2,3);
+set global long_query_time=1;
+set global slow_query_log = on;
+begin;
+update t1 set b = 5 where a = 2;
+insert into t2 select * from t2 where sleep(1);
+commit;
+select * from t2;
+a	b
+1	2
+2	3
+set global slow_query_log = off;
+select * from mysql.slow_log;
+start_time	user_host	query_time	lock_time	rows_sent	rows_examined	db	last_insert_id	insert_id	server_id	sql_text	thread_id	rows_affected
+TIMESTAMP	USER_HOST	QUERY_TIME	LOCK_TIME	0	2	log_table	0	0	1	select * from t1 where sleep(1)	THREAD_ID	ROWS_AFFECTED
+TIMESTAMP	USER_HOST	QUERY_TIME	LOCK_TIME	0	2	log_table	0	0	1	select * from t1 where sleep(1)	THREAD_ID	ROWS_AFFECTED
+TIMESTAMP	USER_HOST	QUERY_TIME	LOCK_TIME	0	2	mysql	0	0	1	select * from log_table.t1 where sleep(1)	THREAD_ID	ROWS_AFFECTED
+TIMESTAMP	USER_HOST	QUERY_TIME	LOCK_TIME	0	2	mysql	0	0	1	select * from log_table.t1 where sleep(1)	THREAD_ID	ROWS_AFFECTED
+TIMESTAMP	USER_HOST	QUERY_TIME	LOCK_TIME	0	2	mysql	0	0	1	select * from log_table.t1 where sleep(1)	THREAD_ID	ROWS_AFFECTED
+TIMESTAMP	USER_HOST	QUERY_TIME	LOCK_TIME	1	0	mysql	0	0	1	select sleep(1)	THREAD_ID	ROWS_AFFECTED
+TIMESTAMP	USER_HOST	QUERY_TIME	LOCK_TIME	1	0	mysql	0	0	15	select sleep(1)	THREAD_ID	ROWS_AFFECTED
+TIMESTAMP	USER_HOST	QUERY_TIME	LOCK_TIME	2	2	log_table	0	0	1	select *, sleep(1) from t1	THREAD_ID	ROWS_AFFECTED
+TIMESTAMP	USER_HOST	QUERY_TIME	LOCK_TIME	2	2	log_table	0	0	1	select *, sleep(1) from t1	THREAD_ID	ROWS_AFFECTED
+TIMESTAMP	USER_HOST	QUERY_TIME	LOCK_TIME	0	2	log_table	0	0	1	insert into t2 select * from t2 where sleep(1)	THREAD_ID	ROWS_AFFECTED
+begin;
+update t1 set b = 6 where a = 2;
+set global long_query_time=1;
+set global slow_query_log = on;
+insert into t2 select * from t2 where sleep(1);
+commit;
+select * from t2;
+a	b
+1	2
+2	3
+set global slow_query_log = off;
+select * from mysql.slow_log;
+start_time	user_host	query_time	lock_time	rows_sent	rows_examined	db	last_insert_id	insert_id	server_id	sql_text	thread_id	rows_affected
+TIMESTAMP	USER_HOST	QUERY_TIME	LOCK_TIME	0	2	log_table	0	0	1	select * from t1 where sleep(1)	THREAD_ID	ROWS_AFFECTED
+TIMESTAMP	USER_HOST	QUERY_TIME	LOCK_TIME	0	2	log_table	0	0	1	select * from t1 where sleep(1)	THREAD_ID	ROWS_AFFECTED
+TIMESTAMP	USER_HOST	QUERY_TIME	LOCK_TIME	0	2	mysql	0	0	1	select * from log_table.t1 where sleep(1)	THREAD_ID	ROWS_AFFECTED
+TIMESTAMP	USER_HOST	QUERY_TIME	LOCK_TIME	0	2	mysql	0	0	1	select * from log_table.t1 where sleep(1)	THREAD_ID	ROWS_AFFECTED
+TIMESTAMP	USER_HOST	QUERY_TIME	LOCK_TIME	0	2	mysql	0	0	1	select * from log_table.t1 where sleep(1)	THREAD_ID	ROWS_AFFECTED
+TIMESTAMP	USER_HOST	QUERY_TIME	LOCK_TIME	1	0	mysql	0	0	1	select sleep(1)	THREAD_ID	ROWS_AFFECTED
+TIMESTAMP	USER_HOST	QUERY_TIME	LOCK_TIME	1	0	mysql	0	0	15	select sleep(1)	THREAD_ID	ROWS_AFFECTED
+TIMESTAMP	USER_HOST	QUERY_TIME	LOCK_TIME	2	2	log_table	0	0	1	select *, sleep(1) from t1	THREAD_ID	ROWS_AFFECTED
+TIMESTAMP	USER_HOST	QUERY_TIME	LOCK_TIME	2	2	log_table	0	0	1	select *, sleep(1) from t1	THREAD_ID	ROWS_AFFECTED
+TIMESTAMP	USER_HOST	QUERY_TIME	LOCK_TIME	0	2	log_table	0	0	1	insert into t2 select * from t2 where sleep(1)	THREAD_ID	ROWS_AFFECTED
+TIMESTAMP	USER_HOST	QUERY_TIME	LOCK_TIME	0	2	log_table	0	0	1	insert into t2 select * from t2 where sleep(1)	THREAD_ID	ROWS_AFFECTED
+use log_table $$
+create procedure turn_on_slow_log(loops int)
+begin
+declare i int default 0;
+while i < loops do
+truncate mysql.slow_log;
+set global slow_query_log = on;
+set global long_query_time = 1;
+set i = i + 1;
+select sleep(1) from log_table.t1;
+set global slow_query_log = off;
+end while;
+end$$
+set @iterations = 3;
+call turn_on_slow_log(@iterations);
+select * from mysql.slow_log;
+start_time	user_host	query_time	lock_time	rows_sent	rows_examined	db	last_insert_id	insert_id	server_id	sql_text	thread_id	rows_affected
+use log_table $$
+create procedure turn_on_general_log(loops int)
+begin
+declare i int default 0;
+while i < loops do
+truncate mysql.general_log;
+set global general_log = on;
+set i = i + 1;
+select * from log_table.t1;
+set global general_log = off;
+end while;
+end$$
+call turn_on_general_log(@iterations);
+select * from mysql.general_log;
+event_time	user_host	thread_id	server_id	command_type	argument
+use log_table $$
+create procedure loop_select(loops int)
+begin
+declare i int default 0;
+while i < loops do
+set i = i + 1;
+select * from log_table.t1;
+end while;
+end$$
+set global slow_query_log = on;
+set global general_log = on;
+call loop_select(@iterations);
+set global slow_query_log = off;
+set global general_log = off;
+select * from mysql.slow_log;
+start_time	user_host	query_time	lock_time	rows_sent	rows_examined	db	last_insert_id	insert_id	server_id	sql_text	thread_id	rows_affected
+select * from mysql.general_log;
+event_time	user_host	thread_id	server_id	command_type	argument
+TIMESTAMP	USER_HOST	THREAD_ID	1	Query	call loop_select(@iterations)
+TIMESTAMP	USER_HOST	THREAD_ID	1	Query	set global slow_query_log = off
+TIMESTAMP	USER_HOST	THREAD_ID	1	Query	set global general_log = off
+set global long_query_time = 1;
+set global slow_query_log = on;
+set global general_log = on;
+begin;
+select sleep(1) from t1;
+sleep(1)
+0
+0
+update t2 set b = 4 where a = 1 and sleep(1);
+call loop_select(@iterations);
+commit;
+set global slow_query_log = off;
+set global general_log = off;
+select * from mysql.slow_log;
+start_time	user_host	query_time	lock_time	rows_sent	rows_examined	db	last_insert_id	insert_id	server_id	sql_text	thread_id	rows_affected
+TIMESTAMP	USER_HOST	QUERY_TIME	LOCK_TIME	2	2	log_table	0	0	1	select sleep(1) from t1	THREAD_ID	ROWS_AFFECTED
+TIMESTAMP	USER_HOST	QUERY_TIME	LOCK_TIME	0	2	log_table	0	0	1	update t2 set b = 4 where a = 1 and sleep(1)	THREAD_ID	ROWS_AFFECTED
+select * from mysql.general_log;
+event_time	user_host	thread_id	server_id	command_type	argument
+TIMESTAMP	USER_HOST	THREAD_ID	1	Query	call loop_select(@iterations)
+TIMESTAMP	USER_HOST	THREAD_ID	1	Query	set global slow_query_log = off
+TIMESTAMP	USER_HOST	THREAD_ID	1	Query	set global general_log = off
+TIMESTAMP	USER_HOST	THREAD_ID	1	Query	begin
+TIMESTAMP	USER_HOST	THREAD_ID	1	Query	select sleep(1) from t1
+TIMESTAMP	USER_HOST	THREAD_ID	1	Query	update t2 set b = 4 where a = 1 and sleep(1)
+TIMESTAMP	USER_HOST	THREAD_ID	1	Query	call loop_select(@iterations)
+TIMESTAMP	USER_HOST	THREAD_ID	1	Query	commit
+TIMESTAMP	USER_HOST	THREAD_ID	1	Query	set global slow_query_log = off
+TIMESTAMP	USER_HOST	THREAD_ID	1	Query	set global general_log = off
+begin;
+select sleep(1) from t1;
+sleep(1)
+0
+0
+update t2 set b = 4 where a = 1 and sleep(1);
+call loop_select(@iterations);
+rollback;
+set global slow_query_log = off;
+set global general_log = off;
+select * from mysql.slow_log;
+start_time	user_host	query_time	lock_time	rows_sent	rows_examined	db	last_insert_id	insert_id	server_id	sql_text	thread_id	rows_affected
+TIMESTAMP	USER_HOST	QUERY_TIME	LOCK_TIME	2	2	log_table	0	0	1	select sleep(1) from t1	THREAD_ID	ROWS_AFFECTED
+TIMESTAMP	USER_HOST	QUERY_TIME	LOCK_TIME	0	2	log_table	0	0	1	update t2 set b = 4 where a = 1 and sleep(1)	THREAD_ID	ROWS_AFFECTED
+select * from mysql.general_log;
+event_time	user_host	thread_id	server_id	command_type	argument
+TIMESTAMP	USER_HOST	THREAD_ID	1	Query	call loop_select(@iterations)
+TIMESTAMP	USER_HOST	THREAD_ID	1	Query	set global slow_query_log = off
+TIMESTAMP	USER_HOST	THREAD_ID	1	Query	set global general_log = off
+TIMESTAMP	USER_HOST	THREAD_ID	1	Query	begin
+TIMESTAMP	USER_HOST	THREAD_ID	1	Query	select sleep(1) from t1
+TIMESTAMP	USER_HOST	THREAD_ID	1	Query	update t2 set b = 4 where a = 1 and sleep(1)
+TIMESTAMP	USER_HOST	THREAD_ID	1	Query	call loop_select(@iterations)
+TIMESTAMP	USER_HOST	THREAD_ID	1	Query	commit
+TIMESTAMP	USER_HOST	THREAD_ID	1	Query	set global slow_query_log = off
+TIMESTAMP	USER_HOST	THREAD_ID	1	Query	set global general_log = off
+use mysql;
+truncate slow_log;
+begin;
+insert into slow_log(start_time) values(CURRENT_TIMESTAMP(6));
+ERROR HY000: You can't use locks with log tables
+commit;
+insert into slow_log(start_time) values(CURRENT_TIMESTAMP(6));
+ERROR HY000: You can't use locks with log tables
+insert into general_log(event_time) values(CURRENT_TIMESTAMP(6));
+ERROR HY000: You can't use locks with log tables
+set global long_query_time = 1;
+set global slow_query_log = on;
+set global general_log = on;
+select sleep(1);
+sleep(1)
+0
+set global slow_query_log = off;
+set global general_log = off;
+select * from mysql.slow_log;
+start_time	user_host	query_time	lock_time	rows_sent	rows_examined	db	last_insert_id	insert_id	server_id	sql_text	thread_id	rows_affected
+TIMESTAMP	USER_HOST	QUERY_TIME	LOCK_TIME	1	0	mysql	0	0	1	select sleep(1)	THREAD_ID	ROWS_AFFECTED
+select * from mysql.general_log;
+event_time	user_host	thread_id	server_id	command_type	argument
+TIMESTAMP	USER_HOST	THREAD_ID	1	Query	call loop_select(@iterations)
+TIMESTAMP	USER_HOST	THREAD_ID	1	Query	set global slow_query_log = off
+TIMESTAMP	USER_HOST	THREAD_ID	1	Query	set global general_log = off
+TIMESTAMP	USER_HOST	THREAD_ID	1	Query	begin
+TIMESTAMP	USER_HOST	THREAD_ID	1	Query	select sleep(1) from t1
+TIMESTAMP	USER_HOST	THREAD_ID	1	Query	update t2 set b = 4 where a = 1 and sleep(1)
+TIMESTAMP	USER_HOST	THREAD_ID	1	Query	call loop_select(@iterations)
+TIMESTAMP	USER_HOST	THREAD_ID	1	Query	commit
+TIMESTAMP	USER_HOST	THREAD_ID	1	Query	set global slow_query_log = off
+TIMESTAMP	USER_HOST	THREAD_ID	1	Query	set global general_log = off
+TIMESTAMP	USER_HOST	THREAD_ID	1	Query	select sleep(1)
+TIMESTAMP	USER_HOST	THREAD_ID	1	Query	set global slow_query_log = off
+TIMESTAMP	USER_HOST	THREAD_ID	1	Query	set global general_log = off
+update slow_log set rows_sent = 10 where server_id = 1;
+ERROR HY000: You can't use locks with log tables
+update general_log set thread_id = 10 where server_id = 1;
+ERROR HY000: You can't use locks with log tables
+delete from slow_log;
+ERROR HY000: You can't use locks with log tables
+delete from general_log;
+ERROR HY000: You can't use locks with log tables
+set global slow_query_log = off;
+set global general_log = off;
+drop table if exists mysql.slow_log;
+set @save_sequoiadb_support_mode= @@global.sequoiadb_support_mode;
+set sequoiadb_support_mode='';
+CREATE TABLE IF NOT EXISTS `slow_log` (
+`start_time` timestamp(6) NOT NULL DEFAULT current_timestamp(6) ON UPDATE current_timestamp(6),
+`user_host` mediumtext NOT NULL,
+`query_time` time(6) NOT NULL,
+`lock_time` time(6) NOT NULL,
+`rows_sent` int(11) NOT NULL,
+`rows_examined` int(11) NOT NULL,
+`db` varchar(512) NOT NULL,
+`last_insert_id` int(11) NOT NULL,
+`insert_id` int(11) NOT NULL,
+`server_id` int(10) unsigned NOT NULL,
+`sql_text` mediumtext NOT NULL,
+`thread_id` bigint(21) unsigned NOT NULL,
+`rows_affected` int(11) NOT NULL
+) ENGINE=SequoiaDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin 
+COMMENT='Slow log, sequoiadb:{table_options: {NoTrans: true}}';
+CREATE TABLE IF NOT EXISTS `general_log` (
+`event_time` timestamp(6) NOT NULL DEFAULT current_timestamp(6) ON UPDATE current_timestamp(6),
+`user_host` mediumtext NOT NULL,
+`thread_id` bigint(21) unsigned NOT NULL,
+`server_id` int(10) unsigned NOT NULL,
+`command_type` varchar(64) NOT NULL,
+`argument` mediumtext NOT NULL
+) ENGINE=SequoiaDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin 
+COMMENT='General log, sequoiadb:{table_options: {NoTrans: true}}';
+Warnings:
+Note	1050	Table 'general_log' already exists
+set global long_query_time = 1;
+set global slow_query_log = on;
+set global general_log = on;
+set global slow_query_log = off;
+set global general_log = off;
+drop table if exists mysql.slow_log;
+drop table if exists mysql.general_log;
+CREATE TABLE IF NOT EXISTS `slow_log` (
+`start_time` timestamp(6) NOT NULL DEFAULT current_timestamp(6) ON UPDATE current_timestamp(6),
+`user_host` mediumtext NOT NULL,
+`query_time` time(6) NOT NULL,
+`lock_time` time(6) NOT NULL,
+`rows_sent` int(11) NOT NULL,
+`rows_examined` int(11) NOT NULL,
+`db` varchar(512) NOT NULL,
+`last_insert_id` int(11) NOT NULL,
+`insert_id` int(11) NOT NULL,
+`server_id` int(10) unsigned NOT NULL,
+`sql_text` mediumtext NOT NULL,
+`thread_id` bigint(21) unsigned NOT NULL,
+`rows_affected` int(11) NOT NULL
+) ENGINE=SequoiaDB DEFAULT CHARSET=utf8 COMMENT='Slow log';
+CREATE TABLE IF NOT EXISTS `general_log` (
+`event_time` timestamp(6) NOT NULL DEFAULT current_timestamp(6) ON UPDATE current_timestamp(6),
+`user_host` mediumtext NOT NULL,
+`thread_id` bigint(21) unsigned NOT NULL,
+`server_id` int(10) unsigned NOT NULL,
+`command_type` varchar(64) NOT NULL,
+`argument` mediumtext NOT NULL
+) ENGINE=SequoiaDB DEFAULT CHARSET=utf8 COMMENT='General log';
+set sequoiadb_support_mode = @save_sequoiadb_support_mode;
+set global slow_query_log = off;
+set global general_log = off;
+drop table if exists mysql.slow_log;
+drop table if exists mysql.general_log;
+CREATE TABLE IF NOT EXISTS `slow_log` (
+`start_time` timestamp(6) NOT NULL DEFAULT current_timestamp(6) ON UPDATE current_timestamp(6),
+`user_host` mediumtext NOT NULL,
+`query_time` time(6) NOT NULL,
+`lock_time` time(6) NOT NULL,
+`rows_sent` int(11) NOT NULL,
+`rows_examined` int(11) NOT NULL,
+`db` varchar(512) NOT NULL,
+`last_insert_id` int(11) NOT NULL,
+`insert_id` int(11) NOT NULL,
+`server_id` int(10) unsigned NOT NULL,
+`sql_text` mediumtext NOT NULL,
+`thread_id` bigint(21) unsigned NOT NULL,
+`rows_affected` int(11) NOT NULL
+) ENGINE=csv DEFAULT CHARSET=utf8 COMMENT='Slow log';
+CREATE TABLE `general_log` (
+`event_time` timestamp(6) NOT NULL DEFAULT current_timestamp(6) ON UPDATE current_timestamp(6),
+`user_host` mediumtext NOT NULL,
+`thread_id` bigint(21) unsigned NOT NULL,
+`server_id` int(10) unsigned NOT NULL,
+`command_type` varchar(64) NOT NULL,
+`argument` mediumtext NOT NULL
+) ENGINE=CSV DEFAULT CHARSET=utf8 COMMENT='General log';
+connection default;
+set global slow_query_log = @old_slow_query_log;
+set global long_query_time = @old_long_query_time;
+set global log_output = @old_log_output;
+set global general_log = @old_general_log;
+drop database if exists log_table;

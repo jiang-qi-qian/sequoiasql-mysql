@@ -1,0 +1,154 @@
+connection conn1;
+DROP DATABASE IF EXISTS metasync_function;
+connection conn2;
+SHOW CREATE DATABASE metasync_function;
+ERROR 42000: Unknown database 'metasync_function'
+connection conn1;
+CREATE DATABASE metasync_function;
+USE metasync_function;
+CREATE DEFINER=`fs`@`%` FUNCTION sp_definer (  s varchar(30) )    # 多个参数用,分割 参数的类型必须是mysql列存在的类型
+RETURNS VARCHAR(255)                                              # 指定返回值类型，如果你不确定返回文本长度，可以使用text
+BEGIN
+DECLARE str VARCHAR(255) DEFAULT 'hello ';                     # 定义一个变量，可以指定默认值
+SET str = CONCAT( str, s );                                       # 设置改边变量的值
+RETURN str;                                                    # 返回值
+END|
+Warnings:
+Note	1449	The user specified as a definer ('fs'@'%') does not exist
+CREATE FUNCTION sp_chistics () RETURNS INT
+LANGUAGE SQL
+DETERMINISTIC
+SQL SECURITY INVOKER
+COMMENT 'Characteristics function test'
+    BEGIN
+DECLARE x INT(11);
+SET x = -1;
+RETURN x;
+END|
+CREATE OR REPLACE FUNCTION sp_chistics () RETURNS INT
+LANGUAGE SQL
+DETERMINISTIC
+SQL SECURITY INVOKER
+COMMENT 'Characteristics function test'
+    BEGIN
+DECLARE y INT(11) DEFAULT 1;
+SET y = y * 2;
+RETURN y;
+END|
+CREATE FUNCTION sp_case () RETURNS INT
+BEGIN
+DECLARE x INT DEFAULT 0;
+DECLARE CONTINUE HANDLER FOR SQLSTATE '42S02'
+  BEGIN
+SET x:= x + 1000;
+END;
+CASE ( SELECT 1 FROM no_such_view LIMIT 1 )
+WHEN 1 THEN SET x:= x + 1;
+WHEN 2 THEN SET x:= x + 2;
+ELSE SET x:= x + 100;
+END CASE;
+SET x:= x + 500;
+RETURN x;
+END|
+CREATE AGGREGATE FUNCTION IF NOT EXISTS sp_aggregate_count ( x INT ) RETURNS INT
+BEGIN
+DECLARE count_students INT DEFAULT 0;
+DECLARE CONTINUE HANDLER FOR NOT FOUND
+RETURN count_students;
+LOOP
+FETCH GROUP NEXT ROW;
+IF x  THEN
+SET count_students = count_students+1;
+END IF;
+END LOOP;
+END|
+connection conn2;
+USE metasync_function;
+SHOW CREATE FUNCTION sp_definer;
+Function	sql_mode	Create Function	character_set_client	collation_connection	Database Collation
+sp_definer	STRICT_TRANS_TABLES,ERROR_FOR_DIVISION_BY_ZERO,NO_AUTO_CREATE_USER,NO_ENGINE_SUBSTITUTION	CREATE DEFINER=`fs`@`%` FUNCTION `sp_definer`(s varchar(30) ) RETURNS varchar(255) CHARSET utf8mb4 COLLATE utf8mb4_bin
+BEGIN
+DECLARE str VARCHAR(255) DEFAULT 'hello ';                     # 定义一个变量，可以指定默认值
+SET str = CONCAT( str, s );                                       # 设置改边变量的值
+RETURN str;                                                    # 返回值
+END	latin1	latin1_swedish_ci	utf8mb4_bin
+SHOW CREATE FUNCTION sp_chistics;
+Function	sql_mode	Create Function	character_set_client	collation_connection	Database Collation
+sp_chistics	STRICT_TRANS_TABLES,ERROR_FOR_DIVISION_BY_ZERO,NO_AUTO_CREATE_USER,NO_ENGINE_SUBSTITUTION	CREATE DEFINER=`x`@`%` FUNCTION `sp_chistics`() RETURNS int(11)
+    DETERMINISTIC
+    SQL SECURITY INVOKER
+    COMMENT 'Characteristics function test'
+BEGIN
+DECLARE y INT(11) DEFAULT 1;
+SET y = y * 2;
+RETURN y;
+END	latin1	latin1_swedish_ci	utf8mb4_bin
+SHOW CREATE FUNCTION sp_case;
+Function	sql_mode	Create Function	character_set_client	collation_connection	Database Collation
+sp_case	STRICT_TRANS_TABLES,ERROR_FOR_DIVISION_BY_ZERO,NO_AUTO_CREATE_USER,NO_ENGINE_SUBSTITUTION	CREATE DEFINER=`x`@`%` FUNCTION `sp_case`() RETURNS int(11)
+BEGIN
+DECLARE x INT DEFAULT 0;
+DECLARE CONTINUE HANDLER FOR SQLSTATE '42S02'
+  BEGIN
+SET x:= x + 1000;
+END;
+CASE ( SELECT 1 FROM no_such_view LIMIT 1 )
+WHEN 1 THEN SET x:= x + 1;
+WHEN 2 THEN SET x:= x + 2;
+ELSE SET x:= x + 100;
+END CASE;
+SET x:= x + 500;
+RETURN x;
+END	latin1	latin1_swedish_ci	utf8mb4_bin
+SHOW CREATE FUNCTION sp_aggregate_count;
+Function	sql_mode	Create Function	character_set_client	collation_connection	Database Collation
+sp_aggregate_count	STRICT_TRANS_TABLES,ERROR_FOR_DIVISION_BY_ZERO,NO_AUTO_CREATE_USER,NO_ENGINE_SUBSTITUTION	CREATE DEFINER=`x`@`%` AGGREGATE FUNCTION `sp_aggregate_count`(x INT ) RETURNS int(11)
+BEGIN
+DECLARE count_students INT DEFAULT 0;
+DECLARE CONTINUE HANDLER FOR NOT FOUND
+RETURN count_students;
+LOOP
+FETCH GROUP NEXT ROW;
+IF x  THEN
+SET count_students = count_students+1;
+END IF;
+END LOOP;
+END	latin1	latin1_swedish_ci	utf8mb4_bin
+ALTER FUNCTION sp_chistics
+NO SQL
+COMMENT 'alter function test'|
+connection conn1;
+SHOW CREATE FUNCTION sp_chistics;
+Function	sql_mode	Create Function	character_set_client	collation_connection	Database Collation
+sp_chistics	STRICT_TRANS_TABLES,ERROR_FOR_DIVISION_BY_ZERO,NO_AUTO_CREATE_USER,NO_ENGINE_SUBSTITUTION	CREATE DEFINER=`x`@`%` FUNCTION `sp_chistics`() RETURNS int(11)
+    NO SQL
+    DETERMINISTIC
+    SQL SECURITY INVOKER
+    COMMENT 'alter function test'
+BEGIN
+DECLARE y INT(11) DEFAULT 1;
+SET y = y * 2;
+RETURN y;
+END	latin1	latin1_swedish_ci	utf8mb4_bin
+DROP FUNCTION IF EXISTS sp_definer;
+DROP FUNCTION sp_chistics;
+DROP FUNCTION sp_case;
+DROP FUNCTION IF EXISTS sp_case;
+Warnings:
+Note	1305	FUNCTION metasync_function.sp_case does not exist
+DROP FUNCTION IF EXISTS sp_aggregate_count;
+connection conn2;
+SHOW CREATE FUNCTION sp_definer;
+ERROR 42000: FUNCTION sp_definer does not exist
+SHOW CREATE FUNCTION sp_chistics;
+ERROR 42000: FUNCTION sp_chistics does not exist
+SHOW CREATE FUNCTION sp_case;
+ERROR 42000: FUNCTION sp_case does not exist
+SHOW CREATE FUNCTION sp_aggregate_count;
+ERROR 42000: FUNCTION sp_aggregate_count does not exist
+DROP DATABASE metasync_function;
+connection conn2;
+SHOW CREATE DATABASE metasync_function;
+ERROR 42000: Unknown database 'metasync_function'
+drop function p1;
+ERROR 42000: FUNCTION (UDF) p1 does not exist

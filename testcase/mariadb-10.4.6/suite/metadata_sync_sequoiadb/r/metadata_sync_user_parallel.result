@@ -1,0 +1,269 @@
+connection conn1;
+set session server_ha_wait_sync_timeout = 10;
+connection conn2;
+set session server_ha_wait_sync_timeout = 10;
+connection conn1;
+drop database if exists metadata_sync_23102;
+drop database if exists metadata_sync_user_parallel;
+create database metadata_sync_23102;
+create database metadata_sync_user_parallel;
+use metadata_sync_23102;
+CREATE TABLE t1(a INT NOT NULL, b INT, c INT);
+connection conn2;
+drop user if exists metadata_sync_user_23102;
+flush privileges;
+create user 'metadata_sync_user_23102'@'%' IDENTIFIED BY 'metadata_sync_user_23102';
+flush privileges;
+connection conn1;
+GRANT create,alter,drop ON t1 TO metadata_sync_user_23102@'%' IDENTIFIED BY 'metadata_sync_user_23102' WITH GRANT OPTION;
+FLUSH PRIVILEGES;
+connect   conn3, $mysql_host2, 'metadata_sync_user_23102', 'metadata_sync_user_23102', $mysql_db, $mysql_port2 ;
+connection conn3;
+alter table metadata_sync_23102.t1 add column d int;
+disconnect conn3;
+connection conn1;
+use metadata_sync_user_parallel;
+revoke create,alter,drop on metadata_sync_23102.t1 from metadata_sync_user_23102@'%';
+flush privileges;
+connect   conn3, $mysql_host2, 'metadata_sync_user_23102', 'metadata_sync_user_23102', $mysql_db, $mysql_port2 ;
+connection conn3;
+alter table metadata_sync_23102.t1 drop column d;
+ERROR 42000: ALTER command denied to user 'metadata_sync_user_23102'@'x' for table 't1'
+disconnect conn3;
+connection conn1;
+alter table metadata_sync_23102.t1 drop column d;
+GRANT insert,update,delete,select ON metadata_sync_23102.t1 TO metadata_sync_user_23102@'%' IDENTIFIED BY 'metadata_sync_user_23102' WITH GRANT OPTION;
+FLUSH PRIVILEGES;
+connect   conn3, $mysql_host2, 'metadata_sync_user_23102', 'metadata_sync_user_23102', $mysql_db, $mysql_port2 ;
+connection conn3;
+insert into metadata_sync_23102.t1 values(1,1,1);
+disconnect conn3;
+connection conn1;
+revoke insert,update,delete,select on metadata_sync_23102.t1 from metadata_sync_user_23102@'%';
+FLUSH PRIVILEGES;
+connect   conn3, $mysql_host2, 'metadata_sync_user_23102', 'metadata_sync_user_23102', $mysql_db, $mysql_port2 ;
+connection conn3;
+insert into metadata_sync_23102.t1 values(1,1,1);
+ERROR 42000: INSERT command denied to user 'metadata_sync_user_23102'@'x' for table 't1'
+disconnect conn3;
+connection conn1;
+GRANT index ON metadata_sync_23102.t1 TO metadata_sync_user_23102@'%' IDENTIFIED BY 'metadata_sync_user_23102' WITH GRANT OPTION;
+FLUSH PRIVILEGES;
+connect   conn3, $mysql_host2, 'metadata_sync_user_23102', 'metadata_sync_user_23102', $mysql_db, $mysql_port2 ;
+connection conn3;
+create index a on metadata_sync_23102.t1(a);
+disconnect conn3;
+connection conn1;
+revoke index on metadata_sync_23102.t1 from metadata_sync_user_23102@'%';
+FLUSH PRIVILEGES;
+connect   conn3, $mysql_host2, 'metadata_sync_user_23102', 'metadata_sync_user_23102', $mysql_db, $mysql_port2 ;
+connection conn3;
+drop index a on metadata_sync_23102.t1;
+ERROR 42000: INDEX command denied to user 'metadata_sync_user_23102'@'x' for table 't1'
+disconnect conn3;
+connection conn1;
+CREATE TRIGGER metadata_sync_23102.t1_bi BEFORE INSERT ON t1 FOR EACH ROW SET NEW.a = 1;
+GRANT insert,select,trigger ON metadata_sync_23102.t1 TO metadata_sync_user_23102@'%' IDENTIFIED BY 'metadata_sync_user_23102' WITH GRANT OPTION;
+FLUSH PRIVILEGES;
+connect   conn3, $mysql_host2, 'metadata_sync_user_23102', 'metadata_sync_user_23102', $mysql_db, $mysql_port2 ;
+connection conn3;
+insert into metadata_sync_23102.t1(b,c) values(2,2);
+select * from metadata_sync_23102.t1 order by c;
+a	b	c
+1	1	1
+1	2	2
+disconnect conn3;
+connection conn1;
+revoke insert,trigger on metadata_sync_23102.t1 from metadata_sync_user_23102@'%';
+FLUSH PRIVILEGES;
+connect   conn3, $mysql_host2, 'metadata_sync_user_23102', 'metadata_sync_user_23102', $mysql_db, $mysql_port2 ;
+connection conn3;
+insert into metadata_sync_23102.t1(b,c) values(2,2);
+ERROR 42000: INSERT command denied to user 'metadata_sync_user_23102'@'x' for table 't1'
+select * from metadata_sync_23102.t1 order by c;
+a	b	c
+1	1	1
+1	2	2
+disconnect conn3;
+connection conn1;
+GRANT ALL ON metadata_sync_23102.* TO metadata_sync_user_23102@'%' IDENTIFIED BY 'metadata_sync_user_23102' WITH GRANT OPTION;
+FLUSH PRIVILEGES;
+connect   conn3, $mysql_host2, 'metadata_sync_user_23102', 'metadata_sync_user_23102', $mysql_db, $mysql_port2 ;
+connection conn3;
+create view metadata_sync_23102.v1 as select 'a';
+disconnect conn3;
+connection conn1;
+revoke ALL on metadata_sync_23102.* from metadata_sync_user_23102@'%';
+FLUSH PRIVILEGES;
+connect   conn3, $mysql_host2, 'metadata_sync_user_23102', 'metadata_sync_user_23102', $mysql_db, $mysql_port2 ;
+connection conn3;
+show create view metadata_sync_23102.v1;
+ERROR 42000: SELECT command denied to user 'metadata_sync_user_23102'@'x' for table 'v1'
+disconnect conn3;
+connection conn1;
+drop database metadata_sync_23102;
+drop user metadata_sync_user_23102;
+flush privileges;
+connection conn1;
+drop database if exists metadata_sync_23103;
+create database metadata_sync_23103;
+use metadata_sync_23103;
+CREATE TABLE t1(a INT NOT NULL, b INT, c INT);
+connection conn2;
+drop user if exists metadata_sync_user_23103;
+flush privileges;
+create user 'metadata_sync_user_23103'@'%' IDENTIFIED BY 'metadata_sync_user_23103';
+connection conn1;
+GRANT create,alter,drop ON metadata_sync_23103.* TO metadata_sync_user_23103@'%' IDENTIFIED BY 'metadata_sync_user_23103' WITH GRANT OPTION;
+FLUSH PRIVILEGES;
+connect   conn3, $mysql_host2, 'metadata_sync_user_23103', 'metadata_sync_user_23103', $mysql_db, $mysql_port2 ;
+connection conn3;
+alter table metadata_sync_23103.t1 add column d int;
+disconnect conn3;
+connection conn1;
+revoke create,alter,drop on metadata_sync_23103.* from metadata_sync_user_23103@'%';
+flush privileges;
+connect   conn3, $mysql_host2, 'metadata_sync_user_23103', 'metadata_sync_user_23103', $mysql_db, $mysql_port2 ;
+connection conn3;
+alter table metadata_sync_23103.t1 drop column d;
+ERROR 42000: ALTER command denied to user 'metadata_sync_user_23103'@'x' for table 't1'
+disconnect conn3;
+connection conn1;
+alter table metadata_sync_23103.t1 drop column d;
+GRANT insert,update,delete,select ON metadata_sync_23103.* TO metadata_sync_user_23103@'%' IDENTIFIED BY 'metadata_sync_user_23103' WITH GRANT OPTION;
+FLUSH PRIVILEGES;
+connect   conn3, $mysql_host2, 'metadata_sync_user_23103', 'metadata_sync_user_23103', $mysql_db, $mysql_port2 ;
+connection conn3;
+insert into metadata_sync_23103.t1 values(1,1,1);
+disconnect conn3;
+connection conn1;
+revoke insert,update,delete,select on metadata_sync_23103.* from metadata_sync_user_23103@'%';
+FLUSH PRIVILEGES;
+connect   conn3, $mysql_host2, 'metadata_sync_user_23103', 'metadata_sync_user_23103', $mysql_db, $mysql_port2 ;
+connection conn3;
+insert into metadata_sync_23103.t1 values(1,1,1);
+ERROR 42000: INSERT command denied to user 'metadata_sync_user_23103'@'x' for table 't1'
+disconnect conn3;
+connection conn1;
+GRANT index ON metadata_sync_23103.* TO metadata_sync_user_23103@'%' IDENTIFIED BY 'metadata_sync_user_23103' WITH GRANT OPTION;
+FLUSH PRIVILEGES;
+connect   conn3, $mysql_host2, 'metadata_sync_user_23103', 'metadata_sync_user_23103', $mysql_db, $mysql_port2 ;
+connection conn3;
+create index a on metadata_sync_23103.t1(a);
+disconnect conn3;
+connection conn1;
+revoke index on metadata_sync_23103.* from metadata_sync_user_23103@'%';
+FLUSH PRIVILEGES;
+connect   conn3, $mysql_host2, 'metadata_sync_user_23103', 'metadata_sync_user_23103', $mysql_db, $mysql_port2 ;
+connection conn3;
+drop index a on metadata_sync_23103.t1;
+ERROR 42000: INDEX command denied to user 'metadata_sync_user_23103'@'x' for table 't1'
+disconnect conn3;
+connection conn1;
+CREATE TRIGGER t1_bi BEFORE INSERT ON t1 FOR EACH ROW SET NEW.a = 1;
+GRANT insert,select,trigger ON metadata_sync_23103.* TO metadata_sync_user_23103@'%' IDENTIFIED BY 'metadata_sync_user_23103' WITH GRANT OPTION;
+FLUSH PRIVILEGES;
+connect   conn3, $mysql_host2, 'metadata_sync_user_23103', 'metadata_sync_user_23103', $mysql_db, $mysql_port2 ;
+connection conn3;
+insert into metadata_sync_23103.t1(b,c) values(2,2);
+select * from metadata_sync_23103.t1 order by c;
+a	b	c
+1	1	1
+1	2	2
+disconnect conn3;
+connection conn1;
+revoke insert,trigger on metadata_sync_23103.* from metadata_sync_user_23103@'%';
+FLUSH PRIVILEGES;
+connect   conn3, $mysql_host2, 'metadata_sync_user_23103', 'metadata_sync_user_23103', $mysql_db, $mysql_port2 ;
+connection conn3;
+insert into metadata_sync_23103.t1(b,c) values(2,2);
+ERROR 42000: INSERT command denied to user 'metadata_sync_user_23103'@'x' for table 't1'
+select * from metadata_sync_23103.t1 order by c;
+a	b	c
+1	1	1
+1	2	2
+disconnect conn3;
+connection conn1;
+revoke select on metadata_sync_23103.* from metadata_sync_user_23103@'%';
+GRANT ALL ON metadata_sync_23103.* TO metadata_sync_user_23103@'%' IDENTIFIED BY 'metadata_sync_user_23103' WITH GRANT OPTION;
+FLUSH PRIVILEGES;
+connect   conn3, $mysql_host2, 'metadata_sync_user_23103', 'metadata_sync_user_23103', $mysql_db, $mysql_port2 ;
+connection conn3;
+create view metadata_sync_23103.v1 as select 'a';
+disconnect conn3;
+connection conn1;
+revoke ALL on metadata_sync_23103.* from metadata_sync_user_23103@'%';
+FLUSH PRIVILEGES;
+connect   conn3, $mysql_host2, 'metadata_sync_user_23103', 'metadata_sync_user_23103', $mysql_db, $mysql_port2 ;
+connection conn3;
+show create view metadata_sync_23103.v1;
+ERROR 42000: SELECT command denied to user 'metadata_sync_user_23103'@'x' for table 'v1'
+disconnect conn3;
+connection conn1;
+GRANT create routine,alter routine ON metadata_sync_23103.* TO metadata_sync_user_23103@'%' IDENTIFIED BY 'metadata_sync_user_23103' WITH GRANT OPTION;
+FLUSH PRIVILEGES;
+connect   conn3, $mysql_host2, 'metadata_sync_user_23103', 'metadata_sync_user_23103', $mysql_db, $mysql_port2 ;
+connection conn3;
+create function metadata_sync_23103.hello23103 (s char(20)) returns char(50) deterministic return concat('Hello,' , s , '!');
+disconnect conn3;
+connection conn1;
+revoke EXECUTE,alter routine on function metadata_sync_23103.hello23103 from metadata_sync_user_23103@'%';
+revoke create routine,alter routine on metadata_sync_23103.* from metadata_sync_user_23103@'%';
+FLUSH PRIVILEGES;
+connect   conn3, $mysql_host2, 'metadata_sync_user_23103', 'metadata_sync_user_23103', $mysql_db, $mysql_port2 ;
+connection conn3;
+alter function metadata_sync_23103.hello23103 comment 'test';
+ERROR 42000: alter routine command denied to user 'metadata_sync_user_23103'@'%' for routine 'metadata_sync_23103.hello23103'
+disconnect conn3;
+connection conn2;
+drop database metadata_sync_23103;
+drop user metadata_sync_user_23103;
+flush privileges;
+connection conn1;
+drop database if exists metadata_sync_23104;
+create database metadata_sync_23104;
+use metadata_sync_23104;
+connection conn2;
+drop user if exists metadata_sync_user_23104;
+create user 'metadata_sync_user_23104';
+flush privileges;
+connection conn1;
+create function hello23104 (s char(20)) returns char(50) deterministic return concat('Hello,' , s , '!');
+GRANT alter routine ON function metadata_sync_23104.hello23104 TO metadata_sync_user_23104@'%' IDENTIFIED BY 'metadata_sync_user_23104' WITH GRANT OPTION;
+FLUSH PRIVILEGES;
+connect   conn3, $mysql_host2, 'metadata_sync_user_23104', 'metadata_sync_user_23104', $mysql_db, $mysql_port2 ;
+connection conn3;
+alter function metadata_sync_23104.hello23104 comment 'test';
+disconnect conn3;
+connection conn1;
+revoke alter routine on function metadata_sync_23104.hello23104 from metadata_sync_user_23104@'%';
+FLUSH PRIVILEGES;
+connect   conn3, $mysql_host2, 'metadata_sync_user_23104', 'metadata_sync_user_23104', $mysql_db, $mysql_port2 ;
+connection conn3;
+alter function metadata_sync_23104.hello23104 comment 'test11';
+ERROR 42000: alter routine command denied to user 'metadata_sync_user_23104'@'%' for routine 'metadata_sync_23104.hello23104'
+disconnect conn3;
+connection conn1;
+GRANT execute ON function metadata_sync_23104.hello23104 TO metadata_sync_user_23104@'%' IDENTIFIED BY 'metadata_sync_user_23104' WITH GRANT OPTION;
+FLUSH PRIVILEGES;
+connect   conn3, $mysql_host2, 'metadata_sync_user_23104', 'metadata_sync_user_23104', $mysql_db, $mysql_port2 ;
+connection conn3;
+select metadata_sync_23104.hello23104('world');
+metadata_sync_23104.hello23104('world')
+Hello,world!
+disconnect conn3;
+connection conn1;
+revoke execute on function metadata_sync_23104.hello23104 from metadata_sync_user_23104@'%';
+FLUSH PRIVILEGES;
+connect   conn3, $mysql_host2, 'metadata_sync_user_23104', 'metadata_sync_user_23104', $mysql_db, $mysql_port2 ;
+connection conn3;
+select metadata_sync_23104.hello23104('world');
+ERROR 42000: execute command denied to user 'metadata_sync_user_23104'@'%' for routine 'metadata_sync_23104.hello23104'
+disconnect conn3;
+connection conn1;
+drop database metadata_sync_23104;
+drop database metadata_sync_user_parallel;
+connection conn1;
+set session server_ha_wait_sync_timeout = default;
+connection conn2;
+set session server_ha_wait_sync_timeout = default;

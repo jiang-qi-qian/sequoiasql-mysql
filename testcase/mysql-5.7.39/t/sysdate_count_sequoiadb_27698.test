@@ -1,0 +1,23 @@
+#seqDB-27698
+
+--source include/have_sequoiadb.inc
+
+--disable_warnings
+drop database if exists sysdate_count_sequoiadb_27698;
+--enable_warnings
+create database sysdate_count_sequoiadb_27698;
+use sysdate_count_sequoiadb_27698;
+
+create table t1 (
+   id int(11) DEFAULT NULL,
+   date timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
+) engine=SequoiaDB default charset=utf8 collate=utf8_bin;
+insert into t1 values (1, now()), (2, now()), (3, '20210711');
+select count(*) from t1 where date >= date_format(sysdate(), "%Y%m%d");
+
+create table t2(a double);
+insert into t2 values (1.25), (3.14), (-0.01); 
+select count(*) from t2 where a > rand();
+
+drop database sysdate_count_sequoiadb_27698;
+--source include/uninstall_sequoiadb.inc

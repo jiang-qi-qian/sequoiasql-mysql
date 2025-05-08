@@ -1,0 +1,227 @@
+drop database if exists explain_direct_sort_27689;
+create database explain_direct_sort_27689;
+drop database explain_direct_sort_27689;
+create database explain_direct_sort_27689;
+use explain_direct_sort_27689;
+set session sequoiadb_debug_log=on;
+set session optimizer_switch='mrr=on';
+drop table if exists t1,t2;
+create table t1(
+col1 int,
+col2 varchar(10),
+col3 varchar(10),
+col4 varchar(10),
+key idx_col1(col1),
+key idx_col2(col2),
+key idx_col12(col1,col2),
+key idx_col4(col4)
+);
+insert into t1 values(5,'xyz','abd','abd');
+insert into t1 values(4,'abc','abcdef','xyz');
+insert into t1 values(3,'abd','def','defg');
+insert into t1 values(0,'abde','xyz','def');
+insert into t1 values(2,'defg','abc','efg');
+insert into t1 values(null,null,null,null);
+insert into t1 values(6,'abcdef','abde','abc');
+insert into t1 values(1,'def','defg','abcdef');
+select * from t1 order by col1;
+col1	col2	col3	col4
+NULL	NULL	NULL	NULL
+0	abde	xyz	def
+1	def	defg	abcdef
+2	defg	abc	efg
+3	abd	def	defg
+4	abc	abcdef	xyz
+5	xyz	abd	abd
+6	abcdef	abde	abc
+select * from t1 order by col2;
+col1	col2	col3	col4
+NULL	NULL	NULL	NULL
+4	abc	abcdef	xyz
+6	abcdef	abde	abc
+3	abd	def	defg
+0	abde	xyz	def
+1	def	defg	abcdef
+2	defg	abc	efg
+5	xyz	abd	abd
+select * from t1 order by col3;
+col1	col2	col3	col4
+NULL	NULL	NULL	NULL
+2	defg	abc	efg
+4	abc	abcdef	xyz
+5	xyz	abd	abd
+6	abcdef	abde	abc
+3	abd	def	defg
+1	def	defg	abcdef
+0	abde	xyz	def
+select * from t1 order by col4;
+col1	col2	col3	col4
+NULL	NULL	NULL	NULL
+6	abcdef	abde	abc
+1	def	defg	abcdef
+5	xyz	abd	abd
+0	abde	xyz	def
+3	abd	def	defg
+2	defg	abc	efg
+4	abc	abcdef	xyz
+create table t2 like t1;
+insert into t2 select * from t1;
+explain update t1 set col3 = 'hello' where col1 = 6;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	UPDATE	t1	NULL	range	idx_col1,idx_col12	idx_col1	5	const	2	100.00	Using where
+update t1 set col3 = 'hello' where col1 = 6;
+[Note] Testcase: Operation log begin
+[Note] SequoiaDB: optimizer pushdown autocommit: 1
+[Note] SequoiaDB: optimizer update: 1, rule: [{ "$set": { "col3": "hello" } }], condition: [{ "col1": { "$et": 6 } }], table: explain_direct_sort_27689.t1
+explain update t1 set col3 = 'hello' where col1 > 6;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	UPDATE	t1	NULL	range	idx_col1,idx_col12	idx_col1	5	const	6	100.00	Using where
+update t1 set col3 = 'hello' where col1 > 6;
+[Note] Testcase: Operation log begin
+[Note] SequoiaDB: optimizer pushdown autocommit: 1
+[Note] SequoiaDB: optimizer update: 1, rule: [{ "$set": { "col3": "hello" } }], condition: [{ "col1": { "$gt": 6 } }], table: explain_direct_sort_27689.t1
+explain update t1 set col3 = concat(col3, '-updated') where col1 > 7;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	UPDATE	t1	NULL	range	idx_col1,idx_col12	idx_col1	5	const	6	100.00	Using where
+update t1 set col3 = concat(col3, '-updated') where col1 > 7;
+[Note] Testcase: Operation log begin
+[Note] SequoiaDB: optimizer update: 0, rule: [{}], condition: [{ "col1": { "$gt": 7 } }], table: explain_direct_sort_27689.t1
+[Note] SequoiaDB: Query message: condition[{ "col1": { "$gt": 7 } }], selector[{}], order_by[{ "col1": 1 }], hint[{ "": "idx_col1" }], limit[-1], offset[0], table[explain_direct_sort_27689.t1]
+explain update t1,t2 set t1.col3 = 'ghi' where t1.col1 = t2.col1 and t1.col2 > 'def';
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	UPDATE	t1	NULL	range	idx_col1,idx_col2,idx_col12	idx_col2	13	NULL	3	100.00	Using where with pushed condition ((`explain_direct_sort_27689`.`t1`.`col2` > 'def') and (`explain_direct_sort_27689`.`t1`.`col1` is not null))
+1	SIMPLE	t2	NULL	ref	idx_col1,idx_col12	idx_col1	5	explain_direct_sort_27689.t1.col1	2	100.00	Using index
+update t1,t2 set t1.col3 = 'ghi' where t1.col1 = t2.col1 and t1.col2 > 'def';
+[Note] Testcase: Operation log begin
+[Note] SequoiaDB: Query message: condition[{ "$and": [ { "col2": { "$gt": "def" } }, { "col1": { "$isnull": 0 } } ] }], selector[{}], order_by[{ "col2": 1 }], hint[{ "": "idx_col2" }], limit[-1], offset[0], table[explain_direct_sort_27689.t1]
+[Note] SequoiaDB: Query message: condition[{ "col1": { "$et": 2 } }], selector[{}], order_by[{ "col1": 1 }], hint[{ "": "idx_col1" }], limit[-1], offset[0], table[explain_direct_sort_27689.t2]
+[Note] SequoiaDB: Query message: condition[{ "col1": { "$et": 5 } }], selector[{}], order_by[{ "col1": 1 }], hint[{ "": "idx_col1" }], limit[-1], offset[0], table[explain_direct_sort_27689.t2]
+explain delete from t1 where col1 is null or col2 = 'xyz';
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	DELETE	t1	NULL	index_merge	idx_col1,idx_col2,idx_col12	idx_col1,idx_col2	5,13	NULL	4	100.00	Using sdb_union(idx_col1,idx_col2); Using where
+delete from t1 where col1 is null or col2 = 'xyz';
+[Note] Testcase: Operation log begin
+[Note] SequoiaDB: optimizer delete: 1, condition: [{ "col1": { "$isnull": 1 } }], table: explain_direct_sort_27689.t1
+[Note] SequoiaDB: optimizer delete: 1, condition: [{ "col2": { "$et": "xyz" } }], table: explain_direct_sort_27689.t1
+explain delete from t1 where col1 <=> null or col2 <=> 'xyz';
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	DELETE	t1	NULL	index_merge	idx_col1,idx_col2,idx_col12	idx_col1,idx_col2	5,13	NULL	4	100.00	Using sdb_union(idx_col1,idx_col2); Using where
+delete from t1 where col1 <=> null or col2 <=> 'xyz';
+[Note] Testcase: Operation log begin
+[Note] SequoiaDB: Condition can't be pushed down. db=[explain_direct_sort_27689], table[t1], sql=[delete from t1 where col1 <=> null or col2 <=> 'xyz']
+[Note] SequoiaDB: optimizer delete: 0, condition: [{ "col1": { "$isnull": 1 } }], table: explain_direct_sort_27689.t1
+[Note] SequoiaDB: Query message: condition[{ "col1": { "$isnull": 1 } }], selector[{}], order_by[{ "col1": 1 }], hint[{ "": "idx_col1" }], limit[-1], offset[0], table[explain_direct_sort_27689.t1]
+[Note] SequoiaDB: optimizer delete: 0, condition: [{ "col2": { "$et": "xyz" } }], table: explain_direct_sort_27689.t1
+[Note] SequoiaDB: Query message: condition[{ "col2": { "$et": "xyz" } }], selector[{}], order_by[{ "col2": 1 }], hint[{ "": "idx_col2" }], limit[-1], offset[0], table[explain_direct_sort_27689.t1]
+explain delete from t1 where t1.col1 = (select t2.col1 from t2 where t2.col4 = 'xyz');
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	DELETE	t1	NULL	range	idx_col1,idx_col12	idx_col1	5	const	2	100.00	Using where
+2	SUBQUERY	t2	NULL	ref	idx_col4	idx_col4	13	const	2	100.00	NULL
+delete from t1 where t1.col1 = (select t2.col1 from t2 where t2.col4 = 'xyz');
+[Note] Testcase: Operation log begin
+[Note] SequoiaDB: optimizer delete: 0, condition: [{ "col4": { "$et": "xyz" } }], table: explain_direct_sort_27689.t2
+[Note] SequoiaDB: Query message: condition[{ "col4": { "$et": "xyz" } }], selector[{}], order_by[{ "col4": 1 }], hint[{ "": "idx_col4" }], limit[-1], offset[0], table[explain_direct_sort_27689.t2]
+[Note] SequoiaDB: optimizer delete: 0, condition: [{ "col1": { "$et": 4 } }], table: explain_direct_sort_27689.t1
+[Note] SequoiaDB: Query message: condition[{ "col1": { "$et": 4 } }], selector[{}], order_by[{ "col1": 1 }], hint[{ "": "idx_col1" }], limit[-1], offset[0], table[explain_direct_sort_27689.t1]
+explain insert into t1 select * from t2 where t2.col2 in ('abc','def');
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	INSERT	t1	NULL	ALL	NULL	NULL	NULL	NULL	NULL	NULL	NULL
+1	SIMPLE	t2	NULL	range	idx_col2	idx_col2	13	NULL	4	100.00	Using where with pushed condition (`explain_direct_sort_27689`.`t2`.`col2` in ('abc','def')); Using MRR
+insert into t1 select * from t2 where t2.col2 in ('abc','def') ;
+[Note] Testcase: Operation log begin
+[Note] SequoiaDB: Query message: condition[{ "col2": { "$in": [ "abc", "def" ] } }], selector[{}], order_by[{ "col2": 1 }], hint[{ "": "idx_col2" }], limit[-1], offset[0], table[explain_direct_sort_27689.t2]
+explain insert into t1 select * from t2 where t2.col2 < 'def' order by t2.col4 limit 2;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	INSERT	t1	NULL	ALL	NULL	NULL	NULL	NULL	NULL	NULL	NULL
+1	SIMPLE	t2	NULL	NULL	idx_col2	NULL	NULL	NULL	8	33.33	Using where with pushed condition (`explain_direct_sort_27689`.`t2`.`col2` < 'def'); Using pushed ORDER BY; Storage engine handles access type
+insert into t1 select * from t2 where t2.col2 < 'def' order by t2.col4 limit 2;
+[Note] Testcase: Operation log begin
+[Note] SequoiaDB: Query message: condition[{ "col2": { "$lt": "def" } }], selector[{}], order_by[{ "col4": 1 }], hint[{ "": "" }], limit[2], offset[0], table[explain_direct_sort_27689.t2]
+explain insert into t1 select * from t2 where t2.col2 < 'def' order by t2.col2 limit 2;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	INSERT	t1	NULL	ALL	NULL	NULL	NULL	NULL	NULL	NULL	NULL
+1	SIMPLE	t2	NULL	NULL	idx_col2	NULL	NULL	NULL	8	33.33	Using where with pushed condition (`explain_direct_sort_27689`.`t2`.`col2` < 'def'); Using pushed ORDER BY; Storage engine handles access type
+insert into t1 select * from t2 where t2.col2 < 'def' order by t2.col2 limit 2;
+[Note] Testcase: Operation log begin
+[Note] SequoiaDB: Query message: condition[{ "col2": { "$lt": "def" } }], selector[{}], order_by[{ "col2": 1 }], hint[{ "": "" }], limit[2], offset[0], table[explain_direct_sort_27689.t2]
+explain update t1 set col3 = 'udi' where col1 > 3 order by col1 limit 2;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	UPDATE	t1	NULL	range	idx_col1,idx_col12	idx_col1	5	const	7	100.00	Using where; Using temporary
+update t1 set col3 = 'udi' where col1 > 3 order by col1 limit 2;
+[Note] Testcase: Operation log begin
+[Note] SequoiaDB: optimizer update: 0, rule: [{}], condition: [{ "col1": { "$gt": 3 } }], table: explain_direct_sort_27689.t1
+[Note] SequoiaDB: Query message: condition[{ "col1": { "$gt": 3 } }], selector[{}], order_by[{ "col1": 1 }], hint[{ "": "idx_col1" }], limit[-1], offset[0], table[explain_direct_sort_27689.t1]
+explain update t1 set col3 = 'udi' where col1 > 3 order by col1 desc limit 2;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	UPDATE	t1	NULL	range	idx_col1,idx_col12	idx_col1	5	const	7	100.00	Using where; Using temporary
+update t1 set col3 = 'udi' where col1 > 3 order by col1 desc limit 2;
+[Note] Testcase: Operation log begin
+[Note] SequoiaDB: optimizer update: 0, rule: [{}], condition: [{ "col1": { "$gt": 3 } }], table: explain_direct_sort_27689.t1
+[Note] SequoiaDB: Query message: condition[{ "col1": { "$gt": 3 } }], selector[{}], order_by[{ "col1": -1 }], hint[{ "": "idx_col1" }], limit[-1], offset[0], table[explain_direct_sort_27689.t1]
+explain delete from t1 order by col1 limit 2;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	DELETE	t1	NULL	index	NULL	idx_col1	5	NULL	2	100.00	NULL
+delete from t1 order by col1 limit 2;
+[Note] Testcase: Operation log begin
+[Note] SequoiaDB: optimizer delete: 0, condition: [{}], table: explain_direct_sort_27689.t1
+[Note] SequoiaDB: Query message: condition[{}], selector[{}], order_by[{ "col1": 1 }], hint[{ "": "idx_col1" }], limit[-1], offset[0], table[explain_direct_sort_27689.t1]
+explain delete from t1 order by col1 desc limit 2;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	DELETE	t1	NULL	index	NULL	idx_col1	5	NULL	2	100.00	NULL
+delete from t1 order by col1 desc limit 2;
+[Note] Testcase: Operation log begin
+[Note] SequoiaDB: optimizer delete: 0, condition: [{}], table: explain_direct_sort_27689.t1
+[Note] SequoiaDB: Query message: condition[{}], selector[{}], order_by[{ "col1": -1 }], hint[{ "": "idx_col1" }], limit[-1], offset[0], table[explain_direct_sort_27689.t1]
+explain delete from t1 order by col3 limit 2;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	DELETE	t1	NULL	ALL	NULL	NULL	NULL	NULL	6	100.00	Using filesort
+delete from t1 order by col3 limit 2;
+[Note] Testcase: Operation log begin
+[Note] SequoiaDB: optimizer delete: 0, condition: [{}], table: explain_direct_sort_27689.t1
+[Note] SequoiaDB: Query message: condition[{}], selector[{}], order_by[{}], hint[{}], limit[-1], offset[0], table[explain_direct_sort_27689.t1]
+explain update t1,t2 set t1.col2 = 'aaa' where t1.col4 = t2.col4 and t1.col1 < 5;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	UPDATE	t1	NULL	range	idx_col1,idx_col12,idx_col4	idx_col1	5	NULL	2	100.00	Using where with pushed condition ((`explain_direct_sort_27689`.`t1`.`col1` < 5) and (`explain_direct_sort_27689`.`t1`.`col4` is not null))
+1	SIMPLE	t2	NULL	ref	idx_col4	idx_col4	13	explain_direct_sort_27689.t1.col4	2	100.00	Using index
+update t1,t2 set t1.col2 = 'aaa' where t1.col4 = t2.col4 and t1.col1 < 5;
+[Note] Testcase: Operation log begin
+[Note] SequoiaDB: Query message: condition[{ "$and": [ { "col1": { "$lt": 5 } }, { "col4": { "$isnull": 0 } } ] }], selector[{}], order_by[{ "col1": 1 }], hint[{ "": "idx_col1" }], limit[-1], offset[0], table[explain_direct_sort_27689.t1]
+[Note] SequoiaDB: Query message: condition[{ "col4": { "$et": "abcdef" } }], selector[{}], order_by[{ "col4": 1 }], hint[{ "": "idx_col4" }], limit[-1], offset[0], table[explain_direct_sort_27689.t2]
+[Note] SequoiaDB: Query message: condition[{ "col4": { "$et": "efg" } }], selector[{}], order_by[{ "col4": 1 }], hint[{ "": "idx_col4" }], limit[-1], offset[0], table[explain_direct_sort_27689.t2]
+[Note] SequoiaDB: Query message: condition[{ "col4": { "$et": "xyz" } }], selector[{}], order_by[{ "col4": 1 }], hint[{ "": "idx_col4" }], limit[-1], offset[0], table[explain_direct_sort_27689.t2]
+[Note] SequoiaDB: Query message: condition[{ "col4": { "$et": "xyz" } }], selector[{}], order_by[{ "col4": 1 }], hint[{ "": "idx_col4" }], limit[-1], offset[0], table[explain_direct_sort_27689.t2]
+explain update t1,t2 set t1.col2 = 'aaa' where t1.col4 = t2.col4 and t1.col1 < 5;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	UPDATE	t1	NULL	range	idx_col1,idx_col12,idx_col4	idx_col1	5	NULL	2	100.00	Using where with pushed condition ((`explain_direct_sort_27689`.`t1`.`col1` < 5) and (`explain_direct_sort_27689`.`t1`.`col4` is not null))
+1	SIMPLE	t2	NULL	ref	idx_col4	idx_col4	13	explain_direct_sort_27689.t1.col4	2	100.00	Using index
+update t1,t2 set t1.col2 = 'aaa' where t1.col4 = t2.col4 and t1.col1 < 5;
+[Note] Testcase: Operation log begin
+[Note] SequoiaDB: Query message: condition[{ "$and": [ { "col1": { "$lt": 5 } }, { "col4": { "$isnull": 0 } } ] }], selector[{}], order_by[{ "col1": 1 }], hint[{ "": "idx_col1" }], limit[-1], offset[0], table[explain_direct_sort_27689.t1]
+[Note] SequoiaDB: Query message: condition[{ "col4": { "$et": "abcdef" } }], selector[{}], order_by[{ "col4": 1 }], hint[{ "": "idx_col4" }], limit[-1], offset[0], table[explain_direct_sort_27689.t2]
+[Note] SequoiaDB: Query message: condition[{ "col4": { "$et": "efg" } }], selector[{}], order_by[{ "col4": 1 }], hint[{ "": "idx_col4" }], limit[-1], offset[0], table[explain_direct_sort_27689.t2]
+[Note] SequoiaDB: Query message: condition[{ "col4": { "$et": "xyz" } }], selector[{}], order_by[{ "col4": 1 }], hint[{ "": "idx_col4" }], limit[-1], offset[0], table[explain_direct_sort_27689.t2]
+[Note] SequoiaDB: Query message: condition[{ "col4": { "$et": "xyz" } }], selector[{}], order_by[{ "col4": 1 }], hint[{ "": "idx_col4" }], limit[-1], offset[0], table[explain_direct_sort_27689.t2]
+explain delete from t1 where t1.col1 < (select col1 from t2 where t2.col4 = 'def') order by t1.col1 limit 3;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	DELETE	t1	NULL	range	idx_col1,idx_col12	idx_col1	5	const	2	100.00	Using where
+2	SUBQUERY	t2	NULL	ref	idx_col4	idx_col4	13	const	2	100.00	NULL
+delete from t1 where t1.col1 < (select col1 from t2 where t2.col4 = 'def') order by t1.col1 limit 3;
+[Note] Testcase: Operation log begin
+[Note] SequoiaDB: optimizer delete: 0, condition: [{ "col4": { "$et": "def" } }], table: explain_direct_sort_27689.t2
+[Note] SequoiaDB: Query message: condition[{ "col4": { "$et": "def" } }], selector[{}], order_by[{ "col4": 1 }], hint[{ "": "idx_col4" }], limit[-1], offset[0], table[explain_direct_sort_27689.t2]
+[Note] SequoiaDB: optimizer delete: 0, condition: [{ "col1": { "$lt": 0 } }], table: explain_direct_sort_27689.t1
+[Note] SequoiaDB: Query message: condition[{ "col1": { "$lt": 0 } }], selector[{}], order_by[{ "col1": 1 }], hint[{ "": "idx_col1" }], limit[-1], offset[0], table[explain_direct_sort_27689.t1]
+explain delete from t1 where t1.col1 < (select col1 from t2 where t2.col4 = 'def') order by t1.col3 limit 3;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	DELETE	t1	NULL	range	idx_col1,idx_col12	idx_col1	5	const	2	100.00	Using where; Using filesort
+2	SUBQUERY	t2	NULL	ref	idx_col4	idx_col4	13	const	2	100.00	NULL
+delete from t1 where t1.col1 < (select col1 from t2 where t2.col4 = 'def') order by t1.col3 limit 3;
+[Note] Testcase: Operation log begin
+[Note] SequoiaDB: optimizer delete: 0, condition: [{ "col4": { "$et": "def" } }], table: explain_direct_sort_27689.t2
+[Note] SequoiaDB: Query message: condition[{ "col4": { "$et": "def" } }], selector[{}], order_by[{ "col4": 1 }], hint[{ "": "idx_col4" }], limit[-1], offset[0], table[explain_direct_sort_27689.t2]
+[Note] SequoiaDB: optimizer delete: 0, condition: [{ "col1": { "$lt": 0 } }], table: explain_direct_sort_27689.t1
+[Note] SequoiaDB: Query message: condition[{ "col1": { "$lt": 0 } }], selector[{}], order_by[{ "col1": 1 }], hint[{ "": "idx_col1" }], limit[-1], offset[0], table[explain_direct_sort_27689.t1]
+drop table t1,t2;
+set session sequoiadb_debug_log=off;
+set session optimizer_switch=default;
+drop database explain_direct_sort_27689;
