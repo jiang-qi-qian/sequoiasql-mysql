@@ -1,0 +1,60 @@
+CREATE TABLE t1(a tinytext, key (a(255)));
+INSERT INTO t1 VALUES (repeat('a', 256));
+ERROR 22001: Data too long for column 'a' at row 1
+INSERT INTO t1 VALUES ("hello");
+SELECT * FROM t1;
+a
+hello
+UPDATE t1 SET a = "update";
+SELECT * FROM t1;
+a
+update
+DELETE FROM t1 WHERE a ="update";
+SELECT * FROM t1;
+a
+DROP TABLE t1;
+CREATE TABLE t1(a text, key (a(255)));
+INSERT INTO t1 VALUES (repeat('a', 65536));
+ERROR 22001: Data too long for column 'a' at row 1
+INSERT INTO t1 VALUES ("hello2");
+SELECT * FROM t1;
+a
+hello2
+UPDATE t1 SET a = "update2";
+SELECT * FROM t1;
+a
+update2
+DELETE FROM t1 WHERE a ="update2";
+SELECT * FROM t1;
+a
+DROP TABLE t1;
+CREATE TABLE t1(a mediumtext, key (a(255)));
+INSERT INTO t1 VALUES (repeat('a', 16777216));
+ERROR HY000: Result of repeat() was larger than max_allowed_packet (4194304) - truncated
+INSERT INTO t1 VALUES ("hello3");
+SELECT * FROM t1;
+a
+hello3
+UPDATE t1 SET a = "update3";
+SELECT * FROM t1;
+a
+update3
+DELETE FROM t1 WHERE a ="update3";
+SELECT * FROM t1;
+a
+DROP TABLE t1;
+CREATE TABLE t1(a longtext, key (a(255)));
+INSERT INTO t1 VALUES (repeat('a', 16777216));
+ERROR HY000: Result of repeat() was larger than max_allowed_packet (4194304) - truncated
+INSERT INTO t1 VALUES ("hello4");
+SELECT * FROM t1;
+a
+hello4
+UPDATE t1 SET a = "update4";
+SELECT * FROM t1;
+a
+update4
+DELETE FROM t1 WHERE a ="update4";
+SELECT * FROM t1;
+a
+DROP TABLE t1;

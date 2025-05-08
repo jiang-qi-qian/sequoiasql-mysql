@@ -1,0 +1,104 @@
+#case 32296
+--source include/have_sequoiadb.inc
+
+set session sequoiadb_support_mode = '';
+
+set global slow_query_log = on;
+set global general_log = on;  
+
+set global log_output = 'file';
+select @@log_output;
+
+--error 1580
+create or replace table mysql.general_log (a int);
+
+--error 1580
+create or replace table mysql.slow_log (a int);
+
+set global log_output = 'table';
+select @@log_output;
+
+--error 1580
+create or replace table mysql.general_log (a int);
+
+--error 1580
+create or replace table mysql.slow_log (a int);
+
+set global log_output = 'file,table';
+select @@log_output;
+
+--error 1580
+create or replace table mysql.general_log (a int);
+
+--error 1580
+create or replace table mysql.slow_log (a int);
+
+# SEQUOIASQLMAINSTREAM-1937
+#set global slow_query_log = off;
+#set global general_log = off;
+#
+#drop table mysql.general_log;
+#drop table mysql.slow_log;
+#
+#use mysql;
+#CREATE TABLE `slow_log` (
+#  `start_time` timestamp(6) NOT NULL DEFAULT current_timestamp(6) ON UPDATE current_timestamp(6),
+#  `user_host` mediumtext NOT NULL,
+#  `query_time` time(6) NOT NULL,
+#  `lock_time` time(6) NOT NULL,
+#  `rows_sent` int(11) NOT NULL,
+#  `rows_examined` int(11) NOT NULL,
+#  `db` varchar(512) NOT NULL,
+#  `last_insert_id` int(11) NOT NULL,
+#  `insert_id` int(11) NOT NULL,
+#  `server_id` int(10) unsigned NOT NULL,
+#  `sql_text` mediumtext NOT NULL,
+#  `thread_id` bigint(21) unsigned NOT NULL,
+#  `rows_affected` int(11) NOT NULL
+#) ENGINE=SequoiaDB DEFAULT CHARSET=utf8 COMMENT='Slow log';
+#
+#CREATE TABLE `general_log` (
+#  `event_time` timestamp(6) NOT NULL DEFAULT current_timestamp(6) ON UPDATE current_timestamp(6),
+#  `user_host` mediumtext NOT NULL,
+#  `thread_id` bigint(21) unsigned NOT NULL,
+#  `server_id` int(10) unsigned NOT NULL,
+#  `command_type` varchar(64) NOT NULL,
+#  `argument` mediumtext NOT NULL
+#) ENGINE=SequoiaDB DEFAULT CHARSET=utf8 COMMENT='General log';
+#
+#set global slow_query_log = on;
+#set global general_log = on;
+#
+#select @@log_output;
+#set global log_output = 'file';
+#select @@log_output;
+#
+#--error 1580
+#create or replace table mysql.general_log (a int);
+#
+#--error 1580
+#create or replace table mysql.slow_log (a int);
+#
+#set global log_output = 'table';
+#select @@log_output;
+#
+#--error 1580
+#create or replace table mysql.general_log (a int);
+#
+#--error 1580
+#create or replace table mysql.slow_log (a int);
+#
+#set global log_output = 'file,table';
+#select @@log_output;
+#
+#--error 1580
+#create or replace table mysql.general_log (a int);
+#
+#--error 1580
+#create or replace table mysql.slow_log (a int);
+
+set global slow_query_log = 1;
+set global general_log = 1;
+set global log_output = default;
+
+--source include/uninstall_sequoiadb.inc

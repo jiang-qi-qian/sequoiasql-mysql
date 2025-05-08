@@ -1,0 +1,216 @@
+#
+# MDEV-17042: prepared statement does not return error with
+# SQL_MODE STRICT_TRANS_TABLES. (Part 2)
+#
+drop table if exists t1;
+create table t1(a int);
+drop table t1;
+set @save_sql_mode=@@sql_mode;
+set sql_mode='STRICT_TRANS_TABLES';
+Warnings:
+Warning	3135	'NO_ZERO_DATE', 'NO_ZERO_IN_DATE' and 'ERROR_FOR_DIVISION_BY_ZERO' sql modes should be used with strict mode. They will be merged with strict mode in a future release.
+Warning	3090	Changing sql mode 'NO_AUTO_CREATE_USER' is deprecated. It will be removed in a future release.
+CREATE TABLE t1 (id int, count int) engine=sequoiadb;
+insert into t1 values (1,1),(0,2);
+select * from t1 order by id;
+id	count
+0	2
+1	1
+select * from t1 where id = '1bad';
+id	count
+1	1
+Warnings:
+Warning	1292	Truncated incorrect DOUBLE value: '1bad'
+update t1 set count = count + 1 where id = '1bad';
+ERROR 22007: Truncated incorrect DOUBLE value: '1bad'
+select * from t1 order by id;
+id	count
+0	2
+1	1
+delete from t1 where id = '1bad';
+ERROR 22007: Truncated incorrect DOUBLE value: '1bad'
+select * from t1 order by id;
+id	count
+0	2
+1	1
+prepare stmt from "update t1 set count = count + 1 where id = '1bad'";
+execute stmt;
+ERROR 22007: Truncated incorrect DOUBLE value: '1bad'
+deallocate prepare stmt;
+prepare stmt from 'update t1 set count = count + 1 where id = ?';
+set @a = '1bad';
+execute stmt using @a;
+ERROR 22007: Truncated incorrect DOUBLE value: '1bad'
+deallocate prepare stmt;
+drop table t1;
+CREATE TABLE t1 (id decimal(10,5), count int) engine=sequoiadb;
+insert into t1 values (1,1),(0,2);
+select * from t1 order by id;
+id	count
+0.00000	2
+1.00000	1
+select * from t1 where id = '1bad';
+id	count
+1.00000	1
+Warnings:
+Warning	1292	Truncated incorrect DECIMAL value: '1bad'
+update t1 set count = count + 1 where id = '1bad';
+ERROR 22007: Truncated incorrect DECIMAL value: '1bad'
+select * from t1 order by id;
+id	count
+0.00000	2
+1.00000	1
+delete from t1 where id = '1bad';
+ERROR 22007: Truncated incorrect DECIMAL value: '1bad'
+select * from t1 order by id;
+id	count
+0.00000	2
+1.00000	1
+prepare stmt from "update t1 set count = count + 1 where id = '1bad'";
+execute stmt;
+ERROR 22007: Truncated incorrect DECIMAL value: '1bad'
+deallocate prepare stmt;
+prepare stmt from 'update t1 set count = count + 1 where id = ?';
+set @a = '1bad';
+execute stmt using @a;
+ERROR 22007: Truncated incorrect DECIMAL value: '1bad'
+deallocate prepare stmt;
+drop table t1;
+CREATE TABLE t1 (id double, count int) engine=sequoiadb;
+insert into t1 values (1,1),(0,2);
+select * from t1 order by id;
+id	count
+0	2
+1	1
+select * from t1 where id = '1bad';
+id	count
+1	1
+Warnings:
+Warning	1292	Truncated incorrect DOUBLE value: '1bad'
+Warning	1292	Truncated incorrect DOUBLE value: '1bad'
+update t1 set count = count + 1 where id = '1bad';
+ERROR 22007: Truncated incorrect DOUBLE value: '1bad'
+select * from t1 order by id;
+id	count
+0	2
+1	1
+delete from t1 where id = '1bad';
+ERROR 22007: Truncated incorrect DOUBLE value: '1bad'
+select * from t1 order by id;
+id	count
+0	2
+1	1
+prepare stmt from "update t1 set count = count + 1 where id = '1bad'";
+execute stmt;
+ERROR 22007: Truncated incorrect DOUBLE value: '1bad'
+deallocate prepare stmt;
+prepare stmt from 'update t1 set count = count + 1 where id = ?';
+set @a = '1bad';
+execute stmt using @a;
+ERROR 22007: Truncated incorrect DOUBLE value: '1bad'
+deallocate prepare stmt;
+drop table t1;
+CREATE TABLE t1 (id date, count int) engine=sequoiadb;
+insert into t1 values ("2019-06-11",1),("2019-06-12",2);
+select * from t1 order by id;
+id	count
+2019-06-11	1
+2019-06-12	2
+select * from t1 where id = '1bad';
+id	count
+Warnings:
+Warning	1292	Incorrect date value: '1bad' for column 'id' at row 1
+Warning	1292	Incorrect date value: '1bad' for column 'id' at row 1
+update t1 set count = count + 1 where id = '1bad';
+ERROR 22007: Incorrect date value: '1bad' for column 'id' at row 1
+select * from t1 order by id;
+id	count
+2019-06-11	1
+2019-06-12	2
+delete from t1 where id = '1bad';
+ERROR 22007: Incorrect date value: '1bad' for column 'id' at row 1
+select * from t1 order by id;
+id	count
+2019-06-11	1
+2019-06-12	2
+prepare stmt from "update t1 set count = count + 1 where id = '1bad'";
+execute stmt;
+ERROR 22007: Incorrect date value: '1bad' for column 'id' at row 1
+deallocate prepare stmt;
+prepare stmt from 'update t1 set count = count + 1 where id = ?';
+set @a = '1bad';
+execute stmt using @a;
+ERROR 22007: Incorrect date value: '1bad' for column 'id' at row 1
+deallocate prepare stmt;
+drop table t1;
+set sql_mode=@save_sql_mode;
+Warnings:
+Warning	3090	Changing sql mode 'NO_AUTO_CREATE_USER' is deprecated. It will be removed in a future release.
+CREATE TABLE t1 (id time, count int) engine=sequoiadb;
+insert into t1 values ("10:00:00",1),("11:00:00",2);
+select * from t1 order by id;
+id	count
+10:00:00	1
+11:00:00	2
+select * from t1 where id = '1bad';
+id	count
+Warnings:
+Warning	1292	Incorrect time value: '1bad' for column 'id' at row 1
+update t1 set count = count + 1 where id = '1bad';
+ERROR 22007: Incorrect time value: '1bad' for column 'id' at row 1
+select * from t1 order by id;
+id	count
+10:00:00	1
+11:00:00	2
+delete from t1 where id = '1bad';
+ERROR 22007: Incorrect time value: '1bad' for column 'id' at row 1
+select * from t1 order by id;
+id	count
+10:00:00	1
+11:00:00	2
+prepare stmt from "update t1 set count = count + 1 where id = '1bad'";
+execute stmt;
+ERROR 22007: Incorrect time value: '1bad' for column 'id' at row 1
+deallocate prepare stmt;
+prepare stmt from 'update t1 set count = count + 1 where id = ?';
+set @a = '1bad';
+execute stmt using @a;
+ERROR 22007: Incorrect time value: '1bad' for column 'id' at row 1
+deallocate prepare stmt;
+drop table t1;
+set sql_mode=@save_sql_mode;
+CREATE TABLE t1 (id timestamp, count int) engine=sequoiadb;
+insert into t1 values ("2023-01-01 10:00:00",1),("2023-01-01 11:00:00",2);
+select * from t1 order by id;
+id	count
+2023-01-01 10:00:00	1
+2023-01-01 11:00:00	2
+select * from t1 where id = '1bad';
+id	count
+Warnings:
+Warning	1292	Incorrect datetime value: '1bad' for column 'id' at row 1
+Warning	1292	Incorrect datetime value: '1bad' for column 'id' at row 1
+update t1 set count = count + 1 where id = '1bad';
+ERROR 22007: Incorrect datetime value: '1bad' for column 'id' at row 1
+select * from t1 order by id;
+id	count
+2023-01-01 10:00:00	1
+2023-01-01 11:00:00	2
+delete from t1 where id = '1bad';
+ERROR 22007: Incorrect datetime value: '1bad' for column 'id' at row 1
+select * from t1 order by id;
+id	count
+2023-01-01 10:00:00	1
+2023-01-01 11:00:00	2
+prepare stmt from "update t1 set count = count + 1 where id = '1bad'";
+execute stmt;
+ERROR 22007: Incorrect datetime value: '1bad' for column 'id' at row 1
+deallocate prepare stmt;
+prepare stmt from 'update t1 set count = count + 1 where id = ?';
+set @a = '1bad';
+execute stmt using @a;
+ERROR 22007: Incorrect datetime value: '1bad' for column 'id' at row 1
+deallocate prepare stmt;
+drop table t1;
+set sql_mode=@save_sql_mode;
+# End of 5.5 tests

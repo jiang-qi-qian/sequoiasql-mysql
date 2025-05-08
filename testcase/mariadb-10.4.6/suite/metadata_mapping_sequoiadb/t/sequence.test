@@ -1,0 +1,126 @@
+# seqDB-24568:不同实例组做序列操作
+
+--source suite/metadata_mapping_sequoiadb/inc/insts_connect_sequoiadb.inc
+
+# connect to group1_conn1, clear databases in the beginning
+connection group1_conn1;
+--disable_warnings
+set sql_mode = 'ANSI_QUOTES';
+set character_set_client = utf8;
+set character_set_connection = utf8;
+drop database if exists multi_inst_group_sequence_table;
+set sql_mode=default; 
+--enable_warnings
+
+# connect to group2_conn1, clear databases in the beginning
+connection group2_conn1;
+--disable_warnings
+set sql_mode = 'ANSI_QUOTES';
+set character_set_client = utf8;
+set character_set_connection = utf8;
+drop database if exists multi_inst_group_sequence_table;
+set sql_mode=default; 
+--enable_warnings
+
+# 再次清理表，避免受其他用例影响（用例每次新建实例，sdb那边可能存在残留，再次新建只是在mysql端建了映射关系，再次删除才能删除mysql和sdb端的表，保证表不残留），清理后重建
+# 实例组1
+connection group1_conn1;
+create database multi_inst_group_sequence_table;
+use multi_inst_group_sequence_table;
+create table clearX(a int);
+drop database multi_inst_group_sequence_table;
+create database multi_inst_group_sequence_table;
+use multi_inst_group_sequence_table;
+# 实例组2
+connection group2_conn1;
+create database multi_inst_group_sequence_table;
+use multi_inst_group_sequence_table;
+create table clearX(a int);
+drop database multi_inst_group_sequence_table;
+create database multi_inst_group_sequence_table;
+use multi_inst_group_sequence_table;
+
+# 创建序列
+# 实例组1
+connection group1_conn1;
+create sequence s1;
+show create sequence s1;
+select * from s1; 
+create table t1 ( id int primary key default (next value for s1), name char(16) );
+show create table t1;
+insert into t1(name) VALUES ('Jack'),('Bob'),('Zhangsan'),('Tom');
+select * from s1;
+select * from t1;
+# 实例组2
+connection group2_conn1;
+create sequence s1;
+show create sequence s1;
+select * from s1; 
+create table t1 ( id int primary key default (next value for s1), name char(16) );
+show create table t1;
+insert into t1(name) VALUES ('Jack'),('Bob'),('Zhangsan'),('Tom');
+select * from s1;
+select * from t1;
+
+# 重命名序列
+# 实例组1
+connection group1_conn1;
+rename table s1 to s2;
+show create sequence s2;
+select * from s2;
+# 实例组2
+connection group2_conn1;
+rename table s1 to s2;
+show create sequence s2;
+select * from s2;
+
+# 创建表指定序列
+# 实例组1
+connection group1_conn1;
+create or replace sequence s3
+   increment by -10
+   minvalue = 0
+   maxvalue 50
+   start with 10
+   cache 5 cycle
+   comment "create or replace sequence, sequoiadb:{ table_options: { ShardingKey: { next_not_cached_value: 1 } } }";
+show create sequence s3;
+show create table s3;
+select * from s3;
+# 实例组2
+connection group2_conn1;
+create or replace sequence s3
+   increment by -10
+   minvalue = 0
+   maxvalue 50
+   start with 10
+   cache 5 cycle
+   comment "create or replace sequence, sequoiadb:{ table_options: { ShardingKey: { next_not_cached_value: 1 } } }";
+show create sequence s3;
+show create table s3;
+select * from s3;
+
+# 删除序列
+# 实例组1
+connection group1_conn1;
+drop table s3;
+# failed: 1146: Table doesn't exist
+--error 1146
+select * from s3;
+# 实例组2
+connection group2_conn1;
+drop table s3;
+# failed: 1146: Table doesn't exist
+--error 1146
+select * from s3;
+
+# 删除数据库
+# 实例组1
+connection group1_conn1;
+drop database multi_inst_group_sequence_table;
+# 实例组2
+connection group2_conn1;
+drop database multi_inst_group_sequence_table;
+
+--source include/uninstall_sequoiadb.inc
+--source suite/metadata_mapping_sequoiadb/inc/insts_disconnect_sequoiadb.inc

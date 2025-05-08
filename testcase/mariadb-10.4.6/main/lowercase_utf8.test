@@ -1,0 +1,16 @@
+#
+# Bug#25830 SHOW TABLE STATUS behaves differently depending on table name
+#
+
+CREATE DATABASE test_lowercase_utf8;
+USE test_lowercase_utf8;
+
+set names utf8;
+create table `Ö` (id int);
+#show tables from test like 'Ö';
+#show tables from test like 'ö';
+show tables from test_lowercase_utf8 like 'Ö';
+show tables from test_lowercase_utf8 like 'ö';
+drop table `Ö`;
+
+DROP DATABASE test_lowercase_utf8;

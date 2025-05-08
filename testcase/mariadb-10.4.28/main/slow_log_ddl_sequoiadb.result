@@ -1,0 +1,30 @@
+set session sequoiadb_support_mode = '';
+set global slow_query_log = on;
+set global general_log = on;
+set global log_output = 'file';
+select @@log_output;
+@@log_output
+FILE
+create or replace table mysql.general_log (a int);
+ERROR HY000: You cannot 'CREATE OR REPLACE' a log table if logging is enabled
+create or replace table mysql.slow_log (a int);
+ERROR HY000: You cannot 'CREATE OR REPLACE' a log table if logging is enabled
+set global log_output = 'table';
+select @@log_output;
+@@log_output
+TABLE
+create or replace table mysql.general_log (a int);
+ERROR HY000: You cannot 'CREATE OR REPLACE' a log table if logging is enabled
+create or replace table mysql.slow_log (a int);
+ERROR HY000: You cannot 'CREATE OR REPLACE' a log table if logging is enabled
+set global log_output = 'file,table';
+select @@log_output;
+@@log_output
+FILE,TABLE
+create or replace table mysql.general_log (a int);
+ERROR HY000: You cannot 'CREATE OR REPLACE' a log table if logging is enabled
+create or replace table mysql.slow_log (a int);
+ERROR HY000: You cannot 'CREATE OR REPLACE' a log table if logging is enabled
+set global slow_query_log = 1;
+set global general_log = 1;
+set global log_output = default;

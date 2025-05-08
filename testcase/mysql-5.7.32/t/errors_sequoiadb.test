@@ -1,0 +1,101 @@
+--source include/have_sequoiadb.inc
+create database test_errors_sequoiadb;
+use test_errors_sequoiadb;
+
+create table t1 (a int, primary key(a))engine=sequoiadb COMMENT='sequoiadb:{ table_options: { ShardingKey: { a: 1 }, AutoSplit:true } }';
+insert into t1 values (1); 
+--error 1062
+insert into t1 values (1);
+--error 40178
+update ignore t1 set a = 2;
+set global sequoiadb_error_level=warning;
+--error 1062
+insert into t1 values (1);
+--enable_warnings
+update ignore t1 set a = 2;
+--disable_warnings
+set global sequoiadb_error_level=error;
+drop table t1;
+
+#BUG #SEQUOIASQLMAINSTREAM-399
+--error 40006 
+create table t1 ( a char(10) ) COMMENT="sequoiadb:{ table_options: { a : 1 } }"; 
+create table t1 ( id int primary key, a char(8)) COMMENT="sequoiadb:{ table_options : {ShardingKey:{id:1}, ShardingType : 'hash' }}";
+--error 40177
+create unique index a on t1(a); 
+drop table t1; 
+create table t1 (a char(10)); 
+insert into t1 values ('abc'),('bcd'),('abc'); 
+#BUG #SEQUOIASQLMAINSTREAM-203
+--error 1062
+create unique index a on t1 (a); 
+--error 1062
+alter table t1 add unique a(a); 
+drop table t1;
+
+# SEQUOIASQLMAINSTREAM-487 SEQUOIADBMAINSTREAM-7255
+# Testcase: seqDB-24293
+create table t1 ( id int, t longtext, index (`id`) ) ;
+--error 40291
+create index id1 on t1(id);
+--error 40024
+insert into t1 values(1, repeat('a',16773075));
+create index t_idx on t1(t(255));
+--error 40039
+insert into t1 values(2, repeat('a', 4084));
+create table t2 (id int) comment "sequoiadb: {table_options: {ShardingKey:{id:1},IsMainCL:true}}";
+--error 40135
+insert into t2 values(1);
+--error 40245
+alter table t1 comment 'sequoiadb: {table_options: {AutoSplit: true}}'; 
+alter table t1 comment 'sequoiadb: {table_options: {AutoIndexId: false}}';
+--error 40279
+update t1 set t = 'update';
+--error 40279
+insert into t1 values (NULL, 'text');
+drop table t1;
+create table t1 ( id int ) ;
+insert into t1 values (NULL);
+#BUG #SEQUOIASQLMAINSTREAM-813
+--error 1138
+alter table t1 add primary key(id);
+select * from t1;
+set sql_mode = "";
+alter table t1 add primary key(id);
+select * from t1;
+set sql_mode = default;
+drop table t1,t2;
+
+create table t1 ( a int, b int );
+# same index name and definition
+create index idx_a on t1( a );
+--error 1061
+create index idx_a on t1( a );
+# same index name and different definition
+# SEQUOIADBMAINSTREAM-7359
+--error 1061
+create index idx_a on t1( b );
+# unique index, insert records but index key value conflict
+create unique index idx_b on t1( b );
+insert into t1 values( 1, 1 );
+--error 1062
+insert into t1 values( 2, 1 );
+drop table t1;
+
+#BUG #SEQUOIASQLMAINSTREAM-589
+create table t1 ( id int, c char(2) ) comment 'sequoiadb: {table_options: { ShardingKey: {id: 1}}}';
+--error 40177
+alter table t1 add unique index c(c), algorithm=inplace;
+--error 40177
+alter table t1 add unique index c(c), algorithm=copy;
+insert into t1 values (NULL, 'a');
+#BUG #SEQUOIASQLMAINSTREAM-813
+--error 1138
+alter table t1 add primary key(id), algorithm=inplace;
+--error 1265
+alter table t1 add primary key(id), algorithm=copy;
+drop table t1;
+
+drop database test_errors_sequoiadb;
+
+--source include/uninstall_sequoiadb.inc

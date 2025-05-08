@@ -1,0 +1,73 @@
+#case 18872 
+
+--source include/have_sequoiadb.inc
+--source suite/metadata_sync_sequoiadb/inc/insts_connect_sequoiadb.inc
+
+# connect to conn1, clear databases in the beginning
+connection conn1;
+--disable_warnings
+DROP DATABASE IF EXISTS metasync_view;
+--enable_warnings
+
+# connect to conn2, check databases are cleaned in the beginning
+connection conn2;
+--sleep $sleep
+--error ER_BAD_DB_ERROR 
+SHOW CREATE DATABASE metasync_view;
+
+# seqDB-18872
+# begin testing
+#
+# CREATE/ALTER/DROP VIEW
+#
+connection conn1;
+CREATE DATABASE metasync_view;
+USE metasync_view;
+CREATE TABLE t1 ( a INT, b INT, c INT );
+CREATE VIEW v1 AS SELECT * FROM t1;
+CREATE OR REPLACE VIEW v1(a) AS SELECT "abc";
+CREATE OR REPLACE VIEW v2 AS SELECT * FROM t1 local;
+CREATE OR REPLACE ALGORITHM = MERGE DEFINER = "root"@"localhost" SQL SECURITY INVOKER VIEW v3 AS SELECT * FROM t1 local;
+CREATE DEFINER = "root"@"localhost" VIEW IF NOT EXISTS v4 AS SELECT a FROM t1;
+# check metadatas after create
+connection conn2;
+--sleep $sleep
+USE metasync_view;
+SHOW CREATE TABLE t1;
+--replace_regex /DEFINER=`.*`@/DEFINER=`x`@/
+SHOW CREATE VIEW v1;
+--replace_regex /DEFINER=`.*`@/DEFINER=`x`@/
+SHOW CREATE VIEW v2;
+SHOW CREATE VIEW v3;
+SHOW CREATE VIEW v4;
+# alter view
+ALTER ALGORITHM = MERGE DEFINER = "root"@"localhost" SQL SECURITY INVOKER VIEW v1 AS SELECT * FROM t1 local;
+# check metadatas after alter
+connection conn1;
+--sleep $sleep
+SHOW CREATE VIEW v1;
+# drop view
+DROP VIEW v1,v2,v3;
+DROP VIEW IF EXISTS v4;
+# check metadatas after drop
+connection conn2;
+--sleep $sleep
+--error ER_NO_SUCH_TABLE
+SHOW CREATE VIEW v1;
+--error ER_NO_SUCH_TABLE
+SHOW CREATE VIEW v2;
+--error ER_NO_SUCH_TABLE
+SHOW CREATE VIEW v3;
+--error ER_NO_SUCH_TABLE
+SHOW CREATE VIEW v4;
+
+# clear databases in the ending
+DROP DATABASE metasync_view;
+# check databases are cleaned in the ending
+connection conn2;
+--sleep $sleep
+--error ER_BAD_DB_ERROR 
+SHOW CREATE DATABASE metasync_view;
+
+--source include/uninstall_sequoiadb.inc
+--source suite/metadata_sync_sequoiadb/inc/insts_disconnect_sequoiadb.inc

@@ -1,0 +1,73 @@
+#Case 22125#Case 22127#Case 22129
+--source include/have_sequoiadb.inc
+--disable_warnings
+drop table if exists t1;
+--enable_warnings
+
+#Case 22125
+CREATE TABLE t1 ( a INT ); 
+set session sequoiadb_execute_only_in_mysql=on; 
+drop table t1; 
+CREATE TABLE t1 ( a INT ); 
+SELECT * FROM t1; 
+INSERT INTO t1 VALUES(1),(2),(3),(4);
+UPDATE t1 SET a = a+10;
+DELETE FROM t1 WHERE a = 11;
+#SEQUOIASQLMAINSTREAM-377
+SELECT * FROM t1 ORDER BY a; 
+set session sequoiadb_execute_only_in_mysql=off;
+DROP TABLE t1;
+CREATE TABLE t1 ( a INT );
+INSERT INTO t1 VALUES(1),(2),(3),(4);
+set session sequoiadb_execute_only_in_mysql=on;
+UPDATE t1 SET a = a+10;
+DELETE FROM t1 WHERE a = 11;
+#SEQUOIASQLMAINSTREAM-377
+SELECT * FROM t1 ORDER BY a;
+CREATE INDEX a ON t1(a);
+INSERT INTO t1 VALUES(5);
+UPDATE t1 SET a = a+11;
+DELETE FROM t1 WHERE a = 24;
+SELECT * FROM t1 ORDER BY a;
+set session sequoiadb_execute_only_in_mysql=off;
+SELECT * FROM t1 ORDER BY a;
+DROP TABLE t1;
+
+#Case 22127
+set session sequoiadb_execute_only_in_mysql=on;
+CREATE TABLE t1 ( a INT PRIMARY KEY);
+INSERT INTO t1 VALUES (1),(2);
+--disable_result_log
+ANALYZE TABLE t1;
+--enable_result_log
+SHOW CREATE TABLE t1;
+DROP TABLE t1;
+set session sequoiadb_execute_only_in_mysql=off;
+CREATE TABLE t1 ( a INT PRIMARY KEY);
+INSERT INTO t1 VALUES (1),(2);
+set session sequoiadb_execute_only_in_mysql=on;
+--disable_result_log
+ANALYZE TABLE t1;
+--enable_result_log
+SHOW CREATE TABLE t1;
+set session sequoiadb_execute_only_in_mysql=off;
+DROP TABLE t1;
+
+#Case 22129
+set session sequoiadb_execute_only_in_mysql=on;
+CREATE TABLE t1 ( a INT PRIMARY KEY);
+INSERT INTO t1 VALUES (1),(2);
+TRUNCATE TABLE t1;
+SELECT * FROM t1 ORDER BY a;
+DROP TABLE t1;
+set session sequoiadb_execute_only_in_mysql=off;
+CREATE TABLE t1 ( a INT PRIMARY KEY);
+INSERT INTO t1 VALUES (1),(2);
+set session sequoiadb_execute_only_in_mysql=on;
+TRUNCATE TABLE t1;
+SELECT * FROM t1 ORDER BY a;
+set session sequoiadb_execute_only_in_mysql=off;
+SELECT * FROM t1 ORDER BY a;
+DROP TABLE t1;
+
+--source include/uninstall_sequoiadb.inc

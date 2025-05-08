@@ -1,0 +1,17 @@
+DROP DATABASE IF EXISTS create_tmp_table_as_select;
+CREATE DATABASE create_tmp_table_as_select;
+DROP DATABASE create_tmp_table_as_select;
+CREATE DATABASE create_tmp_table_as_select;
+USE create_tmp_table_as_select;
+CREATE TABLE t1 (id INT);
+INSERT INTO t1 VALUES (1);
+SELECT * FROM t1;
+id
+1
+CREATE TEMPORARY TABLE t2 AS SELECT * FROM t1;
+SELECT * FROM t2;
+id
+1
+DROP TABLE t1;
+DROP TABLE t2;
+DROP DATABASE create_tmp_table_as_select;

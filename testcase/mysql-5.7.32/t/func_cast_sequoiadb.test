@@ -1,0 +1,878 @@
+# check cast(varchar as type) to SequoiaDB
+#Case 17403#Case 17404#Case 17405#Case 17406#Case 17407#Case 17408#Case 17409#Case 17410
+#Case 17411#Case 17412#Case 17413#Case 17414#Case 17415#Case 17416#Case 17417#Case 17418
+#Case 17419#Case 17420
+
+#check cast(date as type) to SequoiaDB
+#Case 17601#Case 17602#Case 17603#Case 17604#Case 17605#Case 17606
+#Case 17607#Case 17608#Case 17609#Case 17610#Case 17611#Case 17612#Case 17613#Case 17614
+#Case 17615#Case 17616#Case 17617#Case 17618
+
+#check cast(datetime as type) to SequoiaDB
+#Case 17619#Case 17620#Case 17621#Case 17622#Case 17623#Case 17624
+#Case 17625#Case 17626#Case 17627#Case 17628#Case 17629#Case 17630#Case 17631#Case 17632
+#Case 17633#Case 17634#Case 17635#Case 17636
+
+#check cast(time as type) to SequoiaDB
+#Case 17655#Case 17656#Case 17657#Case 17658#Case 17659#Case 17660
+#Case 17661#Case 17662#Case 17663#Case 17664#Case 17665#Case 17666#Case 17667#Case 17668
+#Case 17669#Case 17670#Case 17671#Case 17672
+
+--source include/have_sequoiadb.inc
+
+#
+# cast(varchar as type)
+#
+CREATE TABLE t1(a VARCHAR(127), b INT, c DATE);
+INSERT INTO t1 VALUES ('a',3, '2000-01-01'),('a1',1,'2001-01-01'),('b',11,'2002-01-01'),('1',9,'2008-01-01'),('1.00',5,'2013-01-01'),('1.02',7,'2004-04-01'), ('1.01',6,'2009-11-01'), ('2001-01-01',13,'2019-05-01'), ('2001#01#01',22,'2006-02-01'),('2001.01.01',10,'2007-08-01'),('2019-01-01',21,'2011-09-01'),('2019.01.01',16,'2012-05-01'),('2019#01#01',13,'2016-06-06'),('2147483647',2,'2001-01-02'),('4294967294',-1,'2001-01-03'),('-4294967299',-9,'2001-01-05'),('922337203685477807',-13,'2001-01-11');
+--sorted_result
+SELECT * FROM t1 WHERE a = CAST('1' AS CHAR);
+--sorted_result
+SELECT * FROM t1 WHERE a = CAST(1.00 AS CHAR);
+--sorted_result
+SELECT * FROM t1 WHERE a > CAST(b AS CHAR);
+--enable_warnings
+--sorted_result
+SELECT * FROM t1 WHERE a > CAST(SUBSTRING('1234567abc', 5, 9) AS CHAR);
+--sorted_result
+SELECT * FROM t1 WHERE a = CAST('1.00' AS NCHAR);
+--sorted_result
+SELECT * FROM t1 WHERE a = CAST(1.01 AS NCHAR);
+--sorted_result
+SELECT * FROM t1 WHERE a < CAST(b AS NCHAR);
+--sorted_result
+SELECT * FROM t1 WHERE a >= CAST(CONCAT('123','abc','456') AS NCHAR);
+--sorted_result
+SELECT * FROM t1 WHERE a = CAST('1.01' AS BINARY);
+--sorted_result
+SELECT * FROM t1 WHERE a = CAST(1 AS BINARY);
+--sorted_result
+SELECT * FROM t1 WHERE a < CAST(b AS BINARY);
+--sorted_result
+SELECT * FROM t1 WHERE a >= CAST(REPLACE('ab12c4','ab12','234') AS BINARY);
+--sorted_result
+SELECT * FROM t1 WHERE a = CAST('1.0' AS SIGNED);
+--sorted_result
+SELECT * FROM t1 WHERE a = CAST(1.000 AS SIGNED);
+--sorted_result
+SELECT * FROM t1 WHERE a < CAST(2147483647 AS SIGNED);
+--sorted_result
+SELECT * FROM t1 WHERE a >= CAST(-2147483649 AS SIGNED);
+--sorted_result
+SELECT * FROM t1 WHERE a < CAST(b AS SIGNED);
+--sorted_result
+SELECT * FROM t1 WHERE a >= CAST(LENGTH('ab123cd456') AS SIGNED);
+--sorted_result
+SELECT * FROM t1 WHERE a = CAST('1' AS UNSIGNED);
+--sorted_result
+SELECT * FROM t1 WHERE a = CAST(1.01 AS UNSIGNED);
+--sorted_result
+SELECT * FROM t1 WHERE a < CAST(4294967297 AS UNSIGNED);
+--sorted_result
+SELECT * FROM t1 WHERE a >= CAST(-4294967299 AS UNSIGNED);
+--sorted_result
+SELECT * FROM t1 WHERE a < CAST(b AS UNSIGNED);
+--sorted_result
+SELECT * FROM t1 WHERE a >= CAST(RPAD('123abc4567',7,'00') AS UNSIGNED);
+--sorted_result
+SELECT * FROM t1 WHERE a = CAST('1' AS DECIMAL);
+--sorted_result
+SELECT * FROM t1 WHERE a = CAST(1.02 AS DECIMAL);
+--sorted_result
+SELECT * FROM t1 WHERE a <= CAST(922337203685477580800 AS DECIMAL);
+--sorted_result
+SELECT * FROM t1 WHERE a < CAST(b AS DECIMAL);
+--sorted_result
+SELECT * FROM t1 WHERE a >= CAST(LPAD('123abc4567',5,'00') AS DECIMAL);
+# SEQUOIASQLMAINSTREAM-613
+--sorted_result
+SELECT * FROM t1 WHERE a = CAST('1' AS DATE);
+--sorted_result
+SELECT * FROM t1 WHERE a >= CAST('2001-01-01' AS DATE);
+--sorted_result
+SELECT * FROM t1 WHERE a >= CAST('2001#01#01' AS DATE);
+--sorted_result
+SELECT * FROM t1 WHERE a >= CAST('2001.01.01' AS DATE);
+--sorted_result
+SELECT * FROM t1 WHERE a > CAST('10000.01.01' AS DATE);
+--sorted_result
+SELECT * FROM t1 WHERE a < CAST(c AS DATE);
+--sorted_result
+SELECT * FROM t1 WHERE a <= CAST(NOW() AS DATE);
+--sorted_result
+SELECT * FROM t1 WHERE a = CAST('1' AS DATETIME);
+--sorted_result
+SELECT * FROM t1 WHERE a >= CAST('2001-01-01 00:00:00' AS DATETIME);
+--sorted_result
+SELECT * FROM t1 WHERE a >= CAST('2001#01#01 23:59:00' AS DATETIME);
+--sorted_result
+SELECT * FROM t1 WHERE a >= CAST('2001.01.01 01:00:00' AS DATETIME);
+--sorted_result
+SELECT * FROM t1 WHERE a > CAST('10000.01.01 03:00:00' AS DATETIME);
+--sorted_result
+SELECT * FROM t1 WHERE a < CAST(c AS DATETIME);
+--sorted_result
+SELECT * FROM t1 WHERE a <= CAST(CURRENT_DATE() AS DATETIME);
+# SEQUOIASQLMAINSTREAM-613
+--sorted_result
+SELECT * FROM t1 WHERE a = CAST('1' AS TIME);
+--sorted_result
+SELECT * FROM t1 WHERE a >= CAST('2001-01-01 00:00:00' AS TIME);
+--sorted_result
+SELECT * FROM t1 WHERE a >= CAST('2001#01#01 23:59:00' AS TIME);
+--sorted_result
+SELECT * FROM t1 WHERE a >= CAST('2001.01.01 01:00:00' AS TIME);
+--disable_warnings
+--sorted_result
+SELECT * FROM t1 WHERE a > CAST('10000.01.01 03:00:00' AS TIME);
+--enable_warnings
+# SEQUOIASQLMAINSTREM-229
+--sorted_result
+SELECT * FROM t1 WHERE a > CAST('-839:59:59.0000' AS TIME);
+--sorted_result
+SELECT * FROM t1 WHERE a < CAST(c AS TIME);
+
+# CREATE INDEX
+ALTER TABLE t1 ADD INDEX aIdx(a);
+--sorted_result
+SELECT * FROM t1 WHERE a = CAST('1' AS CHAR);
+--sorted_result
+SELECT * FROM t1 WHERE a = CAST(1.00 AS CHAR);
+--sorted_result
+SELECT * FROM t1 WHERE a > CAST(b AS CHAR);
+--enable_warnings
+--sorted_result
+SELECT * FROM t1 WHERE a > CAST(SUBSTRING('1234567abc', 5, 9) AS CHAR);
+--sorted_result
+SELECT * FROM t1 WHERE a = CAST('1.00' AS NCHAR);
+--sorted_result
+SELECT * FROM t1 WHERE a = CAST(1.01 AS NCHAR);
+--sorted_result
+SELECT * FROM t1 WHERE a < CAST(b AS NCHAR);
+--sorted_result
+SELECT * FROM t1 WHERE a >= CAST(CONCAT('123','abc','456') AS NCHAR);
+--sorted_result
+SELECT * FROM t1 WHERE a = CAST('1.01' AS BINARY);
+--sorted_result
+SELECT * FROM t1 WHERE a = CAST(1 AS BINARY);
+--sorted_result
+SELECT * FROM t1 WHERE a < CAST(b AS BINARY);
+--sorted_result
+SELECT * FROM t1 WHERE a >= CAST(REPLACE('ab12c4','ab12','234') AS BINARY);
+--sorted_result
+SELECT * FROM t1 WHERE a = CAST('1.0' AS SIGNED);
+--sorted_result
+SELECT * FROM t1 WHERE a = CAST(1.000 AS SIGNED);
+--sorted_result
+SELECT * FROM t1 WHERE a < CAST(2147483647 AS SIGNED);
+--sorted_result
+SELECT * FROM t1 WHERE a >= CAST(-2147483649 AS SIGNED);
+--sorted_result
+SELECT * FROM t1 WHERE a < CAST(b AS SIGNED);
+--sorted_result
+SELECT * FROM t1 WHERE a >= CAST(LENGTH('ab123cd456') AS SIGNED);
+--sorted_result
+SELECT * FROM t1 WHERE a = CAST('1' AS UNSIGNED);
+--sorted_result
+SELECT * FROM t1 WHERE a = CAST(1.01 AS UNSIGNED);
+--sorted_result
+SELECT * FROM t1 WHERE a < CAST(4294967297 AS UNSIGNED);
+--sorted_result
+SELECT * FROM t1 WHERE a >= CAST(-4294967299 AS UNSIGNED);
+--sorted_result
+SELECT * FROM t1 WHERE a < CAST(b AS UNSIGNED);
+--sorted_result
+SELECT * FROM t1 WHERE a >= CAST(RPAD('123abc4567',7,'00') AS UNSIGNED);
+--sorted_result
+SELECT * FROM t1 WHERE a = CAST('1' AS DECIMAL);
+--sorted_result
+SELECT * FROM t1 WHERE a = CAST(1.02 AS DECIMAL);
+--sorted_result
+SELECT * FROM t1 WHERE a <= CAST(922337203685477580800 AS DECIMAL);
+--sorted_result
+SELECT * FROM t1 WHERE a < CAST(b AS DECIMAL);
+--sorted_result
+SELECT * FROM t1 WHERE a >= CAST(LPAD('123abc4567',5,'00') AS DECIMAL);
+# SEQUOIASQLMAINSTREAM-613
+--sorted_result
+SELECT * FROM t1 WHERE a = CAST('1' AS DATE);
+--sorted_result
+SELECT * FROM t1 WHERE a >= CAST('2001-01-01' AS DATE);
+--sorted_result
+SELECT * FROM t1 WHERE a >= CAST('2001#01#01' AS DATE);
+--sorted_result
+SELECT * FROM t1 WHERE a >= CAST('2001.01.01' AS DATE);
+--sorted_result
+SELECT * FROM t1 WHERE a > CAST('10000.01.01' AS DATE);
+--sorted_result
+SELECT * FROM t1 WHERE a < CAST(c AS DATE);
+--sorted_result
+SELECT * FROM t1 WHERE a <= CAST(NOW() AS DATE);
+--sorted_result
+SELECT * FROM t1 WHERE a = CAST('1' AS DATETIME);
+--sorted_result
+SELECT * FROM t1 WHERE a >= CAST('2001-01-01 00:00:00' AS DATETIME);
+--sorted_result
+SELECT * FROM t1 WHERE a >= CAST('2001#01#01 23:59:00' AS DATETIME);
+--sorted_result
+SELECT * FROM t1 WHERE a >= CAST('2001.01.01 01:00:00' AS DATETIME);
+--sorted_result
+SELECT * FROM t1 WHERE a > CAST('10000.01.01 03:00:00' AS DATETIME);
+--sorted_result
+SELECT * FROM t1 WHERE a < CAST(c AS DATETIME);
+--sorted_result
+SELECT * FROM t1 WHERE a <= CAST(CURRENT_DATE() AS DATETIME);
+# SEQUOIASQLMAINSTREAM-613
+--sorted_result
+SELECT * FROM t1 WHERE a = CAST('1' AS TIME);
+--sorted_result
+SELECT * FROM t1 WHERE a >= CAST('2001-01-01 00:00:00' AS TIME);
+--sorted_result
+SELECT * FROM t1 WHERE a >= CAST('2001#01#01 23:59:00' AS TIME);
+--sorted_result
+SELECT * FROM t1 WHERE a >= CAST('2001.01.01 01:00:00' AS TIME);
+--disable_warnings
+--sorted_result
+SELECT * FROM t1 WHERE a > CAST('10000.01.01 03:00:00' AS TIME);
+--enable_warnings
+# SEQUOIASQLMAINSTREM-229
+--sorted_result
+SELECT * FROM t1 WHERE a > CAST('-839:59:59.0000' AS TIME);
+--sorted_result
+SELECT * FROM t1 WHERE a < CAST(c AS TIME);
+
+DROP TABLE t1;
+
+
+#
+# cast(date as type)
+#
+CREATE TABLE t1(a DATE, b VARCHAR(127), c DATETIME );
+INSERT INTO t1 VALUES ('2001-01-01','1.00','2001-05-01 01:12:12'),('2001#01#01','1','2001-05-02 00:01:01'),('2001.01.01','1.01','2001-05-06 23:01:01'),('2000-11-11','a','2007-02-01 02:01:01'),('2000-11-11','a1','2004-04-03 19:20:00'),('2007-08-01','2147483647','2003-03-03 18:18:00'),('2009-09-01','4294967294','2012-12-03 08:10:00'),('2014-05-12','-4294967299','2006-10-02 08:00:02'),('2014-05-12','922337203685477807','2019-02-02 07:30:52'),('2000-07-01','-1','2004-01-04 10:10:10');
+#BUG #SEQUOIASQLMAINSTREAM-1039, disable warning for temporary, we will open warning after problem solved
+SELECT * FROM t1 WHERE a = CAST('1' AS CHAR);
+# SEQUOIASQLMAINSTREAM-613
+--sorted_result
+SELECT * FROM t1 WHERE a < CAST(1.00 AS CHAR);
+--sorted_result
+SELECT * FROM t1 WHERE a > CAST(REPEAT('123a',3) AS CHAR);
+--sorted_result
+SELECT * FROM t1 WHERE a <> CAST('1.00' AS NCHAR);
+--sorted_result
+SELECT * FROM t1 WHERE a != CAST(1.01 AS NCHAR);
+--sorted_result
+SELECT * FROM t1 WHERE a >= CAST(REVERSE('acb1243') AS NCHAR);
+--sorted_result
+SELECT * FROM t1 WHERE a = CAST('1.01' AS BINARY);
+--sorted_result
+SELECT * FROM t1 WHERE a > CAST(1 AS BINARY);
+# SEQUOIASQLMAINSTREAM-613
+--sorted_result
+SELECT * FROM t1 WHERE a <= CAST(REPLACE('ab12c4','ab12','234') AS BINARY);
+#END #SEQUOIASQLMAINSTREAM-1039
+--disable_warnings
+--sorted_result
+SELECT * FROM t1 WHERE a > CAST(b AS CHAR);
+--sorted_result
+SELECT * FROM t1 WHERE a > CAST(b AS NCHAR);
+--sorted_result
+SELECT * FROM t1 WHERE a > CAST(b AS BINARY);
+--enable_warnings
+--sorted_result
+SELECT * FROM t1 WHERE a = CAST('1' AS SIGNED);
+--sorted_result
+SELECT * FROM t1 WHERE a < CAST(2147483647 AS SIGNED);
+--sorted_result
+SELECT * FROM t1 WHERE a >= CAST(-2147483649 AS SIGNED);
+--sorted_result
+SELECT * FROM t1 WHERE a < CAST(b AS SIGNED);
+--sorted_result
+SELECT * FROM t1 WHERE a >= CAST(INSERT('312abc',3,2,'00') AS SIGNED);
+--sorted_result
+SELECT * FROM t1 WHERE a = CAST('1.00' AS UNSIGNED);
+--sorted_result
+SELECT * FROM t1 WHERE a < CAST(4294967297 AS UNSIGNED);
+--sorted_result
+SELECT * FROM t1 WHERE a >= CAST(-4294967299 AS UNSIGNED);
+--sorted_result
+SELECT * FROM t1 WHERE a < CAST(b AS UNSIGNED);
+--sorted_result
+SELECT * FROM t1 WHERE a < CAST(FLOOR(2147483647.2) AS UNSIGNED);
+--sorted_result
+SELECT * FROM t1 WHERE a = CAST('1' AS DECIMAL);
+--sorted_result
+SELECT * FROM t1 WHERE a <> CAST(1.01 AS DECIMAL);
+--sorted_result
+SELECT * FROM t1 WHERE a <= CAST(922337203685477580800 AS DECIMAL);
+--sorted_result
+SELECT * FROM t1 WHERE a < CAST(b AS DECIMAL);
+--sorted_result
+SELECT * FROM t1 WHERE a >= CAST(CEILING(-922337203685477580800) AS DECIMAL);
+# SEQUOIASQLMAINSTREAM-613
+--sorted_result
+SELECT * FROM t1 WHERE a = CAST('1' AS DATE);
+--sorted_result
+SELECT * FROM t1 WHERE a >= CAST('2001-01-01' AS DATE);
+--sorted_result
+SELECT * FROM t1 WHERE a >= CAST('2001#01#01' AS DATE);
+--sorted_result
+SELECT * FROM t1 WHERE a >= CAST('2001.01.01' AS DATE);
+--sorted_result
+SELECT * FROM t1 WHERE a > CAST('9999.12.31' AS DATE);
+--sorted_result
+SELECT * FROM t1 WHERE a < CAST(c AS DATE);
+--sorted_result
+SELECT * FROM t1 WHERE a <= CAST(NOW() AS DATE);
+# SEQUOIASQLMAINSTREAM-613
+--sorted_result
+SELECT * FROM t1 WHERE a > CAST('1.00' AS DATETIME);
+--sorted_result
+SELECT * FROM t1 WHERE a >= CAST('2001-01-01 00:00:00' AS DATETIME);
+--sorted_result
+SELECT * FROM t1 WHERE a >= CAST('2001#01#01 23:59:00' AS DATETIME);
+--sorted_result
+SELECT * FROM t1 WHERE a >= CAST('2001.01.01 01:00:00' AS DATETIME);
+--sorted_result
+SELECT * FROM t1 WHERE a <= CAST('9999.12.31' AS DATETIME);
+--sorted_result
+SELECT * FROM t1 WHERE a < CAST(c AS DATETIME);
+--sorted_result
+SELECT * FROM t1 WHERE a <= CAST(CURRENT_DATE() AS DATETIME);
+--sorted_result
+SELECT * FROM t1 WHERE a <> CAST('1.01' AS TIME);
+--sorted_result
+SELECT * FROM t1 WHERE a >= CAST('2001-01-01 00:00:00' AS TIME);
+# SEQUOIASQLMAINSTREAM-613 / SEQUOIASQLMAINSTREAM-1076
+--sorted_result
+SELECT * FROM t1 WHERE a <= CAST('2001#01#01 23:59:00' AS TIME);
+--sorted_result
+SELECT * FROM t1 WHERE a >= CAST('2001.01.01 01:00:00' AS TIME);
+--sorted_result
+SELECT * FROM t1 WHERE a > CAST('-839:59:59.0000' AS TIME);
+# SEQUOIASQLMAINSTREAM-613 / SEQUOIASQLMAINSTREM-226
+--sorted_result
+SELECT * FROM t1 WHERE a < CAST('10000.01.01 00:00:00' AS TIME);
+--sorted_result
+SELECT * FROM t1 WHERE a < CAST(c AS TIME);
+
+# CREATE INDEX
+ALTER TABLE t1 ADD INDEX aIdx(a);
+#BUG #SEQUOIASQLMAINSTREAM-1039, disable warning for temporary, we will open warning after problem solved
+SELECT * FROM t1 WHERE a = CAST('1' AS CHAR);
+# SEQUOIASQLMAINSTREAM-613
+--sorted_result
+SELECT * FROM t1 WHERE a < CAST(1.00 AS CHAR);
+--sorted_result
+SELECT * FROM t1 WHERE a > CAST(REPEAT('123a',3) AS CHAR);
+--sorted_result
+SELECT * FROM t1 WHERE a <> CAST('1.00' AS NCHAR);
+--sorted_result
+SELECT * FROM t1 WHERE a != CAST(1.01 AS NCHAR);
+--sorted_result
+SELECT * FROM t1 WHERE a >= CAST(REVERSE('acb1243') AS NCHAR);
+--sorted_result
+SELECT * FROM t1 WHERE a = CAST('1.01' AS BINARY);
+--sorted_result
+SELECT * FROM t1 WHERE a > CAST(1 AS BINARY);
+# SEQUOIASQLMAINSTREAM-613
+--sorted_result
+SELECT * FROM t1 WHERE a <= CAST(REPLACE('ab12c4','ab12','234') AS BINARY);
+#END #SEQUOIASQLMAINSTREAM-1039
+--disable_warnings
+--sorted_result
+SELECT * FROM t1 WHERE a > CAST(b AS CHAR);
+--sorted_result
+SELECT * FROM t1 WHERE a > CAST(b AS NCHAR);
+--sorted_result
+SELECT * FROM t1 WHERE a > CAST(b AS BINARY);
+--enable_warnings
+--sorted_result
+SELECT * FROM t1 WHERE a = CAST('1' AS SIGNED);
+--sorted_result
+SELECT * FROM t1 WHERE a < CAST(2147483647 AS SIGNED);
+--sorted_result
+SELECT * FROM t1 WHERE a >= CAST(-2147483649 AS SIGNED);
+--sorted_result
+SELECT * FROM t1 WHERE a < CAST(b AS SIGNED);
+--sorted_result
+SELECT * FROM t1 WHERE a >= CAST(INSERT('312abc',3,2,'00') AS SIGNED);
+--sorted_result
+SELECT * FROM t1 WHERE a = CAST('1.00' AS UNSIGNED);
+--sorted_result
+SELECT * FROM t1 WHERE a < CAST(4294967297 AS UNSIGNED);
+--sorted_result
+SELECT * FROM t1 WHERE a >= CAST(-4294967299 AS UNSIGNED);
+--sorted_result
+SELECT * FROM t1 WHERE a < CAST(b AS UNSIGNED);
+--sorted_result
+SELECT * FROM t1 WHERE a < CAST(FLOOR(2147483647.2) AS UNSIGNED);
+--sorted_result
+SELECT * FROM t1 WHERE a = CAST('1' AS DECIMAL);
+--sorted_result
+SELECT * FROM t1 WHERE a <> CAST(1.01 AS DECIMAL);
+--sorted_result
+SELECT * FROM t1 WHERE a <= CAST(922337203685477580800 AS DECIMAL);
+--sorted_result
+SELECT * FROM t1 WHERE a < CAST(b AS DECIMAL);
+--sorted_result
+SELECT * FROM t1 WHERE a >= CAST(CEILING(-922337203685477580800) AS DECIMAL);
+# SEQUOIASQLMAINSTREAM-613
+--sorted_result
+SELECT * FROM t1 WHERE a = CAST('1' AS DATE);
+--sorted_result
+SELECT * FROM t1 WHERE a >= CAST('2001-01-01' AS DATE);
+--sorted_result
+SELECT * FROM t1 WHERE a >= CAST('2001#01#01' AS DATE);
+--sorted_result
+SELECT * FROM t1 WHERE a >= CAST('2001.01.01' AS DATE);
+--sorted_result
+SELECT * FROM t1 WHERE a > CAST('9999.12.31' AS DATE);
+--sorted_result
+SELECT * FROM t1 WHERE a < CAST(c AS DATE);
+--sorted_result
+SELECT * FROM t1 WHERE a <= CAST(NOW() AS DATE);
+# SEQUOIASQLMAINSTREAM-613
+--sorted_result
+SELECT * FROM t1 WHERE a > CAST('1.00' AS DATETIME);
+--sorted_result
+SELECT * FROM t1 WHERE a >= CAST('2001-01-01 00:00:00' AS DATETIME);
+--sorted_result
+SELECT * FROM t1 WHERE a >= CAST('2001#01#01 23:59:00' AS DATETIME);
+--sorted_result
+SELECT * FROM t1 WHERE a >= CAST('2001.01.01 01:00:00' AS DATETIME);
+--sorted_result
+SELECT * FROM t1 WHERE a <= CAST('9999.12.31' AS DATETIME);
+--sorted_result
+SELECT * FROM t1 WHERE a < CAST(c AS DATETIME);
+--sorted_result
+SELECT * FROM t1 WHERE a <= CAST(CURRENT_DATE() AS DATETIME);
+--sorted_result
+SELECT * FROM t1 WHERE a <> CAST('1.01' AS TIME);
+--sorted_result
+SELECT * FROM t1 WHERE a >= CAST('2001-01-01 00:00:00' AS TIME);
+# SEQUOIASQLMAINSTREAM-613
+--sorted_result
+SELECT * FROM t1 WHERE a <= CAST('2001#01#01 23:59:00' AS TIME);
+--sorted_result
+SELECT * FROM t1 WHERE a >= CAST('2001.01.01 01:00:00' AS TIME);
+# SEQUOIASQLMAINSTREM-229
+--sorted_result
+SELECT * FROM t1 WHERE a > CAST('-839:59:59.0000' AS TIME);
+# SEQUOIASQLMAINSTREAM-613 / SEQUOIASQLMAINSTREM-226
+--sorted_result
+SELECT * FROM t1 WHERE a < CAST('10000.01.01 00:00:00' AS TIME);
+--sorted_result
+SELECT * FROM t1 WHERE a < CAST(c AS TIME);
+DROP TABLE t1;
+
+
+#
+# cast(datetime as type)
+#
+CREATE TABLE t1(a DATETIME, b VARCHAR(127), c DATE );
+INSERT INTO t1 VALUES ('2001-05-01 01:12:12','1.00','2001-01-01'),('2001-05-02 00:01:01','1','2001#01#01'),('2001-05-06 23:01:01','1.01','2001.01.01'),('2007-02-01 02:01:01','a','2000-11-11'),('2004-04-03 19:20:00','a1','2000-11-11'),('2003-03-03 18:18:00','2147483647','2007-08-01'),('2012-12-03 08:10:00','4294967294','2009-09-01'),('2006-10-02 08:00:02','-4294967299','2014-05-12'),('2019-02-02 07:30:52','922337203685477807','2014-05-12'),('2004-01-04 10:10:10','-1','2000-07-01');
+SELECT * FROM t1 WHERE a = CAST('1' AS CHAR);
+--sorted_result
+SELECT * FROM t1 WHERE a < CAST(1.00 AS CHAR);
+--sorted_result
+SELECT * FROM t1 WHERE a > CAST(REPEAT('123a',3) AS CHAR);
+--sorted_result
+SELECT * FROM t1 WHERE a <> CAST('1.00' AS NCHAR);
+--sorted_result
+SELECT * FROM t1 WHERE a != CAST(1.01 AS NCHAR);
+--sorted_result
+SELECT * FROM t1 WHERE a >= CAST(REVERSE('acb1243') AS NCHAR);
+--sorted_result
+SELECT * FROM t1 WHERE a = CAST('1.01' AS BINARY);
+--sorted_result
+SELECT * FROM t1 WHERE a > CAST(1 AS BINARY);
+--sorted_result
+SELECT * FROM t1 WHERE a <= CAST(REPLACE('ab12c4','ab12','234') AS BINARY);
+--disable_warnings
+--sorted_result
+SELECT * FROM t1 WHERE a > CAST(b AS CHAR);
+--sorted_result
+SELECT * FROM t1 WHERE a > CAST(b AS NCHAR);
+--sorted_result
+SELECT * FROM t1 WHERE a > CAST(b AS BINARY);
+--enable_warnings
+--sorted_result
+SELECT * FROM t1 WHERE a = CAST('1' AS SIGNED);
+--sorted_result
+SELECT * FROM t1 WHERE a < CAST(2147483647 AS SIGNED);
+--sorted_result
+SELECT * FROM t1 WHERE a >= CAST(-2147483649 AS SIGNED);
+--sorted_result
+SELECT * FROM t1 WHERE a < CAST(b AS SIGNED);
+--sorted_result
+SELECT * FROM t1 WHERE a >= CAST(INSERT('312abc',3,2,'00') AS SIGNED);
+--sorted_result
+SELECT * FROM t1 WHERE a = CAST('1.00' AS UNSIGNED);
+--sorted_result
+SELECT * FROM t1 WHERE a < CAST(4294967297 AS UNSIGNED);
+--sorted_result
+SELECT * FROM t1 WHERE a >= CAST(-4294967299 AS UNSIGNED);
+--sorted_result
+SELECT * FROM t1 WHERE a < CAST(b AS UNSIGNED);
+--sorted_result
+SELECT * FROM t1 WHERE a < CAST(FLOOR(2147483647.2) AS UNSIGNED);
+--sorted_result
+SELECT * FROM t1 WHERE a = CAST('1' AS DECIMAL);
+--sorted_result
+SELECT * FROM t1 WHERE a <> CAST(1.01 AS DECIMAL);
+--sorted_result
+SELECT * FROM t1 WHERE a <= CAST(922337203685477580800 AS DECIMAL);
+--sorted_result
+SELECT * FROM t1 WHERE a < CAST(b AS DECIMAL);
+--sorted_result
+SELECT * FROM t1 WHERE a >= CAST(CEILING(-922337203685477580800) AS DECIMAL);
+--sorted_result
+SELECT * FROM t1 WHERE a = CAST('1' AS DATE);
+--sorted_result
+SELECT * FROM t1 WHERE a >= CAST('2001-01-01' AS DATE);
+--sorted_result
+SELECT * FROM t1 WHERE a >= CAST('2001#01#01' AS DATE);
+--sorted_result
+SELECT * FROM t1 WHERE a >= CAST('2001.01.01' AS DATE);
+--sorted_result
+SELECT * FROM t1 WHERE a > CAST('9999.12.31' AS DATE);
+--sorted_result
+SELECT * FROM t1 WHERE a < CAST(c AS DATE);
+--sorted_result
+SELECT * FROM t1 WHERE a <= CAST(NOW() AS DATE);
+--sorted_result
+SELECT * FROM t1 WHERE a > CAST('1.00' AS DATETIME);
+--sorted_result
+SELECT * FROM t1 WHERE a >= CAST('2001-01-01 00:00:00' AS DATETIME);
+--sorted_result
+SELECT * FROM t1 WHERE a >= CAST('2001#01#01 23:59:00' AS DATETIME);
+--sorted_result
+SELECT * FROM t1 WHERE a >= CAST('2001.01.01 01:00:00' AS DATETIME);
+--sorted_result
+SELECT * FROM t1 WHERE a <= CAST('9999.12.31' AS DATETIME);
+--sorted_result
+SELECT * FROM t1 WHERE a < CAST(c AS DATETIME);
+--sorted_result
+SELECT * FROM t1 WHERE a <= CAST(CURRENT_DATE() AS DATETIME);
+--sorted_result
+SELECT * FROM t1 WHERE a <> CAST('1.01' AS TIME);
+--sorted_result
+SELECT * FROM t1 WHERE a >= CAST('2001-01-01 00:00:00' AS TIME);
+--sorted_result
+SELECT * FROM t1 WHERE a <= CAST('2001#01#01 23:59:00' AS TIME);
+--sorted_result
+SELECT * FROM t1 WHERE a >= CAST('2001.01.01 01:00:00' AS TIME);
+--sorted_result
+SELECT * FROM t1 WHERE a > CAST('-839:59:59.0000' AS TIME);
+--sorted_result
+SELECT * FROM t1 WHERE a < CAST('10000.01.01 00:00:00' AS TIME);
+--sorted_result
+SELECT * FROM t1 WHERE a < CAST(c AS TIME);
+
+# CREATE INDEX
+ALTER TABLE t1 ADD INDEX aIdx(a);
+SELECT * FROM t1 WHERE a = CAST('1' AS CHAR);
+--sorted_result
+SELECT * FROM t1 WHERE a < CAST(1.00 AS CHAR);
+--sorted_result
+SELECT * FROM t1 WHERE a > CAST(REPEAT('123a',3) AS CHAR);
+--sorted_result
+SELECT * FROM t1 WHERE a <> CAST('1.00' AS NCHAR);
+--sorted_result
+SELECT * FROM t1 WHERE a != CAST(1.01 AS NCHAR);
+--sorted_result
+SELECT * FROM t1 WHERE a >= CAST(REVERSE('acb1243') AS NCHAR);
+--sorted_result
+SELECT * FROM t1 WHERE a = CAST('1.01' AS BINARY);
+--sorted_result
+SELECT * FROM t1 WHERE a > CAST(1 AS BINARY);
+--sorted_result
+SELECT * FROM t1 WHERE a <= CAST(REPLACE('ab12c4','ab12','234') AS BINARY);
+--disable_warnings
+--sorted_result
+SELECT * FROM t1 WHERE a > CAST(b AS CHAR);
+--sorted_result
+SELECT * FROM t1 WHERE a > CAST(b AS NCHAR);
+--sorted_result
+SELECT * FROM t1 WHERE a > CAST(b AS BINARY);
+--enable_warnings
+--sorted_result
+SELECT * FROM t1 WHERE a = CAST('1' AS SIGNED);
+--sorted_result
+SELECT * FROM t1 WHERE a < CAST(2147483647 AS SIGNED);
+--sorted_result
+SELECT * FROM t1 WHERE a >= CAST(-2147483649 AS SIGNED);
+--sorted_result
+SELECT * FROM t1 WHERE a < CAST(b AS SIGNED);
+--sorted_result
+SELECT * FROM t1 WHERE a >= CAST(INSERT('312abc',3,2,'00') AS SIGNED);
+--sorted_result
+SELECT * FROM t1 WHERE a = CAST('1.00' AS UNSIGNED);
+--sorted_result
+SELECT * FROM t1 WHERE a < CAST(4294967297 AS UNSIGNED);
+--sorted_result
+SELECT * FROM t1 WHERE a >= CAST(-4294967299 AS UNSIGNED);
+--sorted_result
+SELECT * FROM t1 WHERE a < CAST(b AS UNSIGNED);
+--sorted_result
+SELECT * FROM t1 WHERE a < CAST(FLOOR(2147483647.2) AS UNSIGNED);
+--sorted_result
+SELECT * FROM t1 WHERE a = CAST('1' AS DECIMAL);
+--sorted_result
+SELECT * FROM t1 WHERE a <> CAST(1.01 AS DECIMAL);
+--sorted_result
+SELECT * FROM t1 WHERE a <= CAST(922337203685477580800 AS DECIMAL);
+--sorted_result
+SELECT * FROM t1 WHERE a < CAST(b AS DECIMAL);
+--sorted_result
+SELECT * FROM t1 WHERE a >= CAST(CEILING(-922337203685477580800) AS DECIMAL);
+--sorted_result
+SELECT * FROM t1 WHERE a = CAST('1' AS DATE);
+--sorted_result
+SELECT * FROM t1 WHERE a >= CAST('2001-01-01' AS DATE);
+--sorted_result
+SELECT * FROM t1 WHERE a >= CAST('2001#01#01' AS DATE);
+--sorted_result
+SELECT * FROM t1 WHERE a >= CAST('2001.01.01' AS DATE);
+--sorted_result
+SELECT * FROM t1 WHERE a > CAST('9999.12.31' AS DATE);
+--sorted_result
+SELECT * FROM t1 WHERE a < CAST(c AS DATE);
+--sorted_result
+SELECT * FROM t1 WHERE a <= CAST(NOW() AS DATE);
+--sorted_result
+SELECT * FROM t1 WHERE a > CAST('1.00' AS DATETIME);
+--sorted_result
+SELECT * FROM t1 WHERE a >= CAST('2001-01-01 00:00:00' AS DATETIME);
+--sorted_result
+SELECT * FROM t1 WHERE a >= CAST('2001#01#01 23:59:00' AS DATETIME);
+--sorted_result
+SELECT * FROM t1 WHERE a >= CAST('2001.01.01 01:00:00' AS DATETIME);
+--sorted_result
+SELECT * FROM t1 WHERE a <= CAST('9999.12.31' AS DATETIME);
+--sorted_result
+SELECT * FROM t1 WHERE a < CAST(c AS DATETIME);
+--sorted_result
+SELECT * FROM t1 WHERE a <= CAST(CURRENT_DATE() AS DATETIME);
+--sorted_result
+SELECT * FROM t1 WHERE a <> CAST('1.01' AS TIME);
+--sorted_result
+SELECT * FROM t1 WHERE a >= CAST('2001-01-01 00:00:00' AS TIME);
+--sorted_result
+SELECT * FROM t1 WHERE a <= CAST('2001#01#01 23:59:00' AS TIME);
+--sorted_result
+SELECT * FROM t1 WHERE a >= CAST('2001.01.01 01:00:00' AS TIME);
+--sorted_result
+SELECT * FROM t1 WHERE a > CAST('-839:59:59.0000' AS TIME);
+--sorted_result
+SELECT * FROM t1 WHERE a < CAST('10000.01.01 00:00:00' AS TIME);
+--sorted_result
+SELECT * FROM t1 WHERE a < CAST(c AS TIME);
+
+DROP TABLE t1;
+
+
+#
+# cast(time as type)
+#
+CREATE TABLE t1(a TIME, b VARCHAR(127), c DATETIME );
+INSERT INTO t1 VALUES ('10:22:33','1.00','2001-05-01 01:12:12'),('12:34:56.78','1','2001-05-02 00:01:01'),(10,'1.01','2001-05-06 23:01:01'),(1234,'a','2007-02-01 02:01:01'),(123456.78,'a1','2004-04-03 19:20:00'),(1234559.99,'2147483647','2003-03-03 18:18:00'),('1','4294967294','2012-12-03 08:10:00'),('1:23','-4294967299','2006-10-02 08:00:02'),('1:23:45','922337203685477807','2019-02-02 07:30:52'),('10.22','-1','2004-01-04 10:10:10'),("-10  1:22:33.45","11",'2001-05-01 01:12:12'),("20 10:22:33","12",'2010-05-01 01:12:12'),("1999-02-03 20:33:34","13",'2020-05-01 01:12:12'),(30,"14",'2030-05-01 01:12:12'),(1230,"15",'2002-05-01 01:12:12'),("1230","16",'2012-05-01 01:12:12'),("12:30","17",'2022-05-01 01:12:12'),("12:30:35","18",'2000-05-01 01:12:12'),("1 12:30:31.32","19",'2016-05-01 01:12:12');
+--sorted_result
+SELECT * FROM t1 WHERE a < CAST(1.00 AS CHAR);
+--sorted_result
+SELECT * FROM t1 WHERE a > CAST(REPEAT('123a',3) AS CHAR);
+--sorted_result
+SELECT * FROM t1 WHERE a <> CAST('1.00' AS NCHAR);
+--sorted_result
+SELECT * FROM t1 WHERE a != CAST(1.01 AS NCHAR);
+--sorted_result
+SELECT * FROM t1 WHERE a >= CAST(REVERSE('acb1243') AS NCHAR);
+--sorted_result
+SELECT * FROM t1 WHERE a = CAST('1.01' AS BINARY);
+--sorted_result
+SELECT * FROM t1 WHERE a > CAST(1 AS BINARY);
+--sorted_result
+SELECT * FROM t1 WHERE a <= CAST(REPLACE('ab12c4','ab12','234') AS BINARY);
+--disable_warnings
+--sorted_result
+SELECT * FROM t1 WHERE a > CAST(b AS CHAR);
+--sorted_result
+SELECT * FROM t1 WHERE a > CAST(b AS NCHAR);
+--sorted_result
+SELECT * FROM t1 WHERE a > CAST(b AS BINARY);
+--enable_warnings
+--sorted_result
+SELECT * FROM t1 WHERE a = CAST('1' AS SIGNED);
+--sorted_result
+SELECT * FROM t1 WHERE a < CAST(2147483647 AS SIGNED);
+--sorted_result
+SELECT * FROM t1 WHERE a >= CAST(-2147483649 AS SIGNED);
+--sorted_result
+SELECT * FROM t1 WHERE a < CAST(b AS SIGNED);
+--sorted_result
+SELECT * FROM t1 WHERE a >= CAST(INSERT('312abc',3,2,'00') AS SIGNED);
+--sorted_result
+SELECT * FROM t1 WHERE a = CAST('1.00' AS UNSIGNED);
+--sorted_result
+SELECT * FROM t1 WHERE a < CAST(4294967297 AS UNSIGNED);
+--sorted_result
+SELECT * FROM t1 WHERE a >= CAST(-4294967299 AS UNSIGNED);
+--sorted_result
+SELECT * FROM t1 WHERE a < CAST(b AS UNSIGNED);
+--sorted_result
+SELECT * FROM t1 WHERE a < CAST(FLOOR(2147483647.2) AS UNSIGNED);
+--sorted_result
+SELECT * FROM t1 WHERE a = CAST('1' AS DECIMAL);
+--sorted_result
+SELECT * FROM t1 WHERE a <> CAST(1.01 AS DECIMAL);
+--sorted_result
+SELECT * FROM t1 WHERE a <= CAST(922337203685477580800 AS DECIMAL);
+--sorted_result
+SELECT * FROM t1 WHERE a < CAST(b AS DECIMAL);
+--sorted_result
+SELECT * FROM t1 WHERE a >= CAST(CEILING(-922337203685477580800) AS DECIMAL);
+--sorted_result
+SELECT * FROM t1 WHERE a = CAST('1' AS DATE);
+--sorted_result
+SELECT * FROM t1 WHERE a >= CAST('2001-01-01' AS DATE);
+--sorted_result
+SELECT * FROM t1 WHERE a >= CAST('2001#01#01' AS DATE);
+--sorted_result
+SELECT * FROM t1 WHERE a >= CAST('2001.01.01' AS DATE);
+--sorted_result
+SELECT * FROM t1 WHERE a > CAST('9999.12.31' AS DATE);
+--sorted_result
+SELECT * FROM t1 WHERE a < CAST(c AS DATE);
+--sorted_result
+SELECT * FROM t1 WHERE a <= CAST(NOW() AS DATE);
+--sorted_result
+SELECT * FROM t1 WHERE a > CAST('1.00' AS DATETIME);
+--sorted_result
+SELECT * FROM t1 WHERE a >= CAST('2001-01-01 00:00:00' AS DATETIME);
+--sorted_result
+SELECT * FROM t1 WHERE a >= CAST('2001#01#01 23:59:00' AS DATETIME);
+--sorted_result
+SELECT * FROM t1 WHERE a >= CAST('2001.01.01 01:00:00' AS DATETIME);
+--sorted_result
+SELECT * FROM t1 WHERE a <= CAST('9999.12.31' AS DATETIME);
+--sorted_result
+SELECT * FROM t1 WHERE a < CAST(c AS DATETIME);
+--sorted_result
+SELECT * FROM t1 WHERE a <= CAST(CURRENT_DATE() AS DATETIME);
+--sorted_result
+SELECT * FROM t1 WHERE a <> CAST('1.01' AS TIME);
+--sorted_result
+SELECT * FROM t1 WHERE a >= CAST('2001-01-01 00:00:00' AS TIME);
+--sorted_result
+SELECT * FROM t1 WHERE a <= CAST('2001#01#01 23:59:00' AS TIME);
+--sorted_result
+SELECT * FROM t1 WHERE a >= CAST('2001.01.01 01:00:00' AS TIME);
+--sorted_result
+SELECT * FROM t1 WHERE a > CAST('-839:59:59.0000' AS TIME);
+--sorted_result
+SELECT * FROM t1 WHERE a < CAST('10000.01.01 00:00:00' AS TIME);
+
+
+# CREATE INDEX
+ALTER TABLE t1 ADD INDEX aIdx(a);
+--sorted_result
+SELECT * FROM t1 WHERE a < CAST(1.00 AS CHAR);
+--sorted_result
+SELECT * FROM t1 WHERE a > CAST(REPEAT('123a',3) AS CHAR);
+--sorted_result
+SELECT * FROM t1 WHERE a <> CAST('1.00' AS NCHAR);
+--sorted_result
+SELECT * FROM t1 WHERE a != CAST(1.01 AS NCHAR);
+--sorted_result
+SELECT * FROM t1 WHERE a >= CAST(REVERSE('acb1243') AS NCHAR);
+--sorted_result
+SELECT * FROM t1 WHERE a = CAST('1.01' AS BINARY);
+--sorted_result
+SELECT * FROM t1 WHERE a > CAST(1 AS BINARY);
+# MYSQL: SEQUOIASQLMAINSTREAM-1148
+--sorted_result
+SELECT * FROM t1 WHERE a <= CAST(REPLACE('ab12c4','ab12','234') AS BINARY);
+--disable_warnings
+--sorted_result
+SELECT * FROM t1 WHERE a > CAST(b AS CHAR);
+--sorted_result
+SELECT * FROM t1 WHERE a > CAST(b AS NCHAR);
+--sorted_result
+SELECT * FROM t1 WHERE a > CAST(b AS BINARY);
+--enable_warnings
+--sorted_result
+SELECT * FROM t1 WHERE a = CAST('1' AS SIGNED);
+--sorted_result
+SELECT * FROM t1 WHERE a < CAST(2147483647 AS SIGNED);
+--sorted_result
+SELECT * FROM t1 WHERE a >= CAST(-2147483649 AS SIGNED);
+--sorted_result
+SELECT * FROM t1 WHERE a < CAST(b AS SIGNED);
+--sorted_result
+SELECT * FROM t1 WHERE a >= CAST(INSERT('312abc',3,2,'00') AS SIGNED);
+--sorted_result
+SELECT * FROM t1 WHERE a = CAST('1.00' AS UNSIGNED);
+--sorted_result
+SELECT * FROM t1 WHERE a < CAST(4294967297 AS UNSIGNED);
+--sorted_result
+SELECT * FROM t1 WHERE a >= CAST(-4294967299 AS UNSIGNED);
+--sorted_result
+SELECT * FROM t1 WHERE a < CAST(b AS UNSIGNED);
+--sorted_result
+SELECT * FROM t1 WHERE a < CAST(FLOOR(2147483647.2) AS UNSIGNED);
+--sorted_result
+SELECT * FROM t1 WHERE a = CAST('1' AS DECIMAL);
+--sorted_result
+SELECT * FROM t1 WHERE a <> CAST(1.01 AS DECIMAL);
+--sorted_result
+SELECT * FROM t1 WHERE a <= CAST(922337203685477580800 AS DECIMAL);
+--sorted_result
+SELECT * FROM t1 WHERE a < CAST(b AS DECIMAL);
+--sorted_result
+SELECT * FROM t1 WHERE a >= CAST(CEILING(-922337203685477580800) AS DECIMAL);
+--sorted_result
+SELECT * FROM t1 WHERE a = CAST('1' AS DATE);
+--sorted_result
+SELECT * FROM t1 WHERE a >= CAST('2001-01-01' AS DATE);
+--sorted_result
+SELECT * FROM t1 WHERE a >= CAST('2001#01#01' AS DATE);
+--sorted_result
+SELECT * FROM t1 WHERE a >= CAST('2001.01.01' AS DATE);
+--sorted_result
+SELECT * FROM t1 WHERE a > CAST('9999.12.31' AS DATE);
+--sorted_result
+SELECT * FROM t1 WHERE a < CAST(c AS DATE);
+--sorted_result
+SELECT * FROM t1 WHERE a <= CAST(NOW() AS DATE);
+--sorted_result
+SELECT * FROM t1 WHERE a > CAST('1.00' AS DATETIME);
+--sorted_result
+SELECT * FROM t1 WHERE a >= CAST('2001-01-01 00:00:00' AS DATETIME);
+--sorted_result
+SELECT * FROM t1 WHERE a >= CAST('2001#01#01 23:59:00' AS DATETIME);
+--sorted_result
+SELECT * FROM t1 WHERE a >= CAST('2001.01.01 01:00:00' AS DATETIME);
+--sorted_result
+SELECT * FROM t1 WHERE a <= CAST('9999.12.31' AS DATETIME);
+--sorted_result
+SELECT * FROM t1 WHERE a < CAST(c AS DATETIME);
+--sorted_result
+SELECT * FROM t1 WHERE a <= CAST(CURRENT_DATE() AS DATETIME);
+--sorted_result
+SELECT * FROM t1 WHERE a <> CAST('1.01' AS TIME);
+--sorted_result
+SELECT * FROM t1 WHERE a >= CAST('2001-01-01 00:00:00' AS TIME);
+--sorted_result
+SELECT * FROM t1 WHERE a <= CAST('2001#01#01 23:59:00' AS TIME);
+--sorted_result
+SELECT * FROM t1 WHERE a >= CAST('2001.01.01 01:00:00' AS TIME);
+--sorted_result
+SELECT * FROM t1 WHERE a > CAST('-839:59:59.0000' AS TIME);
+--sorted_result
+SELECT * FROM t1 WHERE a < CAST('10000.01.01 00:00:00' AS TIME);
+--sorted_result
+SELECT * FROM t1 WHERE a < CAST(c AS TIME);
+
+DROP TABLE t1;
+
+--source include/uninstall_sequoiadb.inc

@@ -1,0 +1,17 @@
+--source include/have_sequoiadb.inc
+
+#
+# MDEV-18239 ASAN use-after-poison in process_str_arg / ... / mark_unsupported_func or unexpected ER_BAD_FIELD_ERROR upon ALTER TABLE
+#
+create database check_constraint;
+use check_constraint;
+create table t1 (a int, b smallint) engine=SequoiaDB;
+connect con1,localhost,root,,check_constraint;
+alter table t1 add constraint check (b < 8);
+#Sequoiadb support alter table inplace
+#error ER_ALTER_OPERATION_NOT_SUPPORTED_REASON;
+alter table t1 modify column b int, algorithm=inplace;
+connection default;
+alter table t1 add primary key (a);
+drop database check_constraint;
+disconnect con1;

@@ -1,0 +1,4306 @@
+connection group1_conn1;
+set sql_mode = 'ANSI_QUOTES';
+set character_set_client = utf8;
+set character_set_connection = utf8;
+drop database if exists multi_inst_group_partition_table;
+set sql_mode=default;
+connection group2_conn1;
+set sql_mode = 'ANSI_QUOTES';
+set character_set_client = utf8;
+set character_set_connection = utf8;
+drop database if exists multi_inst_group_partition_table;
+set sql_mode=default;
+connection group1_conn1;
+create database multi_inst_group_partition_table;
+use multi_inst_group_partition_table;
+create table clearX(a int);
+drop database multi_inst_group_partition_table;
+connection group2_conn1;
+create database multi_inst_group_partition_table;
+use multi_inst_group_partition_table;
+create table clearX(a int);
+drop database multi_inst_group_partition_table;
+connection group1_conn1;
+create database multi_inst_group_partition_table;
+use multi_inst_group_partition_table;
+create table t1 (
+id int not null,
+a int not null
+)
+partition by range (a) (
+partition p0 values less than (10),
+partition p1 values less than (20),
+partition p2 values less than (30),
+partition p3 values less than (40),
+partition p4 values less than (50),
+partition p5 values less than (60),
+partition p6 values less than (70),
+partition p7 values less than (80),
+partition p8 values less than (90),
+partition p9 values less than (100)
+);
+show create table t1;
+Table	Create Table
+t1	CREATE TABLE `t1` (
+  `id` int(11) NOT NULL,
+  `a` int(11) NOT NULL
+) ENGINE=SequoiaDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin
+ PARTITION BY RANGE (`a`)
+(PARTITION `p0` VALUES LESS THAN (10) ENGINE = SequoiaDB,
+ PARTITION `p1` VALUES LESS THAN (20) ENGINE = SequoiaDB,
+ PARTITION `p2` VALUES LESS THAN (30) ENGINE = SequoiaDB,
+ PARTITION `p3` VALUES LESS THAN (40) ENGINE = SequoiaDB,
+ PARTITION `p4` VALUES LESS THAN (50) ENGINE = SequoiaDB,
+ PARTITION `p5` VALUES LESS THAN (60) ENGINE = SequoiaDB,
+ PARTITION `p6` VALUES LESS THAN (70) ENGINE = SequoiaDB,
+ PARTITION `p7` VALUES LESS THAN (80) ENGINE = SequoiaDB,
+ PARTITION `p8` VALUES LESS THAN (90) ENGINE = SequoiaDB,
+ PARTITION `p9` VALUES LESS THAN (100) ENGINE = SequoiaDB)
+insert into t1 values (0,0), (0,1),(1,10), (2,20), (3,30), (4,40), (5,60), (6,60), (7,70), (8,80), (9,90);
+select * from t1 where a >= 1 order by a;
+id	a
+0	1
+1	10
+2	20
+3	30
+4	40
+5	60
+6	60
+7	70
+8	80
+9	90
+connection group2_conn1;
+create database multi_inst_group_partition_table;
+use multi_inst_group_partition_table;
+create table t1 (
+id int not null,
+a int not null
+)
+partition by range (a) (
+partition p0 values less than (10),
+partition p1 values less than (20),
+partition p2 values less than (30),
+partition p3 values less than (40),
+partition p4 values less than (50),
+partition p5 values less than (60),
+partition p6 values less than (70),
+partition p7 values less than (80),
+partition p8 values less than (90),
+partition p9 values less than (100)
+);
+show create table t1;
+Table	Create Table
+t1	CREATE TABLE `t1` (
+  `id` int(11) NOT NULL,
+  `a` int(11) NOT NULL
+) ENGINE=SequoiaDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin
+ PARTITION BY RANGE (`a`)
+(PARTITION `p0` VALUES LESS THAN (10) ENGINE = SequoiaDB,
+ PARTITION `p1` VALUES LESS THAN (20) ENGINE = SequoiaDB,
+ PARTITION `p2` VALUES LESS THAN (30) ENGINE = SequoiaDB,
+ PARTITION `p3` VALUES LESS THAN (40) ENGINE = SequoiaDB,
+ PARTITION `p4` VALUES LESS THAN (50) ENGINE = SequoiaDB,
+ PARTITION `p5` VALUES LESS THAN (60) ENGINE = SequoiaDB,
+ PARTITION `p6` VALUES LESS THAN (70) ENGINE = SequoiaDB,
+ PARTITION `p7` VALUES LESS THAN (80) ENGINE = SequoiaDB,
+ PARTITION `p8` VALUES LESS THAN (90) ENGINE = SequoiaDB,
+ PARTITION `p9` VALUES LESS THAN (100) ENGINE = SequoiaDB)
+insert into t1 values (0,0), (0,1),(1,10), (2,20), (3,30), (4,40), (5,60), (6,60), (7,70), (8,80), (9,90);
+select * from t1 where a >= 1 order by a;
+id	a
+0	1
+1	10
+2	20
+3	30
+4	40
+5	60
+6	60
+7	70
+8	80
+9	90
+connection group1_conn1;
+create table t2 select * from t1;
+show tables;
+Tables_in_multi_inst_group_partition_table
+t1
+t2
+show create table t2;
+Table	Create Table
+t2	CREATE TABLE `t2` (
+  `id` int(11) NOT NULL,
+  `a` int(11) NOT NULL
+) ENGINE=SequoiaDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin
+select * from t2 order by a;
+id	a
+0	0
+0	1
+1	10
+2	20
+3	30
+4	40
+5	60
+6	60
+7	70
+8	80
+9	90
+insert into t2 values (0,0), (0,1),(1,10), (2,20), (3,30), (4,40), (5,60), (6,60), (7,70), (8,80), (9,90);
+select * from t2 order by a;
+id	a
+0	0
+0	0
+0	1
+0	1
+1	10
+1	10
+2	20
+2	20
+3	30
+3	30
+4	40
+4	40
+5	60
+6	60
+5	60
+6	60
+7	70
+7	70
+8	80
+8	80
+9	90
+9	90
+select * from t2 where a >= 1 order by a;
+id	a
+0	1
+0	1
+1	10
+1	10
+2	20
+2	20
+3	30
+3	30
+4	40
+4	40
+5	60
+6	60
+5	60
+6	60
+7	70
+7	70
+8	80
+8	80
+9	90
+9	90
+connection group2_conn1;
+create table t2 select * from t1;
+show tables;
+Tables_in_multi_inst_group_partition_table
+t1
+t2
+show create table t2;
+Table	Create Table
+t2	CREATE TABLE `t2` (
+  `id` int(11) NOT NULL,
+  `a` int(11) NOT NULL
+) ENGINE=SequoiaDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin
+select * from t2 order by a;
+id	a
+0	0
+0	1
+1	10
+2	20
+3	30
+4	40
+5	60
+6	60
+7	70
+8	80
+9	90
+insert into t2 values (0,0), (0,1),(1,10), (2,20), (3,30), (4,40), (5,60), (6,60), (7,70), (8,80), (9,90);
+select * from t2 order by a;
+id	a
+0	0
+0	0
+0	1
+0	1
+1	10
+1	10
+2	20
+2	20
+3	30
+3	30
+4	40
+4	40
+5	60
+6	60
+5	60
+6	60
+7	70
+7	70
+8	80
+8	80
+9	90
+9	90
+select * from t2 where a >= 1 order by a;
+id	a
+0	1
+0	1
+1	10
+1	10
+2	20
+2	20
+3	30
+3	30
+4	40
+4	40
+5	60
+6	60
+5	60
+6	60
+7	70
+7	70
+8	80
+8	80
+9	90
+9	90
+connection group1_conn1;
+alter table t1 add partition (partition p10 values less than (110));
+show create table t1;
+Table	Create Table
+t1	CREATE TABLE `t1` (
+  `id` int(11) NOT NULL,
+  `a` int(11) NOT NULL
+) ENGINE=SequoiaDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin
+ PARTITION BY RANGE (`a`)
+(PARTITION `p0` VALUES LESS THAN (10) ENGINE = SequoiaDB,
+ PARTITION `p1` VALUES LESS THAN (20) ENGINE = SequoiaDB,
+ PARTITION `p2` VALUES LESS THAN (30) ENGINE = SequoiaDB,
+ PARTITION `p3` VALUES LESS THAN (40) ENGINE = SequoiaDB,
+ PARTITION `p4` VALUES LESS THAN (50) ENGINE = SequoiaDB,
+ PARTITION `p5` VALUES LESS THAN (60) ENGINE = SequoiaDB,
+ PARTITION `p6` VALUES LESS THAN (70) ENGINE = SequoiaDB,
+ PARTITION `p7` VALUES LESS THAN (80) ENGINE = SequoiaDB,
+ PARTITION `p8` VALUES LESS THAN (90) ENGINE = SequoiaDB,
+ PARTITION `p9` VALUES LESS THAN (100) ENGINE = SequoiaDB,
+ PARTITION `p10` VALUES LESS THAN (110) ENGINE = SequoiaDB)
+insert into t1 values (9, 100), (10, 101);
+select * from t1 order by a;
+id	a
+0	0
+0	1
+1	10
+2	20
+3	30
+4	40
+5	60
+6	60
+7	70
+8	80
+9	90
+9	100
+10	101
+select * from t1 where a >= 100 order by a;
+id	a
+9	100
+10	101
+connection group1_conn1;
+alter table t1 drop partition p0;
+alter table t1 drop partition p10;
+show create table t1;
+Table	Create Table
+t1	CREATE TABLE `t1` (
+  `id` int(11) NOT NULL,
+  `a` int(11) NOT NULL
+) ENGINE=SequoiaDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin
+ PARTITION BY RANGE (`a`)
+(PARTITION `p1` VALUES LESS THAN (20) ENGINE = SequoiaDB,
+ PARTITION `p2` VALUES LESS THAN (30) ENGINE = SequoiaDB,
+ PARTITION `p3` VALUES LESS THAN (40) ENGINE = SequoiaDB,
+ PARTITION `p4` VALUES LESS THAN (50) ENGINE = SequoiaDB,
+ PARTITION `p5` VALUES LESS THAN (60) ENGINE = SequoiaDB,
+ PARTITION `p6` VALUES LESS THAN (70) ENGINE = SequoiaDB,
+ PARTITION `p7` VALUES LESS THAN (80) ENGINE = SequoiaDB,
+ PARTITION `p8` VALUES LESS THAN (90) ENGINE = SequoiaDB,
+ PARTITION `p9` VALUES LESS THAN (100) ENGINE = SequoiaDB)
+select * from t1 order by a;
+id	a
+1	10
+2	20
+3	30
+4	40
+5	60
+6	60
+7	70
+8	80
+9	90
+insert into t1 values  (0, 0), (1,10), (1,11), (2,20), (3,30), (4,40), (5,60), (6,60), (7,70), (8,80);
+insert into t1 values (10,100);
+ERROR HY000: Table has no partition for value 100
+select * from t1 order by a;
+id	a
+0	0
+1	10
+1	10
+1	11
+2	20
+2	20
+3	30
+3	30
+4	40
+4	40
+5	60
+6	60
+5	60
+6	60
+7	70
+7	70
+8	80
+8	80
+9	90
+select * from t1 where a > 10 order by a;
+id	a
+1	11
+2	20
+2	20
+3	30
+3	30
+4	40
+4	40
+5	60
+6	60
+5	60
+6	60
+7	70
+7	70
+8	80
+8	80
+9	90
+connection group1_conn1;
+alter table t1 remove partitioning;
+show create table t1;
+Table	Create Table
+t1	CREATE TABLE `t1` (
+  `id` int(11) NOT NULL,
+  `a` int(11) NOT NULL
+) ENGINE=SequoiaDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin
+insert into t1 values (0,0), (0,1),(1,10), (2,20), (3,30), (4,40), (5,60), (6,60), (7,70), (8,80), (9,90), (10,100);
+select * from t1 order by a;
+id	a
+0	0
+0	0
+0	1
+1	10
+1	10
+1	10
+1	11
+2	20
+2	20
+2	20
+3	30
+3	30
+3	30
+4	40
+4	40
+4	40
+5	60
+6	60
+5	60
+6	60
+5	60
+6	60
+7	70
+7	70
+7	70
+8	80
+8	80
+8	80
+9	90
+9	90
+10	100
+create index idx on t1(id);
+show index from t1;
+Table	Non_unique	Key_name	Seq_in_index	Column_name	Collation	Cardinality	Sub_part	Packed	Null	Index_type	Comment	Index_comment
+t1	1	idx	1	id	A	NULL	NULL	NULL		BTREE		
+select * from t1 order by a;
+id	a
+0	0
+0	0
+0	1
+1	10
+1	10
+1	10
+1	11
+2	20
+2	20
+2	20
+3	30
+3	30
+3	30
+4	40
+4	40
+4	40
+5	60
+6	60
+5	60
+6	60
+5	60
+6	60
+7	70
+7	70
+7	70
+8	80
+8	80
+8	80
+9	90
+9	90
+10	100
+select * from t1 where id > 0 order by id;
+id	a
+1	10
+1	10
+1	11
+1	10
+2	20
+2	20
+2	20
+3	30
+3	30
+3	30
+4	40
+4	40
+4	40
+5	60
+5	60
+5	60
+6	60
+6	60
+6	60
+7	70
+7	70
+7	70
+8	80
+8	80
+8	80
+9	90
+9	90
+10	100
+explain select * from t1 where id > 0 order by id;
+id	select_type	table	type	possible_keys	key	key_len	ref	rows	Extra
+1	SIMPLE	t1	ALL	idx	NULL	NULL	NULL	31	Using where with pushed condition
+drop index idx on t1;
+show index from t1;
+Table	Non_unique	Key_name	Seq_in_index	Column_name	Collation	Cardinality	Sub_part	Packed	Null	Index_type	Comment	Index_comment
+select * from t1 order by a;
+id	a
+0	0
+0	0
+0	1
+1	10
+1	10
+1	10
+1	11
+2	20
+2	20
+2	20
+3	30
+3	30
+3	30
+4	40
+4	40
+4	40
+5	60
+6	60
+5	60
+6	60
+5	60
+6	60
+7	70
+7	70
+7	70
+8	80
+8	80
+8	80
+9	90
+9	90
+10	100
+explain select * from t1 where id > 0 order by id;
+id	select_type	table	type	possible_keys	key	key_len	ref	rows	Extra
+1	SIMPLE	t1	ALL	NULL	NULL	NULL	NULL	31	Using where with pushed condition
+drop table t1;
+show tables;
+Tables_in_multi_inst_group_partition_table
+t2
+create table t1 (
+id int not null,
+a int not null
+)
+partition by range (a) (
+partition p0 values less than (10),
+partition p1 values less than (20),
+partition p2 values less than (30),
+partition p3 values less than (40),
+partition p4 values less than (50),
+partition p5 values less than (60),
+partition p6 values less than (70),
+partition p7 values less than (80),
+partition p8 values less than (90),
+partition p9 values less than (100)
+);
+show create table t1;
+Table	Create Table
+t1	CREATE TABLE `t1` (
+  `id` int(11) NOT NULL,
+  `a` int(11) NOT NULL
+) ENGINE=SequoiaDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin
+ PARTITION BY RANGE (`a`)
+(PARTITION `p0` VALUES LESS THAN (10) ENGINE = SequoiaDB,
+ PARTITION `p1` VALUES LESS THAN (20) ENGINE = SequoiaDB,
+ PARTITION `p2` VALUES LESS THAN (30) ENGINE = SequoiaDB,
+ PARTITION `p3` VALUES LESS THAN (40) ENGINE = SequoiaDB,
+ PARTITION `p4` VALUES LESS THAN (50) ENGINE = SequoiaDB,
+ PARTITION `p5` VALUES LESS THAN (60) ENGINE = SequoiaDB,
+ PARTITION `p6` VALUES LESS THAN (70) ENGINE = SequoiaDB,
+ PARTITION `p7` VALUES LESS THAN (80) ENGINE = SequoiaDB,
+ PARTITION `p8` VALUES LESS THAN (90) ENGINE = SequoiaDB,
+ PARTITION `p9` VALUES LESS THAN (100) ENGINE = SequoiaDB)
+insert into t1 values (0,0), (0,1),(1,10), (2,20), (3,30), (4,40), (5,60), (6,60), (7,70), (8,80), (9,90), (10,99);
+select * from t1 order by a;
+id	a
+0	0
+0	1
+1	10
+2	20
+3	30
+4	40
+5	60
+6	60
+7	70
+8	80
+9	90
+10	99
+connection group1_conn1;
+drop database multi_inst_group_partition_table;
+connection group2_conn1;
+drop database multi_inst_group_partition_table;
+connection group1_conn1;
+create database multi_inst_group_partition_table;
+use multi_inst_group_partition_table;
+CREATE TABLE t1 (
+id INT NOT NULL,
+a INT NOT NULL
+)
+PARTITION BY LIST COLUMNS (a) (
+PARTITION p0 VALUES IN (1, 2),
+PARTITION p1 VALUES IN (3, 4),
+PARTITION p2 VALUES IN (5, 6),
+PARTITION p3 VALUES IN (7, 8),
+PARTITION p4 VALUES IN (9, 10),
+PARTITION p5 VALUES IN (11, 12),
+PARTITION p6 VALUES IN (13, 14)
+);
+show create table t1;
+Table	Create Table
+t1	CREATE TABLE `t1` (
+  `id` int(11) NOT NULL,
+  `a` int(11) NOT NULL
+) ENGINE=SequoiaDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin
+ PARTITION BY LIST  COLUMNS(`a`)
+(PARTITION `p0` VALUES IN (1,2) ENGINE = SequoiaDB,
+ PARTITION `p1` VALUES IN (3,4) ENGINE = SequoiaDB,
+ PARTITION `p2` VALUES IN (5,6) ENGINE = SequoiaDB,
+ PARTITION `p3` VALUES IN (7,8) ENGINE = SequoiaDB,
+ PARTITION `p4` VALUES IN (9,10) ENGINE = SequoiaDB,
+ PARTITION `p5` VALUES IN (11,12) ENGINE = SequoiaDB,
+ PARTITION `p6` VALUES IN (13,14) ENGINE = SequoiaDB)
+insert into t1 values (1,1), (2,2), (3,3), (4,4), (5,5), (6,6), (7,7), (8,8), (9,9), (10,10), (11,11), (12,12), (13,13), (14,14);
+select * from t1 order by a;
+id	a
+1	1
+2	2
+3	3
+4	4
+5	5
+6	6
+7	7
+8	8
+9	9
+10	10
+11	11
+12	12
+13	13
+14	14
+select * from t1 where a > 6 order by a;
+id	a
+7	7
+8	8
+9	9
+10	10
+11	11
+12	12
+13	13
+14	14
+connection group2_conn1;
+create database multi_inst_group_partition_table;
+use multi_inst_group_partition_table;
+CREATE TABLE t1 (
+id INT NOT NULL,
+a INT NOT NULL
+)
+PARTITION BY LIST COLUMNS (a) (
+PARTITION p0 VALUES IN (1, 2),
+PARTITION p1 VALUES IN (3, 4),
+PARTITION p2 VALUES IN (5, 6),
+PARTITION p3 VALUES IN (7, 8),
+PARTITION p4 VALUES IN (9, 10),
+PARTITION p5 VALUES IN (11, 12),
+PARTITION p6 VALUES IN (13, 14)
+);
+show create table t1;
+Table	Create Table
+t1	CREATE TABLE `t1` (
+  `id` int(11) NOT NULL,
+  `a` int(11) NOT NULL
+) ENGINE=SequoiaDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin
+ PARTITION BY LIST  COLUMNS(`a`)
+(PARTITION `p0` VALUES IN (1,2) ENGINE = SequoiaDB,
+ PARTITION `p1` VALUES IN (3,4) ENGINE = SequoiaDB,
+ PARTITION `p2` VALUES IN (5,6) ENGINE = SequoiaDB,
+ PARTITION `p3` VALUES IN (7,8) ENGINE = SequoiaDB,
+ PARTITION `p4` VALUES IN (9,10) ENGINE = SequoiaDB,
+ PARTITION `p5` VALUES IN (11,12) ENGINE = SequoiaDB,
+ PARTITION `p6` VALUES IN (13,14) ENGINE = SequoiaDB)
+insert into t1 values (1,1), (2,2), (3,3), (4,4), (5,5), (6,6), (7,7), (8,8), (9,9), (10,10), (11,11), (12,12), (13,13), (14,14);
+select * from t1 order by a;
+id	a
+1	1
+2	2
+3	3
+4	4
+5	5
+6	6
+7	7
+8	8
+9	9
+10	10
+11	11
+12	12
+13	13
+14	14
+select * from t1 where a > 6 order by a;
+id	a
+7	7
+8	8
+9	9
+10	10
+11	11
+12	12
+13	13
+14	14
+connection group1_conn1;
+create table t2 select * from t1;
+show tables;
+Tables_in_multi_inst_group_partition_table
+t1
+t2
+show create table t2;
+Table	Create Table
+t2	CREATE TABLE `t2` (
+  `id` int(11) NOT NULL,
+  `a` int(11) NOT NULL
+) ENGINE=SequoiaDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin
+select * from t2 order by a;
+id	a
+1	1
+2	2
+3	3
+4	4
+5	5
+6	6
+7	7
+8	8
+9	9
+10	10
+11	11
+12	12
+13	13
+14	14
+insert into t2 values (1,1), (2,2), (3,3), (4,4), (5,5), (6,6), (7,7), (8,8), (9,9), (10,10), (11,11), (12,12), (13,13), (14,14);
+select * from t2 order by a;
+id	a
+1	1
+1	1
+2	2
+2	2
+3	3
+3	3
+4	4
+4	4
+5	5
+5	5
+6	6
+6	6
+7	7
+7	7
+8	8
+8	8
+9	9
+9	9
+10	10
+10	10
+11	11
+11	11
+12	12
+12	12
+13	13
+13	13
+14	14
+14	14
+select * from t2 where a >= 1 order by a;
+id	a
+1	1
+1	1
+2	2
+2	2
+3	3
+3	3
+4	4
+4	4
+5	5
+5	5
+6	6
+6	6
+7	7
+7	7
+8	8
+8	8
+9	9
+9	9
+10	10
+10	10
+11	11
+11	11
+12	12
+12	12
+13	13
+13	13
+14	14
+14	14
+connection group2_conn1;
+create table t2 select * from t1;
+show tables;
+Tables_in_multi_inst_group_partition_table
+t1
+t2
+show create table t2;
+Table	Create Table
+t2	CREATE TABLE `t2` (
+  `id` int(11) NOT NULL,
+  `a` int(11) NOT NULL
+) ENGINE=SequoiaDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin
+select * from t2 order by a;
+id	a
+1	1
+2	2
+3	3
+4	4
+5	5
+6	6
+7	7
+8	8
+9	9
+10	10
+11	11
+12	12
+13	13
+14	14
+insert into t2 values (1,1), (2,2), (3,3), (4,4), (5,5), (6,6), (7,7), (8,8), (9,9), (10,10), (11,11), (12,12), (13,13), (14,14);
+select * from t2 order by a;
+id	a
+1	1
+1	1
+2	2
+2	2
+3	3
+3	3
+4	4
+4	4
+5	5
+5	5
+6	6
+6	6
+7	7
+7	7
+8	8
+8	8
+9	9
+9	9
+10	10
+10	10
+11	11
+11	11
+12	12
+12	12
+13	13
+13	13
+14	14
+14	14
+select * from t2 where a >= 1 order by a;
+id	a
+1	1
+1	1
+2	2
+2	2
+3	3
+3	3
+4	4
+4	4
+5	5
+5	5
+6	6
+6	6
+7	7
+7	7
+8	8
+8	8
+9	9
+9	9
+10	10
+10	10
+11	11
+11	11
+12	12
+12	12
+13	13
+13	13
+14	14
+14	14
+connection group1_conn1;
+alter table t1 add partition (partition p7 values in (15, 16));
+show create table t1;
+Table	Create Table
+t1	CREATE TABLE `t1` (
+  `id` int(11) NOT NULL,
+  `a` int(11) NOT NULL
+) ENGINE=SequoiaDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin
+ PARTITION BY LIST  COLUMNS(`a`)
+(PARTITION `p0` VALUES IN (1,2) ENGINE = SequoiaDB,
+ PARTITION `p1` VALUES IN (3,4) ENGINE = SequoiaDB,
+ PARTITION `p2` VALUES IN (5,6) ENGINE = SequoiaDB,
+ PARTITION `p3` VALUES IN (7,8) ENGINE = SequoiaDB,
+ PARTITION `p4` VALUES IN (9,10) ENGINE = SequoiaDB,
+ PARTITION `p5` VALUES IN (11,12) ENGINE = SequoiaDB,
+ PARTITION `p6` VALUES IN (13,14) ENGINE = SequoiaDB,
+ PARTITION `p7` VALUES IN (15,16) ENGINE = SequoiaDB)
+select * from t1 order by a;
+id	a
+1	1
+2	2
+3	3
+4	4
+5	5
+6	6
+7	7
+8	8
+9	9
+10	10
+11	11
+12	12
+13	13
+14	14
+insert into t1 values (15, 15), (16, 16);
+select * from t1 order by a;
+id	a
+1	1
+2	2
+3	3
+4	4
+5	5
+6	6
+7	7
+8	8
+9	9
+10	10
+11	11
+12	12
+13	13
+14	14
+15	15
+16	16
+select * from t1 where a >= 15 order by a;
+id	a
+15	15
+16	16
+create index idx on t1(id);
+show index from t1;
+Table	Non_unique	Key_name	Seq_in_index	Column_name	Collation	Cardinality	Sub_part	Packed	Null	Index_type	Comment	Index_comment
+t1	1	idx	1	id	A	NULL	NULL	NULL		BTREE		
+select * from t1 where id > 2 order by id;
+id	a
+3	3
+4	4
+5	5
+6	6
+7	7
+8	8
+9	9
+10	10
+11	11
+12	12
+13	13
+14	14
+15	15
+16	16
+explain select * from t1 where id > 2 order by id;
+id	select_type	table	type	possible_keys	key	key_len	ref	rows	Extra
+1	SIMPLE	t1	ALL	idx	NULL	NULL	NULL	16	Using where with pushed condition
+select * from t1 order by a;
+id	a
+1	1
+2	2
+3	3
+4	4
+5	5
+6	6
+7	7
+8	8
+9	9
+10	10
+11	11
+12	12
+13	13
+14	14
+15	15
+16	16
+drop index idx on t1;
+show index from t1;
+Table	Non_unique	Key_name	Seq_in_index	Column_name	Collation	Cardinality	Sub_part	Packed	Null	Index_type	Comment	Index_comment
+select * from t1 where id > 0 order by id;
+id	a
+1	1
+2	2
+3	3
+4	4
+5	5
+6	6
+7	7
+8	8
+9	9
+10	10
+11	11
+12	12
+13	13
+14	14
+15	15
+16	16
+explain select * from t1 where id > 0 order by id;
+id	select_type	table	type	possible_keys	key	key_len	ref	rows	Extra
+1	SIMPLE	t1	ALL	NULL	NULL	NULL	NULL	16	Using where with pushed condition
+alter table t1 drop partition p0;
+show create table t1;
+Table	Create Table
+t1	CREATE TABLE `t1` (
+  `id` int(11) NOT NULL,
+  `a` int(11) NOT NULL
+) ENGINE=SequoiaDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin
+ PARTITION BY LIST  COLUMNS(`a`)
+(PARTITION `p1` VALUES IN (3,4) ENGINE = SequoiaDB,
+ PARTITION `p2` VALUES IN (5,6) ENGINE = SequoiaDB,
+ PARTITION `p3` VALUES IN (7,8) ENGINE = SequoiaDB,
+ PARTITION `p4` VALUES IN (9,10) ENGINE = SequoiaDB,
+ PARTITION `p5` VALUES IN (11,12) ENGINE = SequoiaDB,
+ PARTITION `p6` VALUES IN (13,14) ENGINE = SequoiaDB,
+ PARTITION `p7` VALUES IN (15,16) ENGINE = SequoiaDB)
+select * from t1 order by a;
+id	a
+3	3
+4	4
+5	5
+6	6
+7	7
+8	8
+9	9
+10	10
+11	11
+12	12
+13	13
+14	14
+15	15
+16	16
+insert into t1 values (1, 1);
+ERROR HY000: Table has no partition for value from column_list
+insert into t1 values (3,3), (4,4), (5,5), (6,6), (7,7), (8,8), (9,9), (10,10), (11,11), (12,12), (13,13), (14,14), (15, 15), (16, 16);
+select * from t1 order by a;
+id	a
+3	3
+3	3
+4	4
+4	4
+5	5
+5	5
+6	6
+6	6
+7	7
+7	7
+8	8
+8	8
+9	9
+9	9
+10	10
+10	10
+11	11
+11	11
+12	12
+12	12
+13	13
+13	13
+14	14
+14	14
+15	15
+15	15
+16	16
+16	16
+select * from t1 where a > 10 order by a;
+id	a
+11	11
+11	11
+12	12
+12	12
+13	13
+13	13
+14	14
+14	14
+15	15
+15	15
+16	16
+16	16
+alter table t1 remove partitioning;
+show create table t1;
+Table	Create Table
+t1	CREATE TABLE `t1` (
+  `id` int(11) NOT NULL,
+  `a` int(11) NOT NULL
+) ENGINE=SequoiaDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin
+insert into t1 values (1, 1), (2, 2), (3,3), (4,4), (5,5), (6,6), (7,7), (8,8), (9,9), (10,10), (11,11), (12,12), (13,13), (14,14), (15, 15), (16, 16);
+select * from t1 order by a;
+id	a
+1	1
+2	2
+3	3
+3	3
+3	3
+4	4
+4	4
+4	4
+5	5
+5	5
+5	5
+6	6
+6	6
+6	6
+7	7
+7	7
+7	7
+8	8
+8	8
+8	8
+9	9
+9	9
+9	9
+10	10
+10	10
+10	10
+11	11
+11	11
+11	11
+12	12
+12	12
+12	12
+13	13
+13	13
+13	13
+14	14
+14	14
+14	14
+15	15
+15	15
+15	15
+16	16
+16	16
+16	16
+drop table t1;
+show tables;
+Tables_in_multi_inst_group_partition_table
+t2
+CREATE TABLE t1 (
+id INT NOT NULL,
+a INT NOT NULL
+)
+PARTITION BY LIST COLUMNS (a) (
+PARTITION p0 VALUES IN (1, 2),
+PARTITION p1 VALUES IN (3, 4),
+PARTITION p2 VALUES IN (5, 6),
+PARTITION p3 VALUES IN (7, 8),
+PARTITION p4 VALUES IN (9, 10),
+PARTITION p5 VALUES IN (11, 12),
+PARTITION p6 VALUES IN (13, 14)
+);
+show create table t1;
+Table	Create Table
+t1	CREATE TABLE `t1` (
+  `id` int(11) NOT NULL,
+  `a` int(11) NOT NULL
+) ENGINE=SequoiaDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin
+ PARTITION BY LIST  COLUMNS(`a`)
+(PARTITION `p0` VALUES IN (1,2) ENGINE = SequoiaDB,
+ PARTITION `p1` VALUES IN (3,4) ENGINE = SequoiaDB,
+ PARTITION `p2` VALUES IN (5,6) ENGINE = SequoiaDB,
+ PARTITION `p3` VALUES IN (7,8) ENGINE = SequoiaDB,
+ PARTITION `p4` VALUES IN (9,10) ENGINE = SequoiaDB,
+ PARTITION `p5` VALUES IN (11,12) ENGINE = SequoiaDB,
+ PARTITION `p6` VALUES IN (13,14) ENGINE = SequoiaDB)
+insert into t1 values (1,1), (2,2), (3,3), (4,4), (5,5), (6,6), (7,7), (8,8), (9,9), (10,10), (11,11), (12,12), (13,13), (14,14);
+select * from t1 order by a;
+id	a
+1	1
+2	2
+3	3
+4	4
+5	5
+6	6
+7	7
+8	8
+9	9
+10	10
+11	11
+12	12
+13	13
+14	14
+connection group1_conn1;
+drop database multi_inst_group_partition_table;
+connection group2_conn1;
+drop database multi_inst_group_partition_table;
+connection group1_conn1;
+create database multi_inst_group_partition_table;
+use multi_inst_group_partition_table;
+CREATE TABLE t1 (
+id INT NOT NULL,
+a INT NOT NULL
+)
+PARTITION BY LIST COLUMNS (a)
+SUBPARTITION BY HASH (a) (
+PARTITION p0 VALUES IN (1, 2),
+PARTITION p1 VALUES IN (3, 4),
+PARTITION p2 VALUES IN (5, 6),
+PARTITION p3 VALUES IN (7, 8),
+PARTITION p4 VALUES IN (9, 10),
+PARTITION p5 VALUES IN (11, 12),
+PARTITION p6 VALUES IN (13, 14)
+);
+show create table t1;
+Table	Create Table
+t1	CREATE TABLE `t1` (
+  `id` int(11) NOT NULL,
+  `a` int(11) NOT NULL
+) ENGINE=SequoiaDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin
+ PARTITION BY LIST  COLUMNS(`a`)
+SUBPARTITION BY HASH (`a`)
+(PARTITION `p0` VALUES IN (1,2) ENGINE = SequoiaDB,
+ PARTITION `p1` VALUES IN (3,4) ENGINE = SequoiaDB,
+ PARTITION `p2` VALUES IN (5,6) ENGINE = SequoiaDB,
+ PARTITION `p3` VALUES IN (7,8) ENGINE = SequoiaDB,
+ PARTITION `p4` VALUES IN (9,10) ENGINE = SequoiaDB,
+ PARTITION `p5` VALUES IN (11,12) ENGINE = SequoiaDB,
+ PARTITION `p6` VALUES IN (13,14) ENGINE = SequoiaDB)
+insert into t1 values (1,1), (2,2), (3,3), (4,4), (5,5), (6,6), (7,7), (8,8), (9,9), (10,10), (11,11), (12,12), (13,13), (14,14);
+select * from t1 order by a;
+id	a
+1	1
+2	2
+3	3
+4	4
+5	5
+6	6
+7	7
+8	8
+9	9
+10	10
+11	11
+12	12
+13	13
+14	14
+select * from t1 where a > 6 order by a;
+id	a
+7	7
+8	8
+9	9
+10	10
+11	11
+12	12
+13	13
+14	14
+connection group2_conn1;
+create database multi_inst_group_partition_table;
+use multi_inst_group_partition_table;
+CREATE TABLE t1 (
+id INT NOT NULL,
+a INT NOT NULL
+)
+PARTITION BY LIST COLUMNS (a)
+SUBPARTITION BY HASH (a) (
+PARTITION p0 VALUES IN (1, 2),
+PARTITION p1 VALUES IN (3, 4),
+PARTITION p2 VALUES IN (5, 6),
+PARTITION p3 VALUES IN (7, 8),
+PARTITION p4 VALUES IN (9, 10),
+PARTITION p5 VALUES IN (11, 12),
+PARTITION p6 VALUES IN (13, 14)
+);
+show create table t1;
+Table	Create Table
+t1	CREATE TABLE `t1` (
+  `id` int(11) NOT NULL,
+  `a` int(11) NOT NULL
+) ENGINE=SequoiaDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin
+ PARTITION BY LIST  COLUMNS(`a`)
+SUBPARTITION BY HASH (`a`)
+(PARTITION `p0` VALUES IN (1,2) ENGINE = SequoiaDB,
+ PARTITION `p1` VALUES IN (3,4) ENGINE = SequoiaDB,
+ PARTITION `p2` VALUES IN (5,6) ENGINE = SequoiaDB,
+ PARTITION `p3` VALUES IN (7,8) ENGINE = SequoiaDB,
+ PARTITION `p4` VALUES IN (9,10) ENGINE = SequoiaDB,
+ PARTITION `p5` VALUES IN (11,12) ENGINE = SequoiaDB,
+ PARTITION `p6` VALUES IN (13,14) ENGINE = SequoiaDB)
+insert into t1 values (1,1), (2,2), (3,3), (4,4), (5,5), (6,6), (7,7), (8,8), (9,9), (10,10), (11,11), (12,12), (13,13), (14,14);
+select * from t1 order by a;
+id	a
+1	1
+2	2
+3	3
+4	4
+5	5
+6	6
+7	7
+8	8
+9	9
+10	10
+11	11
+12	12
+13	13
+14	14
+select * from t1 where a > 6 order by a;
+id	a
+7	7
+8	8
+9	9
+10	10
+11	11
+12	12
+13	13
+14	14
+connection group1_conn1;
+create table t2 select * from t1;
+show tables;
+Tables_in_multi_inst_group_partition_table
+t1
+t2
+show create table t2;
+Table	Create Table
+t2	CREATE TABLE `t2` (
+  `id` int(11) NOT NULL,
+  `a` int(11) NOT NULL
+) ENGINE=SequoiaDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin
+select * from t2 order by a;
+id	a
+1	1
+2	2
+3	3
+4	4
+5	5
+6	6
+7	7
+8	8
+9	9
+10	10
+11	11
+12	12
+13	13
+14	14
+insert into t2 values (1,1), (2,2), (3,3), (4,4), (5,5), (6,6), (7,7), (8,8), (9,9), (10,10), (11,11), (12,12), (13,13), (14,14);
+select * from t2 order by a;
+id	a
+1	1
+1	1
+2	2
+2	2
+3	3
+3	3
+4	4
+4	4
+5	5
+5	5
+6	6
+6	6
+7	7
+7	7
+8	8
+8	8
+9	9
+9	9
+10	10
+10	10
+11	11
+11	11
+12	12
+12	12
+13	13
+13	13
+14	14
+14	14
+select * from t2 where a >= 1 order by a;
+id	a
+1	1
+1	1
+2	2
+2	2
+3	3
+3	3
+4	4
+4	4
+5	5
+5	5
+6	6
+6	6
+7	7
+7	7
+8	8
+8	8
+9	9
+9	9
+10	10
+10	10
+11	11
+11	11
+12	12
+12	12
+13	13
+13	13
+14	14
+14	14
+connection group2_conn1;
+create table t2 select * from t1;
+show tables;
+Tables_in_multi_inst_group_partition_table
+t1
+t2
+show create table t2;
+Table	Create Table
+t2	CREATE TABLE `t2` (
+  `id` int(11) NOT NULL,
+  `a` int(11) NOT NULL
+) ENGINE=SequoiaDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin
+select * from t2 order by a;
+id	a
+1	1
+2	2
+3	3
+4	4
+5	5
+6	6
+7	7
+8	8
+9	9
+10	10
+11	11
+12	12
+13	13
+14	14
+insert into t2 values (1,1), (2,2), (3,3), (4,4), (5,5), (6,6), (7,7), (8,8), (9,9), (10,10), (11,11), (12,12), (13,13), (14,14);
+select * from t2 order by a;
+id	a
+1	1
+1	1
+2	2
+2	2
+3	3
+3	3
+4	4
+4	4
+5	5
+5	5
+6	6
+6	6
+7	7
+7	7
+8	8
+8	8
+9	9
+9	9
+10	10
+10	10
+11	11
+11	11
+12	12
+12	12
+13	13
+13	13
+14	14
+14	14
+select * from t2 where a >= 1 order by a;
+id	a
+1	1
+1	1
+2	2
+2	2
+3	3
+3	3
+4	4
+4	4
+5	5
+5	5
+6	6
+6	6
+7	7
+7	7
+8	8
+8	8
+9	9
+9	9
+10	10
+10	10
+11	11
+11	11
+12	12
+12	12
+13	13
+13	13
+14	14
+14	14
+connection group1_conn1;
+alter table t1 add partition (partition p7 values in (15, 16));
+show create table t1;
+Table	Create Table
+t1	CREATE TABLE `t1` (
+  `id` int(11) NOT NULL,
+  `a` int(11) NOT NULL
+) ENGINE=SequoiaDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin
+ PARTITION BY LIST  COLUMNS(`a`)
+SUBPARTITION BY HASH (`a`)
+(PARTITION `p0` VALUES IN (1,2) ENGINE = SequoiaDB,
+ PARTITION `p1` VALUES IN (3,4) ENGINE = SequoiaDB,
+ PARTITION `p2` VALUES IN (5,6) ENGINE = SequoiaDB,
+ PARTITION `p3` VALUES IN (7,8) ENGINE = SequoiaDB,
+ PARTITION `p4` VALUES IN (9,10) ENGINE = SequoiaDB,
+ PARTITION `p5` VALUES IN (11,12) ENGINE = SequoiaDB,
+ PARTITION `p6` VALUES IN (13,14) ENGINE = SequoiaDB,
+ PARTITION `p7` VALUES IN (15,16) ENGINE = SequoiaDB)
+select * from t1 order by a;
+id	a
+1	1
+2	2
+3	3
+4	4
+5	5
+6	6
+7	7
+8	8
+9	9
+10	10
+11	11
+12	12
+13	13
+14	14
+insert into t1 values (15, 15), (16, 16);
+select * from t1 order by a;
+id	a
+1	1
+2	2
+3	3
+4	4
+5	5
+6	6
+7	7
+8	8
+9	9
+10	10
+11	11
+12	12
+13	13
+14	14
+15	15
+16	16
+select * from t1 where a >= 15 order by a;
+id	a
+15	15
+16	16
+create index idx on t1(id);
+show index from t1;
+Table	Non_unique	Key_name	Seq_in_index	Column_name	Collation	Cardinality	Sub_part	Packed	Null	Index_type	Comment	Index_comment
+t1	1	idx	1	id	A	NULL	NULL	NULL		BTREE		
+select * from t1 where id > 2 order by id;
+id	a
+3	3
+4	4
+5	5
+6	6
+7	7
+8	8
+9	9
+10	10
+11	11
+12	12
+13	13
+14	14
+15	15
+16	16
+explain select * from t1 where id > 2 order by id;
+id	select_type	table	type	possible_keys	key	key_len	ref	rows	Extra
+1	SIMPLE	t1	ALL	idx	NULL	NULL	NULL	16	Using where with pushed condition
+select * from t1 order by a;
+id	a
+1	1
+2	2
+3	3
+4	4
+5	5
+6	6
+7	7
+8	8
+9	9
+10	10
+11	11
+12	12
+13	13
+14	14
+15	15
+16	16
+drop index idx on t1;
+show index from t1;
+Table	Non_unique	Key_name	Seq_in_index	Column_name	Collation	Cardinality	Sub_part	Packed	Null	Index_type	Comment	Index_comment
+select * from t1 where id > 0 order by id;
+id	a
+1	1
+2	2
+3	3
+4	4
+5	5
+6	6
+7	7
+8	8
+9	9
+10	10
+11	11
+12	12
+13	13
+14	14
+15	15
+16	16
+explain select * from t1 where id > 0 order by id;
+id	select_type	table	type	possible_keys	key	key_len	ref	rows	Extra
+1	SIMPLE	t1	ALL	NULL	NULL	NULL	NULL	16	Using where with pushed condition
+alter table t1 drop partition p0;
+show create table t1;
+Table	Create Table
+t1	CREATE TABLE `t1` (
+  `id` int(11) NOT NULL,
+  `a` int(11) NOT NULL
+) ENGINE=SequoiaDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin
+ PARTITION BY LIST  COLUMNS(`a`)
+SUBPARTITION BY HASH (`a`)
+(PARTITION `p1` VALUES IN (3,4) ENGINE = SequoiaDB,
+ PARTITION `p2` VALUES IN (5,6) ENGINE = SequoiaDB,
+ PARTITION `p3` VALUES IN (7,8) ENGINE = SequoiaDB,
+ PARTITION `p4` VALUES IN (9,10) ENGINE = SequoiaDB,
+ PARTITION `p5` VALUES IN (11,12) ENGINE = SequoiaDB,
+ PARTITION `p6` VALUES IN (13,14) ENGINE = SequoiaDB,
+ PARTITION `p7` VALUES IN (15,16) ENGINE = SequoiaDB)
+select * from t1 order by a;
+id	a
+3	3
+4	4
+5	5
+6	6
+7	7
+8	8
+9	9
+10	10
+11	11
+12	12
+13	13
+14	14
+15	15
+16	16
+insert into t1 values (1, 1);
+ERROR HY000: Table has no partition for value from column_list
+insert into t1 values (3,3), (4,4), (5,5), (6,6), (7,7), (8,8), (9,9), (10,10), (11,11), (12,12), (13,13), (14,14), (15, 15), (16, 16);
+select * from t1 order by a;
+id	a
+3	3
+3	3
+4	4
+4	4
+5	5
+5	5
+6	6
+6	6
+7	7
+7	7
+8	8
+8	8
+9	9
+9	9
+10	10
+10	10
+11	11
+11	11
+12	12
+12	12
+13	13
+13	13
+14	14
+14	14
+15	15
+15	15
+16	16
+16	16
+select * from t1 where a > 10 order by a;
+id	a
+11	11
+11	11
+12	12
+12	12
+13	13
+13	13
+14	14
+14	14
+15	15
+15	15
+16	16
+16	16
+alter table t1 remove partitioning;
+show create table t1;
+Table	Create Table
+t1	CREATE TABLE `t1` (
+  `id` int(11) NOT NULL,
+  `a` int(11) NOT NULL
+) ENGINE=SequoiaDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin
+insert into t1 values (1, 1), (2, 2), (3,3), (4,4), (5,5), (6,6), (7,7), (8,8), (9,9), (10,10), (11,11), (12,12), (13,13), (14,14), (15, 15), (16, 16);
+select * from t1 order by a;
+id	a
+1	1
+2	2
+3	3
+3	3
+3	3
+4	4
+4	4
+4	4
+5	5
+5	5
+5	5
+6	6
+6	6
+6	6
+7	7
+7	7
+7	7
+8	8
+8	8
+8	8
+9	9
+9	9
+9	9
+10	10
+10	10
+10	10
+11	11
+11	11
+11	11
+12	12
+12	12
+12	12
+13	13
+13	13
+13	13
+14	14
+14	14
+14	14
+15	15
+15	15
+15	15
+16	16
+16	16
+16	16
+drop table t1;
+show tables;
+Tables_in_multi_inst_group_partition_table
+t2
+CREATE TABLE t1 (
+id INT NOT NULL,
+a INT NOT NULL
+)
+PARTITION BY LIST COLUMNS (a)
+SUBPARTITION BY HASH (a) (
+PARTITION p0 VALUES IN (1, 2),
+PARTITION p1 VALUES IN (3, 4),
+PARTITION p2 VALUES IN (5, 6),
+PARTITION p3 VALUES IN (7, 8),
+PARTITION p4 VALUES IN (9, 10),
+PARTITION p5 VALUES IN (11, 12),
+PARTITION p6 VALUES IN (13, 14)
+);
+show create table t1;
+Table	Create Table
+t1	CREATE TABLE `t1` (
+  `id` int(11) NOT NULL,
+  `a` int(11) NOT NULL
+) ENGINE=SequoiaDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin
+ PARTITION BY LIST  COLUMNS(`a`)
+SUBPARTITION BY HASH (`a`)
+(PARTITION `p0` VALUES IN (1,2) ENGINE = SequoiaDB,
+ PARTITION `p1` VALUES IN (3,4) ENGINE = SequoiaDB,
+ PARTITION `p2` VALUES IN (5,6) ENGINE = SequoiaDB,
+ PARTITION `p3` VALUES IN (7,8) ENGINE = SequoiaDB,
+ PARTITION `p4` VALUES IN (9,10) ENGINE = SequoiaDB,
+ PARTITION `p5` VALUES IN (11,12) ENGINE = SequoiaDB,
+ PARTITION `p6` VALUES IN (13,14) ENGINE = SequoiaDB)
+insert into t1 values (1,1), (2,2), (3,3), (4,4), (5,5), (6,6), (7,7), (8,8), (9,9), (10,10), (11,11), (12,12), (13,13), (14,14);
+select * from t1 order by a;
+id	a
+1	1
+2	2
+3	3
+4	4
+5	5
+6	6
+7	7
+8	8
+9	9
+10	10
+11	11
+12	12
+13	13
+14	14
+connection group1_conn1;
+drop database multi_inst_group_partition_table;
+connection group2_conn1;
+drop database multi_inst_group_partition_table;
+connection group1_conn1;
+create database multi_inst_group_partition_table;
+use multi_inst_group_partition_table;
+CREATE TABLE t1 (
+id INT NOT NULL,
+a INT NOT NULL
+)
+PARTITION BY RANGE COLUMNS (a)
+SUBPARTITION BY KEY (id)
+SUBPARTITIONS 2 (
+PARTITION p0 VALUES LESS THAN (0),
+PARTITION p1 VALUES LESS THAN (10),
+PARTITION p2 VALUES LESS THAN (20),
+PARTITION p3 VALUES LESS THAN (30),
+PARTITION p4 VALUES LESS THAN (40),
+PARTITION p5 VALUES LESS THAN (50)
+);
+show create table t1;
+Table	Create Table
+t1	CREATE TABLE `t1` (
+  `id` int(11) NOT NULL,
+  `a` int(11) NOT NULL
+) ENGINE=SequoiaDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin
+ PARTITION BY RANGE  COLUMNS(`a`)
+SUBPARTITION BY KEY (`id`)
+SUBPARTITIONS 2
+(PARTITION `p0` VALUES LESS THAN (0) ENGINE = SequoiaDB,
+ PARTITION `p1` VALUES LESS THAN (10) ENGINE = SequoiaDB,
+ PARTITION `p2` VALUES LESS THAN (20) ENGINE = SequoiaDB,
+ PARTITION `p3` VALUES LESS THAN (30) ENGINE = SequoiaDB,
+ PARTITION `p4` VALUES LESS THAN (40) ENGINE = SequoiaDB,
+ PARTITION `p5` VALUES LESS THAN (50) ENGINE = SequoiaDB)
+insert into t1 values (0,-1), (1,0), (2,10), (3,20), (4,30), (5,40), (5,49);
+select * from t1 order by a;
+id	a
+0	-1
+1	0
+2	10
+3	20
+4	30
+5	40
+5	49
+select * from t1 where a > -1 order by a;
+id	a
+1	0
+2	10
+3	20
+4	30
+5	40
+5	49
+connection group2_conn1;
+create database multi_inst_group_partition_table;
+use multi_inst_group_partition_table;
+CREATE TABLE t1 (
+id INT NOT NULL,
+a INT NOT NULL
+)
+PARTITION BY RANGE COLUMNS (a)
+SUBPARTITION BY KEY (id)
+SUBPARTITIONS 2 (
+PARTITION p0 VALUES LESS THAN (0),
+PARTITION p1 VALUES LESS THAN (10),
+PARTITION p2 VALUES LESS THAN (20),
+PARTITION p3 VALUES LESS THAN (30),
+PARTITION p4 VALUES LESS THAN (40),
+PARTITION p5 VALUES LESS THAN (50)
+);
+show create table t1;
+Table	Create Table
+t1	CREATE TABLE `t1` (
+  `id` int(11) NOT NULL,
+  `a` int(11) NOT NULL
+) ENGINE=SequoiaDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin
+ PARTITION BY RANGE  COLUMNS(`a`)
+SUBPARTITION BY KEY (`id`)
+SUBPARTITIONS 2
+(PARTITION `p0` VALUES LESS THAN (0) ENGINE = SequoiaDB,
+ PARTITION `p1` VALUES LESS THAN (10) ENGINE = SequoiaDB,
+ PARTITION `p2` VALUES LESS THAN (20) ENGINE = SequoiaDB,
+ PARTITION `p3` VALUES LESS THAN (30) ENGINE = SequoiaDB,
+ PARTITION `p4` VALUES LESS THAN (40) ENGINE = SequoiaDB,
+ PARTITION `p5` VALUES LESS THAN (50) ENGINE = SequoiaDB)
+insert into t1 values (0,-1), (1,0), (2,10), (3,20), (4,30), (5,40), (5,49);
+select * from t1 order by a;
+id	a
+0	-1
+1	0
+2	10
+3	20
+4	30
+5	40
+5	49
+select * from t1 where a > -1 order by a;
+id	a
+1	0
+2	10
+3	20
+4	30
+5	40
+5	49
+connection group1_conn1;
+create table t2 select * from t1;
+show tables;
+Tables_in_multi_inst_group_partition_table
+t1
+t2
+show create table t2;
+Table	Create Table
+t2	CREATE TABLE `t2` (
+  `id` int(11) NOT NULL,
+  `a` int(11) NOT NULL
+) ENGINE=SequoiaDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin
+select * from t2 order by a;
+id	a
+0	-1
+1	0
+2	10
+3	20
+4	30
+5	40
+5	49
+insert into t2 values (0,-1), (1,0), (2,10), (3,20), (4,30), (5,40), (5,49);
+select * from t2 order by a;
+id	a
+0	-1
+0	-1
+1	0
+1	0
+2	10
+2	10
+3	20
+3	20
+4	30
+4	30
+5	40
+5	40
+5	49
+5	49
+select * from t2 where a > -1 order by a;
+id	a
+1	0
+1	0
+2	10
+2	10
+3	20
+3	20
+4	30
+4	30
+5	40
+5	40
+5	49
+5	49
+connection group2_conn1;
+create table t2 select * from t1;
+show tables;
+Tables_in_multi_inst_group_partition_table
+t1
+t2
+show create table t2;
+Table	Create Table
+t2	CREATE TABLE `t2` (
+  `id` int(11) NOT NULL,
+  `a` int(11) NOT NULL
+) ENGINE=SequoiaDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin
+select * from t2 order by a;
+id	a
+0	-1
+1	0
+2	10
+3	20
+4	30
+5	40
+5	49
+insert into t2 values (0,-1), (1,0), (2,10), (3,20), (4,30), (5,40), (5,49);
+select * from t2 order by a;
+id	a
+0	-1
+0	-1
+1	0
+1	0
+2	10
+2	10
+3	20
+3	20
+4	30
+4	30
+5	40
+5	40
+5	49
+5	49
+select * from t2 where a > -1 order by a;
+id	a
+1	0
+1	0
+2	10
+2	10
+3	20
+3	20
+4	30
+4	30
+5	40
+5	40
+5	49
+5	49
+connection group1_conn1;
+alter table t1 add partition (partition p6 values less than (60));
+show create table t1;
+Table	Create Table
+t1	CREATE TABLE `t1` (
+  `id` int(11) NOT NULL,
+  `a` int(11) NOT NULL
+) ENGINE=SequoiaDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin
+ PARTITION BY RANGE  COLUMNS(`a`)
+SUBPARTITION BY KEY (`id`)
+SUBPARTITIONS 2
+(PARTITION `p0` VALUES LESS THAN (0) ENGINE = SequoiaDB,
+ PARTITION `p1` VALUES LESS THAN (10) ENGINE = SequoiaDB,
+ PARTITION `p2` VALUES LESS THAN (20) ENGINE = SequoiaDB,
+ PARTITION `p3` VALUES LESS THAN (30) ENGINE = SequoiaDB,
+ PARTITION `p4` VALUES LESS THAN (40) ENGINE = SequoiaDB,
+ PARTITION `p5` VALUES LESS THAN (50) ENGINE = SequoiaDB,
+ PARTITION `p6` VALUES LESS THAN (60) ENGINE = SequoiaDB)
+select * from t1 order by a;
+id	a
+0	-1
+1	0
+2	10
+3	20
+4	30
+5	40
+5	49
+insert into t1 values (6, 59);
+select * from t1 order by a;
+id	a
+0	-1
+1	0
+2	10
+3	20
+4	30
+5	40
+5	49
+6	59
+select * from t1 where a >= 50 order by a;
+id	a
+6	59
+create index idx on t1(id);
+show index from t1;
+Table	Non_unique	Key_name	Seq_in_index	Column_name	Collation	Cardinality	Sub_part	Packed	Null	Index_type	Comment	Index_comment
+t1	1	idx	1	id	A	NULL	NULL	NULL		BTREE		
+select * from t1 where id > 1 order by id;
+id	a
+2	10
+3	20
+4	30
+5	40
+5	49
+6	59
+explain select * from t1 where id > 2 order by id;
+id	select_type	table	type	possible_keys	key	key_len	ref	rows	Extra
+1	SIMPLE	t1	ALL	idx	NULL	NULL	NULL	8	Using where with pushed condition
+select * from t1 order by a;
+id	a
+0	-1
+1	0
+2	10
+3	20
+4	30
+5	40
+5	49
+6	59
+drop index idx on t1;
+show index from t1;
+Table	Non_unique	Key_name	Seq_in_index	Column_name	Collation	Cardinality	Sub_part	Packed	Null	Index_type	Comment	Index_comment
+select * from t1 where id > 0 order by id;
+id	a
+1	0
+2	10
+3	20
+4	30
+5	40
+5	49
+6	59
+explain select * from t1 where id > 0 order by id;
+id	select_type	table	type	possible_keys	key	key_len	ref	rows	Extra
+1	SIMPLE	t1	ALL	NULL	NULL	NULL	NULL	8	Using where with pushed condition
+alter table t1 drop partition p0;
+alter table t1 drop partition p6;
+show create table t1;
+Table	Create Table
+t1	CREATE TABLE `t1` (
+  `id` int(11) NOT NULL,
+  `a` int(11) NOT NULL
+) ENGINE=SequoiaDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin
+ PARTITION BY RANGE  COLUMNS(`a`)
+SUBPARTITION BY KEY (`id`)
+SUBPARTITIONS 2
+(PARTITION `p1` VALUES LESS THAN (10) ENGINE = SequoiaDB,
+ PARTITION `p2` VALUES LESS THAN (20) ENGINE = SequoiaDB,
+ PARTITION `p3` VALUES LESS THAN (30) ENGINE = SequoiaDB,
+ PARTITION `p4` VALUES LESS THAN (40) ENGINE = SequoiaDB,
+ PARTITION `p5` VALUES LESS THAN (50) ENGINE = SequoiaDB)
+select * from t1 order by a;
+id	a
+1	0
+2	10
+3	20
+4	30
+5	40
+5	49
+insert into t1 values (1,0), (2,10), (3,20), (4,30), (5,40), (5,49);
+insert into t1 values (0, -1);
+ERROR HY000: Table has no partition for value from column_list
+insert into t1 values (6, 59);
+ERROR HY000: Table has no partition for value from column_list
+select * from t1 order by a;
+id	a
+1	0
+1	0
+2	10
+2	10
+3	20
+3	20
+4	30
+4	30
+5	40
+5	40
+5	49
+5	49
+select * from t1 where a > 10 order by a;
+id	a
+3	20
+3	20
+4	30
+4	30
+5	40
+5	40
+5	49
+5	49
+alter table t1 remove partitioning;
+show create table t1;
+Table	Create Table
+t1	CREATE TABLE `t1` (
+  `id` int(11) NOT NULL,
+  `a` int(11) NOT NULL
+) ENGINE=SequoiaDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin
+insert into t1 values (0,-1), (1,0), (2,10), (3,20), (4,30), (5,40), (5,49), (6, 59);
+select * from t1 order by a;
+id	a
+0	-1
+1	0
+1	0
+1	0
+2	10
+2	10
+2	10
+3	20
+3	20
+3	20
+4	30
+4	30
+4	30
+5	40
+5	40
+5	40
+5	49
+5	49
+5	49
+6	59
+drop table t1;
+show tables;
+Tables_in_multi_inst_group_partition_table
+t2
+CREATE TABLE t1 (
+id INT NOT NULL,
+a INT NOT NULL
+)
+PARTITION BY RANGE COLUMNS (a)
+SUBPARTITION BY KEY (id)
+SUBPARTITIONS 2 (
+PARTITION p0 VALUES LESS THAN (0),
+PARTITION p1 VALUES LESS THAN (10),
+PARTITION p2 VALUES LESS THAN (20),
+PARTITION p3 VALUES LESS THAN (30),
+PARTITION p4 VALUES LESS THAN (40),
+PARTITION p5 VALUES LESS THAN (50)
+);
+show create table t1;
+Table	Create Table
+t1	CREATE TABLE `t1` (
+  `id` int(11) NOT NULL,
+  `a` int(11) NOT NULL
+) ENGINE=SequoiaDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin
+ PARTITION BY RANGE  COLUMNS(`a`)
+SUBPARTITION BY KEY (`id`)
+SUBPARTITIONS 2
+(PARTITION `p0` VALUES LESS THAN (0) ENGINE = SequoiaDB,
+ PARTITION `p1` VALUES LESS THAN (10) ENGINE = SequoiaDB,
+ PARTITION `p2` VALUES LESS THAN (20) ENGINE = SequoiaDB,
+ PARTITION `p3` VALUES LESS THAN (30) ENGINE = SequoiaDB,
+ PARTITION `p4` VALUES LESS THAN (40) ENGINE = SequoiaDB,
+ PARTITION `p5` VALUES LESS THAN (50) ENGINE = SequoiaDB)
+insert into t1 values (0,-1), (1,0), (2,10), (3,20), (4,30), (5,40), (5,49);
+select * from t1 order by a;
+id	a
+0	-1
+1	0
+2	10
+3	20
+4	30
+5	40
+5	49
+connection group1_conn1;
+drop database multi_inst_group_partition_table;
+connection group2_conn1;
+drop database multi_inst_group_partition_table;
+connection group1_conn1;
+create database multi_inst_group_partition_table;
+use multi_inst_group_partition_table;
+create table t1(id int not null, a int not null);
+show create table t1;
+Table	Create Table
+t1	CREATE TABLE `t1` (
+  `id` int(11) NOT NULL,
+  `a` int(11) NOT NULL
+) ENGINE=SequoiaDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin
+insert into t1 values (0,0), (0,1),(1,10), (2,20), (3,30), (4,40), (5,59);
+select * from t1 order by a;
+id	a
+0	0
+0	1
+1	10
+2	20
+3	30
+4	40
+5	59
+connection group2_conn1;
+create database multi_inst_group_partition_table;
+use multi_inst_group_partition_table;
+create table t1(id int not null, a int not null);
+show create table t1;
+Table	Create Table
+t1	CREATE TABLE `t1` (
+  `id` int(11) NOT NULL,
+  `a` int(11) NOT NULL
+) ENGINE=SequoiaDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin
+insert into t1 values (0,0), (0,1),(1,10), (2,20), (3,30), (4,40), (5,59);
+select * from t1 order by a;
+id	a
+0	0
+0	1
+1	10
+2	20
+3	30
+4	40
+5	59
+connection group1_conn1;
+alter table t1 
+partition by range (a) (
+partition p0 values less than (10),
+partition p1 values less than (20),
+partition p2 values less than (30),
+partition p3 values less than (40),
+partition p4 values less than (50),
+partition p5 values less than (60)
+);
+show create table t1;
+Table	Create Table
+t1	CREATE TABLE `t1` (
+  `id` int(11) NOT NULL,
+  `a` int(11) NOT NULL
+) ENGINE=SequoiaDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin
+ PARTITION BY RANGE (`a`)
+(PARTITION `p0` VALUES LESS THAN (10) ENGINE = SequoiaDB,
+ PARTITION `p1` VALUES LESS THAN (20) ENGINE = SequoiaDB,
+ PARTITION `p2` VALUES LESS THAN (30) ENGINE = SequoiaDB,
+ PARTITION `p3` VALUES LESS THAN (40) ENGINE = SequoiaDB,
+ PARTITION `p4` VALUES LESS THAN (50) ENGINE = SequoiaDB,
+ PARTITION `p5` VALUES LESS THAN (60) ENGINE = SequoiaDB)
+select * from t1 order by a;
+id	a
+0	0
+0	1
+1	10
+2	20
+3	30
+4	40
+5	59
+insert into t1 values (0,0), (0,1),(1,10), (2,20), (3,30), (4,40), (5,59);
+select * from t1 order by a;
+id	a
+0	0
+0	0
+0	1
+0	1
+1	10
+1	10
+2	20
+2	20
+3	30
+3	30
+4	40
+4	40
+5	59
+5	59
+select * from t1 where a >= 1 order by a;
+id	a
+0	1
+0	1
+1	10
+1	10
+2	20
+2	20
+3	30
+3	30
+4	40
+4	40
+5	59
+5	59
+connection group2_conn1;
+alter table t1 
+partition by range (a) (
+partition p0 values less than (10),
+partition p1 values less than (20),
+partition p2 values less than (30),
+partition p3 values less than (40),
+partition p4 values less than (50),
+partition p5 values less than (60)
+);
+show create table t1;
+Table	Create Table
+t1	CREATE TABLE `t1` (
+  `id` int(11) NOT NULL,
+  `a` int(11) NOT NULL
+) ENGINE=SequoiaDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin
+ PARTITION BY RANGE (`a`)
+(PARTITION `p0` VALUES LESS THAN (10) ENGINE = SequoiaDB,
+ PARTITION `p1` VALUES LESS THAN (20) ENGINE = SequoiaDB,
+ PARTITION `p2` VALUES LESS THAN (30) ENGINE = SequoiaDB,
+ PARTITION `p3` VALUES LESS THAN (40) ENGINE = SequoiaDB,
+ PARTITION `p4` VALUES LESS THAN (50) ENGINE = SequoiaDB,
+ PARTITION `p5` VALUES LESS THAN (60) ENGINE = SequoiaDB)
+select * from t1 order by a;
+id	a
+0	0
+0	1
+1	10
+2	20
+3	30
+4	40
+5	59
+insert into t1 values (0,0), (0,1),(1,10), (2,20), (3,30), (4,40), (5,59);
+select * from t1 order by a;
+id	a
+0	0
+0	0
+0	1
+0	1
+1	10
+1	10
+2	20
+2	20
+3	30
+3	30
+4	40
+4	40
+5	59
+5	59
+select * from t1 where a >= 1 order by a;
+id	a
+0	1
+0	1
+1	10
+1	10
+2	20
+2	20
+3	30
+3	30
+4	40
+4	40
+5	59
+5	59
+connection group1_conn1;
+create table t2(a int);
+rename table t1 to t2;
+ERROR 42S01: Table 't2' already exists
+drop table t2;
+rename table t1 to t2;
+show create table t2;
+Table	Create Table
+t2	CREATE TABLE `t2` (
+  `id` int(11) NOT NULL,
+  `a` int(11) NOT NULL
+) ENGINE=SequoiaDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin
+ PARTITION BY RANGE (`a`)
+(PARTITION `p0` VALUES LESS THAN (10) ENGINE = SequoiaDB,
+ PARTITION `p1` VALUES LESS THAN (20) ENGINE = SequoiaDB,
+ PARTITION `p2` VALUES LESS THAN (30) ENGINE = SequoiaDB,
+ PARTITION `p3` VALUES LESS THAN (40) ENGINE = SequoiaDB,
+ PARTITION `p4` VALUES LESS THAN (50) ENGINE = SequoiaDB,
+ PARTITION `p5` VALUES LESS THAN (60) ENGINE = SequoiaDB)
+select * from t2 order by a;
+id	a
+0	0
+0	0
+0	1
+0	1
+1	10
+1	10
+2	20
+2	20
+3	30
+3	30
+4	40
+4	40
+5	59
+5	59
+connection group2_conn1;
+create table t2(a int);
+rename table t1 to t2;
+ERROR 42S01: Table 't2' already exists
+drop table t2;
+rename table t1 to t2;
+show create table t2;
+Table	Create Table
+t2	CREATE TABLE `t2` (
+  `id` int(11) NOT NULL,
+  `a` int(11) NOT NULL
+) ENGINE=SequoiaDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin
+ PARTITION BY RANGE (`a`)
+(PARTITION `p0` VALUES LESS THAN (10) ENGINE = SequoiaDB,
+ PARTITION `p1` VALUES LESS THAN (20) ENGINE = SequoiaDB,
+ PARTITION `p2` VALUES LESS THAN (30) ENGINE = SequoiaDB,
+ PARTITION `p3` VALUES LESS THAN (40) ENGINE = SequoiaDB,
+ PARTITION `p4` VALUES LESS THAN (50) ENGINE = SequoiaDB,
+ PARTITION `p5` VALUES LESS THAN (60) ENGINE = SequoiaDB)
+select * from t2 order by a;
+id	a
+0	0
+0	0
+0	1
+0	1
+1	10
+1	10
+2	20
+2	20
+3	30
+3	30
+4	40
+4	40
+5	59
+5	59
+connection group1_conn1;
+create table t1(a int);
+alter table t2 rename to t1;
+ERROR 42S01: Table 't1' already exists
+drop table t1;
+alter table t2 rename to t1;
+show create table t1;
+Table	Create Table
+t1	CREATE TABLE `t1` (
+  `id` int(11) NOT NULL,
+  `a` int(11) NOT NULL
+) ENGINE=SequoiaDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin
+ PARTITION BY RANGE (`a`)
+(PARTITION `p0` VALUES LESS THAN (10) ENGINE = SequoiaDB,
+ PARTITION `p1` VALUES LESS THAN (20) ENGINE = SequoiaDB,
+ PARTITION `p2` VALUES LESS THAN (30) ENGINE = SequoiaDB,
+ PARTITION `p3` VALUES LESS THAN (40) ENGINE = SequoiaDB,
+ PARTITION `p4` VALUES LESS THAN (50) ENGINE = SequoiaDB,
+ PARTITION `p5` VALUES LESS THAN (60) ENGINE = SequoiaDB)
+select * from t1 order by a;
+id	a
+0	0
+0	0
+0	1
+0	1
+1	10
+1	10
+2	20
+2	20
+3	30
+3	30
+4	40
+4	40
+5	59
+5	59
+connection group2_conn1;
+create table t1(a int);
+alter table t2 rename to t1;
+ERROR 42S01: Table 't1' already exists
+drop table t1;
+alter table t2 rename to t1;
+show create table t1;
+Table	Create Table
+t1	CREATE TABLE `t1` (
+  `id` int(11) NOT NULL,
+  `a` int(11) NOT NULL
+) ENGINE=SequoiaDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin
+ PARTITION BY RANGE (`a`)
+(PARTITION `p0` VALUES LESS THAN (10) ENGINE = SequoiaDB,
+ PARTITION `p1` VALUES LESS THAN (20) ENGINE = SequoiaDB,
+ PARTITION `p2` VALUES LESS THAN (30) ENGINE = SequoiaDB,
+ PARTITION `p3` VALUES LESS THAN (40) ENGINE = SequoiaDB,
+ PARTITION `p4` VALUES LESS THAN (50) ENGINE = SequoiaDB,
+ PARTITION `p5` VALUES LESS THAN (60) ENGINE = SequoiaDB)
+select * from t1 order by a;
+id	a
+0	0
+0	0
+0	1
+0	1
+1	10
+1	10
+2	20
+2	20
+3	30
+3	30
+4	40
+4	40
+5	59
+5	59
+connection group1_conn1;
+alter table t1 remove partitioning;
+show create table t1;
+Table	Create Table
+t1	CREATE TABLE `t1` (
+  `id` int(11) NOT NULL,
+  `a` int(11) NOT NULL
+) ENGINE=SequoiaDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin
+insert into t1 values (0,0), (0,1),(1,10), (2,20), (3,30), (4,40), (5,60);
+select * from t1 order by a;
+id	a
+0	0
+0	0
+0	0
+0	1
+0	1
+0	1
+1	10
+1	10
+1	10
+2	20
+2	20
+2	20
+3	30
+3	30
+3	30
+4	40
+4	40
+4	40
+5	59
+5	59
+5	60
+connection group2_conn1;
+alter table t1 remove partitioning;
+show create table t1;
+Table	Create Table
+t1	CREATE TABLE `t1` (
+  `id` int(11) NOT NULL,
+  `a` int(11) NOT NULL
+) ENGINE=SequoiaDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin
+insert into t1 values (0,0), (0,1),(1,10), (2,20), (3,30), (4,40), (5,60);
+select * from t1 order by a;
+id	a
+0	0
+0	0
+0	0
+0	1
+0	1
+0	1
+1	10
+1	10
+1	10
+2	20
+2	20
+2	20
+3	30
+3	30
+3	30
+4	40
+4	40
+4	40
+5	59
+5	59
+5	60
+connection group1_conn1;
+alter table t1 
+PARTITION BY LIST COLUMNS (a) (
+PARTITION p0 VALUES IN (1, 2),
+PARTITION p1 VALUES IN (3, 4),
+PARTITION p2 VALUES IN (5, 6),
+PARTITION p3 VALUES IN (7, 8),
+PARTITION p4 VALUES IN (9, 10),
+PARTITION p5 VALUES IN (11, 12)
+);
+ERROR HY000: Table has no partition for value from column_list
+truncate table t1;
+alter table t1 
+PARTITION BY LIST COLUMNS (a) (
+PARTITION p0 VALUES IN (1, 2),
+PARTITION p1 VALUES IN (3, 4),
+PARTITION p2 VALUES IN (5, 6),
+PARTITION p3 VALUES IN (7, 8),
+PARTITION p4 VALUES IN (9, 10),
+PARTITION p5 VALUES IN (11, 12)
+);
+show create table t1;
+Table	Create Table
+t1	CREATE TABLE `t1` (
+  `id` int(11) NOT NULL,
+  `a` int(11) NOT NULL
+) ENGINE=SequoiaDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin
+ PARTITION BY LIST  COLUMNS(`a`)
+(PARTITION `p0` VALUES IN (1,2) ENGINE = SequoiaDB,
+ PARTITION `p1` VALUES IN (3,4) ENGINE = SequoiaDB,
+ PARTITION `p2` VALUES IN (5,6) ENGINE = SequoiaDB,
+ PARTITION `p3` VALUES IN (7,8) ENGINE = SequoiaDB,
+ PARTITION `p4` VALUES IN (9,10) ENGINE = SequoiaDB,
+ PARTITION `p5` VALUES IN (11,12) ENGINE = SequoiaDB)
+select * from t1 order by a;
+id	a
+insert into t1 values (1,1), (2,2), (3,3), (4,4), (5,5), (6,6), (7,7), (8,8), (9,9), (10,10), (11,11), (12,12);
+select * from t1 order by a;
+id	a
+1	1
+2	2
+3	3
+4	4
+5	5
+6	6
+7	7
+8	8
+9	9
+10	10
+11	11
+12	12
+select * from t1 where a >= 1 order by a;
+id	a
+1	1
+2	2
+3	3
+4	4
+5	5
+6	6
+7	7
+8	8
+9	9
+10	10
+11	11
+12	12
+connection group2_conn1;
+alter table t1 
+PARTITION BY LIST COLUMNS (a) (
+PARTITION p0 VALUES IN (1, 2),
+PARTITION p1 VALUES IN (3, 4),
+PARTITION p2 VALUES IN (5, 6),
+PARTITION p3 VALUES IN (7, 8),
+PARTITION p4 VALUES IN (9, 10),
+PARTITION p5 VALUES IN (11, 12)
+);
+ERROR HY000: Table has no partition for value from column_list
+truncate table t1;
+alter table t1 
+PARTITION BY LIST COLUMNS (a) (
+PARTITION p0 VALUES IN (1, 2),
+PARTITION p1 VALUES IN (3, 4),
+PARTITION p2 VALUES IN (5, 6),
+PARTITION p3 VALUES IN (7, 8),
+PARTITION p4 VALUES IN (9, 10),
+PARTITION p5 VALUES IN (11, 12)
+);
+show create table t1;
+Table	Create Table
+t1	CREATE TABLE `t1` (
+  `id` int(11) NOT NULL,
+  `a` int(11) NOT NULL
+) ENGINE=SequoiaDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin
+ PARTITION BY LIST  COLUMNS(`a`)
+(PARTITION `p0` VALUES IN (1,2) ENGINE = SequoiaDB,
+ PARTITION `p1` VALUES IN (3,4) ENGINE = SequoiaDB,
+ PARTITION `p2` VALUES IN (5,6) ENGINE = SequoiaDB,
+ PARTITION `p3` VALUES IN (7,8) ENGINE = SequoiaDB,
+ PARTITION `p4` VALUES IN (9,10) ENGINE = SequoiaDB,
+ PARTITION `p5` VALUES IN (11,12) ENGINE = SequoiaDB)
+select * from t1 order by a;
+id	a
+insert into t1 values (1,1), (2,2), (3,3), (4,4), (5,5), (6,6), (7,7), (8,8), (9,9), (10,10), (11,11), (12,12);
+select * from t1 order by a;
+id	a
+1	1
+2	2
+3	3
+4	4
+5	5
+6	6
+7	7
+8	8
+9	9
+10	10
+11	11
+12	12
+select * from t1 where a >= 1 order by a;
+id	a
+1	1
+2	2
+3	3
+4	4
+5	5
+6	6
+7	7
+8	8
+9	9
+10	10
+11	11
+12	12
+connection group1_conn1;
+create table t2(a int);
+rename table t1 to t2;
+ERROR 42S01: Table 't2' already exists
+drop table t2;
+rename table t1 to t2;
+show create table t2;
+Table	Create Table
+t2	CREATE TABLE `t2` (
+  `id` int(11) NOT NULL,
+  `a` int(11) NOT NULL
+) ENGINE=SequoiaDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin
+ PARTITION BY LIST  COLUMNS(`a`)
+(PARTITION `p0` VALUES IN (1,2) ENGINE = SequoiaDB,
+ PARTITION `p1` VALUES IN (3,4) ENGINE = SequoiaDB,
+ PARTITION `p2` VALUES IN (5,6) ENGINE = SequoiaDB,
+ PARTITION `p3` VALUES IN (7,8) ENGINE = SequoiaDB,
+ PARTITION `p4` VALUES IN (9,10) ENGINE = SequoiaDB,
+ PARTITION `p5` VALUES IN (11,12) ENGINE = SequoiaDB)
+select * from t2 order by a;
+id	a
+1	1
+2	2
+3	3
+4	4
+5	5
+6	6
+7	7
+8	8
+9	9
+10	10
+11	11
+12	12
+connection group2_conn1;
+create table t2(a int);
+rename table t1 to t2;
+ERROR 42S01: Table 't2' already exists
+drop table t2;
+rename table t1 to t2;
+show create table t2;
+Table	Create Table
+t2	CREATE TABLE `t2` (
+  `id` int(11) NOT NULL,
+  `a` int(11) NOT NULL
+) ENGINE=SequoiaDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin
+ PARTITION BY LIST  COLUMNS(`a`)
+(PARTITION `p0` VALUES IN (1,2) ENGINE = SequoiaDB,
+ PARTITION `p1` VALUES IN (3,4) ENGINE = SequoiaDB,
+ PARTITION `p2` VALUES IN (5,6) ENGINE = SequoiaDB,
+ PARTITION `p3` VALUES IN (7,8) ENGINE = SequoiaDB,
+ PARTITION `p4` VALUES IN (9,10) ENGINE = SequoiaDB,
+ PARTITION `p5` VALUES IN (11,12) ENGINE = SequoiaDB)
+select * from t2 order by a;
+id	a
+1	1
+2	2
+3	3
+4	4
+5	5
+6	6
+7	7
+8	8
+9	9
+10	10
+11	11
+12	12
+connection group1_conn1;
+create table t1(a int);
+alter table t2 rename to t1;
+ERROR 42S01: Table 't1' already exists
+drop table t1;
+alter table t2 rename to t1;
+show create table t1;
+Table	Create Table
+t1	CREATE TABLE `t1` (
+  `id` int(11) NOT NULL,
+  `a` int(11) NOT NULL
+) ENGINE=SequoiaDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin
+ PARTITION BY LIST  COLUMNS(`a`)
+(PARTITION `p0` VALUES IN (1,2) ENGINE = SequoiaDB,
+ PARTITION `p1` VALUES IN (3,4) ENGINE = SequoiaDB,
+ PARTITION `p2` VALUES IN (5,6) ENGINE = SequoiaDB,
+ PARTITION `p3` VALUES IN (7,8) ENGINE = SequoiaDB,
+ PARTITION `p4` VALUES IN (9,10) ENGINE = SequoiaDB,
+ PARTITION `p5` VALUES IN (11,12) ENGINE = SequoiaDB)
+select * from t1 order by a;
+id	a
+1	1
+2	2
+3	3
+4	4
+5	5
+6	6
+7	7
+8	8
+9	9
+10	10
+11	11
+12	12
+connection group2_conn1;
+create table t1(a int);
+alter table t2 rename to t1;
+ERROR 42S01: Table 't1' already exists
+drop table t1;
+alter table t2 rename to t1;
+show create table t1;
+Table	Create Table
+t1	CREATE TABLE `t1` (
+  `id` int(11) NOT NULL,
+  `a` int(11) NOT NULL
+) ENGINE=SequoiaDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin
+ PARTITION BY LIST  COLUMNS(`a`)
+(PARTITION `p0` VALUES IN (1,2) ENGINE = SequoiaDB,
+ PARTITION `p1` VALUES IN (3,4) ENGINE = SequoiaDB,
+ PARTITION `p2` VALUES IN (5,6) ENGINE = SequoiaDB,
+ PARTITION `p3` VALUES IN (7,8) ENGINE = SequoiaDB,
+ PARTITION `p4` VALUES IN (9,10) ENGINE = SequoiaDB,
+ PARTITION `p5` VALUES IN (11,12) ENGINE = SequoiaDB)
+select * from t1 order by a;
+id	a
+1	1
+2	2
+3	3
+4	4
+5	5
+6	6
+7	7
+8	8
+9	9
+10	10
+11	11
+12	12
+connection group1_conn1;
+alter table t1 remove partitioning;
+show create table t1;
+Table	Create Table
+t1	CREATE TABLE `t1` (
+  `id` int(11) NOT NULL,
+  `a` int(11) NOT NULL
+) ENGINE=SequoiaDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin
+insert into t1 values (1,1), (2,2), (3,3), (4,4), (5,5), (6,6), (7,7), (8,8), (9,9), (10,10), (11,11), (12,12);
+select * from t1 order by a;
+id	a
+1	1
+1	1
+2	2
+2	2
+3	3
+3	3
+4	4
+4	4
+5	5
+5	5
+6	6
+6	6
+7	7
+7	7
+8	8
+8	8
+9	9
+9	9
+10	10
+10	10
+11	11
+11	11
+12	12
+12	12
+connection group2_conn1;
+alter table t1 remove partitioning;
+show create table t1;
+Table	Create Table
+t1	CREATE TABLE `t1` (
+  `id` int(11) NOT NULL,
+  `a` int(11) NOT NULL
+) ENGINE=SequoiaDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin
+insert into t1 values (1,1), (2,2), (3,3), (4,4), (5,5), (6,6), (7,7), (8,8), (9,9), (10,10), (11,11), (12,12);
+select * from t1 order by a;
+id	a
+1	1
+1	1
+2	2
+2	2
+3	3
+3	3
+4	4
+4	4
+5	5
+5	5
+6	6
+6	6
+7	7
+7	7
+8	8
+8	8
+9	9
+9	9
+10	10
+10	10
+11	11
+11	11
+12	12
+12	12
+connection group1_conn1;
+alter table t1 
+PARTITION BY HASH (a)
+PARTITIONS 6;
+show create table t1;
+Table	Create Table
+t1	CREATE TABLE `t1` (
+  `id` int(11) NOT NULL,
+  `a` int(11) NOT NULL
+) ENGINE=SequoiaDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin
+ PARTITION BY HASH (`a`)
+PARTITIONS 6
+select * from t1 order by a;
+id	a
+1	1
+1	1
+2	2
+2	2
+3	3
+3	3
+4	4
+4	4
+5	5
+5	5
+6	6
+6	6
+7	7
+7	7
+8	8
+8	8
+9	9
+9	9
+10	10
+10	10
+11	11
+11	11
+12	12
+12	12
+insert into t1 values (1,1), (2,2), (3,3), (4,4), (5,5), (6,6), (7,7), (8,8), (9,9), (10,10), (11,11), (12,12);
+select * from t1 order by a;
+id	a
+1	1
+1	1
+1	1
+2	2
+2	2
+2	2
+3	3
+3	3
+3	3
+4	4
+4	4
+4	4
+5	5
+5	5
+5	5
+6	6
+6	6
+6	6
+7	7
+7	7
+7	7
+8	8
+8	8
+8	8
+9	9
+9	9
+9	9
+10	10
+10	10
+10	10
+11	11
+11	11
+11	11
+12	12
+12	12
+12	12
+select * from t1 where a >= 1 order by a;
+id	a
+1	1
+1	1
+1	1
+2	2
+2	2
+2	2
+3	3
+3	3
+3	3
+4	4
+4	4
+4	4
+5	5
+5	5
+5	5
+6	6
+6	6
+6	6
+7	7
+7	7
+7	7
+8	8
+8	8
+8	8
+9	9
+9	9
+9	9
+10	10
+10	10
+10	10
+11	11
+11	11
+11	11
+12	12
+12	12
+12	12
+connection group2_conn1;
+alter table t1 
+PARTITION BY HASH (a)
+PARTITIONS 6;
+show create table t1;
+Table	Create Table
+t1	CREATE TABLE `t1` (
+  `id` int(11) NOT NULL,
+  `a` int(11) NOT NULL
+) ENGINE=SequoiaDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin
+ PARTITION BY HASH (`a`)
+PARTITIONS 6
+select * from t1 order by a;
+id	a
+1	1
+1	1
+2	2
+2	2
+3	3
+3	3
+4	4
+4	4
+5	5
+5	5
+6	6
+6	6
+7	7
+7	7
+8	8
+8	8
+9	9
+9	9
+10	10
+10	10
+11	11
+11	11
+12	12
+12	12
+insert into t1 values (1,1), (2,2), (3,3), (4,4), (5,5), (6,6), (7,7), (8,8), (9,9), (10,10), (11,11), (12,12);
+select * from t1 order by a;
+id	a
+1	1
+1	1
+1	1
+2	2
+2	2
+2	2
+3	3
+3	3
+3	3
+4	4
+4	4
+4	4
+5	5
+5	5
+5	5
+6	6
+6	6
+6	6
+7	7
+7	7
+7	7
+8	8
+8	8
+8	8
+9	9
+9	9
+9	9
+10	10
+10	10
+10	10
+11	11
+11	11
+11	11
+12	12
+12	12
+12	12
+select * from t1 where a >= 1 order by a;
+id	a
+1	1
+1	1
+1	1
+2	2
+2	2
+2	2
+3	3
+3	3
+3	3
+4	4
+4	4
+4	4
+5	5
+5	5
+5	5
+6	6
+6	6
+6	6
+7	7
+7	7
+7	7
+8	8
+8	8
+8	8
+9	9
+9	9
+9	9
+10	10
+10	10
+10	10
+11	11
+11	11
+11	11
+12	12
+12	12
+12	12
+connection group1_conn1;
+create table t2(a int);
+rename table t1 to t2;
+ERROR 42S01: Table 't2' already exists
+drop table t2;
+rename table t1 to t2;
+show create table t2;
+Table	Create Table
+t2	CREATE TABLE `t2` (
+  `id` int(11) NOT NULL,
+  `a` int(11) NOT NULL
+) ENGINE=SequoiaDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin
+ PARTITION BY HASH (`a`)
+PARTITIONS 6
+select * from t2 order by a;
+id	a
+1	1
+1	1
+1	1
+2	2
+2	2
+2	2
+3	3
+3	3
+3	3
+4	4
+4	4
+4	4
+5	5
+5	5
+5	5
+6	6
+6	6
+6	6
+7	7
+7	7
+7	7
+8	8
+8	8
+8	8
+9	9
+9	9
+9	9
+10	10
+10	10
+10	10
+11	11
+11	11
+11	11
+12	12
+12	12
+12	12
+connection group2_conn1;
+create table t2(a int);
+rename table t1 to t2;
+ERROR 42S01: Table 't2' already exists
+drop table t2;
+rename table t1 to t2;
+show create table t2;
+Table	Create Table
+t2	CREATE TABLE `t2` (
+  `id` int(11) NOT NULL,
+  `a` int(11) NOT NULL
+) ENGINE=SequoiaDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin
+ PARTITION BY HASH (`a`)
+PARTITIONS 6
+select * from t2 order by a;
+id	a
+1	1
+1	1
+1	1
+2	2
+2	2
+2	2
+3	3
+3	3
+3	3
+4	4
+4	4
+4	4
+5	5
+5	5
+5	5
+6	6
+6	6
+6	6
+7	7
+7	7
+7	7
+8	8
+8	8
+8	8
+9	9
+9	9
+9	9
+10	10
+10	10
+10	10
+11	11
+11	11
+11	11
+12	12
+12	12
+12	12
+connection group1_conn1;
+create table t1(a int);
+alter table t2 rename to t1;
+ERROR 42S01: Table 't1' already exists
+drop table t1;
+alter table t2 rename to t1;
+show create table t1;
+Table	Create Table
+t1	CREATE TABLE `t1` (
+  `id` int(11) NOT NULL,
+  `a` int(11) NOT NULL
+) ENGINE=SequoiaDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin
+ PARTITION BY HASH (`a`)
+PARTITIONS 6
+select * from t1 order by a;
+id	a
+1	1
+1	1
+1	1
+2	2
+2	2
+2	2
+3	3
+3	3
+3	3
+4	4
+4	4
+4	4
+5	5
+5	5
+5	5
+6	6
+6	6
+6	6
+7	7
+7	7
+7	7
+8	8
+8	8
+8	8
+9	9
+9	9
+9	9
+10	10
+10	10
+10	10
+11	11
+11	11
+11	11
+12	12
+12	12
+12	12
+connection group2_conn1;
+create table t1(a int);
+alter table t2 rename to t1;
+ERROR 42S01: Table 't1' already exists
+drop table t1;
+alter table t2 rename to t1;
+show create table t1;
+Table	Create Table
+t1	CREATE TABLE `t1` (
+  `id` int(11) NOT NULL,
+  `a` int(11) NOT NULL
+) ENGINE=SequoiaDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin
+ PARTITION BY HASH (`a`)
+PARTITIONS 6
+select * from t1 order by a;
+id	a
+1	1
+1	1
+1	1
+2	2
+2	2
+2	2
+3	3
+3	3
+3	3
+4	4
+4	4
+4	4
+5	5
+5	5
+5	5
+6	6
+6	6
+6	6
+7	7
+7	7
+7	7
+8	8
+8	8
+8	8
+9	9
+9	9
+9	9
+10	10
+10	10
+10	10
+11	11
+11	11
+11	11
+12	12
+12	12
+12	12
+connection group1_conn1;
+alter table t1 remove partitioning;
+show create table t1;
+Table	Create Table
+t1	CREATE TABLE `t1` (
+  `id` int(11) NOT NULL,
+  `a` int(11) NOT NULL
+) ENGINE=SequoiaDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin
+insert into t1 values (1,1), (2,2), (3,3), (4,4), (5,5), (6,6), (7,7), (8,8), (9,9), (10,10), (11,11), (12,12);
+select * from t1 order by a;
+id	a
+1	1
+1	1
+1	1
+1	1
+2	2
+2	2
+2	2
+2	2
+3	3
+3	3
+3	3
+3	3
+4	4
+4	4
+4	4
+4	4
+5	5
+5	5
+5	5
+5	5
+6	6
+6	6
+6	6
+6	6
+7	7
+7	7
+7	7
+7	7
+8	8
+8	8
+8	8
+8	8
+9	9
+9	9
+9	9
+9	9
+10	10
+10	10
+10	10
+10	10
+11	11
+11	11
+11	11
+11	11
+12	12
+12	12
+12	12
+12	12
+connection group2_conn1;
+alter table t1 remove partitioning;
+show create table t1;
+Table	Create Table
+t1	CREATE TABLE `t1` (
+  `id` int(11) NOT NULL,
+  `a` int(11) NOT NULL
+) ENGINE=SequoiaDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin
+insert into t1 values (1,1), (2,2), (3,3), (4,4), (5,5), (6,6), (7,7), (8,8), (9,9), (10,10), (11,11), (12,12);
+select * from t1 order by a;
+id	a
+1	1
+1	1
+1	1
+1	1
+2	2
+2	2
+2	2
+2	2
+3	3
+3	3
+3	3
+3	3
+4	4
+4	4
+4	4
+4	4
+5	5
+5	5
+5	5
+5	5
+6	6
+6	6
+6	6
+6	6
+7	7
+7	7
+7	7
+7	7
+8	8
+8	8
+8	8
+8	8
+9	9
+9	9
+9	9
+9	9
+10	10
+10	10
+10	10
+10	10
+11	11
+11	11
+11	11
+11	11
+12	12
+12	12
+12	12
+12	12
+connection group1_conn1;
+alter table t1 
+PARTITION BY KEY (a)
+PARTITIONS 6;
+show create table t1;
+Table	Create Table
+t1	CREATE TABLE `t1` (
+  `id` int(11) NOT NULL,
+  `a` int(11) NOT NULL
+) ENGINE=SequoiaDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin
+ PARTITION BY KEY (`a`)
+PARTITIONS 6
+select * from t1 order by a;
+id	a
+1	1
+1	1
+1	1
+1	1
+2	2
+2	2
+2	2
+2	2
+3	3
+3	3
+3	3
+3	3
+4	4
+4	4
+4	4
+4	4
+5	5
+5	5
+5	5
+5	5
+6	6
+6	6
+6	6
+6	6
+7	7
+7	7
+7	7
+7	7
+8	8
+8	8
+8	8
+8	8
+9	9
+9	9
+9	9
+9	9
+10	10
+10	10
+10	10
+10	10
+11	11
+11	11
+11	11
+11	11
+12	12
+12	12
+12	12
+12	12
+insert into t1 values (1,1), (2,2), (3,3), (4,4), (5,5), (6,6), (7,7), (8,8), (9,9), (10,10), (11,11), (12,12);
+select * from t1 order by a;
+id	a
+1	1
+1	1
+1	1
+1	1
+1	1
+2	2
+2	2
+2	2
+2	2
+2	2
+3	3
+3	3
+3	3
+3	3
+3	3
+4	4
+4	4
+4	4
+4	4
+4	4
+5	5
+5	5
+5	5
+5	5
+5	5
+6	6
+6	6
+6	6
+6	6
+6	6
+7	7
+7	7
+7	7
+7	7
+7	7
+8	8
+8	8
+8	8
+8	8
+8	8
+9	9
+9	9
+9	9
+9	9
+9	9
+10	10
+10	10
+10	10
+10	10
+10	10
+11	11
+11	11
+11	11
+11	11
+11	11
+12	12
+12	12
+12	12
+12	12
+12	12
+select * from t1 where a >= 1 order by a;
+id	a
+1	1
+1	1
+1	1
+1	1
+1	1
+2	2
+2	2
+2	2
+2	2
+2	2
+3	3
+3	3
+3	3
+3	3
+3	3
+4	4
+4	4
+4	4
+4	4
+4	4
+5	5
+5	5
+5	5
+5	5
+5	5
+6	6
+6	6
+6	6
+6	6
+6	6
+7	7
+7	7
+7	7
+7	7
+7	7
+8	8
+8	8
+8	8
+8	8
+8	8
+9	9
+9	9
+9	9
+9	9
+9	9
+10	10
+10	10
+10	10
+10	10
+10	10
+11	11
+11	11
+11	11
+11	11
+11	11
+12	12
+12	12
+12	12
+12	12
+12	12
+connection group2_conn1;
+alter table t1 
+PARTITION BY KEY (a)
+PARTITIONS 6;
+show create table t1;
+Table	Create Table
+t1	CREATE TABLE `t1` (
+  `id` int(11) NOT NULL,
+  `a` int(11) NOT NULL
+) ENGINE=SequoiaDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin
+ PARTITION BY KEY (`a`)
+PARTITIONS 6
+select * from t1 order by a;
+id	a
+1	1
+1	1
+1	1
+1	1
+2	2
+2	2
+2	2
+2	2
+3	3
+3	3
+3	3
+3	3
+4	4
+4	4
+4	4
+4	4
+5	5
+5	5
+5	5
+5	5
+6	6
+6	6
+6	6
+6	6
+7	7
+7	7
+7	7
+7	7
+8	8
+8	8
+8	8
+8	8
+9	9
+9	9
+9	9
+9	9
+10	10
+10	10
+10	10
+10	10
+11	11
+11	11
+11	11
+11	11
+12	12
+12	12
+12	12
+12	12
+insert into t1 values (1,1), (2,2), (3,3), (4,4), (5,5), (6,6), (7,7), (8,8), (9,9), (10,10), (11,11), (12,12);
+select * from t1 order by a;
+id	a
+1	1
+1	1
+1	1
+1	1
+1	1
+2	2
+2	2
+2	2
+2	2
+2	2
+3	3
+3	3
+3	3
+3	3
+3	3
+4	4
+4	4
+4	4
+4	4
+4	4
+5	5
+5	5
+5	5
+5	5
+5	5
+6	6
+6	6
+6	6
+6	6
+6	6
+7	7
+7	7
+7	7
+7	7
+7	7
+8	8
+8	8
+8	8
+8	8
+8	8
+9	9
+9	9
+9	9
+9	9
+9	9
+10	10
+10	10
+10	10
+10	10
+10	10
+11	11
+11	11
+11	11
+11	11
+11	11
+12	12
+12	12
+12	12
+12	12
+12	12
+select * from t1 where a >= 1 order by a;
+id	a
+1	1
+1	1
+1	1
+1	1
+1	1
+2	2
+2	2
+2	2
+2	2
+2	2
+3	3
+3	3
+3	3
+3	3
+3	3
+4	4
+4	4
+4	4
+4	4
+4	4
+5	5
+5	5
+5	5
+5	5
+5	5
+6	6
+6	6
+6	6
+6	6
+6	6
+7	7
+7	7
+7	7
+7	7
+7	7
+8	8
+8	8
+8	8
+8	8
+8	8
+9	9
+9	9
+9	9
+9	9
+9	9
+10	10
+10	10
+10	10
+10	10
+10	10
+11	11
+11	11
+11	11
+11	11
+11	11
+12	12
+12	12
+12	12
+12	12
+12	12
+connection group1_conn1;
+create table t2(a int);
+rename table t1 to t2;
+ERROR 42S01: Table 't2' already exists
+drop table t2;
+rename table t1 to t2;
+show create table t2;
+Table	Create Table
+t2	CREATE TABLE `t2` (
+  `id` int(11) NOT NULL,
+  `a` int(11) NOT NULL
+) ENGINE=SequoiaDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin
+ PARTITION BY KEY (`a`)
+PARTITIONS 6
+select * from t2 order by a;
+id	a
+1	1
+1	1
+1	1
+1	1
+1	1
+2	2
+2	2
+2	2
+2	2
+2	2
+3	3
+3	3
+3	3
+3	3
+3	3
+4	4
+4	4
+4	4
+4	4
+4	4
+5	5
+5	5
+5	5
+5	5
+5	5
+6	6
+6	6
+6	6
+6	6
+6	6
+7	7
+7	7
+7	7
+7	7
+7	7
+8	8
+8	8
+8	8
+8	8
+8	8
+9	9
+9	9
+9	9
+9	9
+9	9
+10	10
+10	10
+10	10
+10	10
+10	10
+11	11
+11	11
+11	11
+11	11
+11	11
+12	12
+12	12
+12	12
+12	12
+12	12
+connection group2_conn1;
+create table t2(a int);
+rename table t1 to t2;
+ERROR 42S01: Table 't2' already exists
+drop table t2;
+rename table t1 to t2;
+show create table t2;
+Table	Create Table
+t2	CREATE TABLE `t2` (
+  `id` int(11) NOT NULL,
+  `a` int(11) NOT NULL
+) ENGINE=SequoiaDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin
+ PARTITION BY KEY (`a`)
+PARTITIONS 6
+select * from t2 order by a;
+id	a
+1	1
+1	1
+1	1
+1	1
+1	1
+2	2
+2	2
+2	2
+2	2
+2	2
+3	3
+3	3
+3	3
+3	3
+3	3
+4	4
+4	4
+4	4
+4	4
+4	4
+5	5
+5	5
+5	5
+5	5
+5	5
+6	6
+6	6
+6	6
+6	6
+6	6
+7	7
+7	7
+7	7
+7	7
+7	7
+8	8
+8	8
+8	8
+8	8
+8	8
+9	9
+9	9
+9	9
+9	9
+9	9
+10	10
+10	10
+10	10
+10	10
+10	10
+11	11
+11	11
+11	11
+11	11
+11	11
+12	12
+12	12
+12	12
+12	12
+12	12
+connection group1_conn1;
+create table t1(a int);
+alter table t2 rename to t1;
+ERROR 42S01: Table 't1' already exists
+drop table t1;
+alter table t2 rename to t1;
+show create table t1;
+Table	Create Table
+t1	CREATE TABLE `t1` (
+  `id` int(11) NOT NULL,
+  `a` int(11) NOT NULL
+) ENGINE=SequoiaDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin
+ PARTITION BY KEY (`a`)
+PARTITIONS 6
+select * from t1 order by a;
+id	a
+1	1
+1	1
+1	1
+1	1
+1	1
+2	2
+2	2
+2	2
+2	2
+2	2
+3	3
+3	3
+3	3
+3	3
+3	3
+4	4
+4	4
+4	4
+4	4
+4	4
+5	5
+5	5
+5	5
+5	5
+5	5
+6	6
+6	6
+6	6
+6	6
+6	6
+7	7
+7	7
+7	7
+7	7
+7	7
+8	8
+8	8
+8	8
+8	8
+8	8
+9	9
+9	9
+9	9
+9	9
+9	9
+10	10
+10	10
+10	10
+10	10
+10	10
+11	11
+11	11
+11	11
+11	11
+11	11
+12	12
+12	12
+12	12
+12	12
+12	12
+connection group2_conn1;
+create table t1(a int);
+alter table t2 rename to t1;
+ERROR 42S01: Table 't1' already exists
+drop table t1;
+alter table t2 rename to t1;
+show create table t1;
+Table	Create Table
+t1	CREATE TABLE `t1` (
+  `id` int(11) NOT NULL,
+  `a` int(11) NOT NULL
+) ENGINE=SequoiaDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin
+ PARTITION BY KEY (`a`)
+PARTITIONS 6
+select * from t1 order by a;
+id	a
+1	1
+1	1
+1	1
+1	1
+1	1
+2	2
+2	2
+2	2
+2	2
+2	2
+3	3
+3	3
+3	3
+3	3
+3	3
+4	4
+4	4
+4	4
+4	4
+4	4
+5	5
+5	5
+5	5
+5	5
+5	5
+6	6
+6	6
+6	6
+6	6
+6	6
+7	7
+7	7
+7	7
+7	7
+7	7
+8	8
+8	8
+8	8
+8	8
+8	8
+9	9
+9	9
+9	9
+9	9
+9	9
+10	10
+10	10
+10	10
+10	10
+10	10
+11	11
+11	11
+11	11
+11	11
+11	11
+12	12
+12	12
+12	12
+12	12
+12	12
+connection group1_conn1;
+alter table t1 remove partitioning;
+show create table t1;
+Table	Create Table
+t1	CREATE TABLE `t1` (
+  `id` int(11) NOT NULL,
+  `a` int(11) NOT NULL
+) ENGINE=SequoiaDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin
+insert into t1 values (1,1), (2,2), (3,3), (4,4), (5,5), (6,6), (7,7), (8,8), (9,9), (10,10), (11,11), (12,12);
+select * from t1 order by a;
+id	a
+1	1
+1	1
+1	1
+1	1
+1	1
+1	1
+2	2
+2	2
+2	2
+2	2
+2	2
+2	2
+3	3
+3	3
+3	3
+3	3
+3	3
+3	3
+4	4
+4	4
+4	4
+4	4
+4	4
+4	4
+5	5
+5	5
+5	5
+5	5
+5	5
+5	5
+6	6
+6	6
+6	6
+6	6
+6	6
+6	6
+7	7
+7	7
+7	7
+7	7
+7	7
+7	7
+8	8
+8	8
+8	8
+8	8
+8	8
+8	8
+9	9
+9	9
+9	9
+9	9
+9	9
+9	9
+10	10
+10	10
+10	10
+10	10
+10	10
+10	10
+11	11
+11	11
+11	11
+11	11
+11	11
+11	11
+12	12
+12	12
+12	12
+12	12
+12	12
+12	12
+connection group2_conn1;
+alter table t1 remove partitioning;
+show create table t1;
+Table	Create Table
+t1	CREATE TABLE `t1` (
+  `id` int(11) NOT NULL,
+  `a` int(11) NOT NULL
+) ENGINE=SequoiaDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin
+insert into t1 values (1,1), (2,2), (3,3), (4,4), (5,5), (6,6), (7,7), (8,8), (9,9), (10,10), (11,11), (12,12);
+select * from t1 order by a;
+id	a
+1	1
+1	1
+1	1
+1	1
+1	1
+1	1
+2	2
+2	2
+2	2
+2	2
+2	2
+2	2
+3	3
+3	3
+3	3
+3	3
+3	3
+3	3
+4	4
+4	4
+4	4
+4	4
+4	4
+4	4
+5	5
+5	5
+5	5
+5	5
+5	5
+5	5
+6	6
+6	6
+6	6
+6	6
+6	6
+6	6
+7	7
+7	7
+7	7
+7	7
+7	7
+7	7
+8	8
+8	8
+8	8
+8	8
+8	8
+8	8
+9	9
+9	9
+9	9
+9	9
+9	9
+9	9
+10	10
+10	10
+10	10
+10	10
+10	10
+10	10
+11	11
+11	11
+11	11
+11	11
+11	11
+11	11
+12	12
+12	12
+12	12
+12	12
+12	12
+12	12
+connection group1_conn1;
+drop database multi_inst_group_partition_table;
+connection group2_conn1;
+drop database multi_inst_group_partition_table;

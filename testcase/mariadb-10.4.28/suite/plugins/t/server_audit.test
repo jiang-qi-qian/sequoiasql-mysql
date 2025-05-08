@@ -1,0 +1,56 @@
+
+--source include/not_embedded.inc
+
+if (!$SERVER_AUDIT_SO) {
+  skip No SERVER_AUDIT plugin;
+}
+
+install plugin server_audit soname 'server_audit';
+
+--disable_warnings
+drop database if exists server_audit;
+--enable_warnings
+create database server_audit;
+drop database server_audit;
+create database server_audit;
+show databases like "server_audit";
+use server_audit;
+
+show variables like 'server_audit%';
+set global server_audit_file_rotate_now=OFF;
+set global server_audit_file_rotate_size=10485760;
+set global server_audit_file_rotations=999;
+set global server_audit_query_log_limit=102400;
+set global server_audit_file_path='server_audit.log';
+set global server_audit_output_type=file;
+set global server_audit_logging=on;
+
+create table t1(id int,name varchar(20));
+show tables;
+insert into t1 values (1,"John");
+select * from t1;
+update t1 set name="Mike" where id=1;
+select * from t1;
+delete from t1 where id=1;
+select * from t1;
+CREATE USER u1 IDENTIFIED BY 'pwd-123';
+SET PASSWORD FOR u1 = PASSWORD('pwd-321');
+--error 1064
+SET PASSWORD FOR u1=<secret>;
+GRANT ALL ON server_audit.`t1` TO u2 IDENTIFIED BY "pwd-456";
+SHOW GRANTS FOR u2;
+REVOKE UPDATE ON server_audit.`t1` from u2;
+SHOW GRANTS FOR u2;
+CREATE USER u3 IDENTIFIED BY '';
+drop user u1, u2, u3;
+drop table t1;
+drop database server_audit;
+
+show variables like 'server_audit%';
+uninstall plugin server_audit;
+
+let $MYSQLD_DATADIR= `SELECT @@datadir`;
+# replace the timestamp and the hostname with constant values
+--replace_regex /[0-9]* [0-9][0-9]:[0-9][0-9]:[0-9][0-9]\,[^,]*\,/TIME,HOSTNAME,/ /\,[1-9][0-9]*\,/,1,/ /\,[1-9][0-9]*/,ID/
+cat_file $MYSQLD_DATADIR/server_audit.log;
+remove_file $MYSQLD_DATADIR/server_audit.log;

@@ -1,0 +1,241 @@
+#update condition optimized for sequoiadb
+#Case 16900#Case 16901#Case 16902#Case 16903#Case 16904#Case 16905#Case 16906#Case 16907#Case 16908#Case 16909#Case 16910
+#Case 16911#Case 16912#Case 16913#Case 16914#Case 16915#Case 16916
+--source include/have_sequoiadb.inc
+
+--disable_warnings
+DROP TABLE IF EXISTS t1;
+--enable_warnings
+
+#update condition use primary key
+create table t1(a int primary key, b int unique key,c int);
+insert into t1 values(10,1,2),(1,10,11),(5,2,3),(2,5,4),(3,6,7),(6,3,5),(4,11,12);
+insert into t1(a) values(8),(9),(7);
+update t1 set a=a+100 where a>4;
+--sorted_result
+select * from t1;
+update t1 set a=10-a where b>4;
+--sorted_result
+select * from t1;
+update t1 set b=b+100 where b>4;
+--sorted_result
+select * from t1;
+update t1 set b=10-b where a>4;
+--sorted_result
+select * from t1; 
+update t1 set b=a-b where a>100;
+--sorted_result
+select * from t1;
+update t1 set b=a-b where b>100;
+--sorted_result
+select * from t1;
+update t1 set a = a+10 where b is null;
+--sorted_result
+select * from t1;
+drop table t1;
+
+#update condition use unique key
+create table t1(a int , b int unique key,c int);
+insert into t1 values(10,1,2),(1,10,11),(5,2,3),(2,5,4),(3,6,7),(6,3,5),(4,11,12);
+insert into t1(a,c) values(8,8),(9,9),(7,7);
+update t1 set a=a+100 where a>4;
+--sorted_result
+select * from t1;
+update t1 set a=10-a where b>4;
+--sorted_result
+select * from t1;
+update t1 set b=b+100 where b>4;
+--sorted_result
+select * from t1;
+update t1 set b=10-b where a>4;
+--sorted_result
+select * from t1;
+update t1 set b=a-b where a>100;
+--sorted_result
+select * from t1;
+update t1 set b=a-b where b>100;
+--sorted_result
+select * from t1;
+update t1 set a = a+10 where b is null;
+--sorted_result
+select * from t1;
+drop table t1;
+
+#two unique key
+create table t1(a int , b int unique key,c int unique key);
+insert into t1 values(10,1,2),(1,10,11),(5,2,3),(2,5,4),(3,6,7),(6,3,5),(4,11,12);
+insert into t1(a) values(8);
+insert into t1(a,b) values(9,8);
+insert into t1(a,c) values(7,6);
+insert into t1 values();
+update t1 set a=a+100 where a>4;
+--sorted_result
+select * from t1;
+update t1 set a=10-a where b>4;
+--sorted_result
+select * from t1;
+update t1 set b=b+100 where b>4;
+--sorted_result
+select * from t1;
+update t1 set b=10-b where a>4;
+--sorted_result
+select * from t1;
+update t1 set b=a-b where a>100;
+--sorted_result
+select * from t1;
+update t1 set b=a-b where b>100;
+--sorted_result
+select * from t1;
+update t1 set a = a+10 where b is null;
+--sorted_result
+#BUG #SEQUOIASQLMAINSTREAM-439
+select * from t1;
+drop table t1;
+
+#no primary key and unique key
+create table t1(a int, b int, c int);
+insert into t1 values(10,1,2),(1,10,11),(5,2,3),(2,5,4),(3,6,7),(6,3,5),(4,11,12);
+insert into t1(a) values(8);
+insert into t1(a,b) values(9,8);
+insert into t1(a,c) values(7,6);
+insert into t1 values();
+update t1 set a=a+100 where a>4;
+--sorted_result
+select * from t1;
+update t1 set a=10-a where b>4;
+--sorted_result
+select * from t1;
+update t1 set a =10 where b is null;
+--sorted_result
+select * from t1;
+drop table t1;
+
+#composite primary key
+create table t1(a int, b int, c int, primary key(a,b));
+insert into t1 values(10,1,2),(10,10,11),(5,2,3),(2,5,4),(3,6,7),(6,3,5),(4,11,12);
+update t1 set a=a+100 where a>4;
+--sorted_result
+select * from t1;
+drop table t1;
+
+#composite unique key
+create table t1(a int, b int, c int, unique key(a,b));
+insert into t1 values(10,1,2),(10,10,11),(5,2,3),(2,5,4),(3,6,7),(6,3,5),(4,11,12);
+insert into t1(a) values(8);
+insert into t1(a,b) values(9,8);
+insert into t1(a,c) values(7,6);
+insert into t1 values();
+update t1 set a=a+100 where a>4;
+--sorted_result
+select * from t1;
+update t1 set c= 1 where b is null;
+--sorted_result
+select * from t1;
+drop table t1;
+
+#order by and limit
+create table t1(a int, b int, c int);
+insert into t1 values(10,1,2),(10,10,11),(5,2,3),(2,5,4),(3,6,7),(6,3,5),(4,11,12);
+insert into t1(a) values(8);
+insert into t1(a,b) values(9,8);
+insert into t1(a,c) values(7,6);
+insert into t1 values();
+create unique index a on t1(b);
+update t1 set a=100 where a!=4 order by a limit 2;
+--sorted_result
+select * from t1;
+update t1 set a=1000 order by a limit 2;
+--sorted_result
+select * from t1;
+drop table t1;
+
+#multi tables update
+create table t1(a int unique key, b int);
+insert into t1 values(1,1),(2,2),(3,3),(8,8);
+insert into t1(b) values(9);
+create table t2(a int unique key, b int);
+insert into t2 values(1,10),(2,20),(3,30),(10,10);
+insert into t2(b) values(90);
+update t1 join t2 on t1.a=t2.a or t1.a is null set t1.b=t2.b;
+select * from t1;
+drop table t1,t2;
+
+#delete condition use primary key
+create table t1(a int primary key, b int unique key,c int);
+insert into t1 values(10,1,2),(1,10,11),(5,2,3),(2,5,4),(3,6,7),(6,3,5),(4,11,12);
+insert into t1(a) values(8),(9),(7);
+delete from t1 where a >4;
+--sorted_result
+select * from t1;
+drop table t1;
+
+#delete condition use unique key
+create table t1(a int , b int unique key,c int);
+insert into t1 values(10,1,2),(1,10,11),(5,2,3),(2,5,4),(3,6,7),(6,3,5),(4,11,12);
+insert into t1(a,c) values(8,8),(9,9),(7,7);
+delete from t1 where a !=4;
+--sorted_result
+select * from t1;
+drop table t1;
+
+#two unique key
+create table t1(a int , b int unique key,c int unique key);
+insert into t1 values(10,1,2),(1,10,11),(5,2,3),(2,5,4),(3,6,7),(6,3,5),(4,11,12);
+insert into t1(a) values(8);
+insert into t1(a,b) values(9,8);
+insert into t1(a,c) values(7,6);
+insert into t1 values();
+delete from t1 where a !=4;
+--sorted_result
+select * from t1;
+drop table t1;
+
+#no primary key and unique key
+create table t1(a int, b int, c int);
+insert into t1 values(10,1,2),(1,10,11),(5,2,3),(2,5,4),(3,6,7),(6,3,5),(4,11,12);
+insert into t1(a) values(8);
+insert into t1(a,b) values(9,8);
+insert into t1(a,c) values(7,6);
+insert into t1 values();
+delete from t1 where a !=4;
+--sorted_result
+select * from t1;
+drop table t1;
+
+#composite primary key
+create table t1(a int, b int, c int, primary key(a,b));
+insert into t1 values(10,1,2),(10,10,11),(5,2,3),(2,5,4),(3,6,7),(6,3,5),(4,11,12);
+delete from t1 where a>4;
+--sorted_result
+select * from t1;
+drop table t1;
+
+#composite unique key
+create table t1(a int, b int, c int, unique key(a,b));
+insert into t1 values(10,1,2),(10,10,11),(5,2,3),(2,5,4),(3,6,7),(6,3,5),(4,11,12);
+insert into t1(a) values(8);
+insert into t1(a,b) values(9,8);
+insert into t1(a,c) values(7,6);
+insert into t1 values();
+delete from t1 where a!=4;
+--sorted_result
+select * from t1;
+drop table t1;
+
+#order by and limit
+create table t1(a int, b int, c int);
+insert into t1 values(10,1,2),(10,10,11),(5,2,3),(2,5,4),(3,6,7),(6,3,5),(4,11,12);
+insert into t1(a) values(8);
+insert into t1(a,b) values(9,8);
+insert into t1(a,c) values(7,6);
+insert into t1 values();
+create unique index a on t1(b);
+delete from t1 where a!=4 order by a limit 2;
+--sorted_result
+select * from t1;
+delete from t1 order by a limit 2;
+--sorted_result
+select * from t1;
+drop table t1;
+
+--source include/uninstall_sequoiadb.inc

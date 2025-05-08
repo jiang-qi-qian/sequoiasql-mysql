@@ -1,0 +1,10 @@
+#Case 22101
+
+#BUG #SEQUOIASQLMAINSTREAM-641
+create table t1 ( a int, b char(127) );
+LOAD DATA INFILE '../../std_data/loaddata_5w_sequoiadb.dat' INTO TABLE t1(a,b);
+set max_statement_time = 0.01;
+--error 1969
+select * from t1;
+set max_statement_time = default;
+drop table t1;

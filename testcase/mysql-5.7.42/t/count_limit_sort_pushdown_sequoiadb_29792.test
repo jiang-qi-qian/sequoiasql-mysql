@@ -1,0 +1,307 @@
+# Testcase: # seqDB-29792
+
+--source include/have_sequoiadb.inc
+
+--disable_warnings
+drop database if exists count_limit_sort_pushdown_sequoiadb_29792;
+--enable_warnings
+create database count_limit_sort_pushdown_sequoiadb_29792;
+drop database count_limit_sort_pushdown_sequoiadb_29792;
+create database count_limit_sort_pushdown_sequoiadb_29792;
+use count_limit_sort_pushdown_sequoiadb_29792;
+--disable_warnings
+drop table if exists t1,t2;
+--enable_warnings
+
+CREATE TABLE `t1` (
+    `id` int,
+    `documentno` varchar(32) COLLATE utf8mb4_bin DEFAULT NULL,
+    `sffid` decimal(10,0) DEFAULT NULL,
+    KEY `doc` (`documentno`),
+    KEY `id_doc_sff_idx`(`id`, `documentno`, `sffid`)
+  ) ENGINE=SequoiaDB;
+
+insert into t1 values(1, "abc", 1),(2, "abc", 3),(4, "bdc", 4),(4, "bdc", 4),(5,"cf ", 5),(NULL, NULL, NULL),(NULL, NULL, NULL),(NULL, "ef", 7),(8, NULL, 2);
+
+create table t2 like t1;
+insert into t2 select * from t1;
+
+set session sequoiadb_debug_log=on;
+set session sequoiadb_optimizer_options='direct_count,direct_delete,direct_update,direct_limit';
+  
+
+--replace_column 10 #  11 #
+explain select id from t1 group by id;
+select id from t1 group by id;
+--source include/query_pushdown_condition_sequoiadb_2.inc
+
+--replace_column 10 #  11 #
+explain select documentno from t1 group by documentno limit 2;
+select documentno from t1 group by documentno limit 2;
+--source include/query_pushdown_condition_sequoiadb_2.inc
+
+--replace_column 10 #  11 #
+explain select id from t1 order by id;
+select id from t1 order by id;
+--source include/query_pushdown_condition_sequoiadb_2.inc
+
+--replace_column 10 #  11 #
+explain select documentno from t1 order by documentno limit 2;
+select documentno from t1 order by documentno limit 2;
+--source include/query_pushdown_condition_sequoiadb_2.inc
+
+--replace_column 10 #  11 #
+explain select id from t1 group by id with rollup limit 10;
+select id from t1 group by id with rollup limit 10;
+--source include/query_pushdown_condition_sequoiadb_2.inc
+
+--replace_column 10 #  11 #
+explain select distinct id from t1 group by id;
+select distinct id from t1 group by id;
+--source include/query_pushdown_condition_sequoiadb_2.inc
+
+--replace_column 10 #  11 #
+explain select distinct documentno from t1 group by documentno limit 2;
+select distinct documentno from t1 group by documentno limit 2;
+--source include/query_pushdown_condition_sequoiadb_2.inc
+
+
+
+--replace_column 10 #  11 #
+explain select SQL_BUFFER_RESULT documentno from t1 group by documentno;
+select SQL_BUFFER_RESULT documentno from t1 group by documentno;
+--source include/query_pushdown_condition_sequoiadb_2.inc
+
+--replace_column 10 #  11 #
+explain select SQL_BUFFER_RESULT id from t1 group by id limit 2;
+select SQL_BUFFER_RESULT id from t1 group by id limit 2;
+--source include/query_pushdown_condition_sequoiadb_2.inc
+
+--replace_column 10 #  11 #
+explain select SQL_BUFFER_RESULT documentno from t1 order by documentno;
+select SQL_BUFFER_RESULT documentno from t1 order by documentno;
+--source include/query_pushdown_condition_sequoiadb_2.inc
+
+--replace_column 10 #  11 #
+explain select SQL_BUFFER_RESULT id from t1 order by id limit 2;
+select SQL_BUFFER_RESULT id from t1 order by id limit 2;
+--source include/query_pushdown_condition_sequoiadb_2.inc
+
+--replace_column 10 #  11 #
+explain select SQL_BUFFER_RESULT documentno from t1 group by documentno with rollup limit 10;
+select SQL_BUFFER_RESULT documentno from t1 group by documentno with rollup limit 10;
+--source include/query_pushdown_condition_sequoiadb_2.inc
+
+--replace_column 10 #  11 #
+explain select distinct SQL_BUFFER_RESULT documentno from t1 group by documentno;
+select distinct SQL_BUFFER_RESULT documentno from t1 group by documentno;
+--source include/query_pushdown_condition_sequoiadb_2.inc
+
+--replace_column 10 #  11 #
+explain select distinct SQL_BUFFER_RESULT id from t1 group by id limit 2;
+select distinct SQL_BUFFER_RESULT id from t1 group by id limit 2;
+--source include/query_pushdown_condition_sequoiadb_2.inc
+
+
+--replace_column 10 #  11 #
+explain select SQL_SMALL_RESULT id from t1 group by id;
+select SQL_SMALL_RESULT id from t1 group by id;
+--source include/query_pushdown_condition_sequoiadb_2.inc
+
+--replace_column 10 #  11 #
+explain select SQL_SMALL_RESULT documentno from t1 group by documentno limit 2;
+select SQL_SMALL_RESULT documentno from t1 group by documentno limit 2;
+--source include/query_pushdown_condition_sequoiadb_2.inc
+
+--replace_column 10 #  11 #
+explain select SQL_SMALL_RESULT id from t1 order by id;
+select SQL_SMALL_RESULT id from t1 order by id;
+--source include/query_pushdown_condition_sequoiadb_2.inc
+
+--replace_column 10 #  11 #
+explain select SQL_SMALL_RESULT documentno from t1 order by documentno limit 2;
+select SQL_SMALL_RESULT documentno from t1 order by documentno limit 2;
+--source include/query_pushdown_condition_sequoiadb_2.inc
+
+--replace_column 10 #  11 #
+explain select SQL_SMALL_RESULT id from t1 group by id with rollup limit 10;
+select SQL_SMALL_RESULT id from t1 group by id with rollup limit 10;
+--source include/query_pushdown_condition_sequoiadb_2.inc
+
+--replace_column 10 #  11 #
+explain select distinct SQL_SMALL_RESULT id from t1 group by id;
+select distinct SQL_SMALL_RESULT id from t1 group by id;
+--source include/query_pushdown_condition_sequoiadb_2.inc
+
+--replace_column 10 #  11 #
+explain select distinct SQL_SMALL_RESULT documentno from t1 group by documentno limit 2;
+select distinct SQL_SMALL_RESULT documentno from t1 group by documentno limit 2;
+--source include/query_pushdown_condition_sequoiadb_2.inc
+
+
+--replace_column 10 #  11 #
+explain select SQL_BIG_RESULT id from t1 group by id;
+select SQL_BIG_RESULT id from t1 group by id;
+--source include/query_pushdown_condition_sequoiadb_2.inc
+
+--replace_column 10 #  11 #
+explain select SQL_BIG_RESULT documentno from t1 group by documentno limit 2;
+select SQL_BIG_RESULT documentno from t1 group by documentno limit 2;
+--source include/query_pushdown_condition_sequoiadb_2.inc
+
+--replace_column 10 #  11 #
+explain select SQL_BIG_RESULT id from t1 order by id;
+select SQL_BIG_RESULT id from t1 order by id;
+--source include/query_pushdown_condition_sequoiadb_2.inc
+
+--replace_column 10 #  11 #
+explain select SQL_BIG_RESULT documentno from t1 order by documentno limit 2;
+select SQL_BIG_RESULT documentno from t1 order by documentno limit 2;
+--source include/query_pushdown_condition_sequoiadb_2.inc
+
+--replace_column 10 #  11 #
+explain select SQL_BIG_RESULT id from t1 group by id with rollup limit 10;
+select SQL_BIG_RESULT id from t1 group by id with rollup limit 10;
+--source include/query_pushdown_condition_sequoiadb_2.inc
+
+--replace_column 10 #  11 #
+explain select distinct SQL_BIG_RESULT id from t1 group by id;
+select distinct SQL_BIG_RESULT id from t1 group by id;
+--source include/query_pushdown_condition_sequoiadb_2.inc
+
+--replace_column 10 #  11 #
+explain select distinct SQL_BIG_RESULT documentno from t1 group by documentno limit 2;
+select distinct SQL_BIG_RESULT documentno from t1 group by documentno limit 2;
+--source include/query_pushdown_condition_sequoiadb_2.inc
+
+
+--replace_column 10 #  11 #
+explain select HIGH_PRIORITY documentno from t1 group by documentno;
+select HIGH_PRIORITY documentno from t1 group by documentno;
+--source include/query_pushdown_condition_sequoiadb_2.inc
+
+--replace_column 10 #  11 #
+explain select HIGH_PRIORITY id from t1 group by id limit 2;
+select HIGH_PRIORITY id from t1 group by id limit 2;
+--source include/query_pushdown_condition_sequoiadb_2.inc
+
+--replace_column 10 #  11 #
+explain select HIGH_PRIORITY documentno from t1 order by documentno;
+select HIGH_PRIORITY documentno from t1 order by documentno;
+--source include/query_pushdown_condition_sequoiadb_2.inc
+
+--replace_column 10 #  11 #
+explain select HIGH_PRIORITY id from t1 order by id limit 2;
+select HIGH_PRIORITY id from t1 order by id limit 2;
+--source include/query_pushdown_condition_sequoiadb_2.inc
+
+--replace_column 10 #  11 #
+explain select HIGH_PRIORITY documentno from t1 group by documentno with rollup limit 10;
+select HIGH_PRIORITY documentno from t1 group by documentno with rollup limit 10;
+--source include/query_pushdown_condition_sequoiadb_2.inc
+
+--replace_column 10 #  11 #
+explain select distinct HIGH_PRIORITY documentno from t1 group by documentno;
+select distinct HIGH_PRIORITY documentno from t1 group by documentno;
+--source include/query_pushdown_condition_sequoiadb_2.inc
+
+--replace_column 10 #  11 #
+explain select distinct HIGH_PRIORITY id from t1 group by id limit 2;
+select distinct HIGH_PRIORITY id from t1 group by id limit 2;
+--source include/query_pushdown_condition_sequoiadb_2.inc
+
+
+--replace_column 10 #  11 #
+explain select SQL_CACHE id from t1 group by id;
+select SQL_CACHE id from t1 group by id;
+--source include/query_pushdown_condition_sequoiadb_2.inc
+
+--replace_column 10 #  11 #
+explain select SQL_CACHE documentno from t1 group by documentno limit 2;
+select SQL_CACHE documentno from t1 group by documentno limit 2;
+--source include/query_pushdown_condition_sequoiadb_2.inc
+
+--replace_column 10 #  11 #
+explain select SQL_CACHE id from t1 order by id;
+select SQL_CACHE id from t1 order by id;
+--source include/query_pushdown_condition_sequoiadb_2.inc
+
+--replace_column 10 #  11 #
+explain select SQL_CACHE documentno from t1 order by documentno limit 2;
+select SQL_CACHE documentno from t1 order by documentno limit 2;
+--source include/query_pushdown_condition_sequoiadb_2.inc
+
+--replace_column 10 #  11 #
+explain select SQL_CACHE id from t1 group by id with rollup limit 10;
+select SQL_CACHE id from t1 group by id with rollup limit 10;
+--source include/query_pushdown_condition_sequoiadb_2.inc
+
+--replace_column 10 #  11 #
+explain select distinct SQL_CACHE id from t1 group by id;
+select distinct SQL_CACHE id from t1 group by id;
+--source include/query_pushdown_condition_sequoiadb_2.inc
+
+--replace_column 10 #  11 #
+explain select distinct SQL_CACHE documentno from t1 group by documentno limit 2;
+select distinct SQL_CACHE documentno from t1 group by documentno limit 2;
+--source include/query_pushdown_condition_sequoiadb_2.inc
+
+--replace_column 10 #  11 #
+explain select SQL_NO_CACHE documentno from t1 group by documentno;
+select SQL_NO_CACHE documentno from t1 group by documentno;
+--source include/query_pushdown_condition_sequoiadb_2.inc
+
+--replace_column 10 #  11 #
+explain select SQL_NO_CACHE id from t1 group by id limit 2;
+select SQL_NO_CACHE id from t1 group by id limit 2;
+--source include/query_pushdown_condition_sequoiadb_2.inc
+
+--replace_column 10 #  11 #
+explain select SQL_NO_CACHE documentno from t1 order by documentno;
+select SQL_NO_CACHE documentno from t1 order by documentno;
+--source include/query_pushdown_condition_sequoiadb_2.inc
+
+--replace_column 10 #  11 #
+explain select SQL_NO_CACHE id from t1 order by id limit 2;
+select SQL_NO_CACHE id from t1 order by id limit 2;
+--source include/query_pushdown_condition_sequoiadb_2.inc
+
+--replace_column 10 #  11 #
+explain select SQL_NO_CACHE documentno from t1 group by documentno with rollup limit 10;
+select SQL_NO_CACHE documentno from t1 group by documentno with rollup limit 10;
+--source include/query_pushdown_condition_sequoiadb_2.inc
+
+--replace_column 10 #  11 #
+explain select distinct SQL_NO_CACHE documentno from t1 group by documentno;
+select distinct SQL_NO_CACHE documentno from t1 group by documentno;
+--source include/query_pushdown_condition_sequoiadb_2.inc
+
+--replace_column 10 #  11 #
+explain select distinct SQL_NO_CACHE id from t1 group by id limit 2;
+select distinct SQL_NO_CACHE id from t1 group by id limit 2;
+--source include/query_pushdown_condition_sequoiadb_2.inc
+
+--replace_column 10 #  11 #
+explain (select documentno from t1 group by documentno limit 2) union (select documentno from t1 order by documentno limit 2);
+(select documentno from t1 group by documentno limit 2) union (select documentno from t1 order by documentno limit 2);
+--source include/query_pushdown_condition_sequoiadb_2.inc
+
+--replace_column 10 #  11 #
+explain select *,(select documentno from t1 tt group by documentno limit 1) from t2 where t2.id <(select id from t1 where id=5 order by id desc limit 6);
+select *,(select documentno from t1 tt group by documentno limit 1) from t2 where t2.id <(select id from t1 where id=5 order by id desc limit 6);
+--source include/query_pushdown_condition_sequoiadb_3.inc
+
+--replace_column 10 #  11 #
+explain select * from (select documentno from t1 group by documentno limit 10) dt where documentno>="aaa" limit 2,3;
+select * from (select documentno from t1 group by documentno limit 10) dt where documentno>="aaa" limit 2,3;
+--source include/query_pushdown_condition_sequoiadb.inc
+
+--replace_column 10 #  11 #
+explain select * from (select id from t1 order by id limit 6) dt where id<6 limit 2,2;
+select * from (select id from t1 order by id limit 6) dt where id<6 limit 2,2;
+--source include/query_pushdown_condition_sequoiadb.inc
+
+
+drop database count_limit_sort_pushdown_sequoiadb_29792;
+
+--source include/uninstall_sequoiadb.inc

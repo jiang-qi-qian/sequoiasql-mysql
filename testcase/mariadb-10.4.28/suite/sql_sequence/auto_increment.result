@@ -1,0 +1,2 @@
+set global auto_increment_increment= 2, auto_increment_offset= 2;
+set global auto_increment_increment= default, auto_increment_offset= default;

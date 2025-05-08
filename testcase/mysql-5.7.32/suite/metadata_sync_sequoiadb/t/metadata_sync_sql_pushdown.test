@@ -1,0 +1,49 @@
+#case 24128
+
+--source include/have_sequoiadb.inc
+--source suite/metadata_sync_sequoiadb/inc/insts_connect_sequoiadb.inc
+
+# connect to conn1, clear databases in the beginning
+connection conn1;
+--disable_warnings
+DROP DATABASE IF EXISTS metasync_sql_pushdown;
+--enable_warnings
+
+# connect to conn2, check databases are cleaned in the beginning
+connection conn2;
+--error ER_BAD_DB_ERROR 
+SHOW CREATE DATABASE metasync_sql_pushdown;
+
+# seqDB-24128
+# begin testing
+#
+connection conn1;
+SET SESSION sequoiadb_sql_push_down = ON;
+CREATE DATABASE metasync_sql_pushdown;
+USE metasync_sql_pushdown;
+CREATE TABLE t1 ( id INT, name CHAR(16) );
+# check metadatas after create 
+connection conn2;
+SET SESSION sequoiadb_sql_push_down = ON;
+USE metasync_sql_pushdown;
+/*+sql_pushdown=sdb*/ SELECT * FROM metasync_sql_pushdown.t1 ORDER BY id;
+# insert records
+connection conn1;
+INSERT INTO metasync_sql_pushdown.t1 VALUES (1,'Joe'),(2,'Bob'),(3,'Rose');
+/*+sql_pushdown=sdb*/ SELECT * FROM metasync_sql_pushdown.t1 ORDER BY id;
+connection conn2;
+INSERT INTO metasync_sql_pushdown.t1 VALUES (4,'Mary');
+/*+sql_pushdown=sdb*/ SELECT * FROM metasync_sql_pushdown.t1 ORDER BY id;
+
+# clear databases in the ending
+connection conn1;
+DROP DATABASE metasync_sql_pushdown;
+SET SESSION sequoiadb_sql_push_down = default;
+# check databases are cleaned in the ending
+connection conn2;
+--error ER_BAD_DB_ERROR 
+SHOW CREATE DATABASE metasync_sql_pushdown;
+SET SESSION sequoiadb_sql_push_down = default;
+
+--source include/uninstall_sequoiadb.inc
+--source suite/metadata_sync_sequoiadb/inc/insts_disconnect_sequoiadb.inc

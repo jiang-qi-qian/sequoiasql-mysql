@@ -1,0 +1,874 @@
+# seqDB-24552 / seqDB-24561 / seqDB-24565 / seqDB-24566
+
+--source include/have_sequoiadb.inc
+--source suite/metadata_mapping_sequoiadb/inc/insts_connect_sequoiadb.inc
+
+# connect to conn1, clear databases in the beginning
+connection group1_conn1;
+--disable_warnings
+set sql_mode = 'ANSI_QUOTES';
+set character_set_client = utf8;
+set character_set_connection = utf8;
+drop database if exists multi_inst_group_partition_table;
+set sql_mode=default; 
+--enable_warnings
+
+# connect to conn2, clear databases in the beginning
+connection group2_conn1;
+--disable_warnings
+set sql_mode = 'ANSI_QUOTES';
+set character_set_client = utf8;
+set character_set_connection = utf8;
+drop database if exists multi_inst_group_partition_table;
+set sql_mode=default; 
+--enable_warnings
+
+# 清理database
+# 实例组1
+connection group1_conn1;
+create database multi_inst_group_partition_table;
+use multi_inst_group_partition_table;
+create table clearX(a int);
+drop database multi_inst_group_partition_table;
+# 实例组2
+connection group2_conn1;
+create database multi_inst_group_partition_table;
+use multi_inst_group_partition_table;
+create table clearX(a int);
+drop database multi_inst_group_partition_table;
+
+
+#seqDB-24552
+#######
+# range分区表，不同实例组做ddl/索引/数据操作，操作相同
+let $s_create_table = 
+	create table t1 (
+    id int not null,
+    a int not null
+	)
+	partition by range (a) (
+		partition p0 values less than (10),
+		partition p1 values less than (20),
+		partition p2 values less than (30),
+		partition p3 values less than (40),
+		partition p4 values less than (50),
+		partition p5 values less than (60),
+		partition p6 values less than (70),
+		partition p7 values less than (80),
+		partition p8 values less than (90),
+		partition p9 values less than (100)
+	);
+
+# 创建表
+# 实例组1
+connection group1_conn1;
+create database multi_inst_group_partition_table;
+use multi_inst_group_partition_table;
+eval $s_create_table;
+show create table t1;
+insert into t1 values (0,0), (0,1),(1,10), (2,20), (3,30), (4,40), (5,60), (6,60), (7,70), (8,80), (9,90);
+select * from t1 where a >= 1 order by a;
+# 实例组2，创建跟实例组1同名表
+connection group2_conn1;
+create database multi_inst_group_partition_table;
+use multi_inst_group_partition_table;
+eval $s_create_table;
+show create table t1;
+insert into t1 values (0,0), (0,1),(1,10), (2,20), (3,30), (4,40), (5,60), (6,60), (7,70), (8,80), (9,90);
+select * from t1 where a >= 1 order by a;
+
+# 复制表
+# 实例组1
+connection group1_conn1;
+create table t2 select * from t1;
+show tables;
+show create table t2;
+select * from t2 order by a;
+insert into t2 values (0,0), (0,1),(1,10), (2,20), (3,30), (4,40), (5,60), (6,60), (7,70), (8,80), (9,90);
+select * from t2 order by a;
+select * from t2 where a >= 1 order by a;
+# 实例组2，复制跟实例组1同名表
+connection group2_conn1;
+create table t2 select * from t1;
+show tables;
+show create table t2;
+select * from t2 order by a;
+insert into t2 values (0,0), (0,1),(1,10), (2,20), (3,30), (4,40), (5,60), (6,60), (7,70), (8,80), (9,90);
+select * from t2 order by a;
+select * from t2 where a >= 1 order by a;
+
+# 其他操作，均在 实例组1 进行
+connection group1_conn1;
+# 添加分区
+alter table t1 add partition (partition p10 values less than (110));
+show create table t1;
+insert into t1 values (9, 100), (10, 101);
+select * from t1 order by a;
+select * from t1 where a >= 100 order by a;
+# 删除分区
+connection group1_conn1;
+alter table t1 drop partition p0;
+alter table t1 drop partition p10;
+show create table t1;
+select * from t1 order by a;
+insert into t1 values  (0, 0), (1,10), (1,11), (2,20), (3,30), (4,40), (5,60), (6,60), (7,70), (8,80);
+# failed: 1526: Table has no partition for value 100
+--error 1526
+insert into t1 values (10,100);
+select * from t1 order by a;
+select * from t1 where a > 10 order by a;
+# 删除所有分区
+connection group1_conn1;
+alter table t1 remove partitioning;
+show create table t1;
+insert into t1 values (0,0), (0,1),(1,10), (2,20), (3,30), (4,40), (5,60), (6,60), (7,70), (8,80), (9,90), (10,100);
+select * from t1 order by a;
+# 创建索引
+create index idx on t1(id);
+show index from t1;
+select * from t1 order by a;
+select * from t1 where id > 0 order by id;
+explain select * from t1 where id > 0 order by id;
+# 删除索引
+drop index idx on t1;
+show index from t1;
+select * from t1 order by a;
+explain select * from t1 where id > 0 order by id;
+# 删除表
+drop table t1;
+show tables;
+# 再次创建相同表
+eval $s_create_table;
+show create table t1;
+insert into t1 values (0,0), (0,1),(1,10), (2,20), (3,30), (4,40), (5,60), (6,60), (7,70), (8,80), (9,90), (10,99);
+select * from t1 order by a;
+
+# 实例组1
+connection group1_conn1;
+drop database multi_inst_group_partition_table;
+# 实例组2
+connection group2_conn1;
+drop database multi_inst_group_partition_table;
+
+
+#######
+# list分区表，不同实例组做ddl/索引/数据操作，操作相同
+let $s_create_table = 
+	CREATE TABLE t1 (
+    id INT NOT NULL,
+    a INT NOT NULL
+)
+PARTITION BY LIST COLUMNS (a) (
+    PARTITION p0 VALUES IN (1, 2),
+    PARTITION p1 VALUES IN (3, 4),
+    PARTITION p2 VALUES IN (5, 6),
+    PARTITION p3 VALUES IN (7, 8),
+    PARTITION p4 VALUES IN (9, 10),
+    PARTITION p5 VALUES IN (11, 12),
+    PARTITION p6 VALUES IN (13, 14)
+);
+
+# 创建表
+# 实例组1
+connection group1_conn1;
+create database multi_inst_group_partition_table;
+use multi_inst_group_partition_table;
+eval $s_create_table;
+show create table t1;
+insert into t1 values (1,1), (2,2), (3,3), (4,4), (5,5), (6,6), (7,7), (8,8), (9,9), (10,10), (11,11), (12,12), (13,13), (14,14);
+select * from t1 order by a;
+select * from t1 where a > 6 order by a;
+# 实例组2，创建跟实例组1同名表
+connection group2_conn1;
+create database multi_inst_group_partition_table;
+use multi_inst_group_partition_table;
+eval $s_create_table;
+show create table t1;
+insert into t1 values (1,1), (2,2), (3,3), (4,4), (5,5), (6,6), (7,7), (8,8), (9,9), (10,10), (11,11), (12,12), (13,13), (14,14);
+select * from t1 order by a;
+select * from t1 where a > 6 order by a;
+
+# 复制表
+# 实例组1
+connection group1_conn1;
+create table t2 select * from t1;
+show tables;
+show create table t2;
+select * from t2 order by a;
+insert into t2 values (1,1), (2,2), (3,3), (4,4), (5,5), (6,6), (7,7), (8,8), (9,9), (10,10), (11,11), (12,12), (13,13), (14,14);
+select * from t2 order by a;
+select * from t2 where a >= 1 order by a;
+# 实例组2，复制跟实例组1同名表
+connection group2_conn1;
+create table t2 select * from t1;
+show tables;
+show create table t2;
+select * from t2 order by a;
+insert into t2 values (1,1), (2,2), (3,3), (4,4), (5,5), (6,6), (7,7), (8,8), (9,9), (10,10), (11,11), (12,12), (13,13), (14,14);
+select * from t2 order by a;
+select * from t2 where a >= 1 order by a;
+
+# 其他操作，均在 实例组1 进行
+connection group1_conn1;
+# 添加分区
+alter table t1 add partition (partition p7 values in (15, 16));
+show create table t1;
+select * from t1 order by a;
+insert into t1 values (15, 15), (16, 16);
+select * from t1 order by a;
+select * from t1 where a >= 15 order by a;
+# 创建索引
+create index idx on t1(id);
+show index from t1;
+# 删除分区
+alter table t1 drop partition p0;
+show create table t1;
+select * from t1 order by a;
+# failed: 1526: Table has no partition for value from column_list
+--error 1526
+insert into t1 values (1, 1);
+insert into t1 values (3,3), (4,4), (5,5), (6,6), (7,7), (8,8), (9,9), (10,10), (11,11), (12,12), (13,13), (14,14), (15, 15), (16, 16);
+select * from t1 order by a;
+select * from t1 where a > 10 order by a;
+# 删除所有分区
+alter table t1 remove partitioning;
+show create table t1;
+insert into t1 values (1, 1), (2, 2), (3,3), (4,4), (5,5), (6,6), (7,7), (8,8), (9,9), (10,10), (11,11), (12,12), (13,13), (14,14), (15, 15), (16, 16);
+select * from t1 order by a;
+# 创建索引
+--error 1061
+create index idx on t1(id);
+show index from t1;
+select * from t1 where id > 2 order by id;
+explain select * from t1 where id > 2 order by id;
+select * from t1 order by a;
+# 删除索引
+drop index idx on t1;
+show index from t1;
+select * from t1 where id > 0 order by id;
+explain select * from t1 where id > 0 order by id;
+# 删除表
+drop table t1;
+show tables;
+# 再次创建相同表
+eval $s_create_table;
+show create table t1;
+insert into t1 values (1,1), (2,2), (3,3), (4,4), (5,5), (6,6), (7,7), (8,8), (9,9), (10,10), (11,11), (12,12), (13,13), (14,14);
+select * from t1 order by a;
+
+# 实例组1
+connection group1_conn1;
+drop database multi_inst_group_partition_table;
+# 实例组2
+connection group2_conn1;
+drop database multi_inst_group_partition_table;
+
+
+#######
+# 复合分区表，list + hash, 不同实例组做ddl/索引/数据操作，操作相同
+let $s_create_table = 
+    CREATE TABLE t1 (
+        id INT NOT NULL,
+        a INT NOT NULL
+    )
+    PARTITION BY LIST COLUMNS (a)
+    SUBPARTITION BY HASH (a) (
+        PARTITION p0 VALUES IN (1, 2),
+        PARTITION p1 VALUES IN (3, 4),
+        PARTITION p2 VALUES IN (5, 6),
+        PARTITION p3 VALUES IN (7, 8),
+        PARTITION p4 VALUES IN (9, 10),
+        PARTITION p5 VALUES IN (11, 12),
+        PARTITION p6 VALUES IN (13, 14)
+    );
+
+# 创建表
+# 实例组1
+connection group1_conn1;
+create database multi_inst_group_partition_table;
+use multi_inst_group_partition_table;
+eval $s_create_table;
+show create table t1;
+insert into t1 values (1,1), (2,2), (3,3), (4,4), (5,5), (6,6), (7,7), (8,8), (9,9), (10,10), (11,11), (12,12), (13,13), (14,14);
+select * from t1 order by a;
+select * from t1 where a > 6 order by a;
+# 实例组2，创建跟实例组1同名表
+connection group2_conn1;
+create database multi_inst_group_partition_table;
+use multi_inst_group_partition_table;
+eval $s_create_table;
+show create table t1;
+insert into t1 values (1,1), (2,2), (3,3), (4,4), (5,5), (6,6), (7,7), (8,8), (9,9), (10,10), (11,11), (12,12), (13,13), (14,14);
+select * from t1 order by a;
+select * from t1 where a > 6 order by a;
+
+# 复制表
+# 实例组1
+connection group1_conn1;
+create table t2 select * from t1;
+show tables;
+show create table t2;
+select * from t2 order by a;
+insert into t2 values (1,1), (2,2), (3,3), (4,4), (5,5), (6,6), (7,7), (8,8), (9,9), (10,10), (11,11), (12,12), (13,13), (14,14);
+select * from t2 order by a;
+select * from t2 where a >= 1 order by a;
+# 实例组2，复制跟实例组1同名表
+connection group2_conn1;
+create table t2 select * from t1;
+show tables;
+show create table t2;
+select * from t2 order by a;
+insert into t2 values (1,1), (2,2), (3,3), (4,4), (5,5), (6,6), (7,7), (8,8), (9,9), (10,10), (11,11), (12,12), (13,13), (14,14);
+select * from t2 order by a;
+select * from t2 where a >= 1 order by a;
+
+# 其他操作，均在 实例组1 进行
+connection group1_conn1;
+# 添加分区
+alter table t1 add partition (partition p7 values in (15, 16));
+show create table t1;
+select * from t1 order by a;
+insert into t1 values (15, 15), (16, 16);
+select * from t1 order by a;
+select * from t1 where a >= 15 order by a;
+# 创建索引
+create index idx on t1(id);
+show index from t1;
+# 删除分区
+alter table t1 drop partition p0;
+show create table t1;
+select * from t1 order by a;
+# failed: 1526: Table has no partition for value from column_list
+--error 1526
+insert into t1 values (1, 1);
+insert into t1 values (3,3), (4,4), (5,5), (6,6), (7,7), (8,8), (9,9), (10,10), (11,11), (12,12), (13,13), (14,14), (15, 15), (16, 16);
+select * from t1 order by a;
+select * from t1 where a > 10 order by a;
+# 删除所有分区
+alter table t1 remove partitioning;
+show create table t1;
+insert into t1 values (1, 1), (2, 2), (3,3), (4,4), (5,5), (6,6), (7,7), (8,8), (9,9), (10,10), (11,11), (12,12), (13,13), (14,14), (15, 15), (16, 16);
+select * from t1 order by a;
+# 创建索引
+--error 1061
+create index idx on t1(id);
+show index from t1;
+select * from t1 where id > 2 order by id;
+explain select * from t1 where id > 2 order by id;
+select * from t1 order by a;
+# 删除索引
+drop index idx on t1;
+show index from t1;
+select * from t1 where id > 0 order by id;
+explain select * from t1 where id > 0 order by id;
+# 删除表
+drop table t1;
+show tables;
+# 再次创建相同表
+eval $s_create_table;
+show create table t1;
+insert into t1 values (1,1), (2,2), (3,3), (4,4), (5,5), (6,6), (7,7), (8,8), (9,9), (10,10), (11,11), (12,12), (13,13), (14,14);
+select * from t1 order by a;
+
+# 实例组1
+connection group1_conn1;
+drop database multi_inst_group_partition_table;
+# 实例组2
+connection group2_conn1;
+drop database multi_inst_group_partition_table;
+
+
+#######
+# 复合分区表，range + key, 不同实例组做ddl/索引/数据操作，操作相同
+let $s_create_table = 
+    CREATE TABLE t1 (
+        id INT NOT NULL,
+        a INT NOT NULL
+    )
+    PARTITION BY RANGE COLUMNS (a)
+    SUBPARTITION BY KEY (id)
+    SUBPARTITIONS 2 (
+        PARTITION p0 VALUES LESS THAN (0),
+        PARTITION p1 VALUES LESS THAN (10),
+        PARTITION p2 VALUES LESS THAN (20),
+        PARTITION p3 VALUES LESS THAN (30),
+        PARTITION p4 VALUES LESS THAN (40),
+        PARTITION p5 VALUES LESS THAN (50)
+    );
+
+# 创建表
+# 实例组1
+connection group1_conn1;
+create database multi_inst_group_partition_table;
+use multi_inst_group_partition_table;
+eval $s_create_table;
+show create table t1;
+insert into t1 values (0,-1), (1,0), (2,10), (3,20), (4,30), (5,40), (5,49);
+select * from t1 order by a;
+select * from t1 where a > -1 order by a;
+# 实例组2，创建跟实例组1同名表
+connection group2_conn1;
+create database multi_inst_group_partition_table;
+use multi_inst_group_partition_table;
+eval $s_create_table;
+show create table t1;
+insert into t1 values (0,-1), (1,0), (2,10), (3,20), (4,30), (5,40), (5,49);
+select * from t1 order by a;
+select * from t1 where a > -1 order by a;
+
+# 复制表
+# 实例组1
+connection group1_conn1;
+create table t2 select * from t1;
+show tables;
+show create table t2;
+select * from t2 order by a;
+insert into t2 values (0,-1), (1,0), (2,10), (3,20), (4,30), (5,40), (5,49);
+select * from t2 order by a;
+select * from t2 where a > -1 order by a;
+# 实例组2，创建跟实例组1同名表
+connection group2_conn1;
+create table t2 select * from t1;
+show tables;
+show create table t2;
+select * from t2 order by a;
+insert into t2 values (0,-1), (1,0), (2,10), (3,20), (4,30), (5,40), (5,49);
+select * from t2 order by a;
+select * from t2 where a > -1 order by a;
+
+# 其他操作，均在 实例组1 进行
+connection group1_conn1;
+# 添加分区
+alter table t1 add partition (partition p6 values less than (60));
+show create table t1;
+select * from t1 order by a;
+insert into t1 values (6, 59);
+select * from t1 order by a;
+select * from t1 where a >= 50 order by a;
+# 创建索引
+create index idx on t1(id);
+show index from t1;
+# 删除分区
+alter table t1 drop partition p0;
+alter table t1 drop partition p6;
+show create table t1;
+select * from t1 order by a;
+insert into t1 values (1,0), (2,10), (3,20), (4,30), (5,40), (5,49);
+insert into t1 values (0, -1);
+# failed: 1526: Table has no partition for value from column_list
+--error 1526
+insert into t1 values (6, 59);
+select * from t1 order by a;
+select * from t1 where a > 10 order by a;
+# 删除所有分区
+alter table t1 remove partitioning;
+show create table t1;
+insert into t1 values (0,-1), (1,0), (2,10), (3,20), (4,30), (5,40), (5,49), (6, 59);
+select * from t1 order by a;
+# 创建索引
+--error 1061
+create index idx on t1(id);
+show index from t1;
+select * from t1 where id > 1 order by id;
+explain select * from t1 where id > 2 order by id;
+select * from t1 order by a;
+# 删除索引
+drop index idx on t1;
+show index from t1;
+select * from t1 where id > 0 order by id;
+explain select * from t1 where id > 0 order by id;
+# 删除表
+drop table t1;
+show tables;
+# 再次创建相同表
+eval $s_create_table;
+show create table t1;
+insert into t1 values (0,-1), (1,0), (2,10), (3,20), (4,30), (5,40), (5,49);
+select * from t1 order by a;
+
+# 实例组1
+connection group1_conn1;
+drop database multi_inst_group_partition_table;
+# 实例组2
+connection group2_conn1;
+drop database multi_inst_group_partition_table;
+
+
+#seqDB-24561 / seqDB-24565 / seqDB-24566
+
+# 创建普通表
+# 实例组1
+connection group1_conn1;
+create database multi_inst_group_partition_table;
+use multi_inst_group_partition_table;
+create table t1(id int not null, a int not null);
+show create table t1;
+insert into t1 values (0,0), (0,1),(1,10), (2,20), (3,30), (4,40), (5,59);
+select * from t1 order by a;
+# 实例组2，创建跟实例组1同名表
+connection group2_conn1;
+create database multi_inst_group_partition_table;
+use multi_inst_group_partition_table;
+create table t1(id int not null, a int not null);
+show create table t1;
+insert into t1 values (0,0), (0,1),(1,10), (2,20), (3,30), (4,40), (5,59);
+select * from t1 order by a;
+
+
+# 修改为range分区表
+let $s_alter_to_range_table = 
+    alter table t1 
+        partition by range (a) (
+		partition p0 values less than (10),
+		partition p1 values less than (20),
+		partition p2 values less than (30),
+		partition p3 values less than (40),
+		partition p4 values less than (50),
+		partition p5 values less than (60)
+	);
+
+# 实例组1
+connection group1_conn1;
+eval $s_alter_to_range_table;
+show create table t1;
+select * from t1 order by a;
+insert into t1 values (0,0), (0,1),(1,10), (2,20), (3,30), (4,40), (5,59);
+select * from t1 order by a;
+select * from t1 where a >= 1 order by a;
+# 实例组2
+connection group2_conn1;
+eval $s_alter_to_range_table;
+show create table t1;
+select * from t1 order by a;
+insert into t1 values (0,0), (0,1),(1,10), (2,20), (3,30), (4,40), (5,59);
+select * from t1 order by a;
+select * from t1 where a >= 1 order by a;
+
+# rename table
+# 实例组1
+connection group1_conn1;
+create table t2(a int);
+# failed: 1050: Table 't2' already exists
+--error 1050
+rename table t1 to t2;
+drop table t2;
+rename table t1 to t2;
+show create table t2;
+select * from t2 order by a;
+# 实例组2
+connection group2_conn1;
+create table t2(a int);
+# failed: 1050: Table 't2' already exists
+--error 1050
+rename table t1 to t2;
+drop table t2;
+rename table t1 to t2;
+show create table t2;
+select * from t2 order by a;
+
+# alter table rename
+# 实例组1
+connection group1_conn1;
+create table t1(a int);
+# failed: 1050: Table 't2' already exists
+--error 1050
+alter table t2 rename to t1;
+drop table t1;
+alter table t2 rename to t1;
+show create table t1;
+select * from t1 order by a;
+# 实例组2
+connection group2_conn1;
+create table t1(a int);
+# failed: 1050: Table 't2' already exists
+--error 1050
+alter table t2 rename to t1;
+drop table t1;
+alter table t2 rename to t1;
+show create table t1;
+select * from t1 order by a;
+
+# 分区表转普通表
+# 实例组1
+connection group1_conn1;
+alter table t1 remove partitioning;
+show create table t1;
+insert into t1 values (0,0), (0,1),(1,10), (2,20), (3,30), (4,40), (5,60);
+select * from t1 order by a;
+# 实例组2
+connection group2_conn1;
+alter table t1 remove partitioning;
+show create table t1;
+insert into t1 values (0,0), (0,1),(1,10), (2,20), (3,30), (4,40), (5,60);
+select * from t1 order by a;
+
+
+# 修改为list分区表
+let $s_alter_to_list_table = 
+    alter table t1 
+    PARTITION BY LIST COLUMNS (a) (
+        PARTITION p0 VALUES IN (1, 2),
+        PARTITION p1 VALUES IN (3, 4),
+        PARTITION p2 VALUES IN (5, 6),
+        PARTITION p3 VALUES IN (7, 8),
+        PARTITION p4 VALUES IN (9, 10),
+        PARTITION p5 VALUES IN (11, 12)
+);
+# 实例组1
+connection group1_conn1;
+# failed: 1526: Table has no partition for value from column_list
+--error 1526
+eval $s_alter_to_list_table;
+truncate table t1;
+eval $s_alter_to_list_table;
+show create table t1;
+select * from t1 order by a;
+insert into t1 values (1,1), (2,2), (3,3), (4,4), (5,5), (6,6), (7,7), (8,8), (9,9), (10,10), (11,11), (12,12);
+select * from t1 order by a;
+select * from t1 where a >= 1 order by a;
+# 实例组2
+connection group2_conn1;
+# failed: 1526: Table has no partition for value from column_list
+--error 1526
+eval $s_alter_to_list_table;
+truncate table t1;
+eval $s_alter_to_list_table;
+show create table t1;
+select * from t1 order by a;
+insert into t1 values (1,1), (2,2), (3,3), (4,4), (5,5), (6,6), (7,7), (8,8), (9,9), (10,10), (11,11), (12,12);
+select * from t1 order by a;
+select * from t1 where a >= 1 order by a;
+
+# rename table
+# 实例组1
+connection group1_conn1;
+create table t2(a int);
+# failed: 1050: Table 't2' already exists
+--error 1050
+rename table t1 to t2;
+drop table t2;
+rename table t1 to t2;
+show create table t2;
+select * from t2 order by a;
+# 实例组2
+connection group2_conn1;
+create table t2(a int);
+# failed: 1050: Table 't2' already exists
+--error 1050
+rename table t1 to t2;
+drop table t2;
+rename table t1 to t2;
+show create table t2;
+select * from t2 order by a;
+
+# alter table rename
+# 实例组1
+connection group1_conn1;
+create table t1(a int);
+# failed: 1050: Table 't2' already exists
+--error 1050
+alter table t2 rename to t1;
+drop table t1;
+alter table t2 rename to t1;
+show create table t1;
+select * from t1 order by a;
+# 实例组2
+connection group2_conn1;
+create table t1(a int);
+# failed: 1050: Table 't2' already exists
+--error 1050
+alter table t2 rename to t1;
+drop table t1;
+alter table t2 rename to t1;
+show create table t1;
+select * from t1 order by a;
+
+# 分区表转普通表
+# 实例组1
+connection group1_conn1;
+alter table t1 remove partitioning;
+show create table t1;
+insert into t1 values (1,1), (2,2), (3,3), (4,4), (5,5), (6,6), (7,7), (8,8), (9,9), (10,10), (11,11), (12,12);
+select * from t1 order by a;
+# 实例组2
+connection group2_conn1;
+alter table t1 remove partitioning;
+show create table t1;
+insert into t1 values (1,1), (2,2), (3,3), (4,4), (5,5), (6,6), (7,7), (8,8), (9,9), (10,10), (11,11), (12,12);
+select * from t1 order by a;
+
+
+####
+# 修改为hash分区表
+let $s_alter_to_hash_table = 
+    alter table t1 
+    PARTITION BY HASH (a)
+    PARTITIONS 6;
+
+# 实例组1
+connection group1_conn1;
+eval $s_alter_to_hash_table;
+show create table t1;
+select * from t1 order by a;
+insert into t1 values (1,1), (2,2), (3,3), (4,4), (5,5), (6,6), (7,7), (8,8), (9,9), (10,10), (11,11), (12,12);
+select * from t1 order by a;
+select * from t1 where a >= 1 order by a;
+# 实例组2
+connection group2_conn1;
+eval $s_alter_to_hash_table;
+show create table t1;
+select * from t1 order by a;
+insert into t1 values (1,1), (2,2), (3,3), (4,4), (5,5), (6,6), (7,7), (8,8), (9,9), (10,10), (11,11), (12,12);
+select * from t1 order by a;
+select * from t1 where a >= 1 order by a;
+
+# rename table
+# 实例组1
+connection group1_conn1;
+create table t2(a int);
+# failed: 1050: Table 't2' already exists
+--error 1050
+rename table t1 to t2;
+drop table t2;
+rename table t1 to t2;
+show create table t2;
+select * from t2 order by a;
+# 实例组2
+connection group2_conn1;
+create table t2(a int);
+# failed: 1050: Table 't2' already exists
+--error 1050
+rename table t1 to t2;
+drop table t2;
+rename table t1 to t2;
+show create table t2;
+select * from t2 order by a;
+
+# alter table rename
+# 实例组1
+connection group1_conn1;
+create table t1(a int);
+# failed: 1050: Table 't2' already exists
+--error 1050
+alter table t2 rename to t1;
+drop table t1;
+alter table t2 rename to t1;
+show create table t1;
+select * from t1 order by a;
+# 实例组2
+connection group2_conn1;
+create table t1(a int);
+# failed: 1050: Table 't2' already exists
+--error 1050
+alter table t2 rename to t1;
+drop table t1;
+alter table t2 rename to t1;
+show create table t1;
+select * from t1 order by a;
+
+# 分区表转普通表
+# 实例组1
+connection group1_conn1;
+alter table t1 remove partitioning;
+show create table t1;
+insert into t1 values (1,1), (2,2), (3,3), (4,4), (5,5), (6,6), (7,7), (8,8), (9,9), (10,10), (11,11), (12,12);
+select * from t1 order by a;
+# 实例组2
+connection group2_conn1;
+alter table t1 remove partitioning;
+show create table t1;
+insert into t1 values (1,1), (2,2), (3,3), (4,4), (5,5), (6,6), (7,7), (8,8), (9,9), (10,10), (11,11), (12,12);
+select * from t1 order by a;
+
+
+######
+# 修改为key分区表
+let $s_alter_to_key_table = 
+    alter table t1 
+    PARTITION BY KEY (a)
+    PARTITIONS 6;
+
+# 实例组1
+connection group1_conn1;
+eval $s_alter_to_key_table;
+show create table t1;
+select * from t1 order by a;
+insert into t1 values (1,1), (2,2), (3,3), (4,4), (5,5), (6,6), (7,7), (8,8), (9,9), (10,10), (11,11), (12,12);
+select * from t1 order by a;
+select * from t1 where a >= 1 order by a;
+# 实例组2
+connection group2_conn1;
+eval $s_alter_to_key_table;
+show create table t1;
+select * from t1 order by a;
+insert into t1 values (1,1), (2,2), (3,3), (4,4), (5,5), (6,6), (7,7), (8,8), (9,9), (10,10), (11,11), (12,12);
+select * from t1 order by a;
+select * from t1 where a >= 1 order by a;
+
+# rename table
+# 实例组1
+connection group1_conn1;
+create table t2(a int);
+# failed: 1050: Table 't2' already exists
+--error 1050
+rename table t1 to t2;
+drop table t2;
+rename table t1 to t2;
+show create table t2;
+select * from t2 order by a;
+# 实例组2
+connection group2_conn1;
+create table t2(a int);
+# failed: 1050: Table 't2' already exists
+--error 1050
+rename table t1 to t2;
+drop table t2;
+rename table t1 to t2;
+show create table t2;
+select * from t2 order by a;
+
+# alter table rename
+# 实例组1
+connection group1_conn1;
+create table t1(a int);
+# failed: 1050: Table 't2' already exists
+--error 1050
+alter table t2 rename to t1;
+drop table t1;
+alter table t2 rename to t1;
+show create table t1;
+select * from t1 order by a;
+# 实例组2
+connection group2_conn1;
+create table t1(a int);
+# failed: 1050: Table 't2' already exists
+--error 1050
+alter table t2 rename to t1;
+drop table t1;
+alter table t2 rename to t1;
+show create table t1;
+select * from t1 order by a;
+
+# 分区表转普通表
+# 实例组1
+connection group1_conn1;
+alter table t1 remove partitioning;
+show create table t1;
+insert into t1 values (1,1), (2,2), (3,3), (4,4), (5,5), (6,6), (7,7), (8,8), (9,9), (10,10), (11,11), (12,12);
+select * from t1 order by a;
+# 实例组2
+connection group2_conn1;
+alter table t1 remove partitioning;
+show create table t1;
+insert into t1 values (1,1), (2,2), (3,3), (4,4), (5,5), (6,6), (7,7), (8,8), (9,9), (10,10), (11,11), (12,12);
+select * from t1 order by a;
+
+# 实例组1
+connection group1_conn1;
+drop database multi_inst_group_partition_table;
+# 实例组2
+connection group2_conn1;
+drop database multi_inst_group_partition_table;
+
+--source include/uninstall_sequoiadb.inc
+--source suite/metadata_mapping_sequoiadb/inc/insts_disconnect_sequoiadb.inc

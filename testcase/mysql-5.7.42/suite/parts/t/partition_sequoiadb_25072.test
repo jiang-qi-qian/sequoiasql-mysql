@@ -1,0 +1,72 @@
+#SEQIOIASQLMAINSTREAM-1187
+#seqDB-25072
+
+--source include/have_sequoiadb.inc
+--source include/have_partition.inc
+
+--connect (con1, localhost, root)
+--connection con1
+--disable_warnings
+DROP TABLE if EXISTS partition_sequoiadb_25072_1;
+DROP TABLE if EXISTS partition_sequoiadb_25072_2;
+--enable_warnings
+
+CREATE TABLE partition_sequoiadb_25072_1 ( 
+    id INT NOT NULL, 
+    produced_date DATE, 
+    name VARCHAR(100), 
+    company VARCHAR(100) 
+) 
+PARTITION BY RANGE (YEAR(produced_date)) ( 
+    PARTITION p0 VALUES LESS THAN (1990) 
+); 
+ALTER TABLE partition_sequoiadb_25072_1 ADD PARTITION(partition p1 VALUES LESS THAN (2000));
+
+--disconnect con1
+--connect (con1, localhost, root)
+--connection con1
+
+SHOW CREATE TABLE partition_sequoiadb_25072_1;
+INSERT INTO partition_sequoiadb_25072_1 VALUES(1,'1800-01-01','name1','company1');
+INSERT INTO partition_sequoiadb_25072_1 VALUES(2,'1999-01-01','name2','company2');
+SELECT * FROM partition_sequoiadb_25072_1 ORDER BY id ASC;
+ALTER TABLE partition_sequoiadb_25072_1 DROP PARTITION p1;
+
+--disconnect con1
+--connect (con1, localhost, root)
+--connection con1
+
+SHOW CREATE TABLE partition_sequoiadb_25072_1;
+INSERT INTO partition_sequoiadb_25072_1 VALUES(3,'1850-01-01','name3','company3');
+SELECT * FROM partition_sequoiadb_25072_1 ORDER BY id ASC;
+RENAME TABLE partition_sequoiadb_25072_1 TO partition_sequoiadb_25072_2;
+
+--disconnect con1
+--connect (con1, localhost, root)
+--connection con1
+
+SHOW CREATE TABLE partition_sequoiadb_25072_2;
+INSERT INTO partition_sequoiadb_25072_2 VALUES(4,'1900-01-01','name4','company4');
+SELECT * FROM partition_sequoiadb_25072_2 ORDER BY id ASC;
+DROP TABLE partition_sequoiadb_25072_2;
+
+--disconnect con1
+--connect (con1, localhost, root)
+--connection con1
+
+SELECT table_name from information_schema.tables where table_name='partition_sequoiadb_25072_2';
+CREATE TABLE partition_sequoiadb_25072_2 ( 
+    id INT NOT NULL, 
+    produced_date DATE, 
+    name VARCHAR(100), 
+    company VARCHAR(100) 
+) 
+PARTITION BY RANGE (YEAR(produced_date)) ( 
+    PARTITION p0 VALUES LESS THAN (1990) 
+); 
+INSERT INTO partition_sequoiadb_25072_2 VALUES(5,'1950-01-01','name5','company5');
+SELECT * FROM partition_sequoiadb_25072_2;
+
+DROP TABLE partition_sequoiadb_25072_2;
+
+--disconnect con1

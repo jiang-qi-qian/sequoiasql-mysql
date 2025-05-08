@@ -1,0 +1,146 @@
+set names utf8;
+drop database if exists longname;
+create database longname;
+drop database longname;
+create database longname;
+use longname;
+CREATE TABLE longname.test_jfg_table_name_with_64_chars_123456789012345678901234567890 (
+id int(10) unsigned NOT NULL,
+id2 int(10) unsigned NOT NULL,
+PRIMARY KEY ( id, id2 )
+) ENGINE = SequoiaDB DEFAULT CHARSET=latin1 ROW_FORMAT=DYNAMIC
+PARTITION BY RANGE ( id )
+SUBPARTITION BY HASH ( id2 )
+SUBPARTITIONS 2 (
+PARTITION test_jfg_partition_name_with_60_chars_1234567890123456789012 VALUES LESS THAN (1000) ENGINE = SequoiaDB,
+PARTITION pmax VALUES LESS THAN MAXVALUE ENGINE = SequoiaDB);
+ERROR HY000: Too long table name test_jfg_table_name_with_64_chars_123456789012345678901234567890#P#test_jfg_partition_name_with_60_chars_1234567890123456789012
+CREATE TABLE longname.test_jfg_table_name_with_64_chars_12345678901234567890123456789 (
+id int(10) unsigned NOT NULL,
+id2 int(10) unsigned NOT NULL,
+PRIMARY KEY ( id, id2 )
+) ENGINE = SequoiaDB DEFAULT CHARSET=latin1 ROW_FORMAT=DYNAMIC
+PARTITION BY RANGE ( id )
+SUBPARTITION BY HASH ( id2 )
+SUBPARTITIONS 2 (
+PARTITION test_jfg_partition_name_with_60_chars_123456789012345678 VALUES LESS THAN (1000) ENGINE = SequoiaDB,
+PARTITION pmax VALUES LESS THAN MAXVALUE ENGINE = SequoiaDB);
+SHOW CREATE TABLE longname.test_jfg_table_name_with_64_chars_12345678901234567890123456789;
+Table	Create Table
+test_jfg_table_name_with_64_chars_12345678901234567890123456789	CREATE TABLE `test_jfg_table_name_with_64_chars_12345678901234567890123456789` (
+  `id` int(10) unsigned NOT NULL,
+  `id2` int(10) unsigned NOT NULL,
+  PRIMARY KEY (`id`,`id2`)
+) ENGINE=SequoiaDB DEFAULT CHARSET=latin1 COLLATE=latin1_swedish_ci ROW_FORMAT=DYNAMIC
+ PARTITION BY RANGE (`id`)
+SUBPARTITION BY HASH (`id2`)
+SUBPARTITIONS 2
+(PARTITION `test_jfg_partition_name_with_60_chars_123456789012345678` VALUES LESS THAN (1000) ENGINE = SequoiaDB,
+ PARTITION `pmax` VALUES LESS THAN MAXVALUE ENGINE = SequoiaDB)
+INSERT INTO longname.test_jfg_table_name_with_64_chars_12345678901234567890123456789 VALUES(1,1),(2,2);
+SELECT * FROM longname.test_jfg_table_name_with_64_chars_12345678901234567890123456789;
+id	id2
+1	1
+2	2
+DROP TABLE longname.test_jfg_table_name_with_64_chars_12345678901234567890123456789;
+CREATE TABLE test_jfg_table_name_with_64_chars_123456789012345678901234567890 (
+id int(10) unsigned NOT NULL,
+id2 int(10) unsigned NOT NULL,
+PRIMARY KEY ( id, id2 )
+) ENGINE=SequoiaDB DEFAULT CHARSET=latin1 ROW_FORMAT=DYNAMIC
+PARTITION BY RANGE ( id )
+SUBPARTITION BY HASH ( id2 )
+SUBPARTITIONS 2 (
+PARTITION test_jfg_partition_name_with_60_chars_1234567890123456789012 VALUES LESS THAN (1000) ENGINE = SequoiaDB,
+PARTITION pmax VALUES LESS THAN MAXVALUE ENGINE = SequoiaDB);
+ERROR HY000: Too long table name test_jfg_table_name_with_64_chars_123456789012345678901234567890#P#test_jfg_partition_name_with_60_chars_1234567890123456789012
+CREATE TABLE éééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééé(
+id int(10) unsigned NOT NULL,
+id2 int(10) unsigned NOT NULL,
+PRIMARY KEY ( id, id2 )
+) ENGINE=SequoiaDB DEFAULT CHARSET=latin1 ROW_FORMAT=DYNAMIC
+PARTITION BY RANGE ( id )
+SUBPARTITION BY HASH ( id2 )
+SUBPARTITIONS 2 (
+PARTITION çççççççççççççççççççççççççççççççççççççççççççççççççççççççççççç VALUES LESS THAN (1000) ENGINE = SequoiaDB,
+PARTITION pmax VALUES LESS THAN MAXVALUE ENGINE = SequoiaDB);
+ERROR HY000: Can't create table `longname`.`éééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééé` (errno: 1059 "Unknown error 1059")
+CREATE TABLE t( 
+id int(10), 
+id2 int(10), 
+PRIMARY KEY ( id, id2 ) 
+) 
+PARTITION BY RANGE ( id ) 
+SUBPARTITION BY HASH ( id2 ) 
+SUBPARTITIONS 2 ( 
+PARTITION çççççççççççççççççççççççççççççççççççççççççççççççççççççççççççç VALUES LESS THAN (1000) ENGINE = SequoiaDB, 
+PARTITION pmax VALUES LESS THAN MAXVALUE ENGINE = SequoiaDB);
+ERROR HY000: Too long table name t#P#çççççççççççççççççççççççççççççççççççççççççççççççççççççççççççç
+CREATE TABLE t(
+id int(10),   
+id2 int(10),   
+PRIMARY KEY ( id, id2 )  
+) 
+PARTITION BY RANGE ( id )     
+SUBPARTITION BY HASH ( id2 )     
+SUBPARTITIONS 2 ( 
+PARTITION ççççççççççççççççççççççççççççççççççççççççççççççççççççççç VALUES LESS THAN (1000) ENGINE = SequoiaDB,     
+PARTITION pmax VALUES LESS THAN MAXVALUE ENGINE = SequoiaDB);
+show create table t;
+Table	Create Table
+t	CREATE TABLE `t` (
+  `id` int(10) NOT NULL,
+  `id2` int(10) NOT NULL,
+  PRIMARY KEY (`id`,`id2`)
+) ENGINE=SequoiaDB DEFAULT CHARSET=latin1 COLLATE=latin1_swedish_ci
+ PARTITION BY RANGE (`id`)
+SUBPARTITION BY HASH (`id2`)
+SUBPARTITIONS 2
+(PARTITION `ççççççççççççççççççççççççççççççççççççççççççççççççççççççç` VALUES LESS THAN (1000) ENGINE = SequoiaDB,
+ PARTITION `pmax` VALUES LESS THAN MAXVALUE ENGINE = SequoiaDB)
+insert into t values(1,2);
+select * from t;
+id	id2
+1	2
+drop table t;
+CREATE TABLE t (a INT)
+PARTITION BY RANGE (a) SUBPARTITION BY HASH(a)
+(PARTITION `$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$`
+ VALUES LESS THAN (10)
+(SUBPARTITION
+`--------------------------abcdef0123456789abcdef0123456789abcdef`,
+SUBPARTITION
+`0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef`)
+);
+show create table t;
+Table	Create Table
+t	CREATE TABLE `t` (
+  `a` int(11) DEFAULT NULL
+) ENGINE=SequoiaDB DEFAULT CHARSET=latin1 COLLATE=latin1_swedish_ci
+ PARTITION BY RANGE (`a`)
+SUBPARTITION BY HASH (`a`)
+(PARTITION `$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$` VALUES LESS THAN (10)
+ (SUBPARTITION `--------------------------abcdef0123456789abcdef0123456789abcdef` ENGINE = SequoiaDB,
+  SUBPARTITION `0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef` ENGINE = SequoiaDB))
+insert into t values(1);
+select * from t;
+a
+1
+drop table t;
+create table hash_t(
+id int, 
+id2 int
+)
+PARTITION BY HASH(id)
+PARTITIONS 300;
+DROP TABLE `#mysql50#t1#P#@0024@0024@0024@0024@0024@0024@0024@0024@0024@0024@0024@0024@0024@0024@0024@0024@0024@0024@0024@0024@0024@0024@0024@0024@0024@0024@0024@0024@0024@0024@0024@0024@0024@0024@0024@0024@0024@0024@0024@0024@0024@0024@0024@0024@0024@0024@0024@0024@0024@0024@0024@0024@0024@0024@0024@0024@0024@0024@0024@0024@0024@0024@0024@0024#SP#0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef`;
+ERROR 42000: Incorrect table name '#mysql50#t1#P#@0024@0024@0024@0024@0024@0024@0024@0024@0024@0024@0024@0024@0024@0024@0024@0024@0024@'
+create table ççççççççççççççççççççççççççççççççççççççççççççççççççççççççççççççç (a int);
+insert into ççççççççççççççççççççççççççççççççççççççççççççççççççççççççççççççç values(1);
+select count(1) from ççççççççççççççççççççççççççççççççççççççççççççççççççççççççççççççç;
+count(1)
+1
+drop table ççççççççççççççççççççççççççççççççççççççççççççççççççççççççççççççç;
+create table çççççççççççççççççççççççççççççççççççççççççççççççççççççççççççççççç(a int);
+ERROR HY000: Can't create table `longname`.`çççççççççççççççççççççççççççççççççççççççççççççççççççççççççççççççç` (errno: 1059 "Unknown error 1059")
+drop database longname;

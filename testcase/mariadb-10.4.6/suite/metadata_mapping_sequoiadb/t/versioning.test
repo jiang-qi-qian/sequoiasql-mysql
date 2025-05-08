@@ -1,0 +1,188 @@
+# seqDB-24553, seqDB-24554
+
+--source include/have_innodb.inc
+--source include/have_partition.inc
+--source suite/metadata_mapping_sequoiadb/inc/insts_connect_sequoiadb.inc
+
+# connect to group1_conn1, clear databases in the beginning
+connection group1_conn1;
+--disable_warnings
+set sql_mode = 'ANSI_QUOTES';
+set character_set_client = utf8;
+set character_set_connection = utf8;
+drop database if exists multi_inst_group_flashback_table;
+set sql_mode=default; 
+--enable_warnings
+
+# connect to group2_conn1, clear databases in the beginning
+connection group2_conn1;
+--disable_warnings
+set sql_mode = 'ANSI_QUOTES';
+set character_set_client = utf8;
+set character_set_connection = utf8;
+drop database if exists multi_inst_group_flashback_table;
+set sql_mode=default; 
+--enable_warnings
+
+# 再次清理表，避免受其他用例影响（用例每次新建实例，sdb那边可能存在残留，再次新建只是在mysql端建了映射关系，再次删除才能删除mysql和sdb端的表，保证表不残留）
+# 实例组1
+connection group1_conn1;
+create database multi_inst_group_flashback_table;
+use multi_inst_group_flashback_table;
+create table clearX(a int);
+drop database multi_inst_group_flashback_table;
+# 实例组2
+connection group2_conn1;
+create database multi_inst_group_flashback_table;
+use multi_inst_group_flashback_table;
+create table clearX(a int);
+drop database multi_inst_group_flashback_table;
+
+# seqDB-24553:不同实例组对闪回表做DDL操作和数据操作
+# 创建普通闪回表
+# 实例组1
+connection group1_conn1;
+create database multi_inst_group_flashback_table;
+use multi_inst_group_flashback_table;
+create table t1 (a int) with system versioning;
+show create table t1;
+insert into t1 values (0);
+select * from t1 order by a;
+drop database multi_inst_group_flashback_table;
+# 实例组2，创建跟实例组1同名表
+connection group2_conn1;
+create database multi_inst_group_flashback_table;
+use multi_inst_group_flashback_table;
+create table t1 (a INT) with system versioning;
+show create table t1;
+insert into t1 values (0);
+select * from t1 order by a;
+drop database multi_inst_group_flashback_table;
+
+
+# 创建普通表，修改为闪回表
+# 实例组1
+connection group1_conn1;
+create database multi_inst_group_flashback_table;
+use multi_inst_group_flashback_table;
+CREATE TABLE t1 (a INT);
+show create table t1;
+insert into t1 values (0);
+select * from t1 order by a;
+# 实例组2
+connection group2_conn1;
+create database multi_inst_group_flashback_table;
+use multi_inst_group_flashback_table;
+CREATE TABLE t1 (a INT);
+show create table t1;
+insert into t1 values (0);
+select * from t1 order by a;
+
+# 修改为闪回表
+# 实例组1
+connection group1_conn1;
+ALTER TABLE t1 ADD SYSTEM VERSIONING;
+show create table t1;
+insert into t1 values (0);
+select * from t1 order by a;
+# 实例组2
+connection group2_conn1;
+ALTER TABLE t1 ADD SYSTEM VERSIONING;
+show create table t1;
+insert into t1 values (0);
+select * from t1 order by a;
+
+# 修改为普通表
+# 实例组1
+connection group1_conn1;
+ALTER TABLE t1 DROP SYSTEM VERSIONING;
+show create table t1;
+insert into t1 values (0);
+select * from t1 order by a;
+# 实例组2
+connection group2_conn1;
+ALTER TABLE t1 DROP SYSTEM VERSIONING;
+show create table t1;
+insert into t1 values (0);
+select * from t1 order by a;
+
+# 实例组1
+connection group1_conn1;
+drop database multi_inst_group_flashback_table;
+# 实例组2
+connection group2_conn1;
+drop database multi_inst_group_flashback_table;
+
+
+# seqDB-24554:不同实例组对闪回分区表做DDL操作和数据操作
+# range分区表，不同实例组做ddl/索引/数据操作，操作相同
+let $s_create_table = 
+    CREATE TABLE t1(a int) WITH SYSTEM VERSIONING 
+        PARTITION BY SYSTEM_TIME LIMIT 2(
+            PARTITION p0 HISTORY,
+            PARTITION p1 HISTORY,
+            PARTITION p_cur CURRENT   
+    );
+
+# 创建表
+# 实例组1
+connection group1_conn1;
+create database multi_inst_group_flashback_table;
+use multi_inst_group_flashback_table;
+eval $s_create_table;
+show create table t1;
+insert into t1 values (0), (1), (2), (3), (4);
+select * from t1 order by a;
+# 实例组2，创建跟实例组1同名表
+connection group2_conn1;
+create database multi_inst_group_flashback_table;
+use multi_inst_group_flashback_table;
+eval $s_create_table;
+show create table t1;
+insert into t1 values (0), (1), (2), (3), (4);
+select * from t1 order by a;
+
+# 其他操作，均在 实例组1 进行
+connection group1_conn1;
+# 创建索引
+create index idx on t1(a);
+select * from t1 order by a;
+explain select * from t1 order by a;
+show index from t1;
+# 删除索引
+drop index idx on t1;
+select * from t1 order by a;
+explain select * from t1 order by a;
+show index from t1;
+# 添加分区
+alter table t1 add partition (partition p2 history);
+show create table t1;
+insert into t1 values (0), (1), (2), (3), (4);
+select * from t1 order by a;
+# 删除分区
+connection group1_conn1;
+alter table t1 drop partition p0;
+show create table t1;
+# 删除所有分区
+connection group1_conn1;
+alter table t1 remove partitioning;
+show create table t1;
+# 删除表
+drop table t1;
+show tables;
+# 再次创建相同表
+eval $s_create_table;
+show create table t1;
+insert into t1 values (0), (1), (2), (3), (4);
+select * from t1 order by a;
+
+# 实例组1
+connection group1_conn1;
+drop database multi_inst_group_flashback_table;
+# 实例组2
+connection group2_conn1;
+drop database multi_inst_group_flashback_table;
+
+
+--source include/uninstall_sequoiadb.inc
+--source suite/metadata_mapping_sequoiadb/inc/insts_disconnect_sequoiadb.inc

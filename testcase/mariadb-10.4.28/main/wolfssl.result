@@ -1,0 +1,3 @@
+SELECT @@ssl_cipher;
+@@ssl_cipher
+NULL

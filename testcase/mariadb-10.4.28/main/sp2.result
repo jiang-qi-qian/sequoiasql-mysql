@@ -1,0 +1,24 @@
+drop database if exists sp2;
+create database sp2;
+drop database sp2;
+create database sp2;
+use sp2;
+CREATE PROCEDURE sp3() BEGIN END;
+SHOW PROCEDURE STATUS;
+Db	Name	Type	Definer	Modified	Created	Security_type	Comment	character_set_client	collation_connection	Database Collation
+mtr	add_suppression	PROCEDURE	root@localhost	#	#	DEFINER		utf8	utf8_general_ci	latin1_swedish_ci
+mtr	check_testcase	PROCEDURE	root@localhost	#	#	DEFINER		utf8	utf8_general_ci	latin1_swedish_ci
+mtr	check_warnings	PROCEDURE	root@localhost	#	#	DEFINER		utf8	utf8_general_ci	latin1_swedish_ci
+mysql	AddGeometryColumn	PROCEDURE	mariadb.sys@localhost	#	#	INVOKER		latin1	latin1_swedish_ci	latin1_swedish_ci
+mysql	DropGeometryColumn	PROCEDURE	mariadb.sys@localhost	#	#	INVOKER		latin1	latin1_swedish_ci	latin1_swedish_ci
+sp2	sp1	PROCEDURE	root@localhost	#	#	DEFINER		latin1	latin1_swedish_ci	latin1_swedish_ci
+sp2	sp2	PROCEDURE	root@localhost	#	#	DEFINER		latin1	latin1_swedish_ci	latin1_swedish_ci
+sp2	sp3	PROCEDURE	root@localhost	#	#	DEFINER		latin1	latin1_swedish_ci	latin1_swedish_ci
+DROP PROCEDURE sp2;
+select count(*) from mysql.event;
+count(*)
+416
+flush tables;
+show events;
+truncate table mysql.event;
+DROP DATABASE sp2;

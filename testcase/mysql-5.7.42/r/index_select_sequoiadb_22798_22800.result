@@ -1,0 +1,347 @@
+set session sequoiadb_stats_cache_level=1;
+CREATE DATABASE index_select_sequoiadb_22798_22800;
+use index_select_sequoiadb_22798_22800;
+CREATE TABLE t1 (
+a ENUM('1','2','3','4','5','6','7','8','9','10','11','12','13','14','15','16','17','18'),
+b ENUM('a','b','c')
+);
+INSERT INTO t1 VALUES (1,'a'),(2,'b'),(3,'c'),(4,'c'),(5,'c'),(6,'b'),(7,'b'),(8,'a'),(9,'a'),(10,'a'),(11,'b'),(12,'a'),(13,'b'),(14,'c'),(15,'a'),(16,'b'),(17,'c'),(18,'a');
+alter table t1 add PRIMARY KEY(a);
+alter table t1 add index b(b);
+alter table t1 add index ab(a,b);
+alter table t1 add index ba(b,a);
+SHOW CREATE TABLE t1;
+Table	Create Table
+t1	CREATE TABLE `t1` (
+  `a` enum('1','2','3','4','5','6','7','8','9','10','11','12','13','14','15','16','17','18') NOT NULL,
+  `b` enum('a','b','c') DEFAULT NULL,
+  PRIMARY KEY (`a`),
+  KEY `b` (`b`),
+  KEY `ab` (`a`,`b`),
+  KEY `ba` (`b`,`a`)
+) ENGINE=SequoiaDB DEFAULT CHARSET=latin1
+EXPLAIN SELECT * FROM t1 WHERE a=16;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	const	PRIMARY,ab	PRIMARY	1	const	#	100.00	NULL
+Warnings:
+Note	1003	/* select#1 */ select '16' AS `a`,'b' AS `b` from `index_select_sequoiadb_22798_22800`.`t1` where ('16' = 16)
+SELECT * FROM t1 WHERE a=16;
+a	b
+16	b
+[Note] SequoiaDB: Query message: condition[{ "a": { "$et": 16 } }], selector[{}], order_by[{ "a": 1 }], hint[{ "": "PRIMARY" }], limit[-1], offset[0], table[index_select_sequoiadb_22798_22800.t1]
+EXPLAIN SELECT * FROM t1 WHERE b="a";
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	ref	b,ba	ba	2	const	#	100.00	Using index
+Warnings:
+Note	1003	/* select#1 */ select `index_select_sequoiadb_22798_22800`.`t1`.`a` AS `a`,`index_select_sequoiadb_22798_22800`.`t1`.`b` AS `b` from `index_select_sequoiadb_22798_22800`.`t1` where (`index_select_sequoiadb_22798_22800`.`t1`.`b` = 'a')
+SELECT * FROM t1 WHERE b="a";
+a	b
+1	a
+10	a
+12	a
+15	a
+18	a
+8	a
+9	a
+[Note] SequoiaDB: Query message: condition[{ "b": { "$et": 1 } }], selector[{ "a": null, "b": null }], order_by[{ "b": 1, "a": 1 }], hint[{ "": "ba" }], limit[-1], offset[0], table[index_select_sequoiadb_22798_22800.t1]
+EXPLAIN SELECT * FROM t1 WHERE a=10 AND b="a";
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	const	PRIMARY,b,ab,ba	PRIMARY	1	const	#	100.00	NULL
+Warnings:
+Note	1003	/* select#1 */ select '10' AS `a`,'a' AS `b` from `index_select_sequoiadb_22798_22800`.`t1` where (('10' = 10))
+SELECT * FROM t1 WHERE a=10 AND b="a";
+a	b
+10	a
+[Note] SequoiaDB: Query message: condition[{ "a": { "$et": 10 } }], selector[{}], order_by[{ "a": 1 }], hint[{ "": "PRIMARY" }], limit[-1], offset[0], table[index_select_sequoiadb_22798_22800.t1]
+EXPLAIN SELECT * FROM t1 WHERE b="b" AND a=13;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	const	PRIMARY,b,ab,ba	PRIMARY	1	const	#	100.00	NULL
+Warnings:
+Note	1003	/* select#1 */ select '13' AS `a`,'b' AS `b` from `index_select_sequoiadb_22798_22800`.`t1` where (('13' = 13))
+SELECT * FROM t1 WHERE b="b" AND a=13;
+a	b
+13	b
+[Note] SequoiaDB: Query message: condition[{ "a": { "$et": 13 } }], selector[{}], order_by[{ "a": 1 }], hint[{ "": "PRIMARY" }], limit[-1], offset[0], table[index_select_sequoiadb_22798_22800.t1]
+ANALYZE TABLE t1;
+Table	Op	Msg_type	Msg_text
+index_select_sequoiadb_22798_22800.t1	analyze	status	OK
+EXPLAIN SELECT * FROM t1 WHERE a=16;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	const	PRIMARY,ab	PRIMARY	1	const	#	100.00	NULL
+Warnings:
+Note	1003	/* select#1 */ select '16' AS `a`,'b' AS `b` from `index_select_sequoiadb_22798_22800`.`t1` where ('16' = 16)
+SELECT * FROM t1 WHERE a=16;
+a	b
+16	b
+[Note] SequoiaDB: Query message: condition[{ "a": { "$et": 16 } }], selector[{}], order_by[{ "a": 1 }], hint[{ "": "PRIMARY" }], limit[-1], offset[0], table[index_select_sequoiadb_22798_22800.t1]
+EXPLAIN SELECT * FROM t1 WHERE b="a";
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	ref	b,ba	ba	2	const	#	100.00	Using index
+Warnings:
+Note	1003	/* select#1 */ select `index_select_sequoiadb_22798_22800`.`t1`.`a` AS `a`,`index_select_sequoiadb_22798_22800`.`t1`.`b` AS `b` from `index_select_sequoiadb_22798_22800`.`t1` where (`index_select_sequoiadb_22798_22800`.`t1`.`b` = 'a')
+SELECT * FROM t1 WHERE b="a";
+a	b
+1	a
+10	a
+12	a
+15	a
+18	a
+8	a
+9	a
+[Note] SequoiaDB: Query message: condition[{ "b": { "$et": 1 } }], selector[{ "a": null, "b": null }], order_by[{ "b": 1, "a": 1 }], hint[{ "": "ba" }], limit[-1], offset[0], table[index_select_sequoiadb_22798_22800.t1]
+EXPLAIN SELECT * FROM t1 WHERE a=10 AND b="a";
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	const	PRIMARY,b,ab,ba	PRIMARY	1	const	#	100.00	NULL
+Warnings:
+Note	1003	/* select#1 */ select '10' AS `a`,'a' AS `b` from `index_select_sequoiadb_22798_22800`.`t1` where (('10' = 10))
+SELECT * FROM t1 WHERE a=10 AND b="a";
+a	b
+10	a
+[Note] SequoiaDB: Query message: condition[{ "a": { "$et": 10 } }], selector[{}], order_by[{ "a": 1 }], hint[{ "": "PRIMARY" }], limit[-1], offset[0], table[index_select_sequoiadb_22798_22800.t1]
+EXPLAIN SELECT * FROM t1 WHERE b="b" AND a=13;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	const	PRIMARY,b,ab,ba	PRIMARY	1	const	#	100.00	NULL
+Warnings:
+Note	1003	/* select#1 */ select '13' AS `a`,'b' AS `b` from `index_select_sequoiadb_22798_22800`.`t1` where (('13' = 13))
+SELECT * FROM t1 WHERE b="b" AND a=13;
+a	b
+13	b
+[Note] SequoiaDB: Query message: condition[{ "a": { "$et": 13 } }], selector[{}], order_by[{ "a": 1 }], hint[{ "": "PRIMARY" }], limit[-1], offset[0], table[index_select_sequoiadb_22798_22800.t1]
+DROP TABLE t1;
+CREATE TABLE t1 (
+a SET('1','2','3','4','5','6'),
+b SET('a','b','c')
+);
+SHOW CREATE TABLE t1;
+Table	Create Table
+t1	CREATE TABLE `t1` (
+  `a` set('1','2','3','4','5','6') DEFAULT NULL,
+  `b` set('a','b','c') DEFAULT NULL
+) ENGINE=SequoiaDB DEFAULT CHARSET=latin1
+INSERT INTO t1 VALUES ('1','a,b'),('2','b,c'),('3','c'),('4','c'),('5','b,c'),('6','a,b,c'),('2,3','b'),('1,2,3','a'),('1,5,6','a,c'),('2,4','a,c'),('3,5','b,c'),('4,5,6','a,b,c'),('2,6','b'),('2,3,4,5','c'),('2,4,6','a'),('1,3,6','a,b'),('1,2,3,4,5,6','c'),('1,2,3,4','a');
+alter table t1 add PRIMARY KEY(a);
+alter table t1 add index b(b);
+alter table t1 add index ab(a,b);
+alter table t1 add index ba(b,a);
+EXPLAIN SELECT * FROM t1 WHERE a='1,5,6';
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	const	PRIMARY,ab	PRIMARY	1	const	#	100.00	NULL
+Warnings:
+Note	1003	/* select#1 */ select '1,5,6' AS `a`,'a,c' AS `b` from `index_select_sequoiadb_22798_22800`.`t1` where 1
+SELECT * FROM t1 WHERE a='1,5,6';
+a	b
+1,5,6	a,c
+[Note] SequoiaDB: Query message: condition[{ "a": { "$et": 49 } }], selector[{}], order_by[{ "a": 1 }], hint[{ "": "PRIMARY" }], limit[-1], offset[0], table[index_select_sequoiadb_22798_22800.t1]
+EXPLAIN SELECT * FROM t1 WHERE b="a";
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	ref	b,ba	ba	2	const	#	100.00	Using index
+Warnings:
+Note	1003	/* select#1 */ select `index_select_sequoiadb_22798_22800`.`t1`.`a` AS `a`,`index_select_sequoiadb_22798_22800`.`t1`.`b` AS `b` from `index_select_sequoiadb_22798_22800`.`t1` where (`index_select_sequoiadb_22798_22800`.`t1`.`b` = 'a')
+SELECT * FROM t1 WHERE b="a";
+a	b
+1,2,3	a
+1,2,3,4	a
+2,4,6	a
+[Note] SequoiaDB: Query message: condition[{ "b": { "$et": 1 } }], selector[{ "a": null, "b": null }], order_by[{ "b": 1, "a": 1 }], hint[{ "": "ba" }], limit[-1], offset[0], table[index_select_sequoiadb_22798_22800.t1]
+EXPLAIN SELECT * FROM t1 WHERE a=2 AND b="b,c";
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	const	PRIMARY,b,ab,ba	PRIMARY	1	const	#	100.00	NULL
+Warnings:
+Note	1003	/* select#1 */ select '2' AS `a`,'b,c' AS `b` from `index_select_sequoiadb_22798_22800`.`t1` where (('2' = 2))
+SELECT * FROM t1 WHERE a=2 AND b="b,c";
+a	b
+2	b,c
+[Note] SequoiaDB: Query message: condition[{ "a": { "$et": 2 } }], selector[{}], order_by[{ "a": 1 }], hint[{ "": "PRIMARY" }], limit[-1], offset[0], table[index_select_sequoiadb_22798_22800.t1]
+EXPLAIN SELECT * FROM t1 WHERE b="a" AND a='1,2,3,4';
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	const	PRIMARY,b,ab,ba	PRIMARY	1	const	#	100.00	NULL
+Warnings:
+Note	1003	/* select#1 */ select '1,2,3,4' AS `a`,'a' AS `b` from `index_select_sequoiadb_22798_22800`.`t1` where 1
+SELECT * FROM t1 WHERE b="a" AND a='1,2,3,4';
+a	b
+1,2,3,4	a
+[Note] SequoiaDB: Query message: condition[{ "a": { "$et": 15 } }], selector[{}], order_by[{ "a": 1 }], hint[{ "": "PRIMARY" }], limit[-1], offset[0], table[index_select_sequoiadb_22798_22800.t1]
+ANALYZE TABLE t1;
+Table	Op	Msg_type	Msg_text
+index_select_sequoiadb_22798_22800.t1	analyze	status	OK
+EXPLAIN SELECT * FROM t1 WHERE a='1,5,6';
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	const	PRIMARY,ab	PRIMARY	1	const	#	100.00	NULL
+Warnings:
+Note	1003	/* select#1 */ select '1,5,6' AS `a`,'a,c' AS `b` from `index_select_sequoiadb_22798_22800`.`t1` where 1
+SELECT * FROM t1 WHERE a='1,5,6';
+a	b
+1,5,6	a,c
+[Note] SequoiaDB: Query message: condition[{ "a": { "$et": 49 } }], selector[{}], order_by[{ "a": 1 }], hint[{ "": "PRIMARY" }], limit[-1], offset[0], table[index_select_sequoiadb_22798_22800.t1]
+EXPLAIN SELECT * FROM t1 WHERE b="a";
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	ref	b,ba	ba	2	const	#	100.00	Using index
+Warnings:
+Note	1003	/* select#1 */ select `index_select_sequoiadb_22798_22800`.`t1`.`a` AS `a`,`index_select_sequoiadb_22798_22800`.`t1`.`b` AS `b` from `index_select_sequoiadb_22798_22800`.`t1` where (`index_select_sequoiadb_22798_22800`.`t1`.`b` = 'a')
+SELECT * FROM t1 WHERE b="a";
+a	b
+1,2,3	a
+1,2,3,4	a
+2,4,6	a
+[Note] SequoiaDB: Query message: condition[{ "b": { "$et": 1 } }], selector[{ "a": null, "b": null }], order_by[{ "b": 1, "a": 1 }], hint[{ "": "ba" }], limit[-1], offset[0], table[index_select_sequoiadb_22798_22800.t1]
+EXPLAIN SELECT * FROM t1 WHERE a=2 AND b="b,c";
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	const	PRIMARY,b,ab,ba	PRIMARY	1	const	#	100.00	NULL
+Warnings:
+Note	1003	/* select#1 */ select '2' AS `a`,'b,c' AS `b` from `index_select_sequoiadb_22798_22800`.`t1` where (('2' = 2))
+SELECT * FROM t1 WHERE a=2 AND b="b,c";
+a	b
+2	b,c
+[Note] SequoiaDB: Query message: condition[{ "a": { "$et": 2 } }], selector[{}], order_by[{ "a": 1 }], hint[{ "": "PRIMARY" }], limit[-1], offset[0], table[index_select_sequoiadb_22798_22800.t1]
+EXPLAIN SELECT * FROM t1 WHERE b="a" AND a='1,2,3,4';
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	const	PRIMARY,b,ab,ba	PRIMARY	1	const	#	100.00	NULL
+Warnings:
+Note	1003	/* select#1 */ select '1,2,3,4' AS `a`,'a' AS `b` from `index_select_sequoiadb_22798_22800`.`t1` where 1
+SELECT * FROM t1 WHERE b="a" AND a='1,2,3,4';
+a	b
+1,2,3,4	a
+[Note] SequoiaDB: Query message: condition[{ "a": { "$et": 15 } }], selector[{}], order_by[{ "a": 1 }], hint[{ "": "PRIMARY" }], limit[-1], offset[0], table[index_select_sequoiadb_22798_22800.t1]
+DROP TABLE t1;
+CREATE TABLE t1 (
+a INT,
+b CHAR(64)
+);
+LOAD DATA INFILE '../../std_data/index_select_sequoiadb_1.dat' INTO TABLE t1 (a,b);
+alter table t1 add PRIMARY KEY(a);
+alter table t1 add index b(b);
+alter table t1 add index ab(a,b);
+alter table t1 add index ba(b,a);
+SHOW CREATE TABLE t1;
+Table	Create Table
+t1	CREATE TABLE `t1` (
+  `a` int(11) NOT NULL,
+  `b` char(64) DEFAULT NULL,
+  PRIMARY KEY (`a`),
+  KEY `b` (`b`),
+  KEY `ab` (`a`,`b`),
+  KEY `ba` (`b`,`a`)
+) ENGINE=SequoiaDB DEFAULT CHARSET=latin1
+EXPLAIN SELECT * FROM t1 WHERE b IS NULL;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	ref	b,ba	ba	65	const	#	100.00	Using where with pushed condition isnull(`index_select_sequoiadb_22798_22800`.`t1`.`b`); Using index
+Warnings:
+Note	1003	/* select#1 */ select `index_select_sequoiadb_22798_22800`.`t1`.`a` AS `a`,`index_select_sequoiadb_22798_22800`.`t1`.`b` AS `b` from `index_select_sequoiadb_22798_22800`.`t1` where isnull(`index_select_sequoiadb_22798_22800`.`t1`.`b`)
+SELECT * FROM t1 WHERE b IS NULL;
+a	b
+[Note] SequoiaDB: Query message: condition[{ "b": { "$isnull": 1 } }], selector[{ "a": null, "b": null }], order_by[{ "b": 1, "a": 1 }], hint[{ "": "ba" }], limit[-1], offset[0], table[index_select_sequoiadb_22798_22800.t1]
+ANALYZE TABLE t1;
+Table	Op	Msg_type	Msg_text
+index_select_sequoiadb_22798_22800.t1	analyze	status	OK
+EXPLAIN SELECT * FROM t1 WHERE b IS NULL;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	ref	b,ba	b	65	const	#	100.00	Using where with pushed condition isnull(`index_select_sequoiadb_22798_22800`.`t1`.`b`)
+Warnings:
+Note	1003	/* select#1 */ select `index_select_sequoiadb_22798_22800`.`t1`.`a` AS `a`,`index_select_sequoiadb_22798_22800`.`t1`.`b` AS `b` from `index_select_sequoiadb_22798_22800`.`t1` where isnull(`index_select_sequoiadb_22798_22800`.`t1`.`b`)
+SELECT * FROM t1 WHERE b IS NULL;
+a	b
+[Note] SequoiaDB: Query message: condition[{ "b": { "$isnull": 1 } }], selector[{}], order_by[{ "b": 1 }], hint[{ "": "b" }], limit[-1], offset[0], table[index_select_sequoiadb_22798_22800.t1]
+DROP TABLE t1;
+CREATE TABLE t1 (
+a BOOLEAN,
+b BOOLEAN
+);
+INSERT INTO t1 VALUES (1,1),(1,0),(0,1),(1,1),(0,0),(0,1),(1,0),(1,1),(0,0),(1,0),(0,0),(1,1),(0,1),(0,1);
+alter table t1 add index a(a);
+alter table t1 add index b(b);
+alter table t1 add index ab(a,b);
+alter table t1 add index ba(b,a);
+SHOW CREATE TABLE t1;
+Table	Create Table
+t1	CREATE TABLE `t1` (
+  `a` tinyint(1) DEFAULT NULL,
+  `b` tinyint(1) DEFAULT NULL,
+  KEY `a` (`a`),
+  KEY `b` (`b`),
+  KEY `ab` (`a`,`b`),
+  KEY `ba` (`b`,`a`)
+) ENGINE=SequoiaDB DEFAULT CHARSET=latin1
+EXPLAIN SELECT * FROM t1 WHERE a=1;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	ref	a,ab	ab	2	const	#	100.00	Using index
+Warnings:
+Note	1003	/* select#1 */ select `index_select_sequoiadb_22798_22800`.`t1`.`a` AS `a`,`index_select_sequoiadb_22798_22800`.`t1`.`b` AS `b` from `index_select_sequoiadb_22798_22800`.`t1` where (`index_select_sequoiadb_22798_22800`.`t1`.`a` = 1)
+SELECT * FROM t1 WHERE a=1;
+a	b
+1	0
+1	0
+1	0
+1	1
+1	1
+1	1
+1	1
+[Note] SequoiaDB: Query message: condition[{ "a": { "$et": 1 } }], selector[{ "a": null, "b": null }], order_by[{ "a": 1, "b": 1 }], hint[{ "": "ab" }], limit[-1], offset[0], table[index_select_sequoiadb_22798_22800.t1]
+EXPLAIN SELECT * FROM t1 WHERE a=1 AND b=1;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	ref	a,b,ab,ba	ab	4	const,const	#	100.00	Using index
+Warnings:
+Note	1003	/* select#1 */ select `index_select_sequoiadb_22798_22800`.`t1`.`a` AS `a`,`index_select_sequoiadb_22798_22800`.`t1`.`b` AS `b` from `index_select_sequoiadb_22798_22800`.`t1` where ((`index_select_sequoiadb_22798_22800`.`t1`.`b` = 1) and (`index_select_sequoiadb_22798_22800`.`t1`.`a` = 1))
+SELECT * FROM t1 WHERE a=1 AND b=1;
+a	b
+1	1
+1	1
+1	1
+1	1
+[Note] SequoiaDB: Query message: condition[{ "a": { "$et": 1 }, "b": { "$et": 1 } }], selector[{ "a": null, "b": null }], order_by[{ "a": 1, "b": 1 }], hint[{ "": "ab" }], limit[-1], offset[0], table[index_select_sequoiadb_22798_22800.t1]
+EXPLAIN SELECT * FROM t1 WHERE b=1 AND a=1;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	ref	a,b,ab,ba	ab	4	const,const	#	100.00	Using index
+Warnings:
+Note	1003	/* select#1 */ select `index_select_sequoiadb_22798_22800`.`t1`.`a` AS `a`,`index_select_sequoiadb_22798_22800`.`t1`.`b` AS `b` from `index_select_sequoiadb_22798_22800`.`t1` where ((`index_select_sequoiadb_22798_22800`.`t1`.`a` = 1) and (`index_select_sequoiadb_22798_22800`.`t1`.`b` = 1))
+SELECT * FROM t1 WHERE b=1 AND a=1;
+a	b
+1	1
+1	1
+1	1
+1	1
+[Note] SequoiaDB: Query message: condition[{ "a": { "$et": 1 }, "b": { "$et": 1 } }], selector[{ "a": null, "b": null }], order_by[{ "a": 1, "b": 1 }], hint[{ "": "ab" }], limit[-1], offset[0], table[index_select_sequoiadb_22798_22800.t1]
+ANALYZE TABLE t1;
+Table	Op	Msg_type	Msg_text
+index_select_sequoiadb_22798_22800.t1	analyze	status	OK
+EXPLAIN SELECT * FROM t1 WHERE a=1;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	ref	a,ab	ab	2	const	#	100.00	Using index
+Warnings:
+Note	1003	/* select#1 */ select `index_select_sequoiadb_22798_22800`.`t1`.`a` AS `a`,`index_select_sequoiadb_22798_22800`.`t1`.`b` AS `b` from `index_select_sequoiadb_22798_22800`.`t1` where (`index_select_sequoiadb_22798_22800`.`t1`.`a` = 1)
+SELECT * FROM t1 WHERE a=1;
+a	b
+1	0
+1	0
+1	0
+1	1
+1	1
+1	1
+1	1
+[Note] SequoiaDB: Query message: condition[{ "a": { "$et": 1 } }], selector[{ "a": null, "b": null }], order_by[{ "a": 1, "b": 1 }], hint[{ "": "ab" }], limit[-1], offset[0], table[index_select_sequoiadb_22798_22800.t1]
+EXPLAIN SELECT * FROM t1 WHERE a=1 AND b=1;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	ref	a,b,ab,ba	ab	4	const,const	#	100.00	Using index
+Warnings:
+Note	1003	/* select#1 */ select `index_select_sequoiadb_22798_22800`.`t1`.`a` AS `a`,`index_select_sequoiadb_22798_22800`.`t1`.`b` AS `b` from `index_select_sequoiadb_22798_22800`.`t1` where ((`index_select_sequoiadb_22798_22800`.`t1`.`b` = 1) and (`index_select_sequoiadb_22798_22800`.`t1`.`a` = 1))
+SELECT * FROM t1 WHERE a=1 AND b=1;
+a	b
+1	1
+1	1
+1	1
+1	1
+[Note] SequoiaDB: Query message: condition[{ "a": { "$et": 1 }, "b": { "$et": 1 } }], selector[{ "a": null, "b": null }], order_by[{ "a": 1, "b": 1 }], hint[{ "": "ab" }], limit[-1], offset[0], table[index_select_sequoiadb_22798_22800.t1]
+EXPLAIN SELECT * FROM t1 WHERE b=1 AND a=1;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	ref	a,b,ab,ba	ab	4	const,const	#	100.00	Using index
+Warnings:
+Note	1003	/* select#1 */ select `index_select_sequoiadb_22798_22800`.`t1`.`a` AS `a`,`index_select_sequoiadb_22798_22800`.`t1`.`b` AS `b` from `index_select_sequoiadb_22798_22800`.`t1` where ((`index_select_sequoiadb_22798_22800`.`t1`.`a` = 1) and (`index_select_sequoiadb_22798_22800`.`t1`.`b` = 1))
+SELECT * FROM t1 WHERE b=1 AND a=1;
+a	b
+1	1
+1	1
+1	1
+1	1
+[Note] SequoiaDB: Query message: condition[{ "a": { "$et": 1 }, "b": { "$et": 1 } }], selector[{ "a": null, "b": null }], order_by[{ "a": 1, "b": 1 }], hint[{ "": "ab" }], limit[-1], offset[0], table[index_select_sequoiadb_22798_22800.t1]
+DROP TABLE t1;
+DROP DATABASE index_select_sequoiadb_22798_22800;
+set session sequoiadb_stats_cache_level=default;

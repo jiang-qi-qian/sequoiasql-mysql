@@ -1,0 +1,11 @@
+
+#
+# mysqld --help
+#
+--source include/have_sequoiadb.inc
+--source include/not_embedded.inc
+--source include/not_windows.inc
+--source include/have_perfschema.inc
+
+--source include/mysqld--help.inc
+--source include/uninstall_sequoiadb.inc

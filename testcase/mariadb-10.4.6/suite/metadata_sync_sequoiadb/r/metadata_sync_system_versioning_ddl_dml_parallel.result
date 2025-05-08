@@ -1,0 +1,199 @@
+connection conn1;
+DROP DATABASE IF EXISTS metasync_23502;
+connection conn2;
+SHOW CREATE DATABASE metasync_23502;
+ERROR 42000: Unknown database 'metasync_23502'
+connection conn1;
+CREATE DATABASE metasync_23502;
+USE metasync_23502;
+CREATE TABLE sys_version1 (
+id int primary key,
+name varchar(16),
+start_timestamp TIMESTAMP(6) GENERATED ALWAYS as ROW START INVISIBLE,
+end_timestamp TIMESTAMP(6) GENERATED ALWAYS as ROW END INVISIBLE,
+PERIOD FOR SYSTEM_TIME (start_timestamp, end_timestamp)
+) WITH SYSTEM VERSIONING;
+connection conn2;
+INSERT INTO metasync_23502.sys_version1(id,name) VALUES (1,'Joe'),(2,'Bob'),(3,'Mary');
+USE metasync_23502;
+connection conn1;
+CREATE OR REPLACE TABLE sys_version2 (
+x int primary key,
+y int
+) WITH SYSTEM VERSIONING;
+INSERT INTO sys_version2(x,y) VALUES (1,1);
+connection conn2;
+UPDATE sys_version2 SET y = y + 1;
+connection conn1;
+CREATE TABLE sys_version3 SELECT * FROM sys_version2;
+connection conn2;
+SELECT * FROM sys_version3;
+x	y
+1	2
+connection conn1;
+CREATE TABLE period_tab1 (
+id int auto_increment primary key, 
+start_time datetime,
+end_time datetime,
+PERIOD FOR ts_period(start_time, end_time));
+connection conn2;
+INSERT INTO period_tab1(start_time,end_time) VALUES ('2020-12-12 00:00:00', '2021-01-01 00:00:00');
+connection conn1;
+CREATE TABLE period_tab2 (
+id int auto_increment primary key,
+start date,
+end date,
+PERIOD FOR dt_period(start, end));
+INSERT INTO period_tab2(start,end) VALUES ('2020-12-12', '2021-01-01');
+connection conn2;
+SELECT * FROM period_tab2;
+id	start	end
+1	2020-12-12	2021-01-01
+connection conn1;
+CREATE TABLE bitemporal_tab (
+id int auto_increment primary key,
+name varchar(32),
+date_1 date,
+date_2 date,
+row_start timestamp(6) AS ROW START INVISIBLE,
+row_end timestamp(6) AS ROW END INVISIBLE,
+PERIOD FOR application_time(date_1, date_2),
+PERIOD FOR system_time(row_start, row_end)) WITH SYSTEM VERSIONING;
+connection conn2;
+INSERT INTO bitemporal_tab(name,date_1,date_2) VALUES ('Joe', '1997-01-01', '2001-01-01');
+INSERT INTO bitemporal_tab(name,date_1,date_2) VALUES ('Bob', '2008-08-08', '2018-10-10');
+UPDATE bitemporal_tab
+FOR PORTION OF application_time
+FROM '1997-01-01' TO '2001-01-01' SET name = CONCAT('first update: ', name);
+DELETE FROM bitemporal_tab
+FOR PORTION OF application_time FROM '2008-01-01' TO '2018-01-01';
+SELECT * FROM bitemporal_tab ORDER BY id;
+id	name	date_1	date_2
+1	first update: Joe	1997-01-01	2001-01-01
+3	Bob	2018-01-01	2018-10-10
+connection conn1;
+SET system_versioning_alter_history = KEEP;
+ALTER TABLE sys_version1 MODIFY name varchar(127) WITHOUT SYSTEM VERSIONING, ADD COLUMN age int, algorithm=copy;
+SET system_versioning_alter_history = DEFAULT;
+connection conn2;
+INSERT INTO sys_version1(id,name,age) VALUES (1005,'Tom',1005);
+SELECT * FROM sys_version1 ORDER BY id;
+id	name	age
+1	Joe	NULL
+2	Bob	NULL
+3	Mary	NULL
+1005	Tom	1005
+connection conn1;
+SET system_versioning_alter_history = KEEP;
+ALTER TABLE sys_version2 ADD COLUMN z int DEFAULT -1;
+SET system_versioning_alter_history = DEFAULT;
+connection conn2;
+UPDATE sys_version2 SET y = y * 2;
+SELECT * FROM sys_version2 FOR SYSTEM_TIME ALL ORDER BY x,y;
+x	y	z
+1	1	-1
+1	2	-1
+1	4	-1
+connection conn1;
+SET system_versioning_alter_history = KEEP;
+SET server_ha_wait_sync_timeout = 10;
+ALTER TABLE sys_version3 DROP COLUMN y;
+SET system_versioning_alter_history = DEFAULT;
+SET server_ha_wait_sync_timeout = 0;
+connection conn2;
+SELECT * FROM sys_version3 ORDER BY x;
+x
+1
+connection conn1;
+ALTER TABLE period_tab1 ADD COLUMN name varchar(64);
+connection conn2;
+INSERT INTO period_tab1(name,start_time,end_time) VALUES ('David', '2021-02-02 00:00:00', '2021-03-03 00:00:00');
+SELECT * FROM period_tab1 ORDER BY id,name;
+id	start_time	end_time	name
+1	2020-12-12 00:00:00	2021-01-01 00:00:00	NULL
+2	2021-02-02 00:00:00	2021-03-03 00:00:00	David
+connection conn1;
+ALTER TABLE period_tab2 DROP PERIOD FOR dt_period;
+connection conn2;
+SELECT * FROM period_tab2 ORDER BY id;
+id	start	end
+1	2020-12-12	2021-01-01
+connection conn1;
+SET system_versioning_alter_history = KEEP;
+ALTER TABLE bitemporal_tab ADD COLUMN age int, CHANGE name name varchar(127);
+SET system_versioning_alter_history = DEFAULT;
+connection conn2;
+DELETE FROM bitemporal_tab
+FOR PORTION OF application_time FROM '2008-01-01' TO '2010-10-10';
+INSERT INTO bitemporal_tab(name,age,date_1,date_2) VALUES ('TOM', 20, '2020-01-01', '2021-01-01');
+SELECT * FROM bitemporal_tab ORDER BY id;
+id	name	date_1	date_2	age
+1	first update: Joe	1997-01-01	2001-01-01	NULL
+3	Bob	2018-01-01	2018-10-10	NULL
+4	TOM	2020-01-01	2021-01-01	20
+SELECT * FROM bitemporal_tab FOR SYSTEM_TIME ALL ORDER BY id,name;
+id	name	date_1	date_2	age
+1	Joe	1997-01-01	2001-01-01	NULL
+1	first update: Joe	1997-01-01	2001-01-01	NULL
+2	Bob	2008-08-08	2018-10-10	NULL
+3	Bob	2018-01-01	2018-10-10	NULL
+4	TOM	2020-01-01	2021-01-01	20
+connection conn1;
+SET system_versioning_alter_history = KEEP;
+ALTER TABLE bitemporal_tab DROP PERIOD FOR application_time;
+SET system_versioning_alter_history = DEFAULT;
+connection conn2;
+SELECT * FROM bitemporal_tab FOR SYSTEM_TIME ALL ORDER BY id,name;
+id	name	date_1	date_2	age
+1	Joe	1997-01-01	2001-01-01	NULL
+1	first update: Joe	1997-01-01	2001-01-01	NULL
+2	Bob	2008-08-08	2018-10-10	NULL
+3	Bob	2018-01-01	2018-10-10	NULL
+4	TOM	2020-01-01	2021-01-01	20
+UPDATE bitemporal_tab SET name = 'update after drop period' WHERE id > 2;
+SELECT * FROM bitemporal_tab FOR SYSTEM_TIME ALL ORDER BY id,name;
+id	name	date_1	date_2	age
+1	Joe	1997-01-01	2001-01-01	NULL
+1	first update: Joe	1997-01-01	2001-01-01	NULL
+2	Bob	2008-08-08	2018-10-10	NULL
+3	Bob	2018-01-01	2018-10-10	NULL
+3	update after drop period	2018-01-01	2018-10-10	NULL
+4	TOM	2020-01-01	2021-01-01	20
+4	update after drop period	2020-01-01	2021-01-01	20
+connection conn1;
+DROP TABLE sys_version1;
+connection conn2;
+INSERT INTO sys_version1(id,name,age) VALUES (2001,'John',2001);
+ERROR 42S02: Table 'metasync_23502.sys_version1' doesn't exist
+connection conn1;
+DROP TABLE sys_version2;
+connection conn2;
+DELETE FROM sys_version2;
+ERROR 42S02: Table 'metasync_23502.sys_version2' doesn't exist
+connection conn1;
+DROP TABLE sys_version3;
+connection conn2;
+SELECT * FROM sys_version3;
+ERROR 42S02: Table 'metasync_23502.sys_version3' doesn't exist
+connection conn1;
+DROP TABLE period_tab1;
+connection conn2;
+INSERT INTO period_tab1(name,start_time,end_time) VALUES ('Jerry', '2021-04-04 00:00:00', '2021-05-05 00:00:00');
+ERROR 42S02: Table 'metasync_23502.period_tab1' doesn't exist
+connection conn1;
+DROP TABLE period_tab2;
+connection conn2;
+SELECT * FROM period_tab2;
+ERROR 42S02: Table 'metasync_23502.period_tab2' doesn't exist
+connection conn1;
+DROP TABLE bitemporal_tab;
+connection conn2;
+UPDATE bitemporal_tab SET name = 'update last time';
+ERROR 42S02: Table 'metasync_23502.bitemporal_tab' doesn't exist
+SELECT * FROM bitemporal_tab;
+ERROR 42S02: Table 'metasync_23502.bitemporal_tab' doesn't exist
+connection conn1;
+DROP DATABASE metasync_23502;
+connection conn2;
+SHOW CREATE DATABASE metasync_23502;
+ERROR 42000: Unknown database 'metasync_23502'

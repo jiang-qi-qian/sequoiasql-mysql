@@ -1,0 +1,8 @@
+drop table if exists null_prikey_sequoiadb;
+create table null_prikey_sequoiadb(a int);
+insert into null_prikey_sequoiadb values(null);
+set session sequoiadb_execute_only_in_mysql=on;
+drop table null_prikey_sequoiadb;
+set session sequoiadb_execute_only_in_mysql=off;
+create table null_prikey_sequoiadb(a int not null, primary key(a));
+ERROR HY000: Any field of index key should exist and cannot be null

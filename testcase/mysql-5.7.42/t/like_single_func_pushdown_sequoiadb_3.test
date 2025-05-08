@@ -1,0 +1,799 @@
+#seqDB-26641
+--source include/have_sequoiadb.inc
+
+--disable_warnings
+drop database if exists like_single_func_pushdown_sequoiadb;
+--enable_warnings
+create database like_single_func_pushdown_sequoiadb;
+drop database like_single_func_pushdown_sequoiadb;
+create database like_single_func_pushdown_sequoiadb;
+use like_single_func_pushdown_sequoiadb;
+set session sequoiadb_debug_log=on;
+set session sequoiadb_support_mode='';
+
+--disable_warnings
+drop table if exists t1, t2, t3, t4, t5;
+--enable_warnings
+
+create table t1(
+    a varchar(514) charset utf8mb4 collate utf8mb4_bin
+);
+create table t2(
+    a varchar(20) charset utf8mb4 collate utf8mb4_bin
+);
+create table t3(
+    a set('a1','b2','c3') charset utf8mb4 collate utf8mb4_bin
+);
+create table t4(
+    a int
+);
+create table t5(
+    a varchar(20) charset utf8mb4 collate utf8mb4_unicode_ci
+);
+
+#----------------------------information functions-----------------------------------#
+
+#benchmark
+select benchmark(1,1+1);
+insert into t1 values(benchmark(1,1+1));
+select * from t1 where a like benchmark(1,1+1) order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+
+#charset
+select charset(_latin1 'abc');
+insert into t1 values(charset(_latin1 'abc'));
+select * from t1 where a like charset(_latin1 'abc') order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t2 where a like charset((a));
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t3 where a like charset(_latin1 'abc');
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t4 where a like charset(_latin1 'abc');
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t5 where a like charset(_latin1 'abc');
+--source include/query_pushdown_condition_sequoiadb.inc
+
+#coercibility
+select coercibility(_latin1 'abc');
+insert into t1 values(coercibility(_latin1 'abc'));
+select * from t1 where a like coercibility(_latin1 'abc') order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+
+#collation
+select collation(_latin1 'abc');
+insert into t1 values(collation(_latin1 'abc'));
+select * from t1 where a like collation(_latin1 'abc') order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t2 where a like collation((a));
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t3 where a like collation(_latin1 'abc');
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t4 where a like collation(_latin1 'abc');
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t5 where a like collation(_latin1 'abc');
+--source include/query_pushdown_condition_sequoiadb.inc
+
+#connection_id
+select * from t2 where a like connection_id() order by a;
+--replace_regex /^([^s]*)\[Note\]/[Note]/
+--exec grep -w "Query message" $MYSQLTEST_VARDIR/log/mysqld.1.err | tail -1 | sed 's/: ".*",/: "",/'
+
+#current_user
+select * from t2 where a like current_user() order by a;
+--replace_regex /^([^s]*)\[Note\]/[Note]/
+--exec grep -w "Query message" $MYSQLTEST_VARDIR/log/mysqld.1.err | tail -1 | sed 's/: ".*",/: "",/'
+
+#database
+select * from t2 where a like database() order by a;
+--replace_regex /^([^s]*)\[Note\]/[Note]/
+--exec grep -w "Query message" $MYSQLTEST_VARDIR/log/mysqld.1.err | tail -1 | sed 's/: ".*",/: "",/'
+
+#found_rows
+select * from t2 where a like found_rows() order by a;
+--replace_regex /^([^s]*)\[Note\]/[Note]/
+--exec grep -w "Query message" $MYSQLTEST_VARDIR/log/mysqld.1.err | tail -1 | sed 's/: ".*",/: "",/'
+
+#row_count
+select * from t2 where a like row_count() order by a;
+--replace_regex /^([^s]*)\[Note\]/[Note]/
+--exec grep -w "Query message" $MYSQLTEST_VARDIR/log/mysqld.1.err | tail -1 | sed 's/: ".*",/: "",/'
+
+#last_insert_id
+select * from t2 where a like last_insert_id() order by a;
+--replace_regex /^([^s]*)\[Note\]/[Note]/
+--exec grep -w "Query message" $MYSQLTEST_VARDIR/log/mysqld.1.err | tail -1 | sed 's/: ".*",/: "",/'
+
+#schema
+select * from t2 where a like schema() order by a;
+--replace_regex /^([^s]*)\[Note\]/[Note]/
+--exec grep -w "Query message" $MYSQLTEST_VARDIR/log/mysqld.1.err | tail -1 | sed 's/: ".*",/: "",/'
+
+#system_user
+select * from t2 where a like system_user() order by a;
+--replace_regex /^([^s]*)\[Note\]/[Note]/
+--exec grep -w "Query message" $MYSQLTEST_VARDIR/log/mysqld.1.err | tail -1 | sed 's/: ".*",/: "",/'
+
+#session_user
+select * from t2 where a like session_user() order by a;
+--replace_regex /^([^s]*)\[Note\]/[Note]/
+--exec grep -w "Query message" $MYSQLTEST_VARDIR/log/mysqld.1.err | tail -1 | sed 's/: ".*",/: "",/'
+
+#user
+select * from t2 where a like user() order by a;
+--replace_regex /^([^s]*)\[Note\]/[Note]/
+--exec grep -w "Query message" $MYSQLTEST_VARDIR/log/mysqld.1.err | tail -1 | sed 's/: ".*",/: "",/'
+select * from t3 where a like user();
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t4 where a like user();
+--source include/query_pushdown_condition_sequoiadb.inc
+#can pushdown,the user() item is converted to string
+select * from t5 where a like user();
+--source include/query_pushdown_condition_sequoiadb.inc
+
+#version
+select * from t2 where a like version() order by a;
+--replace_regex /^([^s]*)\[Note\]/[Note]/
+--exec grep -w "Query message" $MYSQLTEST_VARDIR/log/mysqld.1.err | tail -1 | sed 's/: ".*",/: "",/'
+
+#----------------------------information functions-----------------------------------#
+
+#---------------------------miscellaneous functions-------------------------------------#
+
+#any_value
+select any_value('miscellaneous');
+insert into t1 values(any_value('miscellaneous'));
+select * from t1 where a like any_value('miscellaneous') order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+
+#default(col_name), can not push down
+select * from t2 where a like default(a) order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+
+#inet_aton
+select inet_aton('10.0.5.9');
+insert into t1 values(inet_aton('10.0.5.9'));
+select * from t1 where a like inet_aton('10.0.5.9') order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t2 where a like inet_aton((a));
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t2 where a like inet_aton(null);
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t3 where a like inet_aton('10.0.5.9');
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t4 where a like inet_aton('10.0.5.9');
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t5 where a like inet_aton('10.0.5.9');
+--source include/query_pushdown_condition_sequoiadb.inc
+
+#inet_ntoa
+select inet_ntoa('167773449');
+insert into t1 values(inet_ntoa('167773449'));
+select * from t1 where a like inet_ntoa('167773449') order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+
+#inet6_aton
+select inet6_aton('10.0.5.9');
+insert into t1 values(inet6_aton('10.0.5.9'));
+select * from t1 where a like inet6_aton('10.0.5.9') order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+
+#inet6_ntoa
+select inet6_ntoa(0x0A000509);
+insert into t1 values(inet6_ntoa(0x0A000509));
+select * from t1 where a like inet6_ntoa(0x0A000509) order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+
+#is_ipv4
+select is_ipv4('10.0.5.9');
+insert into t1 values(is_ipv4('10.0.5.9'));
+select * from t1 where a like is_ipv4('10.0.5.9') order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+
+#is_ipv4_compat
+select is_ipv4_compat(0x0000000000000000000000000A000509);
+insert into t1 values(is_ipv4_compat(0x0000000000000000000000000A000509));
+select * from t1 where a like is_ipv4_compat(0x0000000000000000000000000A000509) order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+
+#is_ipv4_mapped
+select is_ipv4_mapped(0x0000000000000000000000000A000509);
+insert into t1 values(is_ipv4_mapped(0x0000000000000000000000000A000509));
+select * from t1 where a like is_ipv4_mapped(0x0000000000000000000000000A000509) order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+
+#is_ipv6
+select is_ipv6('::10.0.5.9');
+insert into t1 values(is_ipv6('::10.0.5.9'));
+select * from t1 where a like is_ipv6('::10.0.5.9') order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+
+#name_const
+select name_const(1,14),name_const('a','abc');
+insert into t1 values(name_const(1,14)),(name_const('a','abc'));
+select * from t1 where a like name_const(1,14) order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t1 where a like name_const('a','abc') order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t3 where a like name_const(1,14);
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t4 where a like name_const(1,14);
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t5 where a like name_const(1,14);
+--source include/query_pushdown_condition_sequoiadb.inc
+
+#sleep,cannot pushdown
+select * from t2 where a like sleep(1) order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+
+#uuid
+select * from t2 where a like uuid() order by a;
+--replace_regex /^([^s]*)\[Note\]/[Note]/
+--exec grep -w "Query message" $MYSQLTEST_VARDIR/log/mysqld.1.err | tail -1 | sed 's/: ".*",/: "",/'
+
+#uuid_short
+select * from t2 where a like uuid_short() order by a;
+--replace_regex /^([^s]*)\[Note\]/[Note]/
+--exec grep -w "Query message" $MYSQLTEST_VARDIR/log/mysqld.1.err | tail -1 | sed 's/: ".*",/: "",/'
+
+#----------------------------miscellaneous functions-----------------------------------#
+
+#-----------------------------locking functions----------------------------------------#
+
+#get_lock
+select * from t2 where a like get_lock('this is a test case',10) order by a;
+--replace_regex /^([^s]*)\[Note\]/[Note]/
+--exec grep -w "Query message" $MYSQLTEST_VARDIR/log/mysqld.1.err | tail -1 | sed 's/: ".*",/: "",/'
+select * from t2 where a like get_lock((a),10);
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t3 where a like get_lock('this is a test case',10);
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t4 where a like get_lock('this is a test case',10);
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t5 where a like get_lock('this is a test case',10);
+--source include/query_pushdown_condition_sequoiadb.inc
+
+#is_free_lock
+select * from t2 where a like is_free_lock('this is a test case') order by a;
+--replace_regex /^([^s]*)\[Note\]/[Note]/
+--exec grep -w "Query message" $MYSQLTEST_VARDIR/log/mysqld.1.err | tail -1 | sed 's/: ".*",/: "",/'
+select * from t2 where a like is_free_lock((a));
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t3 where a like is_free_lock('this is a test case');
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t4 where a like is_free_lock('this is a test case');
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t5 where a like is_free_lock('this is a test case');
+--source include/query_pushdown_condition_sequoiadb.inc
+
+#is_used_lock
+select * from t2 where a like is_used_lock('this is a test case') order by a;
+--replace_regex /^([^s]*)\[Note\]/[Note]/
+--exec grep -w "Query message" $MYSQLTEST_VARDIR/log/mysqld.1.err | tail -1 | sed 's/: ".*",/: "",/'
+
+#release_lock
+select * from t2 where a like release_lock('this is a test case') order by a;
+--replace_regex /^([^s]*)\[Note\]/[Note]/
+--exec grep -w "Query message" $MYSQLTEST_VARDIR/log/mysqld.1.err | tail -1 | sed 's/: ".*",/: "",/'
+select * from t2 where a like release_lock((a));
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t3 where a like release_lock('this is a test case');
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t4 where a like release_lock('this is a test case');
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t5 where a like release_lock('this is a test case');
+--source include/query_pushdown_condition_sequoiadb.inc
+
+#release_all_locks
+select * from t2 where a like release_all_locks() order by a;
+--replace_regex /^([^s]*)\[Note\]/[Note]/
+--exec grep -w "Query message" $MYSQLTEST_VARDIR/log/mysqld.1.err | tail -1 | sed 's/: ".*",/: "",/'
+
+#-----------------------------locking functions--------------------------------------#
+
+#-------------------------------json functions---------------------------------------#
+
+#json_array_append
+select json_array_append('["a","b"]','$[0]',1);
+insert into t1 values(json_array_append('["a","b"]','$[0]',1));
+select * from t1 where a like json_array_append('["a","b"]','$[0]',1) order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+
+#json_array
+select json_array(1,'abc');
+insert into t1 values(json_array(1,'abc'));
+select * from t1 where a like json_array(1,'abc') order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t2 where a like json_array((a),'abc');
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t3 where a like json_array(1,'abc');
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t4 where a like json_array(1,'abc');
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t5 where a like json_array(1,'abc');
+--source include/query_pushdown_condition_sequoiadb.inc
+
+#json_array_insert
+select json_array_insert('["a","b"]','$[0]',1);
+insert into t1 values(json_array_insert('["a","b"]','$[0]',1));
+select * from t1 where a like json_array_insert('["a","b"]','$[0]',1) order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+
+#json_contains
+select json_contains('{"a":1,"b":2}','1','$.a');
+insert into t1 values(json_contains('{"a":1,"b":2}','1','$.a'));
+select * from t1 where a like json_contains('{"a":1,"b":2}','1','$.a') order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t2 where a like json_contains((a),'1','$.a');
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t2 where a like json_contains(null,'1','$.a');
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t3 where a like json_contains('{"a":1,"b":2}','1','$.a');
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t4 where a like json_contains('{"a":1,"b":2}','1','$.a');
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t5 where a like json_contains('{"a":1,"b":2}','1','$.a');
+--source include/query_pushdown_condition_sequoiadb.inc
+
+#json_depth
+select json_depth('[1,{"a":2}]');
+insert into t1 values(json_depth('[1,{"a":2}]'));
+select * from t1 where a like json_depth('[1,{"a":2}]');
+--source include/query_pushdown_condition_sequoiadb.inc
+
+#json_contains_path
+select json_contains_path('{"a":1,"b":2}','one','$.a','$.c');
+insert into t1 values(json_contains_path('{"a":1,"b":2}','one','$.a','$.c'));
+select * from t1 where a like json_contains_path('{"a":1,"b":2}','one','$.a','$.c') order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+
+#json_extract
+select json_extract('[10,20]','$[1]');
+insert into t1 values(json_extract('[10,20]','$[1]'));
+select * from t1 where a like json_extract('[10,20]','$[1]') order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+
+#json_insert
+select json_insert('{"a":1,"b":2}','$.c','3'),json_insert('{"a":1,"b":2}','$.c',4);
+insert into t1 values(json_insert('{"a":1,"b":2}','$.c','3')),(json_insert('{"a":1,"b":2}','$.c',4));
+select * from t1 where a like json_insert('{"a":1,"b":2}','$.c','3') order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t1 where a like json_insert('{"a":1,"b":2}','$.c',4) order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t2 where a like json_insert((a),'$.c','3');
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t3 where a like json_insert('{"a":1,"b":2}','$.c','3');
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t4 where a like json_insert('{"a":1,"b":2}','$.c','3');
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t5 where a like json_insert('{"a":1,"b":2}','$.c','3');
+--source include/query_pushdown_condition_sequoiadb.inc
+
+#json_keys
+select json_keys('{"a":1,"b":2}');
+insert into t1 values(json_keys('{"a":1,"b":2}'));
+select * from t1 where a like json_keys('{"a":1,"b":2}') order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+
+#json_length
+select json_length('{"a":1,"b":2}');
+insert into t1 values(json_length('{"a":1,"b":2}'));
+select * from t1 where a like json_length('{"a":1,"b":2}') order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+
+#json_merge_patch
+select json_merge_patch('1','true');
+insert into t1 values(json_merge_patch('1','true'));
+select * from t1 where a like json_merge_patch('1','true') order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+
+#json_merge_preserve
+select json_merge_preserve('[1]','[true]');
+insert into t1 values(json_merge_preserve('[1]','[true]'));
+select * from t1 where a like json_merge_preserve('[1]','[true]') order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+
+#json_object
+select json_object('id','1');
+insert into t1 values(json_object('id','1'));
+select * from t1 where a like json_object('id','1') order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+
+#json_pretty
+select json_pretty('[1,3,5]');
+insert into t1 values(json_pretty('[1,3,5]'));
+select * from t1 where a like json_pretty('[1,3,5]') order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+
+#json_quote
+select json_quote('[1,3,5]');
+insert into t1 values(json_quote('[1,3,5]'));
+select * from t1 where a like json_quote('[1,3,5]') order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+
+#json_remove
+select json_remove('["a","b","c"]','$[1]');
+insert into t1 values(json_remove('["a","b","c"]','$[1]'));
+select * from t1 where a like json_remove('["a","b","c"]','$[1]') order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+
+#json_replace
+select json_replace('{"a":1,"b":2}','$.a',10);
+insert into t1 values(json_replace('{"a":1,"b":2}','$.a',10));
+select * from t1 where a like json_replace('{"a":1,"b":2}','$.a',10) order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+
+#json_search
+select json_search('["a","b"]','one','a');
+insert into t1 values(json_search('["a","b"]','one','a'));
+select * from t1 where a like json_search('["a","b"]','one','a') order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+
+#json_set
+select json_set('{"a":1,"b":2}','$.a',10,'$.c',3);
+insert into t1 values(json_set('{"a":1,"b":2}','$.a',10,'$.c',3));
+select * from t1 where a like json_set('{"a":1,"b":2}','$.a',10,'$.c',3) order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+
+#json_storage_size
+select json_storage_size('["a","b"]');
+insert into t1 values(json_storage_size('["a","b"]'));
+select * from t1 where a like json_storage_size('["a","b"]') order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+
+#json_type
+select json_type('["a","b"]');
+insert into t1 values(json_type('["a","b"]'));
+select * from t1 where a like json_type('["a","b"]') order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+
+#json_unquote
+select json_unquote('"abc"');
+insert into t1 values(json_unquote('"abc"'));
+select * from t1 where a like json_unquote('"abc"') order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+
+#json_valid
+select json_valid('["a","b"]');
+insert into t1 values(json_valid('["a","b"]'));
+select * from t1 where a like json_valid('["a","b"]') order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+
+#--------------------------------------json functions---------------------------------------#
+
+#--------------------------functions used with global transaction identifiers-----------------#
+
+#gtid_subset
+select gtid_subset('3E11FA47-71CA-11E1-9E33-C80AA9429562:1','3E11FA47-71CA-11E1-9E33-C80AA9429562:1-3');
+insert into t1 values(gtid_subset('3E11FA47-71CA-11E1-9E33-C80AA9429562:1','3E11FA47-71CA-11E1-9E33-C80AA9429562:1-3'));
+select * from t1 where a like gtid_subset('3E11FA47-71CA-11E1-9E33-C80AA9429562:1','3E11FA47-71CA-11E1-9E33-C80AA9429562:1-3') order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t2 where a like gtid_subset((a),'3E11FA47-71CA-11E1-9E33-C80AA9429562:1-3');
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t2 where a like gtid_subset(null,'3E11FA47-71CA-11E1-9E33-C80AA9429562:1-3');
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t3 where a like gtid_subset('3E11FA47-71CA-11E1-9E33-C80AA9429562:1','3E11FA47-71CA-11E1-9E33-C80AA9429562:1-3');
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t4 where a like gtid_subset('3E11FA47-71CA-11E1-9E33-C80AA9429562:1','3E11FA47-71CA-11E1-9E33-C80AA9429562:1-3');
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t5 where a like gtid_subset('3E11FA47-71CA-11E1-9E33-C80AA9429562:1','3E11FA47-71CA-11E1-9E33-C80AA9429562:1-3');
+--source include/query_pushdown_condition_sequoiadb.inc
+
+#gtid_subtract
+select gtid_subtract('3E11FA47-71CA-11E1-9E33-C80AA9429562:1-3','3E11FA47-71CA-11E1-9E33-C80AA9429562:1');
+insert into t1 values(gtid_subtract('3E11FA47-71CA-11E1-9E33-C80AA9429562:1-3','3E11FA47-71CA-11E1-9E33-C80AA9429562:1'));
+select * from t1 where a like gtid_subtract('3E11FA47-71CA-11E1-9E33-C80AA9429562:1-3','3E11FA47-71CA-11E1-9E33-C80AA9429562:1') order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t2 where a like gtid_subtract('3E11FA47-71CA-11E1-9E33-C80AA9429562:1-3',(a));
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t2 where a like gtid_subtract('3E11FA47-71CA-11E1-9E33-C80AA9429562:1-3',null);
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t3 where a like gtid_subtract('3E11FA47-71CA-11E1-9E33-C80AA9429562:1-3','3E11FA47-71CA-11E1-9E33-C80AA9429562:1');
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t4 where a like gtid_subtract('3E11FA47-71CA-11E1-9E33-C80AA9429562:1-3','3E11FA47-71CA-11E1-9E33-C80AA9429562:1');
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t5 where a like gtid_subtract('3E11FA47-71CA-11E1-9E33-C80AA9429562:1-3','3E11FA47-71CA-11E1-9E33-C80AA9429562:1');
+--source include/query_pushdown_condition_sequoiadb.inc
+
+#-------------------------------functions used with global transaction identifiers---------------------#
+
+#-----------------------------------spatial analysis functions-----------------------------#
+
+#st_geomcollfromtext
+select st_astext(st_geomcollfromtext("multilinestring((10 10,11 11),(9 9,10 10))"));
+insert into t1 values(st_astext(st_geomcollfromtext("multilinestring((10 10,11 11),(9 9,10 10))")));
+select * from t1 where a like st_astext(st_geomcollfromtext("multilinestring((10 10,11 11),(9 9,10 10))")) order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+
+#st_mpointfromtext
+select st_mpointfromtext('multipoint(1 1,2 2,3 3)');
+select * from t1 where a like st_mpointfromtext('multipoint(1 1,2 2,3 3)') order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+
+#point
+select point(1,2);
+select * from t1 where a like point(1,2) order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+
+#st_astext
+select st_astext(st_geomfromtext('linestring(1 1,2 2,3 3)'));
+insert into t1 values(st_astext(st_geomfromtext('linestring(1 1,2 2,3 3)')));
+select * from t1 where a like st_astext(st_geomfromtext('linestring(1 1,2 2,3 3)')) order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+
+#st_dimension
+select st_dimension(st_geomfromtext('linestring(1 1,2 2,3 3)'));
+insert into t1 values(st_dimension(st_geomfromtext('linestring(1 1,2 2,3 3)')));
+select * from t1 where a like st_dimension(st_geomfromtext('linestring(1 1,2 2,3 3)')) order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+
+#st_envelope
+select st_astext(st_envelope(st_geomfromtext('linestring(1 1,2 2)')));
+insert into t1 values(st_astext(st_envelope(st_geomfromtext('linestring(1 1,2 2)'))));
+select * from t1 where a like st_astext(st_envelope(st_geomfromtext('linestring(1 1,2 2)'))) order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+
+#st_srid
+select st_srid(st_geomfromtext('linestring(1 1,2 2)',101));
+insert into t1 values(st_srid(st_geomfromtext('linestring(1 1,2 2)',101)));
+select * from t1 where a like st_srid(st_geomfromtext('linestring(1 1,2 2)',101)) order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+
+#st_x
+select st_x(point(56.7,53.34)),st_x(point('4','8'));
+insert into t1 values(st_x(point(56.7,53.34))),(st_x(point('4','8')));
+select * from t1 where a like st_x(point(56.7,53.34)) order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t1 where a like st_x(point('4','8')) order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t2 where a like st_x(point((a),53.34));
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t2 where a like st_x(point(null,53.34));
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t3 where a like st_x(point(56.7,53.34));
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t4 where a like st_x(point(56.7,53.34));
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t5 where a like st_x(point(56.7,53.34));
+--source include/query_pushdown_condition_sequoiadb.inc
+
+#st_y
+select st_y(point(56.7,53.34));
+insert into t1 values(st_y(point(56.7,53.34)));
+select * from t1 where a like st_y(point(56.7,53.34)) order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+
+#st_endpoint
+select st_astext(st_endpoint(st_geomfromtext('linestring(1 1,2 2,3 3)')));
+insert into t1 values(st_astext(st_endpoint(st_geomfromtext('linestring(1 1,2 2,3 3)'))));
+select * from t1 where a like st_astext(st_endpoint(st_geomfromtext('linestring(1 1,2 2,3 3)'))) order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+
+#st_isclosed
+select st_isclosed(st_geomfromtext('linestring(1 1,2 2,3 3,1 1)'));
+insert into t1 values(st_isclosed(st_geomfromtext('linestring(1 1,2 2,3 3,1 1)')));
+select * from t1 where a like st_isclosed(st_geomfromtext('linestring(1 1,2 2,3 3,1 1)')) order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+
+#st_length
+select st_length(st_geomfromtext('linestring(1 1,2 2,3 3)'));
+insert into t1 values(st_length(st_geomfromtext('linestring(1 1,2 2,3 3)')));
+select * from t1 where a like st_length(st_geomfromtext('linestring(1 1,2 2,3 3)')) order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+
+#st_numpoints
+select st_numpoints(st_geomfromtext('linestring(1 1,2 2,3 3)'));
+insert into t1 values(st_numpoints(st_geomfromtext('linestring(1 1,2 2,3 3)')));
+select * from t1 where a like st_numpoints(st_geomfromtext('linestring(1 1,2 2,3 3)')) order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+
+#st_pointn
+select st_astext(st_pointn(st_geomfromtext('linestring(1 1,2 2,3 3)'),2));
+insert into t1 values(st_astext(st_pointn(st_geomfromtext('linestring(1 1,2 2,3 3)'),2)));
+select * from t1 where a like st_astext(st_pointn(st_geomfromtext('linestring(1 1,2 2,3 3)'),2)) order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+
+#st_startpoint
+select st_astext(st_startpoint(st_geomfromtext('linestring(1 1,2 2,3 3)')));
+insert into t1 values(st_astext(st_startpoint(st_geomfromtext('linestring(1 1,2 2,3 3)'))));
+select * from t1 where a like st_astext(st_startpoint(st_geomfromtext('linestring(1 1,2 2,3 3)'))) order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+
+#st_area
+select st_area(st_geomfromtext('polygon((0 0,0 3,3 0,0 0),(1 1,1 2,2 1,1 1))'));
+insert into t1 values(st_area(st_geomfromtext('polygon((0 0,0 3,3 0,0 0),(1 1,1 2,2 1,1 1))')));
+select * from t1 where a like st_area(st_geomfromtext('polygon((0 0,0 3,3 0,0 0),(1 1,1 2,2 1,1 1))')) order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+
+#st_centroid
+select st_astext(st_centroid(st_geomfromtext('polygon((0 0,0 3,3 0,0 0),(1 1,1 2,2 1,1 1))')));
+insert into t1 values(st_astext(st_centroid(st_geomfromtext('polygon((0 0,0 3,3 0,0 0),(1 1,1 2,2 1,1 1))'))));
+select * from t1 where a like st_astext(st_centroid(st_geomfromtext('polygon((0 0,0 3,3 0,0 0),(1 1,1 2,2 1,1 1))'))) order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+
+#st_exteriorring
+select st_astext(st_exteriorring(st_geomfromtext('polygon((0 0,0 3,3 0,0 0),(1 1,1 2,2 1,1 1))')));
+insert into t1 values(st_astext(st_exteriorring(st_geomfromtext('polygon((0 0,0 3,3 0,0 0),(1 1,1 2,2 1,1 1))'))));
+select * from t1 where a like st_astext(st_exteriorring(st_geomfromtext('polygon((0 0,0 3,3 0,0 0),(1 1,1 2,2 1,1 1))'))) order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+
+#st_interiorringn
+select st_astext(st_interiorringn(st_geomfromtext('polygon((0 0,0 3,3 0,0 0),(1 1,1 2,2 1,1 1))'),1));
+insert into t1 values(st_astext(st_interiorringn(st_geomfromtext('polygon((0 0,0 3,3 0,0 0),(1 1,1 2,2 1,1 1))'),1)));
+select * from t1 where a like st_astext(st_interiorringn(st_geomfromtext('polygon((0 0,0 3,3 0,0 0),(1 1,1 2,2 1,1 1))'),1)) order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+
+#st_numinteriorrings
+select st_numinteriorrings(st_geomfromtext('polygon((0 0,0 3,3 0,0 0),(1 1,1 2,2 1,1 1))'));
+insert into t1 values(st_numinteriorrings(st_geomfromtext('polygon((0 0,0 3,3 0,0 0),(1 1,1 2,2 1,1 1))')));
+select * from t1 where a like st_numinteriorrings(st_geomfromtext('polygon((0 0,0 3,3 0,0 0),(1 1,1 2,2 1,1 1))')) order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+
+#st_geometryn
+select st_astext(st_geometryn(st_geomfromtext('geometrycollection(point(1 1),linestring(2 2,3 3))'),1));
+insert into t1 values(st_astext(st_geometryn(st_geomfromtext('geometrycollection(point(1 1),linestring(2 2,3 3))'),1)));
+select * from t1 where a like st_astext(st_geometryn(st_geomfromtext('geometrycollection(point(1 1),linestring(2 2,3 3))'),1)) order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+
+#st_numgeometries
+select st_numgeometries(st_geomfromtext('geometrycollection(point(1 1),linestring(2 2,3 3))'));
+insert into t1 values(st_numgeometries(st_geomfromtext('geometrycollection(point(1 1),linestring(2 2,3 3))')));
+select * from t1 where a like st_numgeometries(st_geomfromtext('geometrycollection(point(1 1),linestring(2 2,3 3))')) order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+
+#st_buffer
+select st_astext(st_buffer(st_geomfromtext('point(0 0)'),0));
+insert into t1 values(st_astext(st_buffer(st_geomfromtext('point(0 0)'),0)));
+select * from t1 where a like st_astext(st_buffer(st_geomfromtext('point(0 0)'),0)) order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+
+#st_convexhull
+select st_astext(st_convexhull(st_geomfromtext('multipoint(5 0,25 0,15 10,15 25)')));
+insert into t1 values(st_astext(st_convexhull(st_geomfromtext('multipoint(5 0,25 0,15 10,15 25)'))));
+select * from t1 where a like st_astext(st_convexhull(st_geomfromtext('multipoint(5 0,25 0,15 10,15 25)'))) order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+
+#st_difference
+select st_astext(st_difference(point(1,1),point(2,2)));
+insert into t1 values(st_astext(st_difference(point(1,1),point(2,2))));
+select * from t1 where a like st_astext(st_difference(point(1,1),point(2,2))) order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+
+#st_intersection
+select st_astext(st_intersection(st_geomfromtext('linestring(1 1,3 3)'),st_geomfromtext('linestring(1 3,3 1)')));
+insert into t1 values(st_astext(st_intersection(st_geomfromtext('linestring(1 1,3 3)'),st_geomfromtext('linestring(1 3,3 1)'))));
+select * from t1 where a like st_astext(st_intersection(st_geomfromtext('linestring(1 1,3 3)'),st_geomfromtext('linestring(1 3,3 1)'))) order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+
+#st_symdifference
+select st_astext(st_symdifference(st_geomfromtext('multipoint(5 0,25 0,15 10,15 25)'),st_geomfromtext('multipoint(1 1,25 0,15 10,15 25)')));
+insert into t1 values(st_astext(st_symdifference(st_geomfromtext('multipoint(5 0,25 0,15 10,15 25)'),st_geomfromtext('multipoint(1 1,25 0,15 10,15 25)'))));
+select * from t1 where a like st_astext(st_symdifference(st_geomfromtext('multipoint(5 0,25 0,15 10,15 25)'),st_geomfromtext('multipoint(1 1,25 0,15 10,15 25)'))) order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+
+#st_union
+select st_astext(st_union(st_geomfromtext('linestring(1 1,3 3)'),st_geomfromtext('linestring(1 3,3 1)')));
+insert into t1 values(st_astext(st_union(st_geomfromtext('linestring(1 1,3 3)'),st_geomfromtext('linestring(1 3,3 1)'))));
+select * from t1 where a like st_astext(st_union(st_geomfromtext('linestring(1 1,3 3)'),st_geomfromtext('linestring(1 3,3 1)'))) order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+
+#st_distance
+select st_distance(point(1,1),point(4,5)),st_distance(point('1','1'),point('1','5'));
+insert into t1 values(st_distance(point(1,1),point(4,5))),(st_distance(point('1','1'),point('1','5')));
+select * from t1 where a like st_distance(point(1,1),point(4,5)) order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t1 where a like st_distance(point('1','1'),point('1','5')) order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t2 where a like st_distance(point((a),1),point(4,5));
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t3 where a like st_distance(point(1,1),point(4,5));
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t4 where a like st_distance(point(1,1),point(4,5));
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t5 where a like st_distance(point(1,1),point(4,5));
+--source include/query_pushdown_condition_sequoiadb.inc
+
+#st_equals
+select st_equals(point(1,1),point(2,2));
+insert into t1 values(st_equals(point(1,1),point(2,2)));
+select * from t1 where a like st_equals(point(1,1),point(2,2)) order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+
+#mbrcontains
+select mbrcontains(st_geomfromtext('polygon((0 0,0 3,3 3,3 0,0 0))'),st_geomfromtext('point(1 1)'));
+insert into t1 values(mbrcontains(st_geomfromtext('polygon((0 0,0 3,3 3,3 0,0 0))'),st_geomfromtext('point(1 1)')));
+select * from t1 where a like mbrcontains(st_geomfromtext('polygon((0 0,0 3,3 3,3 0,0 0))'),st_geomfromtext('point(1 1)')) order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+
+#mbrwithin
+select mbrwithin(st_geomfromtext('polygon((0 0,0 3,3 3,3 0,0 0))'),st_geomfromtext('point(1 1)'));
+insert into t1 values(mbrwithin(st_geomfromtext('polygon((0 0,0 3,3 3,3 0,0 0))'),st_geomfromtext('point(1 1)')));
+select * from t1 where a like mbrwithin(st_geomfromtext('polygon((0 0,0 3,3 3,3 0,0 0))'),st_geomfromtext('point(1 1)')) order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+
+#mbrcovers
+select mbrcovers(st_geomfromtext('polygon((0 0,0 3,3 3,3 0,0 0))'),st_geomfromtext('point(1 1)'));
+insert into t1 values(mbrcovers(st_geomfromtext('polygon((0 0,0 3,3 3,3 0,0 0))'),st_geomfromtext('point(1 1)')));
+select * from t1 where a like mbrcovers(st_geomfromtext('polygon((0 0,0 3,3 3,3 0,0 0))'),st_geomfromtext('point(1 1)')) order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t2 where a like mbrcovers(null,st_geomfromtext('point(1 1)'));
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t3 where a like mbrcovers(st_geomfromtext('polygon((0 0,0 3,3 3,3 0,0 0))'),st_geomfromtext('point(1 1)'));
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t4 where a like mbrcovers(st_geomfromtext('polygon((0 0,0 3,3 3,3 0,0 0))'),st_geomfromtext('point(1 1)'));
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t5 where a like mbrcovers(st_geomfromtext('polygon((0 0,0 3,3 3,3 0,0 0))'),st_geomfromtext('point(1 1)'));
+--source include/query_pushdown_condition_sequoiadb.inc
+
+#mbrcoveredby
+select mbrcoveredby(st_geomfromtext('polygon((0 0,0 3,3 3,3 0,0 0))'),st_geomfromtext('point(1 1)'));
+insert into t1 values(mbrcoveredby(st_geomfromtext('polygon((0 0,0 3,3 3,3 0,0 0))'),st_geomfromtext('point(1 1)')));
+select * from t1 where a like mbrcoveredby(st_geomfromtext('polygon((0 0,0 3,3 3,3 0,0 0))'),st_geomfromtext('point(1 1)')) order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+
+#st_geohash
+select st_geohash(180,0,10);
+insert into t1 values(st_geohash(180,0,10));
+select * from t1 where a like st_geohash(180,0,10) order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+
+#st_latfromgeohash
+select st_latfromgeohash(st_geohash(45,-20,10));
+insert into t1 values(st_latfromgeohash(st_geohash(45,-20,10)));
+select * from t1 where a like st_latfromgeohash(st_geohash(45,-20,10)) order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+
+#st_longfromgeohash
+select st_longfromgeohash(st_geohash(45,-20,10));
+insert into t1 values(st_longfromgeohash(st_geohash(45,-20,10)));
+select * from t1 where a like st_longfromgeohash(st_geohash(45,-20,10)) order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+
+#st_pointfromgeohash
+select st_astext(st_pointfromgeohash(st_geohash(45,-20,10),0));
+insert into t1 values(st_astext(st_pointfromgeohash(st_geohash(45,-20,10),0)));
+select * from t1 where a like st_astext(st_pointfromgeohash(st_geohash(45,-20,10),0)) order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+
+#st_asgeojson
+select st_asgeojson(st_geomfromtext('point(11.11111 12.22222)'),2);
+insert into t1 values(st_asgeojson(st_geomfromtext('point(11.11111 12.22222)'),2));
+select * from t1 where a like st_asgeojson(st_geomfromtext('point(11.11111 12.22222)'),2) order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+
+#st_geomfromgeojson
+select st_astext(st_geomfromgeojson('{"type": "Point", "coordinates": [11.11, 12.22]}'));
+insert into t1 values(st_astext(st_geomfromgeojson('{"type": "Point", "coordinates": [11.11, 12.22]}')));
+select * from t1 where a like st_astext(st_geomfromgeojson('{"type": "Point", "coordinates": [11.11, 12.22]}')) order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+
+#st_distance_sphere
+select st_distance_sphere(st_geomfromtext('point(0 0)'),st_geomfromtext('point(180 0)'));
+insert into t1 values(st_distance_sphere(st_geomfromtext('point(0 0)'),st_geomfromtext('point(180 0)')));
+select * from t1 where a like st_distance_sphere(st_geomfromtext('point(0 0)'),st_geomfromtext('point(180 0)')) order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+
+#st_isvalid
+select st_isvalid(st_geomfromtext('linestring(0 0,1 1)'));
+insert into t1 values(st_isvalid(st_geomfromtext('linestring(0 0,1 1)')));
+select * from t1 where a like st_isvalid(st_geomfromtext('linestring(0 0,1 1)')) order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+
+#st_simplify
+select st_astext(st_simplify(st_geomfromtext('linestring(0 0,0 1,1 1,1 2,2 2,2 3,3 3)'),0.5));
+insert into t1 values(st_astext(st_simplify(st_geomfromtext('linestring(0 0,0 1,1 1,1 2,2 2,2 3,3 3)'),0.5)));
+select * from t1 where a like st_astext(st_simplify(st_geomfromtext('linestring(0 0,0 1,1 1,1 2,2 2,2 3,3 3)'),0.5)) order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+
+#st_validate
+select st_astext(st_validate(st_geomfromtext('linestring(0 0,1 1)')));
+insert into t1 values(st_astext(st_validate(st_geomfromtext('linestring(0 0,1 1)'))));
+select * from t1 where a like st_astext(st_validate(st_geomfromtext('linestring(0 0,1 1)'))) order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+
+#-----------------------------------spatial analysis functions-----------------------------#
+
+set session sequoiadb_debug_log=default;
+set session sequoiadb_support_mode=default;
+drop table t1, t2, t3, t4, t5;
+drop database like_single_func_pushdown_sequoiadb;
+--source include/uninstall_sequoiadb.inc

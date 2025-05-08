@@ -1,0 +1,128 @@
+# seqDB-29766 seqDB-29767 seqDB-29768 seqDB-29769 seqDB-29770
+
+--source include/have_sequoiadb.inc
+
+#Save old parameters
+SET @old_sql_mode = @@global.sql_mode;
+
+--disable_warnings
+DROP DATABASE IF EXISTS db_29766;
+--enable_warnings
+CREATE DATABASE db_29766;
+USE db_29766;
+
+create table t1(a int, b double);
+insert into t1 values(4,1.4),(10,1.8),(6,3.6),(8,8.7),(1,4.5),
+(NULL,5.3),(3,6.4),(7,NULL),(1,4.5),(9,NULL),(2,2.3),(3,6.4);
+
+alter table t1 add column c timestamp(6) default '04:05:06';
+create function f1 () returns int return 4;
+
+set session sequoiadb_debug_log = on;
+--disable_warnings
+set session sql_mode = "STRICT_TRANS_TABLES,ERROR_FOR_DIVISION_BY_ZERO,NO_AUTO_CREATE_USER,NO_ENGINE_SUBSTITUTION";
+
+# seqDB-29766:查询条件为condA and condB，
+# 其中condA为不确定性函数，condB覆盖普通条件和可确定性函数
+
+--sorted_result
+select * from t1 where b>rand() and c=current_timestamp();
+--replace_regex /^([^s]*)\[Note\]/[Note]/
+--exec grep -w "Query message" $MYSQLTEST_VARDIR/log/mysqld.1.err | tail -1 | sed 's/\<condition.*, selector/condition\[{""}\], selector/'
+explain select * from t1 where b>rand() and c=current_timestamp();
+
+--sorted_result
+select * from t1 where b=uuid() and c=now();
+--replace_regex /^([^s]*)\[Note\]/[Note]/
+--exec grep -w "Query message" $MYSQLTEST_VARDIR/log/mysqld.1.err | tail -1 | sed 's/\<condition.*, selector/condition\[{""}\], selector/'
+explain select * from t1 where b=uuid() and c=now();
+
+--sorted_result
+select * from t1 where a=sysdate() and a>4;
+--source include/query_pushdown_condition_sequoiadb.inc
+explain select * from t1 where a=sysdate() and a>4;
+
+--sorted_result
+select * from t1 where a=f1() and a>4;
+--source include/query_pushdown_condition_sequoiadb.inc
+explain select * from t1 where a=f1() and a>4;
+
+# seqDB-29767:查询条件为condA or condB,
+# 其中condA和B都为不确定性函数
+--sorted_result
+select * from t1 where b>rand() or b=uuid();
+--source include/query_pushdown_condition_sequoiadb.inc
+explain select * from t1 where b>rand() or b=uuid();
+
+--sorted_result
+select * from t1 where a=sysdate() or a=f1();
+--source include/query_pushdown_condition_sequoiadb.inc
+explain select * from t1 where a=sysdate() or a=f1();
+
+# seqDB-29768:覆盖查询条件为condA and condB,
+# 其中condA和condB都为可确定性函数
+--sorted_result
+select * from t1 where c=current_timestamp() and c=now();
+--replace_regex /^([^s]*)\[Note\]/[Note]/
+--exec grep -w "Query message" $MYSQLTEST_VARDIR/log/mysqld.1.err | tail -1 | sed 's/\<condition.*, selector/condition\[{""}\], selector/'
+explain select * from t1 where c=current_timestamp() and c=now();
+
+# seqDB-29769:查询条件为不确定性函数与算子的组合
+# 单个算子
+--sorted_result
+select count(*) from t1 where b>rand();
+--source include/query_pushdown_condition_sequoiadb.inc
+explain select count(*) from t1 where b>rand();
+
+--sorted_result
+select * from t1 where b=uuid() limit 4;
+--source include/query_pushdown_condition_sequoiadb.inc
+explain select * from t1 where b=uuid() limit 4;
+
+--sorted_result
+select * from t1 where a=sysdate() order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+explain select * from t1 where a=sysdate() order by a;
+
+--sorted_result
+select * from t1 where a=f1() group by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+explain select * from t1 where a=f1() group by a;
+
+--sorted_result
+select * from t1 where a=f1() group by a having a>1;
+--source include/query_pushdown_condition_sequoiadb.inc
+explain select * from t1 where a=f1() group by a having a>1;
+
+# 多个算子
+--sorted_result
+select count(*) from t1 where b>rand() group by a order by a limit 4;
+--source include/query_pushdown_condition_sequoiadb.inc
+explain select count(*) from t1 where b>rand() group by a order by a limit 4;
+
+# seqDB-29770:多查询块单表，多查询块中带有不确定性函数和单个算子的组合场景
+--sorted_result
+select * from (select count(*) from t1 where a>1 and b>rand()) as t;
+--source include/query_pushdown_condition_sequoiadb.inc
+explain select * from (select count(*) from t1 where a>1 and b>rand()) as t;
+
+--sorted_result
+select * from (select * from t1 where a>1 and b=uuid() order by a) as t;
+--source include/query_pushdown_condition_sequoiadb.inc
+explain select * from (select * from t1 where a>1 and b=uuid() order by a) as t;
+
+--sorted_result
+select * from (select * from t1 where a>1 and a=sysdate() group by a) as t;
+--source include/query_pushdown_condition_sequoiadb.inc
+explain select * from (select * from t1 where a>1 and a=sysdate() group by a) as t;
+
+--sorted_result
+select * from (select * from t1 where a>1 and a=f1() limit 4) as t;
+--source include/query_pushdown_condition_sequoiadb.inc
+explain select * from (select * from t1 where a>1 and a=f1() limit 4) as t;
+
+--enable_warnings
+set session sequoiadb_debug_log = default;
+set session sql_mode = @old_sql_mode;
+DROP DATABASE db_29766;
+--source include/uninstall_sequoiadb.inc

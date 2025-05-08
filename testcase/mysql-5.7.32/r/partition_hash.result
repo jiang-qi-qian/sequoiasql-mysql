@@ -1,0 +1,168 @@
+CREATE DATABASE test_partition_hash;
+USE test_partition_hash;
+drop table if exists t1;
+#
+# Bug#12725206/Bug#61765: WRONG QUERY RESULTS ON SUBPARTITIONS BASED
+#                         ON USIGNED BIGINT
+#
+CREATE TABLE t1 (
+a int(11) NOT NULL,
+b bigint(20) UNSIGNED NOT NULL
+)
+PARTITION BY RANGE (a)
+SUBPARTITION BY HASH (b)
+SUBPARTITIONS 3
+(PARTITION p1 VALUES LESS THAN (1308614400),
+PARTITION p2 VALUES LESS THAN (1308700800),
+PARTITION p3 VALUES LESS THAN (1308787200),
+PARTITION p4 VALUES LESS THAN (1308873600),
+PARTITION p5 VALUES LESS THAN (1308960000)
+);
+INSERT INTO t1 VALUES
+(1308614400,18446744073709551615),
+(1308700800,0xFFFFFFFFFFFFFFFE),
+(1308787200,18446744073709551613),
+(1308873600,18446744073709551612),
+(1308873600, 12531568256096620965),
+(1308873600, 12531568256096),
+(1308873600, 9223372036854775808);
+SELECT a,b,HEX(b) FROM t1 ORDER BY a, b;
+a	b	HEX(b)
+1308614400	18446744073709551615	FFFFFFFFFFFFFFFF
+1308700800	18446744073709551614	FFFFFFFFFFFFFFFE
+1308787200	18446744073709551613	FFFFFFFFFFFFFFFD
+1308873600	12531568256096	B65BBACA460
+1308873600	9223372036854775808	8000000000000000
+1308873600	12531568256096620965	ADE912EF0F3351A5
+1308873600	18446744073709551612	FFFFFFFFFFFFFFFC
+# The following queries returned nothing
+SELECT * FROM t1 WHERE b = 9223372036854775808;
+a	b
+1308873600	9223372036854775808
+SELECT * FROM t1 WHERE b = 18446744073709551612;
+a	b
+1308873600	18446744073709551612
+SELECT * FROM t1 WHERE b = 18446744073709551615;
+a	b
+1308614400	18446744073709551615
+analyze table t1;
+Table	Op	Msg_type	Msg_text
+test_partition_hash.t1	analyze	status	OK
+DROP TABLE t1;
+CREATE TABLE t1 (c1 INT)
+PARTITION BY HASH (c1)
+PARTITIONS 15;
+INSERT INTO t1 VALUES (1), (2), (3), (4), (5);
+ALTER TABLE t1 COALESCE PARTITION 13;
+DROP TABLE t1;
+CREATE TABLE t1 (c1 INT)
+PARTITION BY LINEAR HASH (c1)
+PARTITIONS 5;
+INSERT INTO t1 VALUES (1), (2), (3), (4), (5);
+ALTER TABLE t1 COALESCE PARTITION 3;
+DROP TABLE t1;
+create table t1 (a int unsigned)
+partition by hash(a div 2)
+partitions 4;
+insert into t1 values (null),(0),(1),(2),(3),(4),(5),(6),(7);
+select * from t1 where a < 0;
+a
+select * from t1 where a is null or (a >= 5 and a <= 7) order by a;
+a
+NULL
+5
+6
+7
+select * from t1 where a is null;
+a
+NULL
+select * from t1 where a is not null;
+a
+0
+1
+2
+3
+4
+5
+6
+7
+select * from t1 where a >= 1 and a < 3 order by a;
+a
+1
+2
+select * from t1 where a >= 3 and a <= 5;
+a
+3
+4
+5
+select * from t1 where a > 2 and a < 4;
+a
+3
+select * from t1 where a > 3 and a <= 6;
+a
+4
+5
+6
+select * from t1 where a > 5 order by a;
+a
+6
+7
+select * from t1 where a >= 1 and a <= 5;
+a
+1
+2
+3
+4
+5
+analyze table t1;
+Table	Op	Msg_type	Msg_text
+test_partition_hash.t1	analyze	status	OK
+drop table t1;
+CREATE TABLE t1 (
+a int not null,
+b int not null,
+c int not null,
+primary key(a,b))
+partition by hash (a)
+(partition x1);
+drop table t1;
+CREATE TABLE t1 (
+a int not null,
+b int not null,
+c int not null,
+primary key(a,b))
+partition by key (a)
+(partition x1);
+drop table t1;
+CREATE TABLE t1 (f1 INTEGER, f2 char(20)) PARTITION BY HASH(f1) PARTITIONS 2;
+INSERT INTO t1 SET f1 = 0 - 1, f2 = '#######';
+select * from t1;
+f1	f2
+-1	#######
+drop table t1;
+create table t1 (c1 int DEFAULT NULL,
+c2 varchar (30) DEFAULT NULL,
+c3 date DEFAULT NULL)
+partition by hash (to_days(c3))
+partitions 12;
+insert into t1 values
+(136,'abc','2002-01-05'),(142,'abc','2002-02-14'),(162,'abc','2002-06-28'),
+(182,'abc','2002-11-09'),(158,'abc','2002-06-01'),(184,'abc','2002-11-22');
+select * from t1;
+c1	c2	c3
+136	abc	2002-01-05
+142	abc	2002-02-14
+158	abc	2002-06-01
+162	abc	2002-06-28
+182	abc	2002-11-09
+184	abc	2002-11-22
+select * from t1 where c3 between '2002-01-01' and '2002-12-31';
+c1	c2	c3
+136	abc	2002-01-05
+142	abc	2002-02-14
+158	abc	2002-06-01
+162	abc	2002-06-28
+182	abc	2002-11-09
+184	abc	2002-11-22
+drop table t1;
+DROP DATABASE test_partition_hash;

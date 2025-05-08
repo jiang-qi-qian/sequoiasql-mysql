@@ -1,0 +1,187 @@
+set session sequoiadb_debug_log=on;
+set global sequoiadb_auto_partition=on;
+drop database if exists sort_sequoiadb;
+create database sort_sequoiadb;
+use sort_sequoiadb;
+CREATE TABLE `t1` (
+`col_int` int(11) DEFAULT NULL,
+`col_varchar_16` varchar(16) COLLATE utf8mb4_bin DEFAULT NULL,
+`col_varchar_16_key` varchar(16) COLLATE utf8mb4_bin DEFAULT NULL,
+`pk` int(11) NOT NULL AUTO_INCREMENT,
+`col_int_key` int(11) DEFAULT NULL,
+PRIMARY KEY (`pk`),
+KEY `col_varchar_16_key` (`col_varchar_16_key`),
+KEY `col_int_key` (`col_int_key`)
+) ;
+LOCK TABLES `t1` WRITE;
+INSERT INTO `t1` VALUES (-361234432,'c','z',6,1019871232),(NULL,NULL,'v',11,-425918464),(4,'s','q',12,-1990000640),(8,NULL,'c',14,NULL),(-1566310400,'y','u',15,2),(0,'z','v',19,1287127040),(7,'o',NULL,21,9),(1,'x','about',28,NULL),(1,NULL,NULL,29,NULL),(7,'z','you',37,-1464074240),(2,'x','y',62,9),(980746240,'x','v',65,NULL),(4,'y','e',66,9),(6,'b',NULL,68,9),(9,'d',NULL,69,6),(8,'y','had',71,9),(NULL,'z','d',75,NULL),(1857945600,NULL,'l',92,5),(NULL,NULL,'p',96,3),(9,'s','s',100,4),(8,'in','have',105,4),(NULL,NULL,'u',108,6),(-1602945024,'why','o',110,8),(0,'z','f',116,-1014300672),(0,'how',NULL,121,NULL),(356712448,'r','k',134,8),(477822976,'s',NULL,137,NULL),(4,'o','m',147,NULL),(1,'z','y',161,9),(NULL,'x','been',163,9),(9,'o',NULL,164,9),(2,'u','he',170,0),(4,'can\'t','w',172,0),(6,'or','k',175,1),(1841037312,'look','I',178,0),(3,'can\'t','time',180,1),(0,'q','about',183,8),(8,'g','I\'m',186,-1553399808),(1253769216,NULL,'e',187,6),(-549126144,'d','a',189,8),(0,NULL,'z',194,6),(1,NULL,'my',197,0),(3,'v','q',198,8),(-1409941504,'t','j',1,-474021888),(1387003904,'p','him',3,NULL),(0,NULL,'a',4,8),(-435486720,'o',NULL,13,1453719552),(0,'you','be',18,5),(1,'d',NULL,20,2),(6,'going','m',23,-51904512),(3,'e','his',24,NULL),(85983232,'j',NULL,34,1),(NULL,NULL,'w',38,NULL),(0,NULL,'j',39,-523698176),(6,'a',NULL,40,NULL),(8,NULL,'q',42,1802240000),(4,'do','she',45,-1435500544),(2,'v','s',51,NULL),(6,'her','n',53,8),(NULL,'up','r',55,7),(-679411712,'k','u',58,9),(0,'her','r',59,NULL),(5,'j',NULL,61,-2044526592),(-511508480,'p','s',64,9),(3,NULL,'will',76,NULL),(552468480,'c','o',79,3),(3,'t','r',81,5),(NULL,'now','b',83,2),(4,NULL,'h',85,1),(7,'right',NULL,86,NULL),(NULL,'s',NULL,87,9),(5,NULL,'there',89,5),(9,NULL,'u',107,1),(NULL,'c','k',113,-288489472),(NULL,NULL,'w',114,2),(4,'p','h',117,NULL),(4,'d','j',118,3),(3,'f','who',139,4),(-1512833024,NULL,'k',140,3),(370868224,'v','j',142,9),(-210370560,'j',NULL,145,0),(5,'l','r',148,5),(2,'n','to',155,8),(9,'come','a',159,NULL),(8,'r','it',160,3),(NULL,NULL,'n',168,773521408),(1,NULL,'x',176,1),(0,'p','m',177,-322109440),(-1577713664,'l',NULL,181,3),(1,'that\'s',NULL,196,NULL),(-566689792,'n',NULL,2,5),(5,NULL,'v',7,1103495168),(NULL,'can','f',10,3),(1,'j','good',17,4),(3,'v','q',22,-932839424),(0,'n','p',31,6),(1290993664,'p','mean',32,8),(NULL,'up',NULL,33,0),(NULL,NULL,'p',41,3),(8,'a','z',43,2),(8,'d','could',44,629604352),(1635647488,'not',NULL,46,-1925840896),(6,'y','l',47,385417216),(NULL,NULL,'n',49,8),(4,'w','g',54,-587530240),(7,'b','t',57,1),(4,NULL,NULL,63,295501824),(4,'w',NULL,74,NULL),(1227030528,'o','q',78,0),(1,'o','o',88,4),(NULL,'m','s',90,2),(6,'q','p',93,6),(3,'q',NULL,94,2),(8,'go','didn\'t',99,2),(7,'m','if',103,0),(8,'from','when',104,NULL),(NULL,NULL,'j',109,7),(6,'you','u',111,2123366400),(1,'n','s',120,3),(1962541056,'u','m',122,5),(4,'d','f',123,8),(NULL,'a','for',124,NULL),(-1196687360,'x','a',126,8),(5,'you\'re',NULL,128,NULL),(1857486848,'m',NULL,129,6),(2,NULL,NULL,132,790953984),(-1421279232,'t','e',138,0),(2,'k','r',156,7),(0,'w','l',158,9),(3,'f','or',162,7),(6,'z','w',165,2),(6,'i','s',166,0),(1,'x','m',173,5),(-950927360,'no','y',174,4),(0,'f','h',184,2121400320),(320798720,'q','c',192,7),(1630797824,NULL,'c',195,7),(NULL,NULL,'m',199,4),(2,NULL,NULL,5,2),(NULL,'l',NULL,8,NULL),(8,'k','in',9,-17825792),(270925824,'y',NULL,16,0),(2,'a','okay',25,7),(NULL,'now','j',26,1),(406978560,'z','now',27,2),(109838336,'p','her',30,3),(1,'i','out',35,0),(417792000,'o','p',36,3),(4,'will','a',48,7),(1,'they','u',50,2),(NULL,'x',NULL,52,7),(4,'t',NULL,56,1),(9,'really','j',60,NULL),(8,NULL,NULL,67,NULL),(406323200,NULL,'v',70,NULL),(8,'u',NULL,72,1),(0,'can','e',73,NULL),(6,'z','o',77,9),(6,'y','w',80,2),(7,'he','yes',82,NULL),(0,'u','r',84,NULL),(0,NULL,'v',91,NULL),(2,'c',NULL,95,NULL),(NULL,'look',NULL,97,7),(533135360,'some','p',98,666959872),(9,NULL,'u',101,2),(NULL,'up','e',102,5),(1080557568,'l','y',106,-396492800),(NULL,'r',NULL,112,4),(8,'it\'s',NULL,115,-672268288),(4,'t','z',119,3),(8,'w','could',125,1),(1051787264,'i','x',127,7),(4,'r','s',130,354484224),(1,'go',NULL,131,3),(6,NULL,'v',133,-325976064),(1,'h','l',135,8),(1,'she','your',136,7),(NULL,'her','know',141,6),(1,'you\'re',NULL,143,-1327693824),(8,NULL,'he',144,7),(0,'as',NULL,146,3),(5,'g','d',149,7),(7,'v','g',150,NULL),(-1194524672,'b','they',151,4),(1,'q','f',152,-1284505600),(1,'oh','h',153,376504320),(1,'j','u',154,4),(1,'g','u',157,NULL),(NULL,NULL,NULL,167,4),(6,'then','v',169,-1987248128),(303431680,'she',NULL,171,NULL),(9306112,'g','what',179,8),(-1744371712,NULL,'h',182,NULL),(5,'s','y',185,3),(-385155072,'mean',NULL,188,303104000),(7,'j','f',190,4),(4,NULL,'u',191,2),(4,'h','go',193,0),(6,NULL,NULL,200,5);
+UNLOCK TABLES;
+EXPLAIN SELECT ALL col_int FROM t1 WHERE col_int_key < 5 ORDER BY col_int;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	ALL	col_int_key	NULL	NULL	NULL	200	33.33	Using where with pushed condition (`sort_sequoiadb`.`t1`.`col_int_key` < 5)
+Warnings:
+Note	1003	/* select#1 */ select `sort_sequoiadb`.`t1`.`col_int` AS `col_int` from `sort_sequoiadb`.`t1` where (`sort_sequoiadb`.`t1`.`col_int_key` < 5) order by `sort_sequoiadb`.`t1`.`col_int`
+SELECT ALL col_int FROM t1 WHERE col_int_key < 5 ORDER BY col_int;
+col_int
+NULL
+NULL
+NULL
+NULL
+NULL
+NULL
+NULL
+NULL
+NULL
+NULL
+NULL
+NULL
+NULL
+-1577713664
+-1566310400
+-1512833024
+-1421279232
+-1409941504
+-1194524672
+-950927360
+-210370560
+0
+0
+0
+0
+1
+1
+1
+1
+1
+1
+1
+1
+1
+1
+1
+1
+2
+2
+3
+3
+3
+3
+4
+4
+4
+4
+4
+4
+4
+4
+4
+4
+5
+5
+6
+6
+6
+6
+6
+6
+6
+7
+7
+7
+7
+8
+8
+8
+8
+8
+8
+8
+8
+8
+9
+9
+9
+85983232
+109838336
+270925824
+406978560
+417792000
+552468480
+1080557568
+1227030528
+1635647488
+1841037312
+[Note] SequoiaDB: optimizer pushdown autocommit: 1
+[Note] SequoiaDB: optimizer pushdown autocommit: 1
+[Note] SequoiaDB: Query message: condition[{ "col_int_key": { "$lt": 5 } }], selector[{}], order_by[{ "col_int": 1 }], hint[{}], limit[-1], offset[0], table[sort_sequoiadb.t1]
+EXPLAIN SELECT ALL SQL_BUFFER_RESULT col_int FROM t1 WHERE col_int_key = 5 OR col_int_key IS NULL ORDER BY col_int;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	ref_or_null	col_int_key	col_int_key	5	const	22	100.00	Using where with pushed condition ((`sort_sequoiadb`.`t1`.`col_int_key` = 5) or isnull(`sort_sequoiadb`.`t1`.`col_int_key`)); Using temporary; Using filesort
+Warnings:
+Note	1003	/* select#1 */ select sql_buffer_result `sort_sequoiadb`.`t1`.`col_int` AS `col_int` from `sort_sequoiadb`.`t1` where ((`sort_sequoiadb`.`t1`.`col_int_key` = 5) or isnull(`sort_sequoiadb`.`t1`.`col_int_key`)) order by `sort_sequoiadb`.`t1`.`col_int`
+SELECT ALL SQL_BUFFER_RESULT col_int FROM t1 WHERE col_int_key = 5 OR col_int_key IS NULL ORDER BY col_int;
+col_int
+NULL
+NULL
+NULL
+NULL
+NULL
+-1744371712
+-566689792
+0
+0
+0
+0
+0
+0
+1
+1
+1
+1
+1
+2
+2
+3
+3
+3
+4
+4
+4
+5
+5
+5
+6
+6
+7
+7
+7
+8
+8
+8
+9
+9
+303431680
+406323200
+477822976
+980746240
+1387003904
+1857945600
+1962541056
+[Note] SequoiaDB: optimizer pushdown autocommit: 1
+[Note] SequoiaDB: Query message: condition[{ "col_int_key": { "$et": 5 } }], selector[{}], order_by[{ "col_int_key": 1 }], hint[{ "": "col_int_key" }], limit[-1], offset[0], table[sort_sequoiadb.t1]
+[Note] SequoiaDB: Query message: condition[{ "col_int_key": { "$isnull": 1 } }], selector[{}], order_by[{ "col_int_key": 1 }], hint[{ "": "col_int_key" }], limit[-1], offset[0], table[sort_sequoiadb.t1]
+EXPLAIN SELECT DISTINCT col_int_key FROM t1 WHERE col_int_key = 1 OR col_int_key = 7 OR col_int_key IS NULL;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	range	col_int_key	col_int_key	5	NULL	1	100.00	Using where with pushed condition ((`sort_sequoiadb`.`t1`.`col_int_key` = 1) or (`sort_sequoiadb`.`t1`.`col_int_key` = 7) or isnull(`sort_sequoiadb`.`t1`.`col_int_key`)); Using index for group-by
+Warnings:
+Note	1003	/* select#1 */ select distinct `sort_sequoiadb`.`t1`.`col_int_key` AS `col_int_key` from `sort_sequoiadb`.`t1` where ((`sort_sequoiadb`.`t1`.`col_int_key` = 1) or (`sort_sequoiadb`.`t1`.`col_int_key` = 7) or isnull(`sort_sequoiadb`.`t1`.`col_int_key`))
+SELECT DISTINCT col_int_key FROM t1 WHERE col_int_key = 1 OR col_int_key = 7 OR col_int_key IS NULL;
+col_int_key
+1
+7
+NULL
+[Note] SequoiaDB: Query message: condition[{ "col_int_key": { "$et": 7 } }], selector[{ "_id": null, "col_int_key": null }], order_by[{ "col_int_key": 1 }], hint[{ "": "col_int_key" }], limit[-1], offset[0], table[sort_sequoiadb.t1]
+[Note] SequoiaDB: optimizer selector object: { "_id": null, "col_int_key": null }, table: sort_sequoiadb.t1
+[Note] SequoiaDB: Query message: condition[{ "$and": [ { "$or": [ { "col_int_key": { "$et": 1 } }, { "col_int_key": { "$et": 7 } }, { "col_int_key": { "$isnull": 1 } } ] }, { "col_int_key": { "$gt": 7 } } ] }], selector[{ "_id": null, "col_int_key": null }], order_by[{ "col_int_key": 1 }], hint[{ "": "col_int_key" }], limit[-1], offset[0], table[sort_sequoiadb.t1]
+drop database sort_sequoiadb;
+set global sequoiadb_auto_partition = 0;

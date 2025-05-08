@@ -1,0 +1,68 @@
+# Testcase: seqDB-22796, seqDB-22797
+
+--source include/big_test.inc
+--source include/have_sequoiadb.inc
+
+CREATE DATABASE index_select_sequoiadb_22796;
+USE index_select_sequoiadb_22796;
+
+#
+# ready data
+#
+# table t1, t2
+create table t1 (a int, b int);
+load data infile '../../std_data/loaddata_large_sequoiadb_2.dat' ignore into table t1 fields terminated by ',';
+alter table t1 add primary key(a);
+alter table t1 add unique index idx_b(b);
+alter table t1 add index idx_ab(a, b);
+alter table t1 add index idx_ba(b, a);
+
+create table t2 (a int, b int);
+load data infile '../../std_data/loaddata_large_sequoiadb_3.dat' ignore into table t2 fields terminated by ',';
+alter table t2 add primary key(a);
+alter table t2 add unique index idx_b(b);
+alter table t2 add index idx_ab(a, b);
+alter table t2 add index idx_ba(b, a);
+
+#
+# seqDB-22796: index selection of subquery's equivalent query
+#
+# Subquery handled with 'index_subquery' or 'unique_index_subquery'
+--replace_column 10 x
+explain select a, b, a in (select a from t1 where a=t2.a) Z from t2;
+analyze table t1;
+analyze table t2;
+--replace_column 10 x
+explain select a, b, a in (select a from t1 where a=t2.a) Z from t2;
+--sorted_result
+select a, b, a in (select a from t1 where a=t2.a) Z from t2 limit 10 ;
+
+#
+# seqDB-22797: index selection for equivalent query with multiple index fields
+#
+# index selection with 'index_merge'
+--replace_column 10 x
+explain select a, b, b in (select b from t1 where a=t2.b) Z from t2;
+analyze table t1;
+analyze table t2;
+--replace_column 10 x
+explain select a, b, b in (select b from t1 where a=t2.b) Z from t2;
+--sorted_result
+select a, b, b in (select b from t1 where a=t2.b) Z from t2 limit 10;
+
+--replace_column 10 x
+explain select * from t1 where a = 1 or b = 1;
+analyze table t1;
+analyze table t2;
+--replace_column 10 x
+explain select a, b, b in (select b from t1 where a=t2.b) Z from t2;
+--sorted_result
+select a, b, b in (select b from t1 where a=t2.b) Z from t2 limit 10;
+
+#
+# clear env
+#
+DROP DATABASE index_select_sequoiadb_22796;
+
+--source include/uninstall_sequoiadb.inc
+

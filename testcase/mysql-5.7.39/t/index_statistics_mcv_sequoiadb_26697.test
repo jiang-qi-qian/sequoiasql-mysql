@@ -1,0 +1,76 @@
+# Testcase: seqDB-26697:单个复合分区表range方式查询，表数据均匀，未命中MCV
+
+#
+# clear residual data
+#
+CREATE DATABASE  IF NOT EXISTS index_statistics_mcv_sequoiadb_26697;
+DROP DATABASE IF EXISTS index_statistics_mcv_sequoiadb_26697;
+
+#
+# set env
+#
+--source include/have_sequoiadb.inc
+
+CREATE DATABASE  IF NOT EXISTS index_statistics_mcv_sequoiadb_26697;
+use index_statistics_mcv_sequoiadb_26697;
+
+#
+# testcase process
+#
+CREATE TABLE t1(
+    a INT NOT NULL,
+    b INT NOT NULL,
+    c INT NOT NULL,
+    INDEX idx_a(a),
+    INDEX idx_b(b)
+)
+PARTITION BY RANGE COLUMNS (a)
+SUBPARTITION BY KEY (b)
+SUBPARTITIONS 2 (
+    PARTITION p0 VALUES LESS THAN (4),
+    PARTITION p1 VALUES LESS THAN (7),
+    PARTITION p2 VALUES LESS THAN (11)
+);
+
+# insert 200 rows
+DELIMITER $;
+CREATE PROCEDURE p1()
+BEGIN
+    DECLARE i INT;
+    DECLARE j INT;
+    SET i=1;
+    WHILE i<=10 DO
+        set j=1;
+        WHILE j<=20 DO
+            INSERT INTO t1(a,b,c) values (i, i, i);
+        SET j=j+1;
+        END WHILE;
+    SET i=i+1;
+    END WHILE;
+END $
+DELIMITER ;$
+
+CALL p1();
+
+--sorted_result
+SELECT * FROM t1 WHERE b<=0;
+--sorted_result
+SELECT * FROM t1 WHERE b>=11;
+ANALYZE TABLE t1;
+
+# set debug='d:i:t:o,/tmp/mysqld26697.trace:f,Sdb_match_cnt_estimator::eval_mcv';
+
+EXPLAIN SELECT * FROM t1 WHERE b<=0;
+EXPLAIN SELECT * FROM t1 WHERE b>=11;
+
+# set debug='';
+
+DROP PROCEDURE p1;
+DROP TABLE t1;
+
+
+#
+# clear env
+#
+DROP DATABASE index_statistics_mcv_sequoiadb_26697;
+--source include/uninstall_sequoiadb.inc

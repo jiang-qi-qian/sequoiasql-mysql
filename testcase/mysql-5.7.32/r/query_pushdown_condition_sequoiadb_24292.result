@@ -1,0 +1,37 @@
+CREATE DATABASE query_pushdown_condition_sequoiadb_24292;
+USE query_pushdown_condition_sequoiadb_24292;
+CREATE TABLE t1 (a INT, b INT, c CHAR(10), KEY ab(a, b), KEY c(c(5)) );
+INSERT INTO t1 VALUES (NULL, NULL, NULL), (1, 1, "1"), (2, 2, "2"), (3, 3, "3");
+SELECT * FROM t1 FORCE INDEX(ab) WHERE a IN (0, 1, 3);
+a	b	c
+1	1	1
+3	3	3
+[Note] SequoiaDB: Query message: condition[{ "a": { "$in": [ 0, 1, 3 ] } }], selector[{}], order_by[{ "a": 1, "b": 1 }], hint[{ "": "ab" }], limit[-1], offset[0], table[query_pushdown_condition_sequoiadb_24292.t1]
+SELECT * FROM t1 FORCE INDEX(ab) WHERE a = 0 OR a = 1 OR a = 3;
+a	b	c
+1	1	1
+3	3	3
+[Note] SequoiaDB: Query message: condition[{ "$and": [ { "$or": [ { "a": { "$et": 0 } }, { "a": { "$et": 1 } }, { "a": { "$et": 3 } } ] }, { "a": { "$in": [ 0, 1, 3 ] } } ] }], selector[{}], order_by[{ "a": 1, "b": 1 }], hint[{ "": "ab" }], limit[-1], offset[0], table[query_pushdown_condition_sequoiadb_24292.t1]
+SELECT * FROM t1 FORCE INDEX(ab) WHERE (a, b) IN ((0, 0), (1, 1), (3, 3));
+a	b	c
+1	1	1
+3	3	3
+[Note] SequoiaDB: Query message: condition[{ "a": { "$et": 3 }, "b": { "$et": 3 } }], selector[{}], order_by[{ "a": 1, "b": 1 }], hint[{ "": "ab" }], limit[-1], offset[0], table[query_pushdown_condition_sequoiadb_24292.t1]
+SELECT * FROM t1 FORCE INDEX(ab) WHERE (a BETWEEN 0 AND 2) OR a = 3;
+a	b	c
+1	1	1
+2	2	2
+3	3	3
+[Note] SequoiaDB: Query message: condition[{ "a": { "$et": 3 } }], selector[{}], order_by[{ "a": 1, "b": 1 }], hint[{ "": "ab" }], limit[-1], offset[0], table[query_pushdown_condition_sequoiadb_24292.t1]
+SELECT * FROM t1 FORCE INDEX(c) WHERE c IN ("1", "2", "3");
+a	b	c
+1	1	1
+2	2	2
+3	3	3
+[Note] SequoiaDB: Query message: condition[{ "$and": [ { "c": { "$in": [ "1", "2", "3" ] } }, { "c": { "$gte": "3" } } ] }], selector[{}], order_by[{ "c": 1 }], hint[{ "": "c" }], limit[-1], offset[0], table[query_pushdown_condition_sequoiadb_24292.t1]
+SELECT * FROM t1 FORCE INDEX(ab) WHERE a IS NULL OR a = 0 OR a = 1;
+a	b	c
+NULL	NULL	NULL
+1	1	1
+[Note] SequoiaDB: Query message: condition[{ "a": { "$et": 1 } }], selector[{}], order_by[{ "a": 1, "b": 1 }], hint[{ "": "ab" }], limit[-1], offset[0], table[query_pushdown_condition_sequoiadb_24292.t1]
+DROP DATABASE query_pushdown_condition_sequoiadb_24292;

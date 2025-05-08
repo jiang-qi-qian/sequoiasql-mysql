@@ -1,0 +1,107 @@
+# seqDB-26334 / seqDB-26335
+
+--source include/have_sequoiadb.inc
+--source suite/metadata_mapping_sequoiadb/inc/insts_connect_sequoiadb.inc
+
+# connect to conn1, clear databases in the beginning
+connection group1_conn1;
+--disable_warnings
+set sql_mode = 'ANSI_QUOTES';
+set character_set_client = utf8;
+set character_set_connection = utf8;
+drop database if exists partition_26334_26335;
+set sql_mode=default;
+--enable_warnings
+
+# connect to conn2, clear databases in the beginning
+connection group2_conn1;
+--disable_warnings
+set sql_mode = 'ANSI_QUOTES';
+set character_set_client = utf8;
+set character_set_connection = utf8;
+drop database if exists partition_26334_26335;
+set sql_mode=default;
+--enable_warnings
+
+# 清理database
+# 实例组1
+connection group1_conn1;
+create database partition_26334_26335;
+use partition_26334_26335;
+create table clearX(a int);
+drop database partition_26334_26335;
+# 实例组2
+connection group2_conn1;
+create database partition_26334_26335;
+use partition_26334_26335;
+create table clearX(a int);
+drop database partition_26334_26335;
+
+# 创建表
+let $s_create_table =
+        create table t1 (
+    id int not null,
+    a int not null
+        )
+        partition by range (a) (
+                partition p0 values less than (10),
+                partition p1 values less than (20),
+                partition p2 values less than (30),
+                partition p3 values less than (40),
+                partition p4 values less than (50),
+                partition p5 values less than (60),
+                partition p6 values less than (70),
+                partition p7 values less than (80),
+                partition p8 values less than (90),
+                partition p9 values less than (100)
+        );
+
+# 创建表
+# 实例组1
+connection group1_conn1;
+create database partition_26334_26335;
+use partition_26334_26335;
+eval $s_create_table;
+show create table t1;
+insert into t1 values (0,0), (0,1),(1,10), (2,20), (3,30), (4,40), (5,60), (6,60), (7,70), (8,80), (9,90);
+select * from t1 where a >= 1 order by a;
+
+# 实例组2，创建跟实例组1同名表
+connection group2_conn1;
+create database partition_26334_26335;
+use partition_26334_26335;
+eval $s_create_table;
+show create table t1;
+insert into t1 values (0,0), (0,1),(1,10), (2,20), (3,30), (4,40), (5,60), (6,60), (7,70), (8,80), (9,90);
+select * from t1 where a >= 1 order by a;
+
+# 复制表 create table 表2 like 表1，表1为分区表
+# 实例组1
+connection group1_conn1;
+create table t2 like t1;
+show tables;
+show create table t1;
+show create table t2;
+select * from t1 order by a;
+select * from t2 order by a;
+
+# seqDB-26335
+# 复制表 create table 表2 select * from 表1，表1为分区表
+# 实例组2
+connection group2_conn1;
+create table t2 select * from t1;
+show tables;
+show create table t1;
+show create table t2;
+select * from t1 order by a;
+select * from t2 order by a;
+
+# 实例组1
+connection group1_conn1;
+drop database partition_26334_26335;
+# 实例组2
+connection group2_conn1;
+drop database partition_26334_26335;
+
+--source include/uninstall_sequoiadb.inc
+--source suite/metadata_mapping_sequoiadb/inc/insts_disconnect_sequoiadb.inc

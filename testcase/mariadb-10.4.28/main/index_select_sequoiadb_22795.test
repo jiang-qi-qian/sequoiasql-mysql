@@ -1,0 +1,210 @@
+# Testcase: seqDB-22795:多表等值查询索引选择
+
+--source include/big_test.inc
+--source include/have_sequoiadb.inc
+
+CREATE DATABASE index_select_sequoiadb_22795;
+use index_select_sequoiadb_22795;
+
+#int char
+CREATE TABLE t1 (
+  a INT,
+  b CHAR(64)
+);
+CREATE TABLE t2 (
+  a INT,
+  b CHAR(64)
+);
+LOAD DATA INFILE '../../std_data/index_select_sequoiadb_1.dat' INTO TABLE t1(a,b);
+INSERT INTO t2 VALUES(6420,'pasdfghjklzxcvbnmQWERTYUIOPASDFGHJKLZXCVBN'),(48767,'a'),(2,'fghjklzxcvbnmQWERTYUIOPASDFGHJKLZXCVBNM'),(3,'b'),(4,'c'),(5,'d'),(6,'e'),(7,'f'),(8,'g'),(9,'h'),(10,'i'),(11,'ja'),(12,'y'),(13,'y'),(14,'t'),(15,'g');
+alter table t1 add PRIMARY KEY(a);
+alter table t1 add index b(b);
+alter table t1 add index ab(a,b);
+alter table t1 add index ba(b,a);
+SHOW CREATE TABLE t1;
+alter table t2 add PRIMARY KEY(a);
+alter table t2 add index b(b);
+alter table t2 add index ab(a,b);
+alter table t2 add index ba(b,a);
+SHOW CREATE TABLE t2;
+--replace_column 9 #
+EXPLAIN SELECT * FROM t1,t2 where t1.a=t2.a;
+SELECT COUNT(*) FROM t1,t2 where t1.a=t2.a;
+--source include/query_pushdown_condition_sequoiadb.inc
+--replace_column 9 #
+EXPLAIN SELECT * FROM t1,t2 where t1.b=t2.b;
+SELECT COUNT(*) FROM t1,t2 where t1.b=t2.b;
+--source include/query_pushdown_condition_sequoiadb.inc
+--replace_column 9 #
+EXPLAIN SELECT * FROM t1,t2 where t1.b=t2.b and t1.a=t2.a;
+--sorted_result
+SELECT * FROM t1,t2 where t1.b=t2.b and t1.a=t2.a;
+--source include/query_pushdown_condition_sequoiadb.inc
+ANALYZE TABLE t1,t2;
+--replace_column 9 #
+EXPLAIN SELECT * FROM t1,t2 where t1.a=t2.a;
+SELECT COUNT(*) FROM t1,t2 where t1.a=t2.a;
+--source include/query_pushdown_condition_sequoiadb.inc
+--replace_column 9 #
+EXPLAIN SELECT * FROM t1,t2 where t1.b=t2.b;
+SELECT COUNT(*) FROM t1,t2 where t1.b=t2.b;
+--source include/query_pushdown_condition_sequoiadb.inc
+--replace_column 9 #
+EXPLAIN SELECT * FROM t1,t2 where t1.b=t2.b and t1.a=t2.a;
+--sorted_result
+SELECT * FROM t1,t2 where t1.b=t2.b and t1.a=t2.a;
+--source include/query_pushdown_condition_sequoiadb.inc
+DROP TABLE t1,t2;
+
+#char float date
+CREATE TABLE t1 (
+  a CHAR(10),
+  b FLOAT,
+  c DATE
+);
+CREATE TABLE t2 (
+  a CHAR(10),
+  b FLOAT,
+  c DATE
+);
+LOAD DATA INFILE '../../std_data/index_select_sequoiadb_5.dat' INTO TABLE t1 FIELDS TERMINATED BY ';';
+INSERT INTO t2 VALUES ('aa',11.1,'2021-9-8'),('ba',21.1,'2008-9-18'),('ca',31.1,'2008-9-19'),('da',41.1,'2008-9-18'),('ea',51.1,'2008-9-18'),('4ab272c58',16832.6,'1994-07-13'),('ga',71.1,'2008-9-12'),('58e694554',18220.3,'2008-9-21'),('ia',9.81,'2008-9-30'),('ja',10.61,'2008-9-27'),('ka',11.71,'2008-9-18'),('la',12.2,'2009-2-12'),('ma',18220.3,'2009-2-12'),('na',14.2,'2001-1-9'),('oa',15.2,'2017-9-8'),('pa',16.1,'2008-9-18'),('qa',17.1,'2012-1-18'),('ra',18.0,'2018-7-18'),('sa',19.1,'2011-11-11');
+alter table t1 add PRIMARY KEY(a);
+alter table t1 add index b(b);
+alter table t1 add index ab(a,b);
+alter table t1 add index bc(b,c);
+alter table t1 add index abc(a,b,c);
+SHOW CREATE TABLE t1;
+alter table t2 add PRIMARY KEY(a);
+alter table t2 add index b(b);
+alter table t2 add index ab(a,b);
+alter table t2 add index bc(b,c);
+alter table t2 add index abc(a,b,c);
+SHOW CREATE TABLE t2; 
+--replace_column 9 #
+EXPLAIN SELECT * FROM t1,t2 where t1.a=t2.a;
+SELECT * FROM t1,t2 where t1.a=t2.a;
+--source include/query_pushdown_condition_sequoiadb.inc
+--replace_column 9 #
+EXPLAIN SELECT * FROM t1,t2 where t1.b=t2.b;
+--sorted_result
+SELECT * FROM t1,t2 where t1.b=t2.b;
+--source include/query_pushdown_condition_sequoiadb.inc
+--replace_column 9 #
+EXPLAIN SELECT * FROM t1,t2 where t1.a=t2.a and t1.b=t2.b;
+--sorted_result
+SELECT * FROM t1,t2 where t1.a=t2.a and t1.b=t2.b;
+--source include/query_pushdown_condition_sequoiadb.inc
+--replace_column 9 #
+EXPLAIN SELECT * FROM t1,t2 where t1.b=t2.b and t1.c=t2.c;
+--sorted_result
+SELECT * FROM t1,t2 where t1.b=t2.b and t1.c=t2.c;
+--source include/query_pushdown_condition_sequoiadb.inc
+--replace_column 9 #
+EXPLAIN SELECT * FROM t1,t2 where t1.a=t2.a and t1.b=t2.b and t1.c=t2.c;
+--sorted_result
+SELECT * FROM t1,t2 where t1.a=t2.a and t1.b=t2.b and t1.c=t2.c;
+--source include/query_pushdown_condition_sequoiadb.inc
+ANALYZE TABLE t1,t2;
+--replace_column 9 #
+EXPLAIN SELECT * FROM t1,t2 where t1.a=t2.a;
+SELECT * FROM t1,t2 where t1.a=t2.a;
+--source include/query_pushdown_condition_sequoiadb.inc
+--replace_column 9 #
+EXPLAIN SELECT * FROM t1,t2 where t1.b=t2.b;
+--sorted_result
+SELECT * FROM t1,t2 where t1.b=t2.b;
+--source include/query_pushdown_condition_sequoiadb.inc
+--replace_column 9 #
+EXPLAIN SELECT * FROM t1,t2 where t1.a=t2.a and t1.b=t2.b;
+--sorted_result
+SELECT * FROM t1,t2 where t1.a=t2.a and t1.b=t2.b;
+--source include/query_pushdown_condition_sequoiadb.inc
+--replace_column 9 #
+EXPLAIN SELECT * FROM t1,t2 where t1.b=t2.b and t1.c=t2.c;
+--sorted_result
+SELECT * FROM t1,t2 where t1.b=t2.b and t1.c=t2.c;
+--source include/query_pushdown_condition_sequoiadb.inc
+--replace_column 9 #
+EXPLAIN SELECT * FROM t1,t2 where t1.a=t2.a and t1.b=t2.b and t1.c=t2.c;
+--sorted_result
+SELECT * FROM t1,t2 where t1.a=t2.a and t1.b=t2.b and t1.c=t2.c;
+--source include/query_pushdown_condition_sequoiadb.inc
+DROP TABLE t1,t2;
+
+#int set enum
+CREATE TABLE t1 (
+  a INT,
+  b ENUM('1','2','3','4','5'),
+  c SET('a','b','c')
+);
+CREATE TABLE t2 (
+  a INT,
+  b ENUM('1','2','3','4','5'),
+  c SET('a','b','c')
+);
+LOAD DATA INFILE '../../std_data/index_select_sequoiadb_2.dat' INTO TABLE t1 fields terminated by ';';
+INSERT INTO t2 VALUES (452528,1,'a,c'),(111,2,'a,b'),(222,5,'a,b,c'),(492926,3,'b'),(2,3,'a,b');
+alter table t1 add PRIMARY KEY(a);
+alter table t1 add index b(b);
+alter table t1 add index ab(a,b);
+alter table t1 add index bc(b,c);
+alter table t1 add index abc(a,b,c);
+SHOW CREATE TABLE t1;
+alter table t2 add PRIMARY KEY(a);
+alter table t2 add index b(b);
+alter table t2 add index ab(a,b);
+alter table t2 add index bc(b,c);
+alter table t2 add index abc(a,b,c);
+SHOW CREATE TABLE t2; 
+--replace_column 9 #
+EXPLAIN SELECT * FROM t1,t2 where t1.a=t2.a;
+--sorted_result
+SELECT * FROM t1,t2 where t1.a=t2.a;
+--source include/query_pushdown_condition_sequoiadb.inc
+--replace_column 9 #
+EXPLAIN SELECT * FROM t1,t2 where t1.b=t2.b;
+SELECT COUNT(*) FROM t1,t2 where t1.b=t2.b;
+--source include/query_pushdown_condition_sequoiadb.inc
+--replace_column 9 #
+EXPLAIN SELECT * FROM t1,t2 where t1.a=t2.a and t1.b=t2.b;
+--sorted_result
+SELECT * FROM t1,t2 where t1.a=t2.a and t1.b=t2.b;
+--source include/query_pushdown_condition_sequoiadb.inc
+--replace_column 9 #
+EXPLAIN SELECT * FROM t1,t2 where t1.b=t2.b and t1.c=t2.c;
+SELECT COUNT(*) FROM t1,t2 where t1.b=t2.b and t1.c=t2.c;
+--source include/query_pushdown_condition_sequoiadb.inc
+--replace_column 9 #
+EXPLAIN SELECT * FROM t1,t2 where t1.a=t2.a and t1.b=t2.b and t1.c=t2.c;
+--sorted_result
+SELECT * FROM t1,t2 where t1.a=t2.a and t1.b=t2.b and t1.c=t2.c;
+--source include/query_pushdown_condition_sequoiadb.inc
+ANALYZE TABLE t1,t2;
+--replace_column 9 #
+EXPLAIN SELECT * FROM t1,t2 where t1.a=t2.a;
+--sorted_result
+SELECT * FROM t1,t2 where t1.a=t2.a;
+--source include/query_pushdown_condition_sequoiadb.inc
+--replace_column 9 #
+EXPLAIN SELECT * FROM t1,t2 where t1.b=t2.b;
+SELECT COUNT(*) FROM t1,t2 where t1.b=t2.b;
+--source include/query_pushdown_condition_sequoiadb.inc
+--replace_column 9 #
+EXPLAIN SELECT * FROM t1,t2 where t1.a=t2.a and t1.b=t2.b;
+--sorted_result
+SELECT * FROM t1,t2 where t1.a=t2.a and t1.b=t2.b;
+--source include/query_pushdown_condition_sequoiadb.inc
+--replace_column 9 #
+EXPLAIN SELECT * FROM t1,t2 where t1.b=t2.b and t1.c=t2.c;
+SELECT COUNT(*) FROM t1,t2 where t1.b=t2.b and t1.c=t2.c;
+--source include/query_pushdown_condition_sequoiadb.inc
+--replace_column 9 #
+EXPLAIN SELECT * FROM t1,t2 where t1.a=t2.a and t1.b=t2.b and t1.c=t2.c;
+--sorted_result
+SELECT * FROM t1,t2 where t1.a=t2.a and t1.b=t2.b and t1.c=t2.c;
+--source include/query_pushdown_condition_sequoiadb.inc
+DROP TABLE t1,t2;
+
+DROP DATABASE index_select_sequoiadb_22795;
+--source include/uninstall_sequoiadb.inc

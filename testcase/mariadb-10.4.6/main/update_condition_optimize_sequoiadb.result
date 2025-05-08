@@ -1,0 +1,538 @@
+DROP TABLE IF EXISTS t1;
+create table t1(a int primary key, b int unique key,c int);
+insert into t1 values(10,1,2),(1,10,11),(5,2,3),(2,5,4),(3,6,7),(6,3,5),(4,11,12);
+insert into t1(a) values(8),(9),(7);
+update t1 set a=a+100 where a>4;
+select * from t1;
+a	b	c
+1	10	11
+105	2	3
+106	3	5
+107	NULL	NULL
+108	NULL	NULL
+109	NULL	NULL
+110	1	2
+2	5	4
+3	6	7
+4	11	12
+update t1 set a=10-a where b>4;
+select * from t1;
+a	b	c
+105	2	3
+106	3	5
+107	NULL	NULL
+108	NULL	NULL
+109	NULL	NULL
+110	1	2
+6	11	12
+7	6	7
+8	5	4
+9	10	11
+update t1 set b=b+100 where b>4;
+select * from t1;
+a	b	c
+105	2	3
+106	3	5
+107	NULL	NULL
+108	NULL	NULL
+109	NULL	NULL
+110	1	2
+6	111	12
+7	106	7
+8	105	4
+9	110	11
+update t1 set b=10-b where a>4;
+select * from t1;
+a	b	c
+105	8	3
+106	7	5
+107	NULL	NULL
+108	NULL	NULL
+109	NULL	NULL
+110	9	2
+6	-101	12
+7	-96	7
+8	-95	4
+9	-100	11
+update t1 set b=a-b where a>100;
+select * from t1;
+a	b	c
+105	97	3
+106	99	5
+107	NULL	NULL
+108	NULL	NULL
+109	NULL	NULL
+110	101	2
+6	-101	12
+7	-96	7
+8	-95	4
+9	-100	11
+update t1 set b=a-b where b>100;
+select * from t1;
+a	b	c
+105	97	3
+106	99	5
+107	NULL	NULL
+108	NULL	NULL
+109	NULL	NULL
+110	9	2
+6	-101	12
+7	-96	7
+8	-95	4
+9	-100	11
+update t1 set a = a+10 where b is null;
+select * from t1;
+a	b	c
+105	97	3
+106	99	5
+110	9	2
+117	NULL	NULL
+118	NULL	NULL
+119	NULL	NULL
+6	-101	12
+7	-96	7
+8	-95	4
+9	-100	11
+drop table t1;
+create table t1(a int , b int unique key,c int);
+insert into t1 values(10,1,2),(1,10,11),(5,2,3),(2,5,4),(3,6,7),(6,3,5),(4,11,12);
+insert into t1(a,c) values(8,8),(9,9),(7,7);
+update t1 set a=a+100 where a>4;
+select * from t1;
+a	b	c
+1	10	11
+105	2	3
+106	3	5
+107	NULL	7
+108	NULL	8
+109	NULL	9
+110	1	2
+2	5	4
+3	6	7
+4	11	12
+update t1 set a=10-a where b>4;
+select * from t1;
+a	b	c
+105	2	3
+106	3	5
+107	NULL	7
+108	NULL	8
+109	NULL	9
+110	1	2
+6	11	12
+7	6	7
+8	5	4
+9	10	11
+update t1 set b=b+100 where b>4;
+select * from t1;
+a	b	c
+105	2	3
+106	3	5
+107	NULL	7
+108	NULL	8
+109	NULL	9
+110	1	2
+6	111	12
+7	106	7
+8	105	4
+9	110	11
+update t1 set b=10-b where a>4;
+select * from t1;
+a	b	c
+105	8	3
+106	7	5
+107	NULL	7
+108	NULL	8
+109	NULL	9
+110	9	2
+6	-101	12
+7	-96	7
+8	-95	4
+9	-100	11
+update t1 set b=a-b where a>100;
+select * from t1;
+a	b	c
+105	97	3
+106	99	5
+107	NULL	7
+108	NULL	8
+109	NULL	9
+110	101	2
+6	-101	12
+7	-96	7
+8	-95	4
+9	-100	11
+update t1 set b=a-b where b>100;
+select * from t1;
+a	b	c
+105	97	3
+106	99	5
+107	NULL	7
+108	NULL	8
+109	NULL	9
+110	9	2
+6	-101	12
+7	-96	7
+8	-95	4
+9	-100	11
+update t1 set a = a+10 where b is null;
+select * from t1;
+a	b	c
+105	97	3
+106	99	5
+110	9	2
+117	NULL	7
+118	NULL	8
+119	NULL	9
+6	-101	12
+7	-96	7
+8	-95	4
+9	-100	11
+drop table t1;
+create table t1(a int , b int unique key,c int unique key);
+insert into t1 values(10,1,2),(1,10,11),(5,2,3),(2,5,4),(3,6,7),(6,3,5),(4,11,12);
+insert into t1(a) values(8);
+insert into t1(a,b) values(9,8);
+insert into t1(a,c) values(7,6);
+insert into t1 values();
+update t1 set a=a+100 where a>4;
+select * from t1;
+a	b	c
+1	10	11
+105	2	3
+106	3	5
+107	NULL	6
+108	NULL	NULL
+109	8	NULL
+110	1	2
+2	5	4
+3	6	7
+4	11	12
+NULL	NULL	NULL
+update t1 set a=10-a where b>4;
+select * from t1;
+a	b	c
+-99	8	NULL
+105	2	3
+106	3	5
+107	NULL	6
+108	NULL	NULL
+110	1	2
+6	11	12
+7	6	7
+8	5	4
+9	10	11
+NULL	NULL	NULL
+update t1 set b=b+100 where b>4;
+select * from t1;
+a	b	c
+-99	108	NULL
+105	2	3
+106	3	5
+107	NULL	6
+108	NULL	NULL
+110	1	2
+6	111	12
+7	106	7
+8	105	4
+9	110	11
+NULL	NULL	NULL
+update t1 set b=10-b where a>4;
+select * from t1;
+a	b	c
+-99	108	NULL
+105	8	3
+106	7	5
+107	NULL	6
+108	NULL	NULL
+110	9	2
+6	-101	12
+7	-96	7
+8	-95	4
+9	-100	11
+NULL	NULL	NULL
+update t1 set b=a-b where a>100;
+select * from t1;
+a	b	c
+-99	108	NULL
+105	97	3
+106	99	5
+107	NULL	6
+108	NULL	NULL
+110	101	2
+6	-101	12
+7	-96	7
+8	-95	4
+9	-100	11
+NULL	NULL	NULL
+update t1 set b=a-b where b>100;
+select * from t1;
+a	b	c
+-99	-207	NULL
+105	97	3
+106	99	5
+107	NULL	6
+108	NULL	NULL
+110	9	2
+6	-101	12
+7	-96	7
+8	-95	4
+9	-100	11
+NULL	NULL	NULL
+update t1 set a = a+10 where b is null;
+select * from t1;
+a	b	c
+-99	-207	NULL
+105	97	3
+106	99	5
+110	9	2
+117	NULL	6
+118	NULL	NULL
+6	-101	12
+7	-96	7
+8	-95	4
+9	-100	11
+NULL	NULL	NULL
+drop table t1;
+create table t1(a int, b int, c int);
+insert into t1 values(10,1,2),(1,10,11),(5,2,3),(2,5,4),(3,6,7),(6,3,5),(4,11,12);
+insert into t1(a) values(8);
+insert into t1(a,b) values(9,8);
+insert into t1(a,c) values(7,6);
+insert into t1 values();
+update t1 set a=a+100 where a>4;
+select * from t1;
+a	b	c
+1	10	11
+105	2	3
+106	3	5
+107	NULL	6
+108	NULL	NULL
+109	8	NULL
+110	1	2
+2	5	4
+3	6	7
+4	11	12
+NULL	NULL	NULL
+update t1 set a=10-a where b>4;
+select * from t1;
+a	b	c
+-99	8	NULL
+105	2	3
+106	3	5
+107	NULL	6
+108	NULL	NULL
+110	1	2
+6	11	12
+7	6	7
+8	5	4
+9	10	11
+NULL	NULL	NULL
+update t1 set a =10 where b is null;
+select * from t1;
+a	b	c
+-99	8	NULL
+10	NULL	6
+10	NULL	NULL
+10	NULL	NULL
+105	2	3
+106	3	5
+110	1	2
+6	11	12
+7	6	7
+8	5	4
+9	10	11
+drop table t1;
+create table t1(a int, b int, c int, primary key(a,b));
+insert into t1 values(10,1,2),(10,10,11),(5,2,3),(2,5,4),(3,6,7),(6,3,5),(4,11,12);
+update t1 set a=a+100 where a>4;
+select * from t1;
+a	b	c
+105	2	3
+106	3	5
+110	1	2
+110	10	11
+2	5	4
+3	6	7
+4	11	12
+drop table t1;
+create table t1(a int, b int, c int, unique key(a,b));
+insert into t1 values(10,1,2),(10,10,11),(5,2,3),(2,5,4),(3,6,7),(6,3,5),(4,11,12);
+insert into t1(a) values(8);
+insert into t1(a,b) values(9,8);
+insert into t1(a,c) values(7,6);
+insert into t1 values();
+update t1 set a=a+100 where a>4;
+select * from t1;
+a	b	c
+105	2	3
+106	3	5
+107	NULL	6
+108	NULL	NULL
+109	8	NULL
+110	1	2
+110	10	11
+2	5	4
+3	6	7
+4	11	12
+NULL	NULL	NULL
+update t1 set c= 1 where b is null;
+select * from t1;
+a	b	c
+105	2	3
+106	3	5
+107	NULL	1
+108	NULL	1
+109	8	NULL
+110	1	2
+110	10	11
+2	5	4
+3	6	7
+4	11	12
+NULL	NULL	1
+drop table t1;
+create table t1(a int, b int, c int);
+insert into t1 values(10,1,2),(10,10,11),(5,2,3),(2,5,4),(3,6,7),(6,3,5),(4,11,12);
+insert into t1(a) values(8);
+insert into t1(a,b) values(9,8);
+insert into t1(a,c) values(7,6);
+insert into t1 values();
+create unique index a on t1(b);
+update t1 set a=100 where a!=4 order by a limit 2;
+select * from t1;
+a	b	c
+10	1	2
+10	10	11
+100	5	4
+100	6	7
+4	11	12
+5	2	3
+6	3	5
+7	NULL	6
+8	NULL	NULL
+9	8	NULL
+NULL	NULL	NULL
+update t1 set a=1000 order by a limit 2;
+select * from t1;
+a	b	c
+10	1	2
+10	10	11
+100	5	4
+100	6	7
+1000	11	12
+1000	NULL	NULL
+5	2	3
+6	3	5
+7	NULL	6
+8	NULL	NULL
+9	8	NULL
+drop table t1;
+create table t1(a int unique key, b int);
+insert into t1 values(1,1),(2,2),(3,3),(8,8);
+insert into t1(b) values(9);
+create table t2(a int unique key, b int);
+insert into t2 values(1,10),(2,20),(3,30),(10,10);
+insert into t2(b) values(90);
+update t1 join t2 on t1.a=t2.a or t1.a is null set t1.b=t2.b;
+select * from t1;
+a	b
+1	10
+2	20
+3	30
+8	8
+NULL	10
+drop table t1,t2;
+create table t1(a int primary key, b int unique key,c int);
+insert into t1 values(10,1,2),(1,10,11),(5,2,3),(2,5,4),(3,6,7),(6,3,5),(4,11,12);
+insert into t1(a) values(8),(9),(7);
+delete from t1 where a >4;
+select * from t1;
+a	b	c
+1	10	11
+2	5	4
+3	6	7
+4	11	12
+drop table t1;
+create table t1(a int , b int unique key,c int);
+insert into t1 values(10,1,2),(1,10,11),(5,2,3),(2,5,4),(3,6,7),(6,3,5),(4,11,12);
+insert into t1(a,c) values(8,8),(9,9),(7,7);
+delete from t1 where a !=4;
+select * from t1;
+a	b	c
+4	11	12
+drop table t1;
+create table t1(a int , b int unique key,c int unique key);
+insert into t1 values(10,1,2),(1,10,11),(5,2,3),(2,5,4),(3,6,7),(6,3,5),(4,11,12);
+insert into t1(a) values(8);
+insert into t1(a,b) values(9,8);
+insert into t1(a,c) values(7,6);
+insert into t1 values();
+delete from t1 where a !=4;
+select * from t1;
+a	b	c
+4	11	12
+NULL	NULL	NULL
+drop table t1;
+create table t1(a int, b int, c int);
+insert into t1 values(10,1,2),(1,10,11),(5,2,3),(2,5,4),(3,6,7),(6,3,5),(4,11,12);
+insert into t1(a) values(8);
+insert into t1(a,b) values(9,8);
+insert into t1(a,c) values(7,6);
+insert into t1 values();
+delete from t1 where a !=4;
+select * from t1;
+a	b	c
+4	11	12
+NULL	NULL	NULL
+drop table t1;
+create table t1(a int, b int, c int, primary key(a,b));
+insert into t1 values(10,1,2),(10,10,11),(5,2,3),(2,5,4),(3,6,7),(6,3,5),(4,11,12);
+delete from t1 where a>4;
+select * from t1;
+a	b	c
+2	5	4
+3	6	7
+4	11	12
+drop table t1;
+create table t1(a int, b int, c int, unique key(a,b));
+insert into t1 values(10,1,2),(10,10,11),(5,2,3),(2,5,4),(3,6,7),(6,3,5),(4,11,12);
+insert into t1(a) values(8);
+insert into t1(a,b) values(9,8);
+insert into t1(a,c) values(7,6);
+insert into t1 values();
+delete from t1 where a!=4;
+select * from t1;
+a	b	c
+4	11	12
+NULL	NULL	NULL
+drop table t1;
+create table t1(a int, b int, c int);
+insert into t1 values(10,1,2),(10,10,11),(5,2,3),(2,5,4),(3,6,7),(6,3,5),(4,11,12);
+insert into t1(a) values(8);
+insert into t1(a,b) values(9,8);
+insert into t1(a,c) values(7,6);
+insert into t1 values();
+create unique index a on t1(b);
+delete from t1 where a!=4 order by a limit 2;
+select * from t1;
+a	b	c
+10	1	2
+10	10	11
+4	11	12
+5	2	3
+6	3	5
+7	NULL	6
+8	NULL	NULL
+9	8	NULL
+NULL	NULL	NULL
+delete from t1 order by a limit 2;
+select * from t1;
+a	b	c
+10	1	2
+10	10	11
+5	2	3
+6	3	5
+7	NULL	6
+8	NULL	NULL
+9	8	NULL
+drop table t1;

@@ -1,0 +1,91 @@
+drop table if exists insert_duplicate_update_sequoiadb;
+create table insert_duplicate_update_sequoiadb (a int primary key, b int);
+drop table insert_duplicate_update_sequoiadb;
+create table insert_duplicate_update_sequoiadb (a int primary key, b int);
+insert into insert_duplicate_update_sequoiadb values(1,1),(2,1),(3,1);
+insert into insert_duplicate_update_sequoiadb values(4,1) on duplicate key update b=2;
+select * from insert_duplicate_update_sequoiadb where a=4 order by a;
+a	b
+4	1
+insert into insert_duplicate_update_sequoiadb values(5,1),(6,1) on duplicate key update b=2;
+select * from insert_duplicate_update_sequoiadb where a in(5,6) order by a;
+a	b
+5	1
+6	1
+select * from insert_duplicate_update_sequoiadb order by a;
+a	b
+1	1
+2	1
+3	1
+4	1
+5	1
+6	1
+delete from insert_duplicate_update_sequoiadb;
+insert into insert_duplicate_update_sequoiadb values(1,1),(2,1),(3,1);
+insert into insert_duplicate_update_sequoiadb values(1,1) on duplicate key update a=4;
+select * from insert_duplicate_update_sequoiadb where a in(1,4) order by a;
+a	b
+4	1
+insert into insert_duplicate_update_sequoiadb values(1,1) on duplicate key update a=1;
+select * from insert_duplicate_update_sequoiadb where a=1 order by a;
+a	b
+1	1
+insert into insert_duplicate_update_sequoiadb values(1,1) on duplicate key update a=1,b=3;
+select * from insert_duplicate_update_sequoiadb where a = 1 order by a;
+a	b
+1	3
+insert into insert_duplicate_update_sequoiadb values(2,3) on duplicate key update a=3,b=2;
+ERROR 23000: Duplicate entry '{ "a": 3 }' for key 'PRIMARY'
+select * from insert_duplicate_update_sequoiadb where a in(2,3) order by a;
+a	b
+2	1
+3	1
+select * from insert_duplicate_update_sequoiadb order by a;
+a	b
+1	3
+2	1
+3	1
+4	1
+delete from insert_duplicate_update_sequoiadb;
+insert into insert_duplicate_update_sequoiadb values(1,1);
+insert into insert_duplicate_update_sequoiadb values(1,1),(2,1),(3,1),(4,1) on duplicate key update a=a+1;
+select * from insert_duplicate_update_sequoiadb order by a;
+a	b
+5	1
+delete from insert_duplicate_update_sequoiadb;
+insert into insert_duplicate_update_sequoiadb values(5,1);
+insert into insert_duplicate_update_sequoiadb values(5,1),(4,1),(3,1),(2,1),(1,1) on duplicate key update a=a+1;
+select * from insert_duplicate_update_sequoiadb order by a;
+a	b
+1	1
+2	1
+3	1
+4	1
+6	1
+delete from insert_duplicate_update_sequoiadb;
+insert into insert_duplicate_update_sequoiadb values(5,1);
+insert into insert_duplicate_update_sequoiadb values(5,1),(4,1),(3,1),(2,1),(1,1) on duplicate key update a=a-1;
+select * from insert_duplicate_update_sequoiadb order by a;
+a	b
+0	1
+delete from insert_duplicate_update_sequoiadb;
+insert into insert_duplicate_update_sequoiadb values(1,1),(2,1);
+insert into insert_duplicate_update_sequoiadb values(1,2) on duplicate key update a=3;
+select * from insert_duplicate_update_sequoiadb where a in(1,3) order by a;
+a	b
+3	1
+insert into insert_duplicate_update_sequoiadb values(2,2) on duplicate key update a=3;
+ERROR 23000: Duplicate entry '{ "a": 3 }' for key 'PRIMARY'
+select * from insert_duplicate_update_sequoiadb where a in(2,3) order by a;
+a	b
+2	1
+3	1
+insert into insert_duplicate_update_sequoiadb values(3,2) on duplicate key update b=3;
+select * from insert_duplicate_update_sequoiadb where a=3 order by a;
+a	b
+3	3
+select * from insert_duplicate_update_sequoiadb order by a;
+a	b
+2	1
+3	3
+drop table insert_duplicate_update_sequoiadb;

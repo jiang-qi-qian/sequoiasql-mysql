@@ -1,0 +1,146 @@
+connection conn1;
+DROP DATABASE IF EXISTS metasync_system_versioning_23500;
+connection conn2;
+SHOW CREATE DATABASE metasync_system_versioning_23500;
+ERROR 42000: Unknown database 'metasync_system_versioning_23500'
+connection conn1;
+CREATE DATABASE metasync_system_versioning_23500;
+USE metasync_system_versioning_23500;
+CREATE TABLE sys_version1 (
+id int primary key,
+name varchar(16),
+start_timestamp TIMESTAMP(6) GENERATED ALWAYS as ROW START INVISIBLE,
+end_timestamp TIMESTAMP(6) GENERATED ALWAYS as ROW END INVISIBLE,
+PERIOD FOR SYSTEM_TIME (start_timestamp, end_timestamp)
+) WITH SYSTEM VERSIONING;
+CREATE OR REPLACE TABLE sys_version2 (
+x int primary key,
+y int
+) WITH SYSTEM VERSIONING;
+connection conn2;
+SHOW CREATE TABLE metasync_system_versioning_23500.sys_version1;
+Table	Create Table
+sys_version1	CREATE TABLE `sys_version1` (
+  `id` int(11) NOT NULL,
+  `name` varchar(16) COLLATE utf8mb4_bin DEFAULT NULL,
+  `start_timestamp` timestamp(6) GENERATED ALWAYS AS ROW START INVISIBLE,
+  `end_timestamp` timestamp(6) GENERATED ALWAYS AS ROW END INVISIBLE,
+  PRIMARY KEY (`id`,`end_timestamp`),
+  PERIOD FOR SYSTEM_TIME (`start_timestamp`, `end_timestamp`)
+) ENGINE=SequoiaDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin WITH SYSTEM VERSIONING
+SHOW CREATE TABLE metasync_system_versioning_23500.sys_version2;
+Table	Create Table
+sys_version2	CREATE TABLE `sys_version2` (
+  `x` int(11) NOT NULL,
+  `y` int(11) DEFAULT NULL,
+  PRIMARY KEY (`x`)
+) ENGINE=SequoiaDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin WITH SYSTEM VERSIONING
+connection conn1;
+CREATE TABLE period_tab (
+id int auto_increment primary key, 
+start_time datetime,
+end_time datetime,
+PERIOD FOR dt_period(start_time, end_time));
+connection conn2;
+SHOW CREATE TABLE metasync_system_versioning_23500.period_tab;
+Table	Create Table
+period_tab	CREATE TABLE `period_tab` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `start_time` datetime NOT NULL,
+  `end_time` datetime NOT NULL,
+  PRIMARY KEY (`id`),
+  PERIOD FOR `dt_period` (`start_time`, `end_time`)
+) ENGINE=SequoiaDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin
+connection conn1;
+CREATE TABLE bitemporal_tab (
+id int auto_increment primary key,
+name varchar(32),
+date_1 date,
+date_2 date,
+row_start timestamp(6) AS ROW START INVISIBLE,
+row_end timestamp(6) AS ROW END INVISIBLE,
+PERIOD FOR application_time(date_1, date_2),
+PERIOD FOR system_time(row_start, row_end)) WITH SYSTEM VERSIONING;
+connection conn2;
+SHOW CREATE TABLE metasync_system_versioning_23500.bitemporal_tab;
+Table	Create Table
+bitemporal_tab	CREATE TABLE `bitemporal_tab` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `name` varchar(32) COLLATE utf8mb4_bin DEFAULT NULL,
+  `date_1` date NOT NULL,
+  `date_2` date NOT NULL,
+  `row_start` timestamp(6) GENERATED ALWAYS AS ROW START INVISIBLE,
+  `row_end` timestamp(6) GENERATED ALWAYS AS ROW END INVISIBLE,
+  PRIMARY KEY (`id`,`row_end`),
+  PERIOD FOR SYSTEM_TIME (`row_start`, `row_end`),
+  PERIOD FOR `application_time` (`date_1`, `date_2`)
+) ENGINE=SequoiaDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin WITH SYSTEM VERSIONING
+USE metasync_system_versioning_23500;
+connection conn1;
+SET system_versioning_alter_history = KEEP;
+ALTER TABLE sys_version2 MODIFY y int WITHOUT SYSTEM VERSIONING, ADD COLUMN z int, algorithm=copy;
+SET system_versioning_alter_history = DEFAULT;
+connection conn2;
+SHOW CREATE TABLE sys_version2;
+Table	Create Table
+sys_version2	CREATE TABLE `sys_version2` (
+  `x` int(11) NOT NULL,
+  `y` int(11) DEFAULT NULL WITHOUT SYSTEM VERSIONING,
+  `z` int(11) DEFAULT NULL,
+  PRIMARY KEY (`x`)
+) ENGINE=SequoiaDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin WITH SYSTEM VERSIONING
+connection conn1;
+ALTER TABLE period_tab ADD COLUMN name varchar(64);
+connection conn2;
+SHOW CREATE TABLE period_tab;
+Table	Create Table
+period_tab	CREATE TABLE `period_tab` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `start_time` datetime NOT NULL,
+  `end_time` datetime NOT NULL,
+  `name` varchar(64) COLLATE utf8mb4_bin DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  PERIOD FOR `dt_period` (`start_time`, `end_time`)
+) ENGINE=SequoiaDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin
+connection conn1;
+SET system_versioning_alter_history = KEEP;
+ALTER TABLE bitemporal_tab ADD COLUMN age int, CHANGE name name varchar(127);
+SET system_versioning_alter_history = DEFAULT;
+connection conn2;
+SHOW CREATE TABLE bitemporal_tab;
+Table	Create Table
+bitemporal_tab	CREATE TABLE `bitemporal_tab` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `name` varchar(127) COLLATE utf8mb4_bin DEFAULT NULL,
+  `date_1` date NOT NULL,
+  `date_2` date NOT NULL,
+  `row_start` timestamp(6) GENERATED ALWAYS AS ROW START INVISIBLE,
+  `row_end` timestamp(6) GENERATED ALWAYS AS ROW END INVISIBLE,
+  `age` int(11) DEFAULT NULL,
+  PRIMARY KEY (`id`,`row_end`),
+  PERIOD FOR SYSTEM_TIME (`row_start`, `row_end`),
+  PERIOD FOR `application_time` (`date_1`, `date_2`)
+) ENGINE=SequoiaDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin WITH SYSTEM VERSIONING
+connection conn1;
+DROP TABLE sys_version1;
+DROP TABLE sys_version2;
+connection conn2;
+SHOW CREATE TABLE sys_version1;
+ERROR 42S02: Table 'metasync_system_versioning_23500.sys_version1' doesn't exist
+SHOW CREATE TABLE sys_version2;
+ERROR 42S02: Table 'metasync_system_versioning_23500.sys_version2' doesn't exist
+connection conn1;
+DROP TABLE period_tab;
+connection conn2;
+SHOW CREATE TABLE period_tab;
+ERROR 42S02: Table 'metasync_system_versioning_23500.period_tab' doesn't exist
+connection conn1;
+DROP TABLE bitemporal_tab;
+connection conn2;
+SHOW CREATE TABLE bitemporal_tab;
+ERROR 42S02: Table 'metasync_system_versioning_23500.bitemporal_tab' doesn't exist
+connection conn1;
+DROP DATABASE metasync_system_versioning_23500;
+connection conn2;
+SHOW CREATE DATABASE metasync_system_versioning_23500;
+ERROR 42000: Unknown database 'metasync_system_versioning_23500'

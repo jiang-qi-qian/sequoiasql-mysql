@@ -1,0 +1,81 @@
+DROP DATABASE IF EXISTS index_merge_sequoiadb_31020;
+CREATE DATABASE index_merge_sequoiadb_31020;
+DROP DATABASE index_merge_sequoiadb_31020;
+CREATE DATABASE index_merge_sequoiadb_31020;
+USE index_merge_sequoiadb_31020;
+CREATE TABLE `list_part_table` (
+`col_varchar_16_key` varchar(16) COLLATE utf8mb4_bin DEFAULT NULL,
+`pk` int(11) NOT NULL,
+`col_varchar_16` varchar(16) COLLATE utf8mb4_bin DEFAULT NULL,
+`col_int_key` int(11) DEFAULT NULL,
+`col_int` int(11) DEFAULT NULL,
+PRIMARY KEY (`pk`),
+KEY `col_varchar_16_key` (`col_varchar_16_key`),
+KEY `col_int_key` (`col_int_key`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin
+PARTITION BY LIST  COLUMNS(`pk`)
+(PARTITION `p0` VALUES IN (1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,44,45,46,47,48,49,50) ENGINE = InnoDB,
+PARTITION `p1` VALUES IN (51,52,53,54,55,56,57,58,59,60,61,62,63,64,65,66,67,68,69,70,71,72,73,74,75,76,77,78,79,80,81,82,83,84,85,86,87,88,89,90,91,92,93,94,95,96,97,98,99,100) ENGINE = InnoDB,
+PARTITION `p2` VALUES IN (101,102,103,104,105,106,107,108,109,110,111,112,113,114,115,116,117,118,119,120,121,122,123,124,125,126,127,128,129,130,131,132,133,134,135,136,137,138,139,140,141,142,143,144,145,146,147,148,149,150) ENGINE = InnoDB,
+PARTITION `p3` VALUES IN (151,152,153,154,155,156,157,158,159,160,161,162,163,164,165,166,167,168,169,170,171,172,173,174,175,176,177,178,179,180,181,182,183,184,185,186,187,188,189,190,191,192,193,194,195,196,197,198,199,200) ENGINE = InnoDB);
+INSERT INTO `list_part_table` VALUES ('j',1,NULL,0,5),('j',2,'q',NULL,9),('h',3,'out',0,NULL),('d',4,NULL,3,5),('in',5,'q',1,0),('was',6,NULL,6,8),(NULL,7,'f',6,6),('me',8,'r',8,NULL),('is',9,'from',0,2),('h',10,'c',NULL,3),('w',11,'m',9,3),(NULL,12,'b',9,NULL),('r',13,'x',9,3),('g',14,'right',1,2),('ok',15,'f',2,7),('o',16,'out',5,3),(NULL,17,NULL,7,7),('n',18,'they',9,2),('d',19,'r',5,2),('u',20,'o',3,4),(NULL,21,'just',8,9),('d',22,'q',1,1),('g',23,NULL,5,NULL),('o',24,'c',1,2),(NULL,25,'b',9,7),('m',26,'a',NULL,9),('a',27,'now',1,1),('m',28,'me',3,7),(NULL,29,'g',8,7),('as',30,NULL,4,4),('a',31,'z',4,9),('know',32,'c',NULL,5),('x',33,'x',8,5),('I\'ll',34,NULL,7,9),('from',35,'her',NULL,6),('g',36,'i',NULL,0),('w',37,'y',4,0),(NULL,38,'oh',NULL,0),(NULL,39,'s',2,1),('why',40,'that',5,NULL),('they',41,'have',NULL,5),(NULL,42,'l',NULL,7),('but',43,'a',5,NULL),('h',44,'a',NULL,4),('l',45,NULL,5,6),('u',46,'v',0,1),('c',47,'be',3,2),('w',48,'s',7,7),('y',49,'to',0,NULL),('u',50,'a',6,1),('z',51,'b',2,NULL),('or',52,'i',8,6),('e',53,'yes',NULL,5),(NULL,54,'i',3,3),('a',55,'z',2,1),('r',56,NULL,4,9),('e',57,'l',1,7),('out',58,'c',9,4),('l',59,'l',NULL,2),('z',60,'l',6,3),(NULL,61,'o',1,NULL),('i',62,NULL,1,5),('t',63,'that',3,2),('j',64,'y',6,2),('d',65,'i',1,6),('y',66,'s',5,6),(NULL,67,'got',2,1),('me',68,NULL,NULL,3),(NULL,69,'not',4,5),('p',70,'f',9,6),('o',71,'o',NULL,4),(NULL,72,NULL,8,1),(NULL,73,'y',1,4),('f',74,NULL,1,NULL),('okay',75,NULL,5,2),('really',76,'y',9,1),('l',77,'he',4,5),('e',78,NULL,3,4),(NULL,79,'p',3,0),('u',80,'h',1,5),('c',81,'come',4,NULL),('i',82,'my',9,8),('some',83,'d',NULL,4),('to',84,NULL,9,2),('k',85,'it\'s',NULL,9),('do',86,NULL,5,7),('m',87,NULL,2,4),(NULL,88,'hey',3,3),('i',89,'really',3,NULL),(NULL,90,'you\'re',NULL,2),('n',91,'q',7,4),('don\'t',92,'come',4,9),('x',93,'s',3,3),('b',94,'g',7,1),('a',95,'v',6,0),(NULL,96,'z',7,7),(NULL,97,'out',2,1),('w',98,'x',4,8),(NULL,99,'z',4,8),('o',100,'j',7,8),('g',101,'why',2,1),('p',102,'y',NULL,8),('q',103,'come',2,3),('r',104,'l',7,4),('n',105,'h',9,1),('k',106,'t',NULL,NULL),('k',107,'g',0,8),(NULL,108,'he',8,3),(NULL,109,'q',6,7),('x',110,'y',NULL,3),('w',111,'that\'s',8,8),('it',112,NULL,3,6),(NULL,113,'o',2,NULL),('a',114,'o',2,6),('see',115,'be',7,3),('d',116,'z',5,8),('w',117,'e',0,0),('d',118,'want',NULL,1),('about',119,'did',4,NULL),('was',120,NULL,7,2),(NULL,121,'can\'t',2,3),('c',122,'m',NULL,5),('are',123,'from',NULL,NULL),('z',124,'e',7,3),(NULL,125,'b',5,9),('a',126,'x',9,7),('s',127,'f',2,0),('got',128,NULL,7,4),('c',129,'f',9,2),(NULL,130,'j',8,9),('t',131,'want',NULL,0),('c',132,'w',7,3),(NULL,133,'u',4,2),('g',134,'t',3,6),('c',135,'q',2,NULL),('could',136,'q',0,NULL),('r',137,NULL,NULL,6),('o',138,'s',6,3),('k',139,'h',7,6),('o',140,'s',9,5),('have',141,'to',NULL,2),('f',142,'a',NULL,3),('j',143,NULL,1,2),(NULL,144,'c',2,NULL),(NULL,145,'w',NULL,2),(NULL,146,'h',2,3),('o',147,'l',NULL,NULL),('been',148,'n',NULL,2),(NULL,149,NULL,0,NULL),('c',150,NULL,1,1),(NULL,151,'w',1,2),('r',152,'a',0,3),('I',153,NULL,7,7),('x',154,'be',5,NULL),('z',155,'the',8,NULL),('x',156,'b',5,1),('v',157,'l',NULL,1),('m',158,NULL,9,3),('p',159,'y',3,5),('z',160,NULL,NULL,8),('c',161,'had',4,NULL),('u',162,'didn\'t',6,2),(NULL,163,'y',5,8),('p',164,'t',3,3),('I\'m',165,NULL,9,1),('h',166,'o',6,9),(NULL,167,'d',5,8),('you',168,'he\'s',5,6),('p',169,NULL,4,6),('come',170,'were',9,7),(NULL,171,NULL,7,1),('q',172,'w',2,6),('for',173,'like',0,7),(NULL,174,NULL,4,5),('l',175,'h',NULL,3),(NULL,176,NULL,3,8),('l',177,'e',4,4),(NULL,178,NULL,3,7),('g',179,NULL,8,NULL),('x',180,'come',8,6),('q',181,'been',2,0),('x',182,'o',7,NULL),('q',183,NULL,4,4),('t',184,NULL,NULL,3),(NULL,185,'q',9,8),('t',186,'x',5,9),('s',187,'q',2,5),('if',188,'think',NULL,8),('y',189,'k',2,8),(NULL,190,'v',7,NULL),('b',191,'I',4,0),('you\'re',192,'a',4,3),('m',193,'x',NULL,5),('the',194,NULL,4,3),('yes',195,NULL,8,1),('i',196,NULL,9,1),(NULL,197,'v',2,1),('right',198,'f',4,7),('n',199,'t',6,0),('l',200,'could',5,7);
+EXPLAIN SELECT `col_varchar_16` AS field1 FROM list_part_table WHERE col_int_key = 1 OR col_varchar_16_key = 'u' group by field1;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	list_part_table	p0,p1,p2,p3	index_merge	col_varchar_16_key,col_int_key	col_int_key,col_varchar_16_key	5,67	NULL	20	100.00	Using union(col_int_key,col_varchar_16_key); Using where; Using temporary; Using filesort
+Warnings:
+Note	1003	/* select#1 */ select `index_merge_sequoiadb_31020`.`list_part_table`.`col_varchar_16` AS `field1` from `index_merge_sequoiadb_31020`.`list_part_table` where ((`index_merge_sequoiadb_31020`.`list_part_table`.`col_int_key` = 1) or (`index_merge_sequoiadb_31020`.`list_part_table`.`col_varchar_16_key` = 'u')) group by `field1`
+SELECT `col_varchar_16` AS field1 FROM list_part_table WHERE col_int_key = 1 OR col_varchar_16_key = 'u' group by field1;
+field1
+NULL
+a
+c
+didn't
+h
+i
+l
+now
+o
+q
+right
+v
+w
+y
+EXPLAIN SELECT `col_varchar_16` AS field1 FROM list_part_table WHERE col_int_key = 1 AND col_varchar_16_key = 'u';
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	list_part_table	p0,p1,p2,p3	index_merge	col_varchar_16_key,col_int_key	col_varchar_16_key,col_int_key	67,5	NULL	1	100.00	Using intersect(col_varchar_16_key,col_int_key); Using where
+Warnings:
+Note	1003	/* select#1 */ select `index_merge_sequoiadb_31020`.`list_part_table`.`col_varchar_16` AS `field1` from `index_merge_sequoiadb_31020`.`list_part_table` where ((`index_merge_sequoiadb_31020`.`list_part_table`.`col_varchar_16_key` = 'u') and (`index_merge_sequoiadb_31020`.`list_part_table`.`col_int_key` = 1))
+SELECT `col_varchar_16` AS field1 FROM list_part_table WHERE col_int_key = 1 AND col_varchar_16_key = 'u';
+field1
+h
+ALTER TABLE list_part_table ENGINE = SequoiaDB;
+EXPLAIN SELECT `col_varchar_16` AS field1 FROM list_part_table WHERE col_int_key = 1 OR col_varchar_16_key = 'u' group by field1;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	list_part_table	p0,p1,p2,p3	ALL	col_varchar_16_key,col_int_key	NULL	NULL	NULL	200	19.00	Using where with pushed condition ((`index_merge_sequoiadb_31020`.`list_part_table`.`col_int_key` = 1) or (`index_merge_sequoiadb_31020`.`list_part_table`.`col_varchar_16_key` = 'u'))
+Warnings:
+Note	1003	/* select#1 */ select `index_merge_sequoiadb_31020`.`list_part_table`.`col_varchar_16` AS `field1` from `index_merge_sequoiadb_31020`.`list_part_table` where ((`index_merge_sequoiadb_31020`.`list_part_table`.`col_int_key` = 1) or (`index_merge_sequoiadb_31020`.`list_part_table`.`col_varchar_16_key` = 'u')) group by `field1`
+SELECT `col_varchar_16` AS field1 FROM list_part_table WHERE col_int_key = 1 OR col_varchar_16_key = 'u' group by field1;
+field1
+NULL
+a
+c
+didn't
+h
+i
+l
+now
+o
+q
+right
+v
+w
+y
+EXPLAIN SELECT `col_varchar_16` AS field1 FROM list_part_table WHERE col_int_key = 1 AND col_varchar_16_key = 'u';
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	list_part_table	p0,p1,p2,p3	index_merge	col_varchar_16_key,col_int_key	col_varchar_16_key,col_int_key	67,5	NULL	1	100.00	Using intersect(col_varchar_16_key,col_int_key); Using where with pushed condition ((`index_merge_sequoiadb_31020`.`list_part_table`.`col_varchar_16_key` = 'u') and (`index_merge_sequoiadb_31020`.`list_part_table`.`col_int_key` = 1))
+Warnings:
+Note	1003	/* select#1 */ select `index_merge_sequoiadb_31020`.`list_part_table`.`col_varchar_16` AS `field1` from `index_merge_sequoiadb_31020`.`list_part_table` where ((`index_merge_sequoiadb_31020`.`list_part_table`.`col_varchar_16_key` = 'u') and (`index_merge_sequoiadb_31020`.`list_part_table`.`col_int_key` = 1))
+SELECT `col_varchar_16` AS field1 FROM list_part_table WHERE col_int_key = 1 AND col_varchar_16_key = 'u';
+field1
+h
+DROP DATABASE index_merge_sequoiadb_31020;

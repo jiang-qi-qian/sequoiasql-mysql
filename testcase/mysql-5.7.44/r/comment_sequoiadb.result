@@ -1,0 +1,504 @@
+drop database if exists db_comment_sequoiadb;
+create database db_comment_sequoiadb;
+drop database db_comment_sequoiadb;
+create database db_comment_sequoiadb;
+use db_comment_sequoiadb;
+CREATE TABLE t1(a INT, b TINYINT) comment="sequoiadb:{table_options:{ShardingKey:{a:1},ShardingType:\"hash\",Partition:1024,Compressed:true,CompressionType:\"lzw\",ReplSize:2,AutoSplit:true,AutoIndexId:true,EnsureShardingIndex:true,StrictDataMode:true}}";
+SHOW CREATE TABLE t1;
+Table	Create Table
+t1	CREATE TABLE `t1` (
+  `a` int(11) DEFAULT NULL,
+  `b` tinyint(4) DEFAULT NULL
+) ENGINE=SequoiaDB DEFAULT CHARSET=latin1 COMMENT='sequoiadb:{table_options:{ShardingKey:{a:1},ShardingType:"hash",Partition:1024,Compressed:true,CompressionType:"lzw",ReplSize:2,AutoSplit:true,AutoIndexId:true,EnsureShardingIndex:true,StrictDataMode:true}}'
+INSERT INTO t1 VALUES (1, 1),(2, 2),(3, 3),(10, 10),(-1, -1);
+SELECT * FROM t1;
+a	b
+-1	-1
+1	1
+10	10
+2	2
+3	3
+UPDATE t1 SET b = -101 WHERE b = 2;
+SELECT * FROM t1;
+a	b
+-1	-1
+1	1
+10	10
+2	-101
+3	3
+DELETE FROM t1 WHERE a > 2;
+SELECT * FROM t1;
+a	b
+-1	-1
+1	1
+2	-101
+DROP TABLE t1;
+CREATE TABLE t1(a INT, b TINYINT) comment="sequoiadb:{table_options:{ShardingKey:{a:-1},ShardingType:\"range\"}}";
+SHOW CREATE TABLE t1;
+Table	Create Table
+t1	CREATE TABLE `t1` (
+  `a` int(11) DEFAULT NULL,
+  `b` tinyint(4) DEFAULT NULL
+) ENGINE=SequoiaDB DEFAULT CHARSET=latin1 COMMENT='sequoiadb:{table_options:{ShardingKey:{a:-1},ShardingType:"range"}}'
+INSERT INTO t1 VALUES (1, 1),(2, 2),(0, 0),(-109, -109),(12, 12);
+SELECT * FROM t1;
+a	b
+-109	-109
+0	0
+1	1
+12	12
+2	2
+UPDATE t1 SET b = -101 WHERE b = 2;
+SELECT * FROM t1;
+a	b
+-109	-109
+0	0
+1	1
+12	12
+2	-101
+DELETE FROM t1 WHERE a > 2;
+SELECT * FROM t1;
+a	b
+-109	-109
+0	0
+1	1
+2	-101
+DROP TABLE t1;
+CREATE TABLE t1(a INT, b TINYINT) comment="sequoiadb:{table_options:{ShardingKey:{a:1}, IsMainCL:true}}";
+SHOW CREATE TABLE t1;
+Table	Create Table
+t1	CREATE TABLE `t1` (
+  `a` int(11) DEFAULT NULL,
+  `b` tinyint(4) DEFAULT NULL
+) ENGINE=SequoiaDB DEFAULT CHARSET=latin1 COMMENT='sequoiadb:{table_options:{ShardingKey:{a:1}, IsMainCL:true}}'
+DROP TABLE t1;
+CREATE TABLE t1(a INT NOT NULL AUTO_INCREMENT, KEY(a)) comment="abc|string";
+SHOW CREATE TABLE t1;
+Table	Create Table
+t1	CREATE TABLE `t1` (
+  `a` int(11) NOT NULL AUTO_INCREMENT,
+  KEY `a` (`a`)
+) ENGINE=SequoiaDB DEFAULT CHARSET=latin1 COMMENT='abc|string'
+INSERT INTO t1 VALUES ();
+SELECT * FROM t1;
+a
+1
+DROP TABLE t1;
+CREATE TABLE t1(a INT);
+SHOW CREATE TABLE t1;
+Table	Create Table
+t1	CREATE TABLE `t1` (
+  `a` int(11) DEFAULT NULL
+) ENGINE=SequoiaDB DEFAULT CHARSET=latin1
+DROP TABLE t1;
+CREATE TABLE t1(a SMALLINT) comment="sequoiadb:{table_options:{Compressed:false}}";
+SHOW CREATE TABLE t1;
+Table	Create Table
+t1	CREATE TABLE `t1` (
+  `a` smallint(6) DEFAULT NULL
+) ENGINE=SequoiaDB DEFAULT CHARSET=latin1 COMMENT='sequoiadb:{table_options:{Compressed:false}}'
+INSERT INTO t1 VALUES (1);
+SELECT * FROM t1;
+a
+1
+DROP TABLE t1;
+CREATE TABLE t1(a SMALLINT) engine = sequoiadb comment="sequoiadb:{table_options:{Compressed:false, CompressionType:'snappy'}}";
+ERROR HY000: Ambiguous compression
+CREATE TABLE t1(a SMALLINT) engine = sequoiadb comment="sequoiadb:{table_options:{Compressed:true, CompressionType:'snappy'}}";
+SHOW CREATE TABLE t1;
+Table	Create Table
+t1	CREATE TABLE `t1` (
+  `a` smallint(6) DEFAULT NULL
+) ENGINE=SequoiaDB DEFAULT CHARSET=latin1 COMMENT='sequoiadb:{table_options:{Compressed:true, CompressionType:''snappy''}}'
+INSERT INTO t1 VALUES (1);
+SELECT * FROM t1;
+a
+1
+DROP TABLE t1;
+CREATE TABLE t1(ordrdt VARCHAR(8)) engine = sequoiadb comment="sequoiadb:{table_options:{ShardingKey:{ordrdt:1},ShardingType:'range',IsMainCL:true,EnsureShardingIndex:false,Compressed:true,ReplSize:-1,CompressionType:'lzw'}}";
+SHOW CREATE TABLE t1;
+Table	Create Table
+t1	CREATE TABLE `t1` (
+  `ordrdt` varchar(8) DEFAULT NULL
+) ENGINE=SequoiaDB DEFAULT CHARSET=latin1 COMMENT='sequoiadb:{table_options:{ShardingKey:{ordrdt:1},ShardingType:''range'',IsMainCL:true,EnsureShardingIndex:false,Compressed:true,ReplSize:-1,CompressionType:''lzw''}}'
+DROP TABLE t1;
+CREATE TABLE t1 ( 
+id INT PRIMARY KEY 
+) 
+COMMENT = "a strictly increasing sequence, sequoiadb:{ table_options: { AutoIncrement: { Field: \"id\", AcquireSize: 1 } } }";
+ERROR HY000: The AUTO_INCREMENT keyword is required
+CREATE TABLE t1 ( id INT PRIMARY KEY AUTO_INCREMENT, name VARCHAR(16)) 
+COMMENT = "a strictly increasing sequence, sequoiadb:{ table_options: { AutoIncrement: { Field: \"id\", AcquireSize: 1, CacheSize:1 } } }";
+SHOW CREATE TABLE t1;
+Table	Create Table
+t1	CREATE TABLE `t1` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `name` varchar(16) DEFAULT NULL,
+  PRIMARY KEY (`id`)
+) ENGINE=SequoiaDB DEFAULT CHARSET=latin1 COMMENT='a strictly increasing sequence, sequoiadb:{ table_options: { AutoIncrement: { Field: "id", AcquireSize: 1, CacheSize:1 } } }'
+INSERT INTO t1(name) VALUES ('Joe'),('Mary'),('Bob');
+SELECT * FROM t1 ORDER BY id;
+id	name
+1	Joe
+2	Mary
+3	Bob
+DROP TABLE t1;
+CREATE TABLE t1 ( id INT PRIMARY KEY AUTO_INCREMENT) 
+COMMENT = "a strictly increasing sequence, sequoiadb:{ table_options: { AutoIncrement: { Field: \"id1\", AcquireSize: 1, CacheSize:1 } } }";
+ERROR HY000: Ambiguous auto increment field
+CREATE TABLE t1 ( id INT PRIMARY KEY AUTO_INCREMENT, name VARCHAR(16)) 
+COMMENT = "a strictly increasing sequence, sequoiadb:{ table_options: { AutoIncrement: { Field: \"id,name\", AcquireSize: 1, CacheSize:1 } } }";
+ERROR HY000: Ambiguous auto increment field
+CREATE TABLE t1 ( id INT PRIMARY KEY AUTO_INCREMENT, name VARCHAR(16))
+COMMENT = "a strictly increasing sequence, sequoiadb:{ table_options: { AutoIncrement: { AcquireSize: 1, CacheSize:1, Increment:5, StartValue:5, MinValue:5, Cycled:true } } }";
+SHOW CREATE TABLE t1;
+Table	Create Table
+t1	CREATE TABLE `t1` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `name` varchar(16) DEFAULT NULL,
+  PRIMARY KEY (`id`)
+) ENGINE=SequoiaDB AUTO_INCREMENT=5 DEFAULT CHARSET=latin1 COMMENT='a strictly increasing sequence, sequoiadb:{ table_options: { AutoIncrement: { AcquireSize: 1, CacheSize:1, Increment:5, StartValue:5, MinValue:5, Cycled:true } } }'
+INSERT INTO t1(name) VALUES ('Joe'),('Mary'),('Bob');
+SELECT * FROM t1 ORDER BY id;
+id	name
+5	Joe
+10	Mary
+15	Bob
+DROP TABLE t1;
+CREATE TABLE t1 ( id INT PRIMARY KEY AUTO_INCREMENT) ENGINE = sequoiadb COMMENT = "a strictly increasing sequence, sequoiadb:{ table_options: { AutoIncrement: { Fielda: \"id\", AcquireSize: 1, CacheSize:1 } } }";
+ERROR HY000: Invalid Argument
+CREATE TABLE t1 ( id INT PRIMARY KEY AUTO_INCREMENT) ENGINE = sequoiadb COMMENT = "a strictly increasing sequence, sequoiadb:{ table_options: { AutoIncrement: { Increments:1 } } }";
+ERROR HY000: Invalid Argument
+CREATE TABLE t1 ( id INT PRIMARY KEY AUTO_INCREMENT) ENGINE = sequoiadb COMMENT = "a strictly increasing sequence, sequoiadb:{ table_options: { AutoIncrement: { StartValues:1 } } }";
+ERROR HY000: Invalid Argument
+CREATE TABLE t1 ( id INT PRIMARY KEY AUTO_INCREMENT) ENGINE = sequoiadb COMMENT = "a strictly increasing sequence, sequoiadb:{ table_options: { AutoIncrement: { MinValues:1 } } }";
+ERROR HY000: Invalid Argument
+CREATE TABLE t1 ( id INT PRIMARY KEY AUTO_INCREMENT) ENGINE = sequoiadb COMMENT = "a strictly increasing sequence, sequoiadb:{ table_options: { AutoIncrement: { MaxValues:1 } } }";
+ERROR HY000: Invalid Argument
+CREATE TABLE t1 ( id INT PRIMARY KEY AUTO_INCREMENT) ENGINE = sequoiadb COMMENT = "a strictly increasing sequence, sequoiadb:{ table_options: { AutoIncrement: { CacheSizes:10 } } }";
+ERROR HY000: Invalid Argument
+CREATE TABLE t1 ( id INT PRIMARY KEY AUTO_INCREMENT) ENGINE = sequoiadb COMMENT = "a strictly increasing sequence, sequoiadb:{ table_options: { AutoIncrement: { AcquireSizes:2 } } }";
+ERROR HY000: Invalid Argument
+CREATE TABLE t1 ( id INT PRIMARY KEY AUTO_INCREMENT) ENGINE = sequoiadb COMMENT = "a strictly increasing sequence, sequoiadb:{ table_options: { AutoIncrement: { Cycleds:true } } }";
+ERROR HY000: Invalid Argument
+CREATE TABLE t1 ( id INT PRIMARY KEY AUTO_INCREMENT) ENGINE = sequoiadb COMMENT = "a strictly increasing sequence, sequoiadb:{ table_options: { AutoIncrement: { Generateds:'default' } } }";
+ERROR HY000: Invalid Argument
+create table t1 ( id INT PRIMARY KEY AUTO_INCREMENT) ENGINE = sequoiadb COMMENT = "a strictly increasing sequence, sequoiadb:{ table_options: { AutoIncrement: { Field: \"id\" } } }";
+show create table t1;
+Table	Create Table
+t1	CREATE TABLE `t1` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  PRIMARY KEY (`id`)
+) ENGINE=SequoiaDB DEFAULT CHARSET=latin1 COMMENT='a strictly increasing sequence, sequoiadb:{ table_options: { AutoIncrement: { Field: "id" } } }'
+alter table t1 COMMENT = "a strictly increasing sequence, sequoiadb:{ table_options: { AutoIncrement: {AcquireSizes: 1, CacheSize:1 } } }";
+ERROR HY000: Invalid Argument
+alter table t1 COMMENT = "a strictly increasing sequence, sequoiadb:{ table_options: { AutoIncrement: { Field:\"a\" } } }";
+ERROR HY000: Autoincrement field does not exist on collection
+alter table t1 COMMENT = "a strictly increasing sequence, sequoiadb:{ table_options: { AutoIncrement:{CacheSize:1, AcquireSize: 1, Increment:2, StartValue:2, MinValue:2, MaxValue:1000, Cycled:true,Generated:\"always\"} } }";
+show create table t1;
+Table	Create Table
+t1	CREATE TABLE `t1` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  PRIMARY KEY (`id`)
+) ENGINE=SequoiaDB AUTO_INCREMENT=2 DEFAULT CHARSET=latin1 COMMENT='a strictly increasing sequence, sequoiadb:{ table_options: { AutoIncrement:{CacheSize:1, AcquireSize: 1, Increment:2, StartValue:2, MinValue:2, MaxValue:1000, Cycled:true,Generated:"always"} } }'
+insert into t1 values(),(),();
+select * from t1 order by id;
+id
+2
+4
+6
+alter table t1 COMMENT = "a strictly increasing sequence, sequoiadb:{ table_options: { AutoIncrement:{ Field: \"id\",Increment:1 } } }";
+show create table t1;
+Table	Create Table
+t1	CREATE TABLE `t1` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  PRIMARY KEY (`id`)
+) ENGINE=SequoiaDB AUTO_INCREMENT=7 DEFAULT CHARSET=latin1 COMMENT='a strictly increasing sequence, sequoiadb:{ table_options: { AutoIncrement:{ Field: "id",Increment:1 } } }'
+insert into t1 values(),(),();
+select * from t1 order by id;
+id
+2
+4
+6
+7
+8
+9
+drop table t1;
+CREATE TABLE range_tab (  
+id INT NOT NULL ,
+birth DATE)
+comment = "sequoiadb:{ table_options: { AutoIncrement: { Field: \"id\", AcquireSize: 1, CacheSize:5 } } }"
+       PARTITION BY RANGE (YEAR(birth)) (
+PARTITION p0 VALUES LESS THAN (2020));
+ERROR HY000: The AUTO_INCREMENT keyword is required
+CREATE TABLE hash_tab ( 
+id INT NOT NULL,
+primary key (id))
+comment = "sequoiadb:{ table_options: { AutoIncrement: { Field: \"id\", AcquireSize: 1, CacheSize: 1 } } }"
+      PARTITION BY HASH(id) PARTITIONS 2;
+ERROR HY000: The AUTO_INCREMENT keyword is required
+CREATE TABLE list_tab ( 
+id INT NOT NULL auto_increment,
+mark INT,
+unique (id,mark))
+comment = "sequoiadb:{ table_options: { AutoIncrement: { Field: \"mark\", AcquireSize: 1, CacheSize: 1 } } }"
+      PARTITION BY LIST (mark) (
+PARTITION x3 VALUES IN (60,80,90,100));
+ERROR HY000: Ambiguous auto increment field
+CREATE TABLE hash_tab ( 
+id INT NOT NULL auto_increment,
+name VARCHAR(100),
+primary key (id))
+comment = "sequoiadb:{ table_options: { AutoIncrement: { Field: \"id,name\", AcquireSize: 1, CacheSize: 1 } } }"
+      PARTITION BY HASH(id) PARTITIONS 2;
+ERROR HY000: Ambiguous auto increment field
+CREATE TABLE sub_tab ( 
+id INT NOT NULL auto_increment,
+mark INT not null,
+primary key (id,mark))
+comment = "sequoiadb:{ table_options: { AutoIncrement: { Field: \"id\", AcquireSizes: 1 } } }"
+      PARTITION BY RANGE (mark)
+SUBPARTITION BY HASH (id+mark)
+(PARTITION x1 VALUES LESS THAN (100)
+(SUBPARTITION x11,
+SUBPARTITION x12));
+ERROR HY000: Invalid Argument
+CREATE TABLE range_tab (  
+id INT NOT NULL auto_increment,
+birth DATE,
+name VARCHAR(100),
+primary key(id, birth)) 
+comment = "a strictly increasing sequence, sequoiadb:{ table_options: { AutoIncrement: { Field: \"id\", AcquireSize: 1, CacheSize:5 } } }" 
+PARTITION BY RANGE (YEAR(birth)) ( 
+PARTITION p0 VALUES LESS THAN (1990), 
+PARTITION p1 VALUES LESS THAN (2000), 
+PARTITION p2 VALUES LESS THAN (2010), 
+PARTITION p3 VALUES LESS THAN (2020));
+CREATE TABLE list_tab (  
+id INT NOT NULL auto_increment,
+mark INT,
+name VARCHAR(100),
+unique (id,mark))
+comment = "a strictly increasing sequence, sequoiadb:{ table_options: { AutoIncrement: { Field: \"id\", AcquireSize: 500, CacheSize: 501 } } }"
+      PARTITION BY LIST (mark) (
+PARTITION x1 VALUES IN (10,20,30,40,50,60), 
+PARTITION x2 VALUES IN (70,75,80,85,90),
+PARTITION x3 VALUES IN (95,98,99,100));
+CREATE TABLE sub_tab ( 
+id INT NOT NULL auto_increment,
+mark INT not null,
+name VARCHAR(100),
+primary key (id,mark))
+comment = "a strictly increasing sequence, sequoiadb:{ table_options: { AutoIncrement: { Field: \"id\", AcquireSize: 2000, CacheSize: 5000 } } }"
+      PARTITION BY RANGE (mark)
+SUBPARTITION BY HASH (id+mark)
+(PARTITION x1 VALUES LESS THAN (60)
+(SUBPARTITION x11,
+SUBPARTITION x12),
+PARTITION x2 VALUES LESS THAN (100)
+(SUBPARTITION x21,
+SUBPARTITION x22));
+CREATE TABLE hash_tab ( 
+id INT NOT NULL auto_increment, 
+name VARCHAR(100), 
+primary key (id)) 
+comment = "a strictly increasing sequence, sequoiadb:{ table_options: { AutoIncrement: { Field: \"id\", AcquireSize: 1, CacheSize: 1 } } }"
+      PARTITION BY HASH(id) PARTITIONS 2;
+SHOW CREATE TABLE range_tab;
+Table	Create Table
+range_tab	CREATE TABLE `range_tab` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `birth` date NOT NULL,
+  `name` varchar(100) DEFAULT NULL,
+  PRIMARY KEY (`id`,`birth`)
+) ENGINE=SequoiaDB DEFAULT CHARSET=latin1 COMMENT='a strictly increasing sequence, sequoiadb:{ table_options: { AutoIncrement: { Field: "id", AcquireSize: 1, CacheSize:5 } } }'
+/*!50100 PARTITION BY RANGE (YEAR(birth))
+(PARTITION p0 VALUES LESS THAN (1990) ENGINE = SequoiaDB,
+ PARTITION p1 VALUES LESS THAN (2000) ENGINE = SequoiaDB,
+ PARTITION p2 VALUES LESS THAN (2010) ENGINE = SequoiaDB,
+ PARTITION p3 VALUES LESS THAN (2020) ENGINE = SequoiaDB) */
+SHOW CREATE TABLE list_tab;
+Table	Create Table
+list_tab	CREATE TABLE `list_tab` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `mark` int(11) DEFAULT NULL,
+  `name` varchar(100) DEFAULT NULL,
+  UNIQUE KEY `id` (`id`,`mark`)
+) ENGINE=SequoiaDB DEFAULT CHARSET=latin1 COMMENT='a strictly increasing sequence, sequoiadb:{ table_options: { AutoIncrement: { Field: "id", AcquireSize: 500, CacheSize: 501 } } }'
+/*!50100 PARTITION BY LIST (mark)
+(PARTITION x1 VALUES IN (10,20,30,40,50,60) ENGINE = SequoiaDB,
+ PARTITION x2 VALUES IN (70,75,80,85,90) ENGINE = SequoiaDB,
+ PARTITION x3 VALUES IN (95,98,99,100) ENGINE = SequoiaDB) */
+SHOW CREATE TABLE sub_tab;
+Table	Create Table
+sub_tab	CREATE TABLE `sub_tab` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `mark` int(11) NOT NULL,
+  `name` varchar(100) DEFAULT NULL,
+  PRIMARY KEY (`id`,`mark`)
+) ENGINE=SequoiaDB DEFAULT CHARSET=latin1 COMMENT='a strictly increasing sequence, sequoiadb:{ table_options: { AutoIncrement: { Field: "id", AcquireSize: 2000, CacheSize: 5000 } } }'
+/*!50100 PARTITION BY RANGE (mark)
+SUBPARTITION BY HASH (id+mark)
+(PARTITION x1 VALUES LESS THAN (60)
+ (SUBPARTITION x11 ENGINE = SequoiaDB,
+  SUBPARTITION x12 ENGINE = SequoiaDB),
+ PARTITION x2 VALUES LESS THAN (100)
+ (SUBPARTITION x21 ENGINE = SequoiaDB,
+  SUBPARTITION x22 ENGINE = SequoiaDB)) */
+SHOW CREATE TABLE hash_tab;
+Table	Create Table
+hash_tab	CREATE TABLE `hash_tab` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `name` varchar(100) DEFAULT NULL,
+  PRIMARY KEY (`id`)
+) ENGINE=SequoiaDB DEFAULT CHARSET=latin1 COMMENT='a strictly increasing sequence, sequoiadb:{ table_options: { AutoIncrement: { Field: "id", AcquireSize: 1, CacheSize: 1 } } }'
+/*!50100 PARTITION BY HASH (id)
+PARTITIONS 2 */
+INSERT INTO range_tab(birth,name) VALUES ('1970-01-01','Joe'),('2001-01-01','Jack'),('2019-01-01','David');
+INSERT INTO list_tab(mark,name) VALUES (50,'Joe'),(70,'Jack'),(99,'David');
+INSERT INTO sub_tab(mark,name) VALUES (50,'Joe'),(70,'Jack'),(99,'David');
+INSERT INTO hash_tab(name) VALUES ('Joe'),('Jack'),('David');
+SELECT * FROM range_tab ORDER BY id;
+id	birth	name
+1	1970-01-01	Joe
+2	2001-01-01	Jack
+3	2019-01-01	David
+SELECT * FROM list_tab ORDER BY id;
+id	mark	name
+1	50	Joe
+2	70	Jack
+3	99	David
+SELECT * FROM sub_tab ORDER BY id;
+id	mark	name
+1	50	Joe
+2	70	Jack
+3	99	David
+SELECT * FROM hash_tab ORDER BY id;
+id	name
+1	Joe
+2	Jack
+3	David
+DROP TABLE range_tab,list_tab,sub_tab,hash_tab;
+CREATE TABLE sub_tab (
+id INT NOT NULL auto_increment,
+mark INT not null,
+name VARCHAR(100),
+primary key (id,mark))
+comment = "a strictly increasing sequence, sequoiadb:{ table_options: {  AutoIncrement: { AcquireSize: 1, CacheSize: 1000, Increment: 5, StartValue: 5, MinValue: 5, MaxValue: 10000, Cycled: true, Generated: \"strict\"  } } }"
+      PARTITION BY RANGE (mark)
+SUBPARTITION BY HASH (id+mark)
+(PARTITION x1 VALUES LESS THAN (60)
+(SUBPARTITION x11,
+SUBPARTITION x12),
+PARTITION x2 VALUES LESS THAN (100)
+(SUBPARTITION x21,
+SUBPARTITION x22));
+CREATE TABLE hash_tab (
+id INT NOT NULL auto_increment,
+name VARCHAR(100),
+primary key (id))
+comment = "a strictly increasing sequence, sequoiadb:{ table_options: { AutoIncrement: { AcquireSize: 10, CacheSize: 10, Increment: 10, StartValue: 5, MinValue: 5} } }"
+      PARTITION BY HASH(id) PARTITIONS 2;
+INSERT INTO sub_tab(mark,name) VALUES (50,'Joe'),(70,'Jack'),(99,'David');
+INSERT INTO hash_tab(name) VALUES ('Joe'),('Jack'),('David');
+SELECT * FROM sub_tab ORDER BY id;
+id	mark	name
+5	50	Joe
+10	70	Jack
+15	99	David
+SELECT * FROM hash_tab ORDER BY id;
+id	name
+5	Joe
+15	Jack
+25	David
+DROP TABLE sub_tab,hash_tab;
+CREATE TABLE range_tab ( #range
+id INT NOT NULL auto_increment,
+birth DATE,
+name VARCHAR(100),
+primary key(id, birth))
+PARTITION BY RANGE (YEAR(birth)) (
+PARTITION p0 VALUES LESS THAN (1990),
+PARTITION p1 VALUES LESS THAN (2000),
+PARTITION p2 VALUES LESS THAN (2010),
+PARTITION p3 VALUES LESS THAN (2020));
+CREATE TABLE hash_tab ( #hash
+id INT NOT NULL auto_increment,
+name VARCHAR(100),
+primary key (id))
+PARTITION BY HASH(id) PARTITIONS 2;
+SHOW CREATE TABLE range_tab;
+Table	Create Table
+range_tab	CREATE TABLE `range_tab` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `birth` date NOT NULL,
+  `name` varchar(100) DEFAULT NULL,
+  PRIMARY KEY (`id`,`birth`)
+) ENGINE=SequoiaDB DEFAULT CHARSET=latin1
+/*!50100 PARTITION BY RANGE (YEAR(birth))
+(PARTITION p0 VALUES LESS THAN (1990) ENGINE = SequoiaDB,
+ PARTITION p1 VALUES LESS THAN (2000) ENGINE = SequoiaDB,
+ PARTITION p2 VALUES LESS THAN (2010) ENGINE = SequoiaDB,
+ PARTITION p3 VALUES LESS THAN (2020) ENGINE = SequoiaDB) */
+SHOW CREATE TABLE hash_tab;
+Table	Create Table
+hash_tab	CREATE TABLE `hash_tab` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `name` varchar(100) DEFAULT NULL,
+  PRIMARY KEY (`id`)
+) ENGINE=SequoiaDB DEFAULT CHARSET=latin1
+/*!50100 PARTITION BY HASH (id)
+PARTITIONS 2 */
+INSERT INTO range_tab(birth,name) VALUES ('1970-01-01','Joe'),('2001-01-01','Jack'),('2019-01-01','David');
+INSERT INTO hash_tab(name) VALUES ('Joe'),('Jack'),('David');
+SELECT * FROM range_tab ORDER BY id;
+id	birth	name
+1	1970-01-01	Joe
+2	2001-01-01	Jack
+3	2019-01-01	David
+ALTER TABLE range_tab comment = "sequoiadb:{ table_options: { AutoIncrement: { CacheSiz:5 } } }";
+ERROR HY000: Invalid Argument
+ALTER TABLE hash_tab comment = "sequoiadb:{ table_options: { AutoIncrement: { Field: 10} } }";
+ERROR HY000: Invalid Argument
+ALTER TABLE range_tab comment = "a strictly increasing sequence, sequoiadb:{ table_options: { AutoIncrement: { Field: \"id\", AcquireSize: 1, CacheSize:5 } } }";
+ALTER TABLE hash_tab comment = "a strictly increasing sequence, sequoiadb:{ table_options: { AutoIncrement: { AcquireSize: 10, CacheSize: 10, Increment: 10, StartValue: 5, MinValue: 5} } }";
+SHOW CREATE TABLE range_tab;
+Table	Create Table
+range_tab	CREATE TABLE `range_tab` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `birth` date NOT NULL,
+  `name` varchar(100) DEFAULT NULL,
+  PRIMARY KEY (`id`,`birth`)
+) ENGINE=SequoiaDB AUTO_INCREMENT=1001 DEFAULT CHARSET=latin1 COMMENT='a strictly increasing sequence, sequoiadb:{ table_options: { AutoIncrement: { Field: "id", AcquireSize: 1, CacheSize:5 } } }'
+/*!50100 PARTITION BY RANGE (YEAR(birth))
+(PARTITION p0 VALUES LESS THAN (1990) ENGINE = SequoiaDB,
+ PARTITION p1 VALUES LESS THAN (2000) ENGINE = SequoiaDB,
+ PARTITION p2 VALUES LESS THAN (2010) ENGINE = SequoiaDB,
+ PARTITION p3 VALUES LESS THAN (2020) ENGINE = SequoiaDB) */
+SHOW CREATE TABLE hash_tab;
+Table	Create Table
+hash_tab	CREATE TABLE `hash_tab` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `name` varchar(100) DEFAULT NULL,
+  PRIMARY KEY (`id`)
+) ENGINE=SequoiaDB AUTO_INCREMENT=1001 DEFAULT CHARSET=latin1 COMMENT='a strictly increasing sequence, sequoiadb:{ table_options: { AutoIncrement: { AcquireSize: 10, CacheSize: 10, Increment: 10, StartValue: 5, MinValue: 5} } }'
+/*!50100 PARTITION BY HASH (id)
+PARTITIONS 2 */
+INSERT INTO range_tab(birth,name) VALUES ('2008-01-01','Bob'),('2010-01-01','Tim');
+INSERT INTO hash_tab(name) VALUES ('Bob'),('Tim');
+SELECT * FROM range_tab ORDER BY id;
+id	birth	name
+1	1970-01-01	Joe
+2	2001-01-01	Jack
+3	2019-01-01	David
+1001	2008-01-01	Bob
+1002	2010-01-01	Tim
+SELECT * FROM hash_tab ORDER BY id;
+id	name
+1	Joe
+2	Jack
+3	David
+1010	Bob
+1020	Tim
+DROP TABLE range_tab,hash_tab;
+drop database db_comment_sequoiadb;

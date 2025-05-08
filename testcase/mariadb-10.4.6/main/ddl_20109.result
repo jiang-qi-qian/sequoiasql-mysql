@@ -1,0 +1,45 @@
+drop database if exists db_20109;
+create database db_20109;
+use db_20109;
+create table ddl_20109(a int(5),b int(5),c int(5),d int(5));
+set session sequoiadb_execute_only_in_mysql=on;
+drop table ddl_20109;
+create table ddl_20109(a int(5),b int(5));
+show tables like 'ddl_20109';
+Tables_in_db_20109 (ddl_20109)
+ddl_20109
+drop table ddl_20109;
+set session sequoiadb_execute_only_in_mysql=off;
+create table ddl_20109(a int(5),b int(5),c int(5),d int(5));
+set session sequoiadb_execute_only_in_mysql=on;
+alter table ddl_20109 rename ddl_20109_2;
+alter table ddl_20109_2 comment "表2";
+alter table ddl_20109_2 default character set utf8 collate utf8_general_ci;
+alter table ddl_20109_2 add e int(5);
+alter table ddl_20109_2 modify c char(5);
+alter table ddl_20109_2 drop d;
+alter table ddl_20109_2 change a a int(5) primary key auto_increment;
+alter table ddl_20109_2 change a a int(5) unsigned not null;
+alter table ddl_20109_2 add index index_b(b),add index index_e(e);
+alter table ddl_20109_2 drop index index_b;
+show create table ddl_20109_2;
+Table	Create Table
+ddl_20109_2	CREATE TABLE `ddl_20109_2` (
+  `a` int(5) unsigned NOT NULL,
+  `b` int(5) DEFAULT NULL,
+  `c` char(5) DEFAULT NULL,
+  `e` int(5) DEFAULT NULL,
+  PRIMARY KEY (`a`),
+  KEY `index_e` (`e`)
+) ENGINE=SequoiaDB DEFAULT CHARSET=utf8 COMMENT='表2'
+drop table ddl_20109_2;
+show tables like 'ddl_20109_2';
+Tables_in_db_20109 (ddl_20109_2)
+drop database db_20109;
+show databases like 'db_20109';
+Database (db_20109)
+create database db_20109;
+show databases like 'db_20109';
+Database (db_20109)
+db_20109
+drop database db_20109;

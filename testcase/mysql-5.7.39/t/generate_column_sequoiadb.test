@@ -1,0 +1,190 @@
+#Case 22371#Case 22372#Case 22373#Case 22374#Case 22375#Case 22377#Case 22378#Case 22508
+--source include/have_sequoiadb.inc
+
+CREATE DATABASE generate_column_sequoiadb;
+USE generate_column_sequoiadb;
+
+#seqDB-22371
+CREATE TABLE t1 (a INT, b INT, c INT GENERATED ALWAYS AS (a + 1) VIRTUAL, d INT GENERATED ALWAYS AS (b + 2) STORED );
+INSERT INTO t1 (a, b) VALUES (1,2);
+SELECT * FROM t1;
+UPDATE t1 SET a = 2 WHERE c = 2; #virtual column can't be pushed down 
+--source include/query_pushdown_condition_sequoiadb.inc
+SELECT * FROM t1;
+#Bug #SEQUOIASQLMAINSTREAM-705
+UPDATE t1 SET a = 4; #pushed down
+--source include/query_pushdown_condition_sequoiadb.inc
+SELECT * FROM t1;
+UPDATE t1 SET b = 4 WHERE d = 4; #pushed down 
+--source include/query_pushdown_condition_sequoiadb.inc
+SELECT * FROM t1;
+UPDATE t1 SET b = 8; #pushed down 
+--source include/query_pushdown_condition_sequoiadb.inc
+SELECT * FROM t1;
+UPDATE t1 SET a = a + 1; #pushed down 
+--source include/query_pushdown_condition_sequoiadb.inc
+SELECT * FROM t1;
+UPDATE t1 SET b = b + 1; #can't be pushed down 
+--source include/query_pushdown_condition_sequoiadb.inc
+SELECT * FROM t1;
+DELETE FROM t1 where d = 11; #pushed down
+--source include/query_pushdown_condition_sequoiadb.inc
+SELECT * FROM t1; 
+DROP TABLE t1;
+
+CREATE TABLE t1 (a INT, b INT GENERATED ALWAYS AS (a + 1) VIRTUAL, c INT GENERATED ALWAYS AS (b * 20) STORED );
+INSERT INTO t1 (a) VALUES (1);
+SELECT * FROM t1;
+UPDATE t1 SET a = 2 WHERE c = 40; #pushed down
+--source include/query_pushdown_condition_sequoiadb.inc 
+SELECT * FROM t1;
+DROP TABLE t1;
+
+#seqDB-22372
+CREATE TABLE t1 (a INT, b INT GENERATED ALWAYS AS (a + 1) STORED, c INT GENERATED ALWAYS AS (b + 20) VIRTUAL );
+INSERT INTO t1 (a) VALUES (1);
+SELECT * FROM t1;
+UPDATE t1 SET a = 2; #pushed down
+--source include/query_pushdown_condition_sequoiadb.inc
+SELECT * FROM t1;
+DROP TABLE t1;
+
+CREATE TABLE t1 (a INT, b INT GENERATED ALWAYS AS (a + 1) VIRTUAL, c INT GENERATED ALWAYS AS (b + 20) VIRTUAL );
+INSERT INTO t1 (a) VALUES (1);
+SELECT * FROM t1;
+UPDATE t1 SET a = 2; #pushed down
+--source include/query_pushdown_condition_sequoiadb.inc
+SELECT * FROM t1;
+DROP TABLE t1;
+
+CREATE TABLE t1 (a INT, b INT GENERATED ALWAYS AS (a + 1) STORED, c INT GENERATED ALWAYS AS (b + 20) STORED );
+INSERT INTO t1 (a) VALUES (1);
+SELECT * FROM t1;
+UPDATE t1 SET a = 2; #pushed down
+--source include/query_pushdown_condition_sequoiadb.inc
+SELECT * FROM t1;
+DROP TABLE t1;
+
+CREATE TABLE t1 (a INT, b INT GENERATED ALWAYS AS (a + 1) VIRTUAL, c INT GENERATED ALWAYS AS (b + 20) STORED );
+INSERT INTO t1 (a) VALUES (1);
+SELECT * FROM t1;
+UPDATE t1 SET a = 2; #pushed down
+--source include/query_pushdown_condition_sequoiadb.inc
+SELECT * FROM t1;
+DROP TABLE t1;
+
+CREATE TABLE t1 (a INT, b INT, c INT GENERATED ALWAYS AS (a + 1) VIRTUAL, d INT GENERATED ALWAYS AS (a + b + 2) STORED, e INT GENERATED ALWAYS AS (b + c) STORED );
+INSERT INTO t1 (a, b) VALUES (1,2);
+UPDATE t1 SET b = 8; #can not pushed down
+--source include/query_pushdown_condition_sequoiadb.inc
+SELECT * FROM t1;
+UPDATE t1 SET a = 8; #can not pushed down
+--source include/query_pushdown_condition_sequoiadb.inc
+SELECT * FROM t1;
+UPDATE t1 SET a = 8, b=1; #pushed down
+--source include/query_pushdown_condition_sequoiadb.inc
+SELECT * FROM t1;
+DROP TABLE t1;
+
+#seqDB-22373
+CREATE TABLE t1 (a INT, b INT);
+INSERT INTO t1 (a,b) VALUES (1,1);
+ALTER TABLE t1 ADD COLUMN (c INT GENERATED ALWAYS AS (a + 1) VIRTUAL), ALGORITHM=INPLACE;
+ALTER TABLE t1 ADD COLUMN (d INT GENERATED ALWAYS AS (a + b + 20) STORED);
+SHOW CREATE TABLE t1;
+SELECT * FROM t1;
+UPDATE t1 SET a = 2; #can't be pushed down
+--source include/query_pushdown_condition_sequoiadb.inc 
+UPDATE t1 SET b = 2; #can't be pushed down
+--source include/query_pushdown_condition_sequoiadb.inc 
+UPDATE t1 SET a = 4, b = 4; #pushed down 
+--source include/query_pushdown_condition_sequoiadb.inc
+CREATE INDEX a ON t1(a);
+CREATE INDEX b ON t1(b);
+--error 1478
+CREATE INDEX c ON t1(c);
+CREATE INDEX d ON t1(d);
+UPDATE t1 SET a =6; #can't be pushed down
+--source include/query_pushdown_condition_sequoiadb.inc 
+UPDATE t1 SET b =6; #can't be pushed down 
+--source include/query_pushdown_condition_sequoiadb.inc
+UPDATE t1 SET a = 8, b = 8; #pushed down
+--source include/query_pushdown_condition_sequoiadb.inc 
+SELECT * FROM t1;
+ALTER TABLE t1 DROP COLUMN c, ALGORITHM=INPLACE;
+SHOW CREATE TABLE t1;
+ALTER TABLE t1 DROP COLUMN d, ALGORITHM=INPLACE;
+SHOW CREATE TABLE t1;
+SELECT * FROM t1;
+DROP TABLE t1;
+
+#seqDB-22374
+CREATE TABLE t1 (a INT KEY,b int NOT NULL DEFAULT 10 comment 'xxx');
+INSERT INTO t1 (a) VALUES (1);
+ALTER TABLE t1 ADD COLUMN (c INT GENERATED ALWAYS AS (a + 1) VIRTUAL, d INT GENERATED ALWAYS AS (b + 20) VIRTUAL), ALGORITHM=INPLACE;
+ALTER TABLE t1 ADD COLUMN (e INT GENERATED ALWAYS AS (a + 1) VIRTUAL, f INT GENERATED ALWAYS AS (b + 20) VIRTUAL), ALGORITHM=INPLACE;
+ALTER TABLE t1 ADD COLUMN (g INT GENERATED ALWAYS AS (a + 1) STORED, h INT GENERATED ALWAYS AS (b + 20) STORED);
+ALTER TABLE t1 ADD COLUMN (i INT GENERATED ALWAYS AS (a + 1) STORED, j INT GENERATED ALWAYS AS (b + 20) STORED);
+SHOW CREATE TABLE t1;
+INSERT INTO t1 (a) VALUES (2);
+SELECT * FROM t1;
+ALTER TABLE t1 MODIFY b INT DEFAULT 30, ALGORITHM=INPLACE;
+SELECT * FROM t1;
+DROP TABLE t1;
+
+CREATE TABLE t1 (a INT KEY AUTO_INCREMENT);
+--error 3109
+ALTER TABLE t1 ADD COLUMN (c INT GENERATED ALWAYS AS (a + 1) VIRTUAL, d INT GENERATED ALWAYS AS (a + 20) STORED);
+DROP TABLE t1;
+   
+#seqDB-22375
+CREATE TABLE t1 (a INT, b INT, c INT GENERATED ALWAYS AS (a + 1) VIRTUAL, d INT GENERATED ALWAYS AS (b + 2) STORED );
+INSERT INTO t1 (a,b) VALUES (1,1); 
+SELECT * FROM t1;
+ALTER TABLE t1 CHANGE c c1 INT GENERATED ALWAYS AS (a + 10) VIRTUAL;
+ALTER TABLE t1 CHANGE d d1 INT GENERATED ALWAYS AS (b + 20) STORED;
+ALTER TABLE t1 MODIFY c1 DECIMAL GENERATED ALWAYS AS (a + 30) VIRTUAL FIRST, ALGORITHM=INPLACE;
+ALTER TABLE t1 MODIFY d1 DECIMAL GENERATED ALWAYS AS (b + 20) STORED FIRST, ALGORITHM=INPLACE;
+ALTER TABLE t1 MODIFY d1 DECIMAL GENERATED ALWAYS AS (b + 30) STORED;
+SHOW CREATE TABLE t1; 
+SELECT * FROM t1;
+DROP TABLE t1;
+   
+#seqDB-22377
+CREATE TABLE t1(a TINYINT,b TINYINT);
+INSERT INTO t1 VALUES(127,127);
+ALTER TABLE t1 ADD COLUMN c TINYINT AS (a + b);
+--error 1264
+ALTER TABLE t1 ADD COLUMN d TINYINT AS (a + b), WITH VALIDATION;
+SHOW CREATE TABLE t1;   
+SELECT * FROM t1;
+DROP TABLE t1;
+
+#seqDB-22508
+CREATE TABLE t1 (a INT, b INT, c INT, d INT, e INT GENERATED ALWAYS AS (a + b + 1) VIRTUAL, f INT GENERATED ALWAYS AS (c + d + 1) STORED);
+INSERT INTO t1 (a, b, c, d) VALUES (1,2,1,2);
+UPDATE t1 SET a = 8; #pushed down
+--source include/query_pushdown_condition_sequoiadb.inc
+SELECT * FROM t1;
+UPDATE t1 SET c = 8; #can not pushed down
+--source include/query_pushdown_condition_sequoiadb.inc
+SELECT * FROM t1;
+UPDATE t1 SET d = d + 1; #can not pushed down
+--source include/query_pushdown_condition_sequoiadb.inc
+SELECT * FROM t1;
+UPDATE t1 SET a = 9, b = 9; #pushed down
+--source include/query_pushdown_condition_sequoiadb.inc
+SELECT * FROM t1;
+UPDATE t1 SET c = 9, d = 9; #pushed down
+--source include/query_pushdown_condition_sequoiadb.inc
+SELECT * FROM t1;
+DROP TABLE t1;
+
+#seqDB-22378
+--error 138
+CREATE TABLE t1 (a INT, c INT GENERATED ALWAYS AS (a + 1) VIRTUAL) COMMENT 'sequoiadb:{table_options:{ShardingKey:{c:1},ShardingType:"hash"}}'; 
+
+DROP DATABASE generate_column_sequoiadb;
+
+--source include/uninstall_sequoiadb.inc
+

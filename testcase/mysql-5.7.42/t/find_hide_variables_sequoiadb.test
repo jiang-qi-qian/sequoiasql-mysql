@@ -1,0 +1,7 @@
+--source include/have_sequoiadb.inc
+
+let $BASEDIR = `select @@basedir`;
+
+--exec $BASEDIR/bin/mysqld --help --verbose --full |grep -B 1 SEQ |sed 's/.*\(SEQUOIASQLMAINSTREAM-[0-9]*\).*/\1/'
+
+--source include/uninstall_sequoiadb.inc

@@ -1,0 +1,16 @@
+#case 29887
+--source include/have_partition.inc
+--source include/have_sequoiadb.inc
+
+--disable_warnings
+drop table if exists hash_part_table, range_part_table, list_part_table, son_part_table, normal_table;
+--enable_warnings
+
+set session sequoiadb_optimizer_options = "direct_sort,direct_limit,direct_count";
+--source include/partition_not_like_sequoiadb.inc
+
+set session sequoiadb_optimizer_options = '';
+--source include/partition_not_like_sequoiadb.inc
+
+--source include/uninstall_sequoiadb.inc
+

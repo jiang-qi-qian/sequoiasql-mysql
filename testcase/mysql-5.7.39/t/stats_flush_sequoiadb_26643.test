@@ -1,0 +1,34 @@
+set session sequoiadb_support_mode = ""; 
+
+--disable_warnings
+drop database if exists db_26643;
+--enable_warnings
+
+create database db_26643;
+use db_26643;
+create table tb_26643_1 ( 
+  id int not null auto_increment, 
+  prdt_no varchar(1024) character set utf8 default null, 
+  cust_no varchar(10) default null, 
+  primary key(id), 
+  key prdt_no_index(prdt_no(333)), 
+  key cust_no_index(cust_no) 
+  ); 
+
+create table tb_26643_2 ( 
+  id int not null auto_increment, 
+  primary key(id));
+
+insert tb_26643_1 values (null,"123","123"); 
+analyze table tb_26643_1; 
+
+insert tb_26643_1 values (null,"123","123"),(null,"123","123"),(null,"123","123"),(null,"123","123"),(null,"123","123"); 
+
+--disable_warnings
+explain select alias1.cust_no from tb_26643_1 as alias1 left join tb_26643_1 as alias2 join tb_26643_2 as alias3 on alias2.cust_no on alias1.prdt_no where alias1.id and alias1.id<3 or alias1.id and alias3.id; 
+--enable_warnings
+
+drop database db_26643;
+
+set session sequoiadb_support_mode = default;
+--source include/uninstall_sequoiadb.inc

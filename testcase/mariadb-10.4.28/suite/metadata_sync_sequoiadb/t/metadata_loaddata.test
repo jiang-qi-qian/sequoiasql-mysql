@@ -1,0 +1,43 @@
+#case 23088
+
+--source include/have_sequoiadb.inc
+--source suite/metadata_sync_sequoiadb/inc/insts_connect_sequoiadb.inc
+
+# connect to conn1, clear databases in the beginning
+connection conn1;
+--disable_warnings
+DROP DATABASE IF EXISTS metasync_loaddata_23088;
+--enable_warnings
+
+# seqDB-23088
+# begin testing
+#
+# LOAD DATA
+#
+CREATE DATABASE metasync_loaddata_23088;
+USE metasync_loaddata_23088;
+CREATE TABLE t1 ( a int, b int, c int auto_increment key ); 
+INSERT INTO t1 VALUES (1,1,1),(2,2,2),(3,3,3),(4,4,4),(5,5,5),(6,6,6),(7,7,7),(8,8,8),(9,9,9),(10,10,10); 
+connection conn2;
+# remove datafile at the begin 
+--exec find $MYSQL_TEST_DIR/.. -name 'metadata_loaddata.txt' | xargs rm -f
+select * into outfile '$MYSQL_TEST_DIR/../metadata_loaddata.txt' fields terminated by ',' from metasync_loaddata_23088.t1;
+
+connection conn1;
+DROP TABLE t1;
+connection conn2;
+--error ER_NO_SUCH_TABLE
+load data infile '$MYSQL_TEST_DIR/../metadata_loaddata.txt' into table metasync_loaddata_23088.t1 fields terminated by ',';
+# remove datafile at the end
+--exec find $MYSQL_TEST_DIR/.. -name 'metadata_loaddata.txt' | xargs rm -f
+
+# clear databases in the ending
+connection conn1;
+DROP DATABASE metasync_loaddata_23088;
+# check databases are cleaned in the ending
+connection conn2;
+--error ER_BAD_DB_ERROR
+SHOW CREATE DATABASE metasync_loaddata_23088;
+
+--source include/uninstall_sequoiadb.inc
+--source suite/metadata_sync_sequoiadb/inc/insts_disconnect_sequoiadb.inc

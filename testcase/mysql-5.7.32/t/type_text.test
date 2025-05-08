@@ -1,0 +1,52 @@
+# (#Case #13095: Check insert/update/delete/query of DataType Text)
+# (#Case #15440: Check insert/update/delete/query of DataType TinyText)
+# (#Case #15441: Check insert/update/delete/query of DataType MediumText)
+# (#Case #15442: Check insert/update/delete/query of DataType LongText)
+
+--source include/have_sequoiadb.inc
+
+CREATE TABLE t1(a tinytext, key (a(255)));
+--error 1406
+INSERT INTO t1 VALUES (repeat('a', 256));
+INSERT INTO t1 VALUES ("hello");
+SELECT * FROM t1;
+UPDATE t1 SET a = "update";
+SELECT * FROM t1;
+DELETE FROM t1 WHERE a ="update";
+SELECT * FROM t1;
+DROP TABLE t1;
+
+CREATE TABLE t1(a text, key (a(255)));
+--error 1406
+INSERT INTO t1 VALUES (repeat('a', 65536));
+INSERT INTO t1 VALUES ("hello2");
+SELECT * FROM t1;
+UPDATE t1 SET a = "update2";
+SELECT * FROM t1;
+DELETE FROM t1 WHERE a ="update2";
+SELECT * FROM t1;
+DROP TABLE t1;
+
+CREATE TABLE t1(a mediumtext, key (a(255)));
+--error 1301
+INSERT INTO t1 VALUES (repeat('a', 16777216));
+INSERT INTO t1 VALUES ("hello3");
+SELECT * FROM t1;
+UPDATE t1 SET a = "update3";
+SELECT * FROM t1;
+DELETE FROM t1 WHERE a ="update3";
+SELECT * FROM t1;
+DROP TABLE t1;
+
+CREATE TABLE t1(a longtext, key (a(255)));
+--error 1301
+INSERT INTO t1 VALUES (repeat('a', 16777216));
+INSERT INTO t1 VALUES ("hello4");
+SELECT * FROM t1;
+UPDATE t1 SET a = "update4";
+SELECT * FROM t1;
+DELETE FROM t1 WHERE a ="update4";
+SELECT * FROM t1;
+DROP TABLE t1;
+
+--source include/uninstall_sequoiadb.inc

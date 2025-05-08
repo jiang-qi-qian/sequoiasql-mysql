@@ -1,0 +1,339 @@
+SET @max_row = 20;
+SET @@session.default_storage_engine = 'SequoiaDB';
+
+#------------------------------------------------------------------------
+#  0. Setting of auxiliary variables + Creation of an auxiliary tables
+#     needed in many testcases
+#------------------------------------------------------------------------
+SELECT @max_row DIV 2 INTO @max_row_div2;
+SELECT @max_row DIV 3 INTO @max_row_div3;
+SELECT @max_row DIV 4 INTO @max_row_div4;
+SET @max_int_4 = 2147483647;
+DROP TABLE IF EXISTS t0_template;
+CREATE TABLE t0_template (
+f_int1 INTEGER,
+f_int2 INTEGER,
+f_char1 CHAR(20),
+f_char2 CHAR(20),
+f_charbig VARCHAR(1000) ,
+PRIMARY KEY(f_int1))
+ENGINE = SEQUOIADB;
+#     Logging of <max_row> INSERTs into t0_template suppressed
+DROP TABLE IF EXISTS t0_definition;
+CREATE TABLE t0_definition (
+state CHAR(3),
+create_command VARBINARY(5000),
+file_list      VARBINARY(10000),
+PRIMARY KEY (state)
+) ENGINE = SEQUOIADB;
+DROP TABLE IF EXISTS t0_aux;
+CREATE TABLE t0_aux ( f_int1 INTEGER,
+f_int2 INTEGER,
+f_char1 CHAR(20),
+f_char2 CHAR(20),
+f_charbig VARCHAR(1000) )
+ENGINE = SEQUOIADB;
+SET AUTOCOMMIT= 1;
+SET @@session.sql_mode= '';
+Warnings:
+Warning	3090	Changing sql mode 'NO_AUTO_CREATE_USER' is deprecated. It will be removed in a future release.
+# End of basic preparations needed for all tests
+#-----------------------------------------------
+
+#========================================================================
+# Checks where the engine is assigned on all supported (CREATE TABLE
+# statement) positions + basic operations on the tables
+#        Storage engine mixups are currently (2005-12-23) not supported
+#========================================================================
+DROP TABLE IF EXISTS t1;
+#------------------------------------------------------------------------
+# 1 Assignment of storage engine just after column list only
+#------------------------------------------------------------------------
+CREATE TABLE t1 (
+f_int1 INTEGER,
+f_int2 INTEGER,
+f_char1 CHAR(20),
+f_char2 CHAR(20),
+f_charbig VARCHAR(1000)
+) ENGINE = 'SequoiaDB'
+PARTITION BY HASH(f_int1) PARTITIONS 2;
+INSERT INTO t1(f_int1,f_int2,f_char1,f_char2,f_charbig)
+SELECT f_int1,f_int2,f_char1,f_char2,f_charbig FROM t0_template;
+DROP TABLE t1;
+#------------------------------------------------------------------------
+# 2 Assignment of storage engine just after partition or subpartition
+#   name only
+#------------------------------------------------------------------------
+CREATE TABLE t1 (
+f_int1 INTEGER,
+f_int2 INTEGER,
+f_char1 CHAR(20),
+f_char2 CHAR(20),
+f_charbig VARCHAR(1000)
+)
+PARTITION BY HASH(f_int1)
+( PARTITION part1 STORAGE ENGINE = 'SequoiaDB',
+PARTITION part2 STORAGE ENGINE = 'SequoiaDB'
+);
+INSERT INTO t1(f_int1,f_int2,f_char1,f_char2,f_charbig)
+SELECT f_int1,f_int2,f_char1,f_char2,f_charbig FROM t0_template;
+DROP TABLE t1;
+CREATE TABLE t1 (
+f_int1 INTEGER,
+f_int2 INTEGER,
+f_char1 CHAR(20),
+f_char2 CHAR(20),
+f_charbig VARCHAR(1000)
+)
+PARTITION BY RANGE(f_int1)
+SUBPARTITION BY HASH(f_int1)
+( PARTITION part1 VALUES LESS THAN (10)
+(SUBPARTITION subpart11 STORAGE ENGINE = 'SequoiaDB',
+SUBPARTITION subpart12 STORAGE ENGINE = 'SequoiaDB'),
+PARTITION part2 VALUES LESS THAN (2147483646)
+(SUBPARTITION subpart21 STORAGE ENGINE = 'SequoiaDB',
+SUBPARTITION subpart22 STORAGE ENGINE = 'SequoiaDB')
+);
+INSERT INTO t1(f_int1,f_int2,f_char1,f_char2,f_charbig)
+SELECT f_int1,f_int2,f_char1,f_char2,f_charbig FROM t0_template;
+DROP TABLE t1;
+#------------------------------------------------------------------------
+# 3 Some but not all named partitions or subpartitions get a storage
+#   engine assigned
+#------------------------------------------------------------------------
+CREATE TABLE t1 (
+f_int1 INTEGER,
+f_int2 INTEGER,
+f_char1 CHAR(20),
+f_char2 CHAR(20),
+f_charbig VARCHAR(1000)
+)
+PARTITION BY HASH(f_int1)
+( PARTITION part1 STORAGE ENGINE = 'SequoiaDB',
+PARTITION part2
+);
+ERROR HY000: The mix of handlers in the partitions is not allowed in this version of MySQL
+CREATE TABLE t1 (
+f_int1 INTEGER,
+f_int2 INTEGER,
+f_char1 CHAR(20),
+f_char2 CHAR(20),
+f_charbig VARCHAR(1000)
+)
+PARTITION BY HASH(f_int1)
+( PARTITION part1                         ,
+PARTITION part2 STORAGE ENGINE = 'SequoiaDB'
+);
+ERROR HY000: The mix of handlers in the partitions is not allowed in this version of MySQL
+CREATE TABLE t1 (
+f_int1 INTEGER,
+f_int2 INTEGER,
+f_char1 CHAR(20),
+f_char2 CHAR(20),
+f_charbig VARCHAR(1000)
+)
+PARTITION BY RANGE(f_int1)
+SUBPARTITION BY HASH(f_int1)
+( PARTITION part1 VALUES LESS THAN (10)
+(SUBPARTITION subpart11,
+SUBPARTITION subpart12 STORAGE ENGINE = 'SequoiaDB'),
+PARTITION part2 VALUES LESS THAN (2147483646)
+(SUBPARTITION subpart21 STORAGE ENGINE = 'SequoiaDB',
+SUBPARTITION subpart22 STORAGE ENGINE = 'SequoiaDB')
+);
+ERROR HY000: The mix of handlers in the partitions is not allowed in this version of MySQL
+CREATE TABLE t1 (
+f_int1 INTEGER,
+f_int2 INTEGER,
+f_char1 CHAR(20),
+f_char2 CHAR(20),
+f_charbig VARCHAR(1000)
+)
+PARTITION BY RANGE(f_int1)
+SUBPARTITION BY HASH(f_int1)
+( PARTITION part1 VALUES LESS THAN (10)
+(SUBPARTITION subpart11 STORAGE ENGINE = 'SequoiaDB',
+SUBPARTITION subpart12 STORAGE ENGINE = 'SequoiaDB'),
+PARTITION part2 VALUES LESS THAN (2147483646)
+(SUBPARTITION subpart21,
+SUBPARTITION subpart22 )
+);
+ERROR HY000: The mix of handlers in the partitions is not allowed in this version of MySQL
+CREATE TABLE t1 (
+f_int1 INTEGER,
+f_int2 INTEGER,
+f_char1 CHAR(20),
+f_char2 CHAR(20),
+f_charbig VARCHAR(1000)
+)
+ENGINE = 'SequoiaDB'
+PARTITION BY RANGE(f_int1)
+SUBPARTITION BY HASH(f_int1)
+( PARTITION part1 VALUES LESS THAN (10)
+(SUBPARTITION subpart11 STORAGE ENGINE = 'SequoiaDB',
+SUBPARTITION subpart12 STORAGE ENGINE = 'SequoiaDB'),
+PARTITION part2 VALUES LESS THAN (2147483646)
+(SUBPARTITION subpart21,
+SUBPARTITION subpart22 )
+);
+INSERT INTO t1(f_int1,f_int2,f_char1,f_char2,f_charbig)
+SELECT f_int1,f_int2,f_char1,f_char2,f_charbig FROM t0_template;
+DROP TABLE t1;
+#------------------------------------------------------------------------
+# 4 Storage engine assignment after partition name + after name of
+#   subpartitions belonging to another partition
+#------------------------------------------------------------------------
+CREATE TABLE t1 (
+f_int1 INTEGER,
+f_int2 INTEGER,
+f_char1 CHAR(20),
+f_char2 CHAR(20),
+f_charbig VARCHAR(1000)
+)
+PARTITION BY RANGE(f_int1)
+SUBPARTITION BY HASH(f_int1)
+( PARTITION part1 VALUES LESS THAN (10)
+(SUBPARTITION subpart11,
+SUBPARTITION subpart12),
+PARTITION part2 VALUES LESS THAN (2147483646)
+(SUBPARTITION subpart21 STORAGE ENGINE = 'SequoiaDB',
+SUBPARTITION subpart22 STORAGE ENGINE = 'SequoiaDB')
+);
+ERROR HY000: The mix of handlers in the partitions is not allowed in this version of MySQL
+CREATE TABLE t1 (
+f_int1 INTEGER,
+f_int2 INTEGER,
+f_char1 CHAR(20),
+f_char2 CHAR(20),
+f_charbig VARCHAR(1000)
+)
+ENGINE = 'SequoiaDB'
+PARTITION BY RANGE(f_int1)
+SUBPARTITION BY HASH(f_int1)
+( PARTITION part1 VALUES LESS THAN (10) ENGINE = 'SequoiaDB'
+(SUBPARTITION subpart11,
+SUBPARTITION subpart12),
+PARTITION part2 VALUES LESS THAN (2147483646)
+(SUBPARTITION subpart21,
+SUBPARTITION subpart22 STORAGE ENGINE = 'SequoiaDB')
+);
+DROP TABLE t1;
+CREATE TABLE t1 (
+f_int1 INTEGER,
+f_int2 INTEGER,
+f_char1 CHAR(20),
+f_char2 CHAR(20),
+f_charbig VARCHAR(1000)
+)
+PARTITION BY RANGE(f_int1)
+SUBPARTITION BY HASH(f_int1)
+( PARTITION part1 VALUES LESS THAN (10) ENGINE = 'SequoiaDB'
+(SUBPARTITION subpart11,
+SUBPARTITION subpart12),
+PARTITION part2 VALUES LESS THAN (2147483646)
+(SUBPARTITION subpart21 STORAGE ENGINE = 'SequoiaDB',
+SUBPARTITION subpart22 STORAGE ENGINE = 'SequoiaDB')
+);
+INSERT INTO t1(f_int1,f_int2,f_char1,f_char2,f_charbig)
+SELECT f_int1,f_int2,f_char1,f_char2,f_charbig FROM t0_template;
+DROP TABLE t1;
+CREATE TABLE t1 (
+f_int1 INTEGER,
+f_int2 INTEGER,
+f_char1 CHAR(20),
+f_char2 CHAR(20),
+f_charbig VARCHAR(1000)
+)
+PARTITION BY RANGE(f_int1)
+SUBPARTITION BY HASH(f_int1)
+( PARTITION part1 VALUES LESS THAN (10)
+(SUBPARTITION subpart11 STORAGE ENGINE = 'SequoiaDB',
+SUBPARTITION subpart12 STORAGE ENGINE = 'SequoiaDB'),
+PARTITION part2 VALUES LESS THAN (2147483646) ENGINE = 'SequoiaDB'
+(SUBPARTITION subpart21 ENGINE = 'SequoiaDB',
+SUBPARTITION subpart22)
+);
+INSERT INTO t1(f_int1,f_int2,f_char1,f_char2,f_charbig)
+SELECT f_int1,f_int2,f_char1,f_char2,f_charbig FROM t0_template;
+DROP TABLE t1;
+#------------------------------------------------------------------------
+# 5 Precedence of storage engine assignments (if there is any)
+#------------------------------------------------------------------------
+# 5.1 Storage engine assignment after column list + after partition
+#     or subpartition name
+CREATE TABLE t1 (
+f_int1 INTEGER,
+f_int2 INTEGER,
+f_char1 CHAR(20),
+f_char2 CHAR(20),
+f_charbig VARCHAR(1000)
+) ENGINE = 'SequoiaDB'
+PARTITION BY HASH(f_int1)
+( PARTITION part1 STORAGE ENGINE = 'SequoiaDB',
+PARTITION part2 STORAGE ENGINE = 'SequoiaDB'
+);
+INSERT INTO t1(f_int1,f_int2,f_char1,f_char2,f_charbig)
+SELECT f_int1,f_int2,f_char1,f_char2,f_charbig FROM t0_template;
+DROP TABLE t1;
+CREATE TABLE t1 (
+f_int1 INTEGER,
+f_int2 INTEGER,
+f_char1 CHAR(20),
+f_char2 CHAR(20),
+f_charbig VARCHAR(1000)
+)
+PARTITION BY RANGE(f_int1)
+SUBPARTITION BY HASH(f_int1)
+( PARTITION part1 VALUES LESS THAN (10)
+(SUBPARTITION subpart11 STORAGE ENGINE = 'SequoiaDB',
+SUBPARTITION subpart12 STORAGE ENGINE = 'SequoiaDB'),
+PARTITION part2 VALUES LESS THAN (2147483646)
+(SUBPARTITION subpart21 STORAGE ENGINE = 'SequoiaDB',
+SUBPARTITION subpart22 STORAGE ENGINE = 'SequoiaDB')
+);
+INSERT INTO t1(f_int1,f_int2,f_char1,f_char2,f_charbig)
+SELECT f_int1,f_int2,f_char1,f_char2,f_charbig FROM t0_template;
+DROP TABLE t1;
+# 6.2 Storage engine assignment after partition name + after
+#     subpartition name
+#     in partition part + in sub partition part
+CREATE TABLE t1 (
+f_int1 INTEGER,
+f_int2 INTEGER,
+f_char1 CHAR(20),
+f_char2 CHAR(20),
+f_charbig VARCHAR(1000)
+)
+PARTITION BY RANGE(f_int1)
+SUBPARTITION BY HASH(f_int1)
+( PARTITION part1 VALUES LESS THAN (10) STORAGE ENGINE = 'SequoiaDB'
+(SUBPARTITION subpart11 STORAGE ENGINE = 'SequoiaDB',
+SUBPARTITION subpart12 STORAGE ENGINE = 'SequoiaDB'),
+PARTITION part2 VALUES LESS THAN (2147483646)
+(SUBPARTITION subpart21 STORAGE ENGINE = 'SequoiaDB',
+SUBPARTITION subpart22 STORAGE ENGINE = 'SequoiaDB')
+);
+INSERT INTO t1(f_int1,f_int2,f_char1,f_char2,f_charbig)
+SELECT f_int1,f_int2,f_char1,f_char2,f_charbig FROM t0_template;
+DROP TABLE t1;
+CREATE TABLE t1 (
+f_int1 INTEGER,
+f_int2 INTEGER,
+f_char1 CHAR(20),
+f_char2 CHAR(20),
+f_charbig VARCHAR(1000)
+)
+PARTITION BY RANGE(f_int1)
+SUBPARTITION BY HASH(f_int1)
+( PARTITION part1 VALUES LESS THAN (1000)
+(SUBPARTITION subpart11 STORAGE ENGINE = 'SequoiaDB',
+SUBPARTITION subpart12 STORAGE ENGINE = 'SequoiaDB'));
+INSERT INTO t1(f_int1,f_int2,f_char1,f_char2,f_charbig)
+SELECT f_int1,f_int2,f_char1,f_char2,f_charbig FROM t0_template;
+DROP TABLE t1;
+SET SESSION default_storage_engine='SequoiaDB';
+DROP VIEW  IF EXISTS v1;
+DROP TABLE IF EXISTS t1;
+DROP TABLE IF EXISTS t0_aux;
+DROP TABLE IF EXISTS t0_definition;
+DROP TABLE IF EXISTS t0_template;

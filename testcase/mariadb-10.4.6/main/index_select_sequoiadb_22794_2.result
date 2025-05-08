@@ -1,0 +1,182 @@
+CREATE DATABASE index_select_sequoiadb_22794_2;
+use index_select_sequoiadb_22794_2;
+CREATE TABLE t1 (
+a INT,
+b CHAR(64),
+c int default 1
+);
+LOAD DATA INFILE '../../std_data/loaddata_5w_sequoiadb.dat' INTO TABLE t1(a,b);
+alter table t1 add PRIMARY KEY(a);
+alter table t1 add index b(b);
+alter table t1 add index ab(a,b);
+alter table t1 add index ba(b,a);
+SHOW CREATE TABLE t1;
+Table	Create Table
+t1	CREATE TABLE `t1` (
+  `a` int(11) NOT NULL,
+  `b` char(64) DEFAULT NULL,
+  `c` int(11) DEFAULT 1,
+  PRIMARY KEY (`a`),
+  KEY `b` (`b`),
+  KEY `ab` (`a`,`b`),
+  KEY `ba` (`b`,`a`)
+) ENGINE=SequoiaDB DEFAULT CHARSET=latin1
+EXPLAIN SELECT * FROM t1 WHERE a=318387;
+id	select_type	table	type	possible_keys	key	key_len	ref	rows	Extra
+1	SIMPLE	t1	const	PRIMARY,ab	PRIMARY	4	const	#	
+SELECT * FROM t1 WHERE a=318387;
+a	b	c
+318387	TQBRCVDUWXYZ	1
+[Note] SequoiaDB: Query message: condition[{ "a": { "$et": 318387 } }], selector[{}], order_by[{ "a": 1 }], hint[{ "": "PRIMARY" }], limit[-1], offset[0], table[index_select_sequoiadb_22794_2.t1]
+EXPLAIN SELECT * FROM t1 WHERE b="ghiuj";
+id	select_type	table	type	possible_keys	key	key_len	ref	rows	Extra
+1	SIMPLE	t1	ref	b,ba	b	65	const	#	Using where with pushed condition
+SELECT * FROM t1 WHERE b="ghiuj";
+a	b	c
+31167	ghiuj	1
+332657	ghiuj	1
+333211	ghiuj	1
+334650	ghiuj	1
+345273	ghiuj	1
+349643	ghiuj	1
+351006	ghiuj	1
+351790	ghiuj	1
+355287	ghiuj	1
+355847	ghiuj	1
+355935	ghiuj	1
+359619	ghiuj	1
+50814	ghiuj	1
+632430	ghiuj	1
+639351	ghiuj	1
+641660	ghiuj	1
+644635	ghiuj	1
+646056	ghiuj	1
+656313	ghiuj	1
+656495	ghiuj	1
+659491	ghiuj	1
+[Note] SequoiaDB: Query message: condition[{ "b": { "$et": "ghiuj" } }], selector[{}], order_by[{ "b": 1 }], hint[{ "": "b" }], limit[-1], offset[0], table[index_select_sequoiadb_22794_2.t1]
+EXPLAIN SELECT * FROM t1 WHERE a=183265 AND b="fghiujmklnopqvwxyzEKLMN";
+id	select_type	table	type	possible_keys	key	key_len	ref	rows	Extra
+1	SIMPLE	t1	const	PRIMARY,b,ab,ba	PRIMARY	4	const	#	
+SELECT * FROM t1 WHERE a=183265 AND b="fghiujmklnopqvwxyzEKLMN";
+a	b	c
+183265	fghiujmklnopqvwxyzEKLMN	1
+[Note] SequoiaDB: Query message: condition[{ "a": { "$et": 183265 } }], selector[{}], order_by[{ "a": 1 }], hint[{ "": "PRIMARY" }], limit[-1], offset[0], table[index_select_sequoiadb_22794_2.t1]
+EXPLAIN SELECT * FROM t1 WHERE b="TQBRCVDUWXYZ" AND a=596115;
+id	select_type	table	type	possible_keys	key	key_len	ref	rows	Extra
+1	SIMPLE	t1	const	PRIMARY,b,ab,ba	PRIMARY	4	const	#	
+SELECT * FROM t1 WHERE b="TQBRCVDUWXYZ" AND a=596115;
+a	b	c
+596115	TQBRCVDUWXYZ	1
+[Note] SequoiaDB: Query message: condition[{ "a": { "$et": 596115 } }], selector[{}], order_by[{ "a": 1 }], hint[{ "": "PRIMARY" }], limit[-1], offset[0], table[index_select_sequoiadb_22794_2.t1]
+DROP TABLE t1;
+CREATE TABLE t1 (
+id INT,
+a ENUM('1','2','3','4','5'),
+b SET('a','b','c')
+);
+LOAD DATA INFILE '../../std_data/index_select_sequoiadb_2.dat' INTO TABLE t1 fields terminated by ';';
+alter table t1 add PRIMARY KEY(id);
+alter table t1 add index a(a);
+alter table t1 add index ab(a,b);
+alter table t1 add index ida(id,a);
+alter table t1 add index idab(id,a,b);
+SHOW CREATE TABLE t1;
+Table	Create Table
+t1	CREATE TABLE `t1` (
+  `id` int(11) NOT NULL,
+  `a` enum('1','2','3','4','5') DEFAULT NULL,
+  `b` set('a','b','c') DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  KEY `a` (`a`),
+  KEY `ab` (`a`,`b`),
+  KEY `ida` (`id`,`a`),
+  KEY `idab` (`id`,`a`,`b`)
+) ENGINE=SequoiaDB DEFAULT CHARSET=latin1
+EXPLAIN SELECT * FROM t1 WHERE id=400812;
+id	select_type	table	type	possible_keys	key	key_len	ref	rows	Extra
+1	SIMPLE	t1	const	PRIMARY,ida,idab	PRIMARY	4	const	#	
+SELECT * FROM t1 WHERE id=400812;
+id	a	b
+400812	5	a
+[Note] SequoiaDB: Query message: condition[{ "id": { "$et": 400812 } }], selector[{}], order_by[{ "id": 1 }], hint[{ "": "PRIMARY" }], limit[-1], offset[0], table[index_select_sequoiadb_22794_2.t1]
+EXPLAIN SELECT * FROM t1 WHERE a=4;
+id	select_type	table	type	possible_keys	key	key_len	ref	rows	Extra
+1	SIMPLE	t1	ref	a,ab	a	2	const	#	Using where
+SELECT COUNT(*) FROM t1 WHERE a=4;
+COUNT(*)
+10626
+[Note] SequoiaDB: Query message: condition[{ "a": { "$et": 4 } }], selector[{}], order_by[{ "a": 1 }], hint[{ "": "a" }], limit[-1], offset[0], table[index_select_sequoiadb_22794_2.t1]
+EXPLAIN SELECT * FROM t1 WHERE a=4 AND b="a,b";
+id	select_type	table	type	possible_keys	key	key_len	ref	rows	Extra
+1	SIMPLE	t1	ref	a,ab	ab	4	const,const	#	Using where with pushed condition
+SELECT COUNT(*) FROM t1 WHERE a=4 AND b="a,b";
+COUNT(*)
+1598
+[Note] SequoiaDB: Query message: condition[{ "$and": [ { "b": { "$et": 3 } }, { "a": { "$et": 4 }, "b": { "$et": 3 } } ] }], selector[{}], order_by[{ "a": 1, "b": 1 }], hint[{ "": "ab" }], limit[-1], offset[0], table[index_select_sequoiadb_22794_2.t1]
+EXPLAIN SELECT * FROM t1 WHERE id=338285 AND a=3;
+id	select_type	table	type	possible_keys	key	key_len	ref	rows	Extra
+1	SIMPLE	t1	const	PRIMARY,a,ab,ida,idab	PRIMARY	4	const	#	
+SELECT * FROM t1 WHERE id=338285 AND a=3;
+id	a	b
+338285	3	a,b
+[Note] SequoiaDB: Query message: condition[{ "id": { "$et": 338285 } }], selector[{}], order_by[{ "id": 1 }], hint[{ "": "PRIMARY" }], limit[-1], offset[0], table[index_select_sequoiadb_22794_2.t1]
+EXPLAIN SELECT * FROM t1 WHERE id=338285 AND a=3 AND b="a,b";
+id	select_type	table	type	possible_keys	key	key_len	ref	rows	Extra
+1	SIMPLE	t1	const	PRIMARY,a,ab,ida,idab	PRIMARY	4	const	#	
+SELECT * FROM t1 WHERE id=338285 AND a=3 AND b="a,b";
+id	a	b
+338285	3	a,b
+[Note] SequoiaDB: Query message: condition[{ "id": { "$et": 338285 } }], selector[{}], order_by[{ "id": 1 }], hint[{ "": "PRIMARY" }], limit[-1], offset[0], table[index_select_sequoiadb_22794_2.t1]
+EXPLAIN SELECT * FROM t1 WHERE a=3 AND b="a,b" AND id=338285;
+id	select_type	table	type	possible_keys	key	key_len	ref	rows	Extra
+1	SIMPLE	t1	const	PRIMARY,a,ab,ida,idab	PRIMARY	4	const	#	
+SELECT * FROM t1 WHERE a=3 AND b="a,b" AND id=338285;
+id	a	b
+338285	3	a,b
+[Note] SequoiaDB: Query message: condition[{ "id": { "$et": 338285 } }], selector[{}], order_by[{ "id": 1 }], hint[{ "": "PRIMARY" }], limit[-1], offset[0], table[index_select_sequoiadb_22794_2.t1]
+DROP TABLE t1;
+CREATE TABLE t1 (
+a CHAR(10),
+b FLOAT,
+c DATE
+);
+LOAD DATA INFILE '../../std_data/index_select_sequoiadb_5.dat' INTO TABLE t1 FIELDS TERMINATED BY ';';
+alter table t1 add PRIMARY KEY(a);
+alter table t1 add index b(b);
+alter table t1 add index ab(a,b);
+alter table t1 add index abc(a,b,c);
+SHOW CREATE TABLE t1;
+Table	Create Table
+t1	CREATE TABLE `t1` (
+  `a` char(10) NOT NULL,
+  `b` float DEFAULT NULL,
+  `c` date DEFAULT NULL,
+  PRIMARY KEY (`a`),
+  KEY `b` (`b`),
+  KEY `ab` (`a`,`b`),
+  KEY `abc` (`a`,`b`,`c`)
+) ENGINE=SequoiaDB DEFAULT CHARSET=latin1
+EXPLAIN SELECT * FROM t1 WHERE a='d58beb7d5' and b=16661.5;
+id	select_type	table	type	possible_keys	key	key_len	ref	rows	Extra
+1	SIMPLE	t1	const	PRIMARY,b,ab,abc	PRIMARY	10	const	#	
+SELECT * FROM t1 WHERE a='d58beb7d5' and b=16661.5;
+a	b	c
+d58beb7d5	16661.5	2026-04-10
+[Note] SequoiaDB: Query message: condition[{ "a": { "$et": "d58beb7d5" } }], selector[{}], order_by[{ "a": 1 }], hint[{ "": "PRIMARY" }], limit[-1], offset[0], table[index_select_sequoiadb_22794_2.t1]
+EXPLAIN SELECT * FROM t1 WHERE a='4ab272c58' and c='1994-07-13';
+id	select_type	table	type	possible_keys	key	key_len	ref	rows	Extra
+1	SIMPLE	t1	const	PRIMARY,ab,abc	PRIMARY	10	const	#	
+SELECT * FROM t1 WHERE a='4ab272c58' and c='1994-07-13';
+a	b	c
+4ab272c58	16832.6	1994-07-13
+[Note] SequoiaDB: Query message: condition[{ "a": { "$et": "4ab272c58" } }], selector[{}], order_by[{ "a": 1 }], hint[{ "": "PRIMARY" }], limit[-1], offset[0], table[index_select_sequoiadb_22794_2.t1]
+EXPLAIN SELECT * FROM t1 WHERE a='d58beb7d5' and b=16661.5 and c='2026-04-10';
+id	select_type	table	type	possible_keys	key	key_len	ref	rows	Extra
+1	SIMPLE	t1	const	PRIMARY,b,ab,abc	PRIMARY	10	const	#	
+SELECT * FROM t1 WHERE a='d58beb7d5' and b=16661.5 and c='2026-04-10';
+a	b	c
+d58beb7d5	16661.5	2026-04-10
+[Note] SequoiaDB: Query message: condition[{ "a": { "$et": "d58beb7d5" } }], selector[{}], order_by[{ "a": 1 }], hint[{ "": "PRIMARY" }], limit[-1], offset[0], table[index_select_sequoiadb_22794_2.t1]
+DROP TABLE t1;
+DROP DATABASE index_select_sequoiadb_22794_2;

@@ -1,0 +1,44 @@
+# Testcase: seqDB-24265
+
+--source include/have_sequoiadb.inc
+
+--disable_warnings
+drop database if exists explain_sequoiadb_24265;
+--enable_warnings
+
+create database explain_sequoiadb_24265;
+drop database explain_sequoiadb_24265;
+create database explain_sequoiadb_24265;
+use explain_sequoiadb_24265;
+
+# SEQUOIASQLMAINSTREAM-811
+CREATE TABLE `t1` (
+  `a` int(11) NOT NULL,
+  `b` int(11) DEFAULT NULL,
+  PRIMARY KEY (`a`),
+  KEY `b` (`b`),
+  KEY `ab` (`a`,`b`),
+  KEY `ba` (`b`,`a`)
+) ENGINE=SequoiaDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin;
+
+CREATE TABLE `t2` (
+  `a` int(11) NOT NULL,
+  `b` int(11) DEFAULT NULL,
+  PRIMARY KEY (`a`),
+  KEY `b` (`b`)
+) ENGINE=SequoiaDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin;
+
+insert into t1 values (1,1),(2,2),(3,3),(4,4),(5,5),(6,6),(7,7),(8,8),(9,9),(10,10),(11,11),(12,12),(13,13),(14,14),(15,15),(16,16),(17,17),(18,18),(19,19),(20,20);
+insert into t2 values (1,1),(2,2),(3,3);
+explain select * from t1,t2 where t1.b=t2.b;
+select * from t2;
+show indexes from t2;
+analyze table t1;
+explain select * from t1,t2 where t1.b=t2.b;
+select * from t2;
+show indexes from t2;
+
+# clear env
+drop database explain_sequoiadb_24265;
+
+--source include/uninstall_sequoiadb.inc

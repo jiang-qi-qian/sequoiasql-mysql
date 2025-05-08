@@ -1,0 +1,41 @@
+<!DOCTYPE suite SYSTEM "http://testng.org/testng-1.0.dtd">
+<!--this xml is for ci, please don't modify it-->
+<!--testcase for function test, which can be excuted concurrently-->
+
+<suite name="mysql" verbose="1" parallel="classes" thread-count="5">
+
+    <!--主机名，CI默认传入localhost-->
+    <parameter name="HOSTNAME" value="${HOSTNAME}"/>
+    <!--协调节点端口号，CI默认传入11810-->
+    <parameter name="SVCNAME" value="${SVCNAME}"/>
+    <!--数据源集群端主机名，CI默认传入localhost-->
+    <parameter name="DSHOSTNAME" value="${DSHOSTNAME}"/>
+    <!--数据源集群端端口号，CI默认传入11810-->
+    <parameter name="DSSVCNAME" value="${DSSVCNAME}"/>
+    <!--mysql实例1地址-->
+    <parameter name="MYSQL1" value="${MYSQL1URL}"/>
+    <!--mysql实例2地址-->
+    <parameter name="MYSQL2" value="${MYSQL2URL}"/>
+    <!--anothermysql实例1地址-->
+    <parameter name="INSTGROUP2URL1" value="${INSTGROUP2URL1}"/>
+    <!--anothermysql实例2地址-->
+    <parameter name="INSTGROUP2URL1" value="${INSTGROUP2URL2}"/>
+    <!--mysql InnoDB地址-->
+    <parameter name="INNODB" value="${INNODBURL}"/>
+    <!--mysql实例账户-->
+    <parameter name="MYSQLUSER" value="${MYSQLUSER}"/>
+    <!--mysql实例密码-->
+    <parameter name="MYSQLPASSWD" value="${MYSQLPASSWD}"/>
+
+    <listeners>
+        <listener class-name="com.sequoiasql.testcommon.TimePrinterListener"/>
+    </listeners>
+
+    <test name="normaltest" parallel="classes" thread-count="5">
+        <packages>
+            <package name="com.sequoiasql.metadatamapping"/>
+        </packages>
+    </test>
+
+</suite>
+    

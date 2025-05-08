@@ -1,0 +1,1570 @@
+create table t1(a int primary key)engine=sequoiadb;
+select @@autocommit;
+@@autocommit
+1
+select @@autocommit;
+@@autocommit
+1
+begin;
+insert into t1 values(1);
+begin;
+insert into t1 values(1);
+ERROR 23000: Duplicate entry '{ "a": 1 }' for key 'PRIMARY'
+select * from t1;
+a
+insert into t1 values(2);
+select * from t1;
+a
+2
+commit;
+select * from t1;
+a
+1
+commit;
+select * from t1;
+a
+1
+2
+drop table t1;
+set session autocommit = 0;
+select @@autocommit;
+@@autocommit
+0
+set session autocommit = 0;
+select @@autocommit;
+@@autocommit
+0
+create table t1(a int primary key)engine=sequoiadb;
+begin;
+insert into t1 values(1);
+begin;
+insert into t1 values(1);
+ERROR 23000: Duplicate entry '{ "a": 1 }' for key 'PRIMARY'
+select * from t1;
+a
+insert into t1 values(2);
+select * from t1;
+a
+2
+commit;
+select * from t1;
+a
+1
+commit;
+commit;
+select * from t1;
+a
+1
+2
+commit;
+drop table t1;
+create table t1 (id int);
+create table t2 (id int,  s1 text);
+insert into t1 values (1),(2),(3);
+insert into t2 values (1,'test'), (2,'test'), (3,'test');
+update t1 left join t2 using(id) set s1 = 'changed';
+select * from t1 left join t2 using(id);
+id	s1
+1	changed
+2	changed
+3	changed
+begin;
+update t1 left join t2 using(id) set s1 = 'changed1';
+update t1 left join t2 using(ID) set s1 = 'changed2';
+ERROR HY000: Lock wait timeout exceeded; try restarting transaction
+commit;
+commit;
+select * from t1 left join t2 using(id);
+id	s1
+1	changed1
+2	changed1
+3	changed1
+begin;
+update t1 left join t2 using(ID) set s1 = 'test';
+commit;
+select * from t1 left join t2 using(id);
+id	s1
+1	test
+2	test
+3	test
+begin;
+delete t1, t2 from t1 left join t2 on t1.id=t2.id where t1.id > 1;
+delete t1, t2 from t1 left join t2 on t1.id=t2.id;
+ERROR HY000: Lock wait timeout exceeded; try restarting transaction
+commit;
+commit;
+select * from t1 left join t2 using(id);
+id	s1
+1	test
+begin;
+delete t1, t2 from t1 left join t2 on t1.id=t2.id;
+commit;
+select * from t1 left join t2 using(id);
+id	s1
+drop table t1,t2;
+create table t1 ( id int, id1 int, c char(16), index (id) );
+insert into t1 values (1,1,'a'), (2,2,'b'), (3,3,'c');
+begin;
+update t1 set c = 'updateC' where id = 3;
+begin;
+insert into t1 values (4,4,'d');
+select * from t1 where id = 3 for update;
+ERROR HY000: Lock wait timeout exceeded; try restarting transaction
+select * from t1;
+id	id1	c
+1	1	a
+2	2	b
+3	3	c
+4	4	d
+insert into t1 values (5,5,'e'),(6,6,'f');
+delete from t1 where id = 1;
+update t1 set c = 'updateE' where id = 5;
+commit;
+select * from t1;
+id	id1	c
+2	2	b
+3	3	c
+4	4	d
+5	5	updateE
+6	6	f
+begin;
+select * from t1 where id = 3 for update;
+ERROR HY000: Lock wait timeout exceeded; try restarting transaction
+insert into t1 values (7,7,'h');
+delete from t1 where id = 4;
+update t1 set c = 'updateF' where id = 6;
+rollback;
+commit;
+select * from t1;
+id	id1	c
+2	2	b
+3	3	updateC
+4	4	d
+5	5	updateE
+6	6	f
+delete from t1;
+insert into t1 values (1,2,'a'),(2,3,'b'), (3,3,'c');
+begin;
+update t1 set c = 'updateC' where id = 3;
+begin;
+delete from t1 where id = 2;
+update t1 set c = 'otherC' where not id = id1 - 1;
+ERROR HY000: Lock wait timeout exceeded; try restarting transaction
+select * from t1;
+id	id1	c
+1	2	a
+3	3	c
+insert into t1 values (4,4,'d'),(5,5,'e');
+delete from t1 where id = 1;
+update t1 set c = 'updateD' where id = 4;
+commit;
+select * from t1;
+id	id1	c
+3	3	c
+4	4	updateD
+5	5	e
+begin;
+update t1 set c = 'updateAll' where id > 0;
+ERROR HY000: Lock wait timeout exceeded; try restarting transaction
+select * from t1;
+id	id1	c
+3	3	c
+4	4	updateD
+5	5	e
+insert into t1 values (6,6,'f');
+delete from t1 where id = 4;
+update t1 set c = 'updateE' where id = 5;
+rollback;
+commit;
+select * from t1;
+id	id1	c
+3	3	updateC
+4	4	updateD
+5	5	e
+delete from t1;
+insert into t1 values (1,2,'a'),(2,3,'b'), (3,3,'c');
+begin;
+delete from t1 where id = 3;
+begin;
+update t1 set c = 'updateB' where id = 2;
+delete from t1 where not id = id1 - 1;
+ERROR HY000: Lock wait timeout exceeded; try restarting transaction
+select * from t1;
+id	id1	c
+1	2	a
+2	3	updateB
+3	3	c
+insert into t1 values (4,4,'d'),(5,5,'e');
+delete from t1 where id = 1;
+update t1 set c = 'updateD' where id = 4;
+commit;
+select * from t1;
+id	id1	c
+2	3	updateB
+3	3	c
+4	4	updateD
+5	5	e
+begin;
+delete from t1 where id > 0;
+ERROR HY000: Lock wait timeout exceeded; try restarting transaction
+select * from t1;
+id	id1	c
+3	3	c
+4	4	updateD
+5	5	e
+insert into t1 values (6,6,'f'),(7,7,'g');
+rollback;
+commit;
+select * from t1;
+id	id1	c
+2	3	updateB
+4	4	updateD
+5	5	e
+delete from t1;
+insert into t1 values (1,1,'a'), (2,2,'b'), (3,3,'c');
+set sequoiadb_rollback_on_timeout = on;
+begin;
+update t1 set c = 'updateC' where id = 3;
+set sequoiadb_rollback_on_timeout = on;
+begin;
+insert into t1 values (4,4,'d');
+select * from t1 where id = 3 for update;
+ERROR HY000: Lock wait timeout exceeded; try restarting transaction
+select * from t1;
+id	id1	c
+1	1	a
+2	2	b
+3	3	c
+insert into t1 values (5,5,'e'),(6,6,'f');
+delete from t1 where id = 1;
+update t1 set c = 'updateE' where id = 5;
+commit;
+set sequoiadb_rollback_on_timeout = on;
+select * from t1;
+id	id1	c
+2	2	b
+3	3	c
+5	5	updateE
+6	6	f
+set sequoiadb_rollback_on_timeout = on;
+begin;
+select * from t1 where id = 3 for update;
+ERROR HY000: Lock wait timeout exceeded; try restarting transaction
+insert into t1 values (7,7,'h');
+delete from t1 where id = 4;
+update t1 set c = 'updateF' where id = 6;
+rollback;
+set sequoiadb_rollback_on_timeout = on;
+commit;
+set sequoiadb_rollback_on_timeout = on;
+select * from t1;
+id	id1	c
+2	2	b
+3	3	updateC
+5	5	updateE
+6	6	updateF
+7	7	h
+delete from t1;
+set global sequoiadb_rollback_on_timeout = on;
+insert into t1 values (1,2,'a'),(2,3,'b'), (3,3,'c');
+begin;
+update t1 set c = 'updateC' where id = 3;
+begin;
+delete from t1 where id = 2;
+update t1 set c = 'otherC' where not id = id1 - 1;
+ERROR HY000: Lock wait timeout exceeded; try restarting transaction
+select * from t1;
+id	id1	c
+1	2	a
+2	3	b
+3	3	c
+insert into t1 values (4,4,'d'),(5,5,'e');
+delete from t1 where id = 1;
+update t1 set c = 'updateD' where id = 4;
+commit;
+select * from t1;
+id	id1	c
+2	3	b
+3	3	c
+4	4	updateD
+5	5	e
+begin;
+update t1 set c = 'updateAll' where id > 0;
+ERROR HY000: Lock wait timeout exceeded; try restarting transaction
+select * from t1;
+id	id1	c
+2	3	b
+3	3	c
+4	4	updateD
+5	5	e
+insert into t1 values (6,6,'f');
+delete from t1 where id = 4;
+update t1 set c = 'updateE' where id = 5;
+rollback;
+commit;
+select * from t1;
+id	id1	c
+2	3	b
+3	3	updateC
+5	5	updateE
+6	6	f
+delete from t1;
+insert into t1 values (1,2,'a'),(2,3,'b'), (3,3,'c');
+begin;
+delete from t1 where id = 3;
+begin;
+update t1 set c = 'updateB' where id = 2;
+delete from t1 where not id = id1 - 1;
+ERROR HY000: Lock wait timeout exceeded; try restarting transaction
+select * from t1;
+id	id1	c
+1	2	a
+2	3	b
+3	3	c
+insert into t1 values (4,4,'d'),(5,5,'e');
+delete from t1 where id = 1;
+update t1 set c = 'updateD' where id = 4;
+commit;
+select * from t1;
+id	id1	c
+2	3	b
+3	3	c
+4	4	updateD
+5	5	e
+begin;
+delete from t1 where id > 0;
+ERROR HY000: Lock wait timeout exceeded; try restarting transaction
+select * from t1;
+id	id1	c
+2	3	b
+3	3	c
+4	4	updateD
+5	5	e
+insert into t1 values (6,6,'f'),(7,7,'g');
+rollback;
+commit;
+select * from t1;
+id	id1	c
+2	3	b
+4	4	updateD
+5	5	e
+6	6	f
+7	7	g
+set global sequoiadb_rollback_on_timeout = off;
+drop table t1;
+create table t1( id int );
+insert into t1 values (1),(0),(2);
+begin;
+insert into t1 values (10),(11);
+delete from t1 where id = 0;
+alter table t1 add index id(id);
+rollback;
+select * from t1 order by id;
+id
+1
+2
+10
+11
+drop table t1;
+create table t1(id int);
+SET GLOBAL TRANSACTION ISOLATION LEVEL READ UNCOMMITTED;
+BEGIN;
+SELECT * FROM t1;
+id
+BEGIN;
+INSERT INTO t1 VALUES(1);
+SELECT * FROM t1;
+id
+COMMIT;
+SELECT * FROM t1;
+id
+1
+BEGIN;
+SELECT * FROM t1;
+id
+1
+BEGIN;
+INSERT INTO t1 VALUES(2);
+SELECT * FROM t1;
+id
+1
+2
+SET SESSION TRANSACTION ISOLATION LEVEL READ COMMITTED;
+SELECT * FROM t1;
+id
+1
+2
+COMMIT;
+BEGIN;
+SELECT * FROM t1;
+id
+1
+SET TRANSACTION ISOLATION LEVEL REPEATABLE READ;
+ERROR 25001: Transaction characteristics can't be changed while a transaction is in progress
+SELECT * FROM t1;
+id
+1
+ROLLBACK;
+ROLLBACK;
+SET TRANSACTION ISOLATION LEVEL REPEATABLE READ;
+BEGIN;
+SELECT * FROM t1;
+id
+1
+BEGIN;
+INSERT INTO t1 VALUES(2);
+COMMIT;
+SELECT * FROM t1;
+id
+1
+2
+COMMIT;
+BEGIN;
+SELECT * FROM t1;
+id
+1
+2
+COMMIT;
+SET GLOBAL TRANSACTION ISOLATION LEVEL REPEATABLE READ;
+SET GLOBAL TRANSACTION ISOLATION LEVEL SERIALIZABLE;
+BEGIN;
+SELECT * FROM t1;
+ERROR HY000: SequoiaDB engine not support transaction serializable isolation. Please set transaction_isolation to other level and restart transaction
+ROLLBACK;
+SET SESSION TRANSACTION ISOLATION LEVEL SERIALIZABLE;
+BEGIN;
+SELECT * FROM t1;
+ERROR HY000: SequoiaDB engine not support transaction serializable isolation. Please set transaction_isolation to other level and restart transaction
+ROLLBACK;
+SET TRANSACTION ISOLATION LEVEL SERIALIZABLE;
+BEGIN;
+SELECT * FROM t1;
+ERROR HY000: SequoiaDB engine not support transaction serializable isolation. Please set transaction_isolation to other level and restart transaction
+ROLLBACK;
+DROP TABLE t1;
+SET GLOBAL TRANSACTION ISOLATION LEVEL REPEATABLE READ;
+create table t1(a int, b int, c int);
+create index a on t1(a);
+insert into t1 values(1,1,1),(2,2,2),(3,3,3),(4,4,4),(5,5,5),(6,6,6),(7,7,7),(8,8,8),(9,9,9),(10,10,10);
+create table t2(a int, b int, c int);
+create index a on t2(a);
+insert into t2 values(1,1,1),(2,2,2),(3,3,3),(4,4,4),(5,5,5),(6,6,6),(7,7,7),(8,8,8),(9,9,9),(10,10,10);
+SET SESSION TRANSACTION ISOLATION LEVEL READ COMMITTED;
+begin;
+select * from t2 where a = 5;
+a	b	c
+5	5	5
+SET SESSION TRANSACTION ISOLATION LEVEL READ COMMITTED;
+begin;
+select * from t2 where a = 5;
+a	b	c
+5	5	5
+insert into t1 values(5,5,5);
+update t1 set a=5 where a>5;
+delete from t1 where a = 2;
+select * from t1 order by c;
+a	b	c
+1	1	1
+2	2	2
+3	3	3
+4	4	4
+5	5	5
+6	6	6
+7	7	7
+8	8	8
+9	9	9
+10	10	10
+commit;
+select * from t1 order by c;
+a	b	c
+1	1	1
+3	3	3
+4	4	4
+5	5	5
+5	5	5
+5	6	6
+5	7	7
+5	8	8
+5	9	9
+5	10	10
+begin;
+insert into t1 values(5,5,5);
+select * from t2 where a =5;
+a	b	c
+5	5	5
+commit;
+select * from t2 where a =5;
+a	b	c
+5	5	5
+begin;
+update t2 set a=5 where a>5;
+select * from t2 where a =5;
+a	b	c
+5	5	5
+commit;
+select * from t2 where a =5;
+a	b	c
+5	5	5
+5	6	6
+5	7	7
+5	8	8
+5	9	9
+5	10	10
+begin;
+delete from t2 where a = 5;
+select * from t2 where a =5;
+a	b	c
+5	5	5
+5	6	6
+5	7	7
+5	8	8
+5	9	9
+5	10	10
+commit;
+select * from t2 where a =5;
+a	b	c
+commit;
+drop table t1,t2;
+create table t1(a int, b int, c int);
+create index a on t1(a);
+insert into t1 values(1,1,1),(2,2,2),(3,3,3),(4,4,4),(5,5,5),(6,6,6),(7,7,7),(8,8,8),(9,9,9),(10,10,10);
+begin;
+insert into t1 values(1,1,1),(2,2,2),(3,3,3),(4,4,4),(5,5,5),(6,6,6),(7,7,7),(8,8,8),(9,9,9),(10,10,10);
+update t1 set a = 100 where a >5;
+update t1 set a = b + 1 where c <5;
+delete from t1 where c between 4 and 9;
+rollback;
+select * from t1 order by c;
+a	b	c
+1	1	1
+2	2	2
+3	3	3
+4	4	4
+5	5	5
+6	6	6
+7	7	7
+8	8	8
+9	9	9
+10	10	10
+begin;
+insert into t1 values(1,1,1),(2,2,2),(3,3,3),(4,4,4),(5,5,5),(6,6,6),(7,7,7),(8,8,8),(9,9,9),(10,10,10);
+update t1 set a = 100 where a >5;
+update t1 set a = b + 1 where c <5;
+delete from t1 where c between 4 and 9;
+commit;
+select * from t1 order by c;
+a	b	c
+2	1	1
+2	1	1
+3	2	2
+3	2	2
+4	3	3
+4	3	3
+100	10	10
+100	10	10
+drop table t1;
+create table t1(a int, b int, c int);
+create index a on t1(a);
+insert into t1 values(1,1,1),(2,2,2),(3,3,3),(4,4,4),(5,5,5),(6,6,6),(7,7,7),(8,8,8),(9,9,9),(10,10,10);
+begin;
+delete from t1;
+rollback;
+select * from t1 order by c;
+a	b	c
+1	1	1
+2	2	2
+3	3	3
+4	4	4
+5	5	5
+6	6	6
+7	7	7
+8	8	8
+9	9	9
+10	10	10
+begin;
+truncate t1;
+rollback;
+select * from t1 order by c;
+a	b	c
+drop table t1;
+create database transaction_sequoiadb1;
+create table transaction_sequoiadb1.t1(a int, b int, c int);
+insert into transaction_sequoiadb1.t1 values(1,1,1),(2,2,2),(3,3,3),(4,4,4),(5,5,5),(6,6,6),(7,7,7),(8,8,8),(9,9,9),(10,10,10);
+create index a on transaction_sequoiadb1.t1(a);
+create database transaction_sequoiadb2;
+create table transaction_sequoiadb2.t1(a int, b int, c int);
+insert into transaction_sequoiadb2.t1 values(1,1,1),(2,2,2),(3,3,3),(4,4,4),(5,5,5),(6,6,6),(7,7,7),(8,8,8),(9,9,9),(10,10,10);
+create index a on transaction_sequoiadb2.t1(a);
+SET SESSION TRANSACTION ISOLATION LEVEL READ COMMITTED;
+begin;
+select * from transaction_sequoiadb1.t1 order by c;
+a	b	c
+1	1	1
+2	2	2
+3	3	3
+4	4	4
+5	5	5
+6	6	6
+7	7	7
+8	8	8
+9	9	9
+10	10	10
+select * from transaction_sequoiadb2.t1 order by c;
+a	b	c
+1	1	1
+2	2	2
+3	3	3
+4	4	4
+5	5	5
+6	6	6
+7	7	7
+8	8	8
+9	9	9
+10	10	10
+begin;
+insert into transaction_sequoiadb1.t1 values(1,1,1),(2,2,2),(3,3,3),(4,4,4),(5,5,5),(6,6,6),(7,7,7),(8,8,8),(9,9,9),(10,10,10);
+insert into transaction_sequoiadb2.t1 values(1,1,1),(2,2,2),(3,3,3),(4,4,4),(5,5,5),(6,6,6),(7,7,7),(8,8,8),(9,9,9),(10,10,10);
+select * from transaction_sequoiadb1.t1 order by c;
+a	b	c
+1	1	1
+2	2	2
+3	3	3
+4	4	4
+5	5	5
+6	6	6
+7	7	7
+8	8	8
+9	9	9
+10	10	10
+select * from transaction_sequoiadb2.t1 order by c;
+a	b	c
+1	1	1
+2	2	2
+3	3	3
+4	4	4
+5	5	5
+6	6	6
+7	7	7
+8	8	8
+9	9	9
+10	10	10
+commit;
+select * from transaction_sequoiadb1.t1 order by c;
+a	b	c
+1	1	1
+1	1	1
+2	2	2
+2	2	2
+3	3	3
+3	3	3
+4	4	4
+4	4	4
+5	5	5
+5	5	5
+6	6	6
+6	6	6
+7	7	7
+7	7	7
+8	8	8
+8	8	8
+9	9	9
+9	9	9
+10	10	10
+10	10	10
+select * from transaction_sequoiadb2.t1 order by c;
+a	b	c
+1	1	1
+1	1	1
+2	2	2
+2	2	2
+3	3	3
+3	3	3
+4	4	4
+4	4	4
+5	5	5
+5	5	5
+6	6	6
+6	6	6
+7	7	7
+7	7	7
+8	8	8
+8	8	8
+9	9	9
+9	9	9
+10	10	10
+10	10	10
+begin;
+update transaction_sequoiadb1.t1 set a = a + 1 where a >5;
+update transaction_sequoiadb2.t1 set a = a + 1 where a >5;
+select * from transaction_sequoiadb1.t1 order by c;
+a	b	c
+1	1	1
+1	1	1
+2	2	2
+2	2	2
+3	3	3
+3	3	3
+4	4	4
+4	4	4
+5	5	5
+5	5	5
+6	6	6
+6	6	6
+7	7	7
+7	7	7
+8	8	8
+8	8	8
+9	9	9
+9	9	9
+10	10	10
+10	10	10
+select * from transaction_sequoiadb2.t1 order by c;
+a	b	c
+1	1	1
+1	1	1
+2	2	2
+2	2	2
+3	3	3
+3	3	3
+4	4	4
+4	4	4
+5	5	5
+5	5	5
+6	6	6
+6	6	6
+7	7	7
+7	7	7
+8	8	8
+8	8	8
+9	9	9
+9	9	9
+10	10	10
+10	10	10
+rollback;
+select * from transaction_sequoiadb1.t1 order by c;
+a	b	c
+1	1	1
+1	1	1
+2	2	2
+2	2	2
+3	3	3
+3	3	3
+4	4	4
+4	4	4
+5	5	5
+5	5	5
+6	6	6
+6	6	6
+7	7	7
+7	7	7
+8	8	8
+8	8	8
+9	9	9
+9	9	9
+10	10	10
+10	10	10
+select * from transaction_sequoiadb2.t1 order by c;
+a	b	c
+1	1	1
+1	1	1
+2	2	2
+2	2	2
+3	3	3
+3	3	3
+4	4	4
+4	4	4
+5	5	5
+5	5	5
+6	6	6
+6	6	6
+7	7	7
+7	7	7
+8	8	8
+8	8	8
+9	9	9
+9	9	9
+10	10	10
+10	10	10
+begin;
+delete from transaction_sequoiadb1.t1;
+delete from transaction_sequoiadb2.t1;
+select * from transaction_sequoiadb1.t1 order by c;
+a	b	c
+1	1	1
+1	1	1
+2	2	2
+2	2	2
+3	3	3
+3	3	3
+4	4	4
+4	4	4
+5	5	5
+5	5	5
+6	6	6
+6	6	6
+7	7	7
+7	7	7
+8	8	8
+8	8	8
+9	9	9
+9	9	9
+10	10	10
+10	10	10
+select * from transaction_sequoiadb2.t1 order by c;
+a	b	c
+1	1	1
+1	1	1
+2	2	2
+2	2	2
+3	3	3
+3	3	3
+4	4	4
+4	4	4
+5	5	5
+5	5	5
+6	6	6
+6	6	6
+7	7	7
+7	7	7
+8	8	8
+8	8	8
+9	9	9
+9	9	9
+10	10	10
+10	10	10
+commit;
+select * from transaction_sequoiadb1.t1 order by c;
+a	b	c
+select * from transaction_sequoiadb2.t1 order by c;
+a	b	c
+commit;
+truncate transaction_sequoiadb1.t1;
+truncate transaction_sequoiadb2.t1;
+insert into transaction_sequoiadb1.t1 values(1,1,1),(2,2,2),(3,3,3),(4,4,4),(5,5,5),(6,6,6),(7,7,7),(8,8,8),(9,9,9),(10,10,10);
+insert into transaction_sequoiadb2.t1 values(1,1,1),(2,2,2),(3,3,3),(4,4,4),(5,5,5),(6,6,6),(7,7,7),(8,8,8),(9,9,9),(10,10,10);
+SET SESSION AUTOCOMMIT=OFF;
+select * from transaction_sequoiadb1.t1 order by c;
+a	b	c
+1	1	1
+2	2	2
+3	3	3
+4	4	4
+5	5	5
+6	6	6
+7	7	7
+8	8	8
+9	9	9
+10	10	10
+select * from transaction_sequoiadb2.t1 order by c;
+a	b	c
+1	1	1
+2	2	2
+3	3	3
+4	4	4
+5	5	5
+6	6	6
+7	7	7
+8	8	8
+9	9	9
+10	10	10
+SET SESSION AUTOCOMMIT=OFF;
+insert into transaction_sequoiadb1.t1 values(1,1,1),(2,2,2),(3,3,3),(4,4,4),(5,5,5),(6,6,6),(7,7,7),(8,8,8),(9,9,9),(10,10,10);
+insert into transaction_sequoiadb2.t1 values(1,1,1),(2,2,2),(3,3,3),(4,4,4),(5,5,5),(6,6,6),(7,7,7),(8,8,8),(9,9,9),(10,10,10);
+select * from transaction_sequoiadb1.t1 order by c;
+a	b	c
+1	1	1
+2	2	2
+3	3	3
+4	4	4
+5	5	5
+6	6	6
+7	7	7
+8	8	8
+9	9	9
+10	10	10
+select * from transaction_sequoiadb2.t1 order by c;
+a	b	c
+1	1	1
+2	2	2
+3	3	3
+4	4	4
+5	5	5
+6	6	6
+7	7	7
+8	8	8
+9	9	9
+10	10	10
+commit;
+select * from transaction_sequoiadb1.t1 order by c;
+a	b	c
+1	1	1
+1	1	1
+2	2	2
+2	2	2
+3	3	3
+3	3	3
+4	4	4
+4	4	4
+5	5	5
+5	5	5
+6	6	6
+6	6	6
+7	7	7
+7	7	7
+8	8	8
+8	8	8
+9	9	9
+9	9	9
+10	10	10
+10	10	10
+select * from transaction_sequoiadb2.t1 order by c;
+a	b	c
+1	1	1
+1	1	1
+2	2	2
+2	2	2
+3	3	3
+3	3	3
+4	4	4
+4	4	4
+5	5	5
+5	5	5
+6	6	6
+6	6	6
+7	7	7
+7	7	7
+8	8	8
+8	8	8
+9	9	9
+9	9	9
+10	10	10
+10	10	10
+update transaction_sequoiadb1.t1 set a = a + 1 where a >5;
+update transaction_sequoiadb2.t1 set a = a + 1 where a >5;
+select * from transaction_sequoiadb1.t1 order by c;
+a	b	c
+1	1	1
+1	1	1
+2	2	2
+2	2	2
+3	3	3
+3	3	3
+4	4	4
+4	4	4
+5	5	5
+5	5	5
+6	6	6
+6	6	6
+7	7	7
+7	7	7
+8	8	8
+8	8	8
+9	9	9
+9	9	9
+10	10	10
+10	10	10
+select * from transaction_sequoiadb2.t1 order by c;
+a	b	c
+1	1	1
+1	1	1
+2	2	2
+2	2	2
+3	3	3
+3	3	3
+4	4	4
+4	4	4
+5	5	5
+5	5	5
+6	6	6
+6	6	6
+7	7	7
+7	7	7
+8	8	8
+8	8	8
+9	9	9
+9	9	9
+10	10	10
+10	10	10
+rollback;
+select * from transaction_sequoiadb1.t1 order by c;
+a	b	c
+1	1	1
+1	1	1
+2	2	2
+2	2	2
+3	3	3
+3	3	3
+4	4	4
+4	4	4
+5	5	5
+5	5	5
+6	6	6
+6	6	6
+7	7	7
+7	7	7
+8	8	8
+8	8	8
+9	9	9
+9	9	9
+10	10	10
+10	10	10
+select * from transaction_sequoiadb2.t1 order by c;
+a	b	c
+1	1	1
+1	1	1
+2	2	2
+2	2	2
+3	3	3
+3	3	3
+4	4	4
+4	4	4
+5	5	5
+5	5	5
+6	6	6
+6	6	6
+7	7	7
+7	7	7
+8	8	8
+8	8	8
+9	9	9
+9	9	9
+10	10	10
+10	10	10
+delete from transaction_sequoiadb1.t1;
+delete from transaction_sequoiadb2.t1;
+select * from transaction_sequoiadb1.t1 order by c;
+a	b	c
+1	1	1
+1	1	1
+2	2	2
+2	2	2
+3	3	3
+3	3	3
+4	4	4
+4	4	4
+5	5	5
+5	5	5
+6	6	6
+6	6	6
+7	7	7
+7	7	7
+8	8	8
+8	8	8
+9	9	9
+9	9	9
+10	10	10
+10	10	10
+select * from transaction_sequoiadb2.t1 order by c;
+a	b	c
+1	1	1
+1	1	1
+2	2	2
+2	2	2
+3	3	3
+3	3	3
+4	4	4
+4	4	4
+5	5	5
+5	5	5
+6	6	6
+6	6	6
+7	7	7
+7	7	7
+8	8	8
+8	8	8
+9	9	9
+9	9	9
+10	10	10
+10	10	10
+commit;
+SET SESSION AUTOCOMMIT=ON;
+select * from transaction_sequoiadb1.t1 order by c;
+a	b	c
+select * from transaction_sequoiadb2.t1 order by c;
+a	b	c
+commit;
+SET SESSION AUTOCOMMIT=ON;
+drop database transaction_sequoiadb1;
+drop database transaction_sequoiadb2;
+create table t1(a int, b int, c int);
+insert into t1 values(1,1,1),(2,2,2),(3,3,3),(4,4,4),(5,5,5),(6,6,6),(7,7,7),(8,8,8),(9,9,9),(10,10,10);
+create index a on t1(a);
+begin;
+insert into t1 values(1,1,1),(2,2,2),(3,3,3),(4,4,4),(5,5,5),(6,6,6),(7,7,7),(8,8,8),(9,9,9),(10,10,10);
+select * from t1 order by c;
+a	b	c
+1	1	1
+2	2	2
+3	3	3
+4	4	4
+5	5	5
+6	6	6
+7	7	7
+8	8	8
+9	9	9
+10	10	10
+commit;
+select * from t1 order by c;
+a	b	c
+1	1	1
+1	1	1
+2	2	2
+2	2	2
+3	3	3
+3	3	3
+4	4	4
+4	4	4
+5	5	5
+5	5	5
+6	6	6
+6	6	6
+7	7	7
+7	7	7
+8	8	8
+8	8	8
+9	9	9
+9	9	9
+10	10	10
+10	10	10
+begin;
+update t1 set a=a+1;
+select * from t1 order by c;
+a	b	c
+1	1	1
+1	1	1
+2	2	2
+2	2	2
+3	3	3
+3	3	3
+4	4	4
+4	4	4
+5	5	5
+5	5	5
+6	6	6
+6	6	6
+7	7	7
+7	7	7
+8	8	8
+8	8	8
+9	9	9
+9	9	9
+10	10	10
+10	10	10
+commit;
+select * from t1 order by c;
+a	b	c
+2	1	1
+2	1	1
+3	2	2
+3	2	2
+4	3	3
+4	3	3
+5	4	4
+5	4	4
+6	5	5
+6	5	5
+7	6	6
+7	6	6
+8	7	7
+8	7	7
+9	8	8
+9	8	8
+10	9	9
+10	9	9
+11	10	10
+11	10	10
+begin;
+delete from t1;
+select * from t1 order by c;
+a	b	c
+2	1	1
+2	1	1
+3	2	2
+3	2	2
+4	3	3
+4	3	3
+5	4	4
+5	4	4
+6	5	5
+6	5	5
+7	6	6
+7	6	6
+8	7	7
+8	7	7
+9	8	8
+9	8	8
+10	9	9
+10	9	9
+11	10	10
+11	10	10
+commit;
+select * from t1 order by c;
+a	b	c
+drop table t1;
+create table t1(a int, b int, c int);
+insert into t1 values(1,1,1),(2,2,2),(3,3,3),(4,4,4),(5,5,5),(6,6,6),(7,7,7),(8,8,8),(9,9,9),(10,10,10);
+create index a on t1(a);
+begin;
+select * from t1 order by c;
+a	b	c
+1	1	1
+2	2	2
+3	3	3
+4	4	4
+5	5	5
+6	6	6
+7	7	7
+8	8	8
+9	9	9
+10	10	10
+begin;
+select * from t1 for update;
+a	b	c
+1	1	1
+2	2	2
+3	3	3
+4	4	4
+5	5	5
+6	6	6
+7	7	7
+8	8	8
+9	9	9
+10	10	10
+insert into t1 values(1,1,1),(2,2,2),(3,3,3),(4,4,4),(5,5,5),(6,6,6),(7,7,7),(8,8,8),(9,9,9),(10,10,10);
+update t1 set a = a + 1 where a >5;
+delete from t1 where a <5;
+rollback;
+select * from t1 order by c;
+a	b	c
+1	1	1
+2	2	2
+3	3	3
+4	4	4
+5	5	5
+6	6	6
+7	7	7
+8	8	8
+9	9	9
+10	10	10
+select * from t1 for update;
+a	b	c
+1	1	1
+2	2	2
+3	3	3
+4	4	4
+5	5	5
+6	6	6
+7	7	7
+8	8	8
+9	9	9
+10	10	10
+insert into t1 values(1,1,1),(2,2,2),(3,3,3),(4,4,4),(5,5,5),(6,6,6),(7,7,7),(8,8,8),(9,9,9),(10,10,10);
+update t1 set a = a + 1 where a >5;
+delete from t1 where a <5;
+select * from t1 order by c;
+a	b	c
+5	5	5
+5	5	5
+7	6	6
+7	6	6
+8	7	7
+8	7	7
+9	8	8
+9	8	8
+10	9	9
+10	9	9
+11	10	10
+11	10	10
+commit;
+drop table t1;
+create table t1(a int, b int, c int);
+insert into t1 values(1,1,1),(2,2,2),(3,3,3),(4,4,4),(5,5,5),(6,6,6),(7,7,7),(8,8,8),(9,9,9),(10,10,10);
+create index a on t1(a);
+begin;
+select * from t1 for update;
+a	b	c
+1	1	1
+2	2	2
+3	3	3
+4	4	4
+5	5	5
+6	6	6
+7	7	7
+8	8	8
+9	9	9
+10	10	10
+begin;
+select * from t1 order by c;
+a	b	c
+1	1	1
+2	2	2
+3	3	3
+4	4	4
+5	5	5
+6	6	6
+7	7	7
+8	8	8
+9	9	9
+10	10	10
+select * from t1 for update;
+ERROR HY000: Lock wait timeout exceeded; try restarting transaction
+insert into t1 values(1,1,1),(2,2,2),(3,3,3),(4,4,4),(5,5,5),(6,6,6),(7,7,7),(8,8,8),(9,9,9),(10,10,10);
+update t1 set a = a + 1 where a >5;
+ERROR HY000: Lock wait timeout exceeded; try restarting transaction
+delete from t1 where a <5;
+ERROR HY000: Lock wait timeout exceeded; try restarting transaction
+rollback;
+select * from t1 order by c;
+a	b	c
+1	1	1
+2	2	2
+3	3	3
+4	4	4
+5	5	5
+6	6	6
+7	7	7
+8	8	8
+9	9	9
+10	10	10
+select * from t1 order by c;
+a	b	c
+1	1	1
+2	2	2
+3	3	3
+4	4	4
+5	5	5
+6	6	6
+7	7	7
+8	8	8
+9	9	9
+10	10	10
+select * from t1 for update;
+ERROR HY000: Lock wait timeout exceeded; try restarting transaction
+insert into t1 values(1,1,1),(2,2,2),(3,3,3),(4,4,4),(5,5,5),(6,6,6),(7,7,7),(8,8,8),(9,9,9),(10,10,10);
+update t1 set a = a + 1 where a >5;
+ERROR HY000: Lock wait timeout exceeded; try restarting transaction
+delete from t1 where a <5;
+ERROR HY000: Lock wait timeout exceeded; try restarting transaction
+select * from t1 order by c;
+a	b	c
+1	1	1
+1	1	1
+2	2	2
+2	2	2
+3	3	3
+3	3	3
+4	4	4
+4	4	4
+5	5	5
+5	5	5
+6	6	6
+6	6	6
+7	7	7
+7	7	7
+8	8	8
+8	8	8
+9	9	9
+9	9	9
+10	10	10
+10	10	10
+commit;
+drop table t1;
+create table t1(a int, b int, c int);
+insert into t1 values(1,1,1),(2,2,2),(3,3,3),(4,4,4),(5,5,5),(6,6,6),(7,7,7),(8,8,8),(9,9,9),(10,10,10);
+create index a on t1(a);
+begin;
+update t1 set a = a + 1;
+begin;
+select * from t1 order by c;
+a	b	c
+1	1	1
+2	2	2
+3	3	3
+4	4	4
+5	5	5
+6	6	6
+7	7	7
+8	8	8
+9	9	9
+10	10	10
+select * from t1 for update;
+ERROR HY000: Lock wait timeout exceeded; try restarting transaction
+insert into t1 values(1,1,1),(2,2,2),(3,3,3),(4,4,4),(5,5,5),(6,6,6),(7,7,7),(8,8,8),(9,9,9),(10,10,10);
+update t1 set a = a + 1 where a >5;
+ERROR HY000: Lock wait timeout exceeded; try restarting transaction
+delete from t1 where a <5;
+ERROR HY000: Lock wait timeout exceeded; try restarting transaction
+rollback;
+select * from t1 order by c;
+a	b	c
+2	1	1
+3	2	2
+4	3	3
+5	4	4
+6	5	5
+7	6	6
+8	7	7
+9	8	8
+10	9	9
+11	10	10
+select * from t1 order by c;
+a	b	c
+1	1	1
+2	2	2
+3	3	3
+4	4	4
+5	5	5
+6	6	6
+7	7	7
+8	8	8
+9	9	9
+10	10	10
+select * from t1 for update;
+ERROR HY000: Lock wait timeout exceeded; try restarting transaction
+insert into t1 values(1,1,1),(2,2,2),(3,3,3),(4,4,4),(5,5,5),(6,6,6),(7,7,7),(8,8,8),(9,9,9),(10,10,10);
+update t1 set a = a + 1 where a >5;
+ERROR HY000: Lock wait timeout exceeded; try restarting transaction
+delete from t1 where a <5;
+ERROR HY000: Lock wait timeout exceeded; try restarting transaction
+select * from t1 order by a,b,c;
+a	b	c
+1	1	1
+2	1	1
+2	2	2
+3	2	2
+3	3	3
+4	3	3
+4	4	4
+5	4	4
+5	5	5
+6	5	5
+6	6	6
+7	6	6
+7	7	7
+8	7	7
+8	8	8
+9	8	8
+9	9	9
+10	9	9
+10	10	10
+11	10	10
+commit;
+drop table t1;
+create table t1(a int, b int, c int);
+insert into t1 values(1,1,1),(2,2,2),(3,3,3),(4,4,4),(5,5,5),(6,6,6),(7,7,7),(8,8,8),(9,9,9),(10,10,10);
+create index a on t1(a);
+set session autocommit=off;
+insert into t1 values(1,1,1),(2,2,2),(3,3,3),(4,4,4),(5,5,5),(6,6,6),(7,7,7),(8,8,8),(9,9,9),(10,10,10);
+update t1 set a=5 where a>5;
+delete from t1 where a = 2;
+set session autocommit=off;
+select * from t1 order by c;
+a	b	c
+1	1	1
+2	2	2
+3	3	3
+4	4	4
+5	5	5
+6	6	6
+7	7	7
+8	8	8
+9	9	9
+10	10	10
+rollback;
+select * from t1 order by c;
+a	b	c
+1	1	1
+2	2	2
+3	3	3
+4	4	4
+5	5	5
+6	6	6
+7	7	7
+8	8	8
+9	9	9
+10	10	10
+insert into t1 values(1,1,1),(2,2,2),(3,3,3),(4,4,4),(5,5,5),(6,6,6),(7,7,7),(8,8,8),(9,9,9),(10,10,10);
+update t1 set a=5 where a>5;
+delete from t1 where a = 2;
+select * from t1 order by c;
+a	b	c
+1	1	1
+2	2	2
+3	3	3
+4	4	4
+5	5	5
+6	6	6
+7	7	7
+8	8	8
+9	9	9
+10	10	10
+commit;
+set session autocommit=on;
+select * from t1 order by c;
+a	b	c
+1	1	1
+1	1	1
+3	3	3
+3	3	3
+4	4	4
+4	4	4
+5	5	5
+5	5	5
+5	6	6
+5	6	6
+5	7	7
+5	7	7
+5	8	8
+5	8	8
+5	9	9
+5	9	9
+5	10	10
+5	10	10
+commit;
+set session autocommit=on;
+drop table t1;
+create table t1(a int, b int, c int);
+insert into t1 values(1,1,1);
+set session transaction_isolation='read-committed';
+set session sequoiadb_use_rollback_segments=off;
+begin;
+update t1 set a=2 where a=1;
+begin;
+select * from t1;
+ERROR HY000: Lock wait timeout exceeded; try restarting transaction
+rollback;
+begin;
+set session sequoiadb_use_rollback_segments=on;
+update t1 set a=2 where a=1;
+select * from t1;
+a	b	c
+1	1	1
+set session sequoiadb_use_rollback_segments=off;
+ERROR 42000: Cannot change sequoiadb_use_rollback_segments during transaction.
+rollback;
+rollback;
+drop table t1;
+set session sequoiadb_use_transaction=off;
+create table t1(a int);
+begin;
+insert into t1 values(1);
+begin;
+select * from t1;
+a
+1
+rollback;
+set session sequoiadb_use_transaction=on;
+rollback;
+drop table t1;
+set session transaction_isolation='read-uncommitted';
+create table t1(a int);
+begin;
+insert into t1 values(1);
+begin;
+select * from t1;
+a
+1
+rollback;
+set session transaction_isolation='REPEATABLE-READ';
+rollback;
+drop table t1;

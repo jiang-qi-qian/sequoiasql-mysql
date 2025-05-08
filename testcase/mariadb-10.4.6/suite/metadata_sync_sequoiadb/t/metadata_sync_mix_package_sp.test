@@ -1,0 +1,99 @@
+#BUG SEQUOIASQLMAINSTREAM-825
+#case 22947
+
+--source include/have_sequoiadb.inc
+--source suite/metadata_sync_sequoiadb/inc/insts_connect_sequoiadb.inc
+
+# connect to conn1, clear databases in the beginning
+connection conn1;
+--disable_warnings
+DROP DATABASE IF EXISTS metasync_mix_pkg_sp;
+--enable_warnings
+
+# connect to conn2, check databases are cleaned in the beginning
+connection conn2;
+--error ER_BAD_DB_ERROR
+SHOW CREATE DATABASE metasync_mix_pkg_sp;
+
+# seqDB-22947
+# begin testing
+#
+# create/alter/drop package and sp(function, procedure) 
+connection conn1;
+SET sql_mode=ORACLE;
+CREATE DATABASE metasync_mix_pkg_sp;
+USE metasync_mix_pkg_sp;
+DELIMITER |;
+CREATE PACKAGE pkg_body1 AS
+  FUNCTION f1 RETURN INT;
+  PROCEDURE p1;
+END; |
+CREATE PACKAGE BODY IF NOT EXISTS metasync_mix_pkg_sp.pkg_body1 AS
+  FUNCTION f1 RETURN TEXT AS
+  BEGIN
+    RETURN 'This is pkg_body1.f1';
+  END;
+  PROCEDURE p1 AS
+  BEGIN
+    SELECT 'This is pkg_body1.p1';
+  END;
+END; |
+SET sql_mode=DEFAULT|
+CREATE FUNCTION f1 ()
+    RETURNS TEXT
+NOT DETERMINISTIC
+CONTAINS SQL
+SQL SECURITY DEFINER
+COMMENT ''
+BEGIN
+  DECLARE x INT;
+  SET x = -1;
+   RETURN 'This is f1';
+END |
+CREATE PROCEDURE p1 ( id int )
+BEGIN
+   SELECT CONCAT( 'This is p', id );
+END |
+DELIMITER ;|
+# check metadatas after create
+connection conn2;
+SET sql_mode=ORACLE;
+USE metasync_mix_pkg_sp;
+--replace_regex /DEFINER=".*"@/DEFINER="x"@/
+SHOW CREATE PACKAGE pkg_body1;
+--replace_regex /DEFINER=".*"@/DEFINER="x"@/
+SHOW CREATE PACKAGE BODY pkg_body1;
+--replace_regex /DEFINER=`.*`@/DEFINER=`x`@/
+SHOW CREATE FUNCTION f1;
+--replace_regex /DEFINER=`.*`@/DEFINER=`x`@/
+SHOW CREATE PROCEDURE p1;
+SELECT pkg_body1.f1();
+CALL pkg_body1.p1();
+SELECT f1();
+CALL p1(1);
+# drop package and sp
+DROP PACKAGE BODY pkg_body1; 
+DROP PACKAGE pkg_body1;
+DROP PROCEDURE p1;
+DROP FUNCTION f1;
+SET sql_mode=DEFAULT;
+# check metadatas after drop
+connection conn1;
+--error ER_SP_DOES_NOT_EXIST
+SHOW CREATE PACKAGE pkg_body1;
+--error ER_SP_DOES_NOT_EXIST
+SHOW CREATE PACKAGE BODY pkg_body1;
+--error ER_SP_DOES_NOT_EXIST
+SHOW CREATE FUNCTION f1;
+--error ER_SP_DOES_NOT_EXIST
+SHOW CREATE PROCEDURE p1;
+
+# clear databases in the ending
+DROP DATABASE metasync_mix_pkg_sp;
+# check databases are cleaned in the ending
+connection conn2;
+--error ER_BAD_DB_ERROR
+SHOW CREATE DATABASE metasync_mix_pkg_sp;
+
+--source include/uninstall_sequoiadb.inc
+--source suite/metadata_sync_sequoiadb/inc/insts_disconnect_sequoiadb.inc

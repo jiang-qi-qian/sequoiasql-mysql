@@ -1,0 +1,82 @@
+connection conn1;
+DROP DATABASE IF EXISTS metaSync_mix_seq_table;
+connection conn2;
+SHOW CREATE DATABASE metaSync_mix_seq_table;
+ERROR 42000: Unknown database 'metasync_mix_seq_table'
+connection conn1;
+CREATE DATABASE metaSync_mix_seq_table;
+USE metaSync_mix_seq_table;
+CREATE SEQUENCE IF NOT EXISTS seq1 MAX_ROWS 10 MIN_ROWS 1 ROW_FORMAT = REDUNDANT SEQUENCE = 1 COMMENT 'create sequence';
+connection conn2;
+USE metaSync_mix_seq_table;
+CREATE TABLE t1 ( id INT PRIMARY KEY DEFAULT ( next value for seq1 ) );
+INSERT INTO t1 VALUES (),(),();
+connection conn1;
+SHOW CREATE TABLE t1;
+Table	Create Table
+t1	CREATE TABLE `t1` (
+  `id` int(11) NOT NULL DEFAULT nextval(`metasync_mix_seq_table`.`seq1`),
+  PRIMARY KEY (`id`)
+) ENGINE=SequoiaDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin
+connection conn2;
+SELECT * FROM seq1;
+next_not_cached_value	minimum_value	maximum_value	start_value	increment	cache_size	cycle_option	cycle_count
+1001	1	9223372036854775806	1	1	1000	0	0
+SELECT * FROM t1 ORDER BY id;
+id
+1
+2
+3
+SELECT PREVIOUS VALUE FOR seq1;
+PREVIOUS VALUE FOR seq1
+3
+SELECT NEXT VALUE FOR seq1;
+NEXT VALUE FOR seq1
+4
+set server_ha_wait_sync_timeout = 10;
+ALTER SEQUENCE seq1 START = 10 RESTART MINVALUE = 10 MAXVALUE = 4000 CYCLE;
+connection conn1;
+set server_ha_wait_sync_timeout = 10;
+ALTER TABLE t1 DROP PRIMARY KEY, CHANGE id id1 BIGINT DEFAULT ( next value for seq1 );
+SELECT * FROM seq1;
+next_not_cached_value	minimum_value	maximum_value	start_value	increment	cache_size	cycle_option	cycle_count
+10	10	4000	10	1	1000	1	0
+SELECT NEXT VALUE FOR seq1;
+NEXT VALUE FOR seq1
+10
+connection conn2;
+SHOW CREATE TABLE t1;
+Table	Create Table
+t1	CREATE TABLE `t1` (
+  `id1` bigint(20) DEFAULT nextval(`metasync_mix_seq_table`.`seq1`)
+) ENGINE=SequoiaDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin
+INSERT INTO t1 VALUES (),(),();
+SELECT * FROM t1 ORDER BY id1;
+id1
+1
+2
+3
+1010
+1011
+1012
+DROP SEQUENCE /* drop sequence */ seq1;
+connection conn1;
+INSERT INTO t1 VALUES ();
+ERROR 42S02: Table 'metasync_mix_seq_table.seq1' doesn't exist
+DROP TABLE t1;
+SHOW CREATE TABLE seq1;
+ERROR 42S02: Table 'metasync_mix_seq_table.seq1' doesn't exist
+SHOW CREATE TABLE t1;
+ERROR 42S02: Table 'metasync_mix_seq_table.t1' doesn't exist
+connection conn2;
+SHOW CREATE TABLE seq1;
+ERROR 42S02: Table 'metasync_mix_seq_table.seq1' doesn't exist
+SHOW CREATE TABLE t1;
+ERROR 42S02: Table 'metasync_mix_seq_table.t1' doesn't exist
+connection conn1;
+DROP DATABASE metaSync_mix_seq_table;
+set server_ha_wait_sync_timeout = 0;
+connection conn2;
+set server_ha_wait_sync_timeout = 0;
+SHOW CREATE DATABASE metaSync_mix_seq_table;
+ERROR 42000: Unknown database 'metasync_mix_seq_table'

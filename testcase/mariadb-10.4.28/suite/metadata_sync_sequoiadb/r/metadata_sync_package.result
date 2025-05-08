@@ -1,0 +1,169 @@
+connection conn1;
+DROP DATABASE IF EXISTS metasync_pkg;
+connection conn2;
+SHOW CREATE DATABASE metasync_pkg;
+ERROR 42000: Unknown database 'metasync_pkg'
+connection conn1;
+SET sql_mode=ORACLE;
+CREATE DATABASE metasync_pkg;
+USE metasync_pkg;
+CREATE OR REPLACE PACKAGE pkg1 AS
+FUNCTION f1 ( id INT ) RETURN DECIMAL(10,2);
+PROCEDURE sp1 ( id INT, amount DECIMAL(10,2) );
+PROCEDURE sp2 ( id INT );
+PROCEDURE sp3 ( name TEXT, salary DECIMAL(10,2) );
+END; |
+CREATE PACKAGE IF NOT EXISTS pkg2 COMMENT 'package comment' SQL SECURITY INVOKER IS
+FUNCTION f1 RETURN INT DETERMINISTIC;
+PROCEDURE sp1 ( x INT, y INT  );
+END |
+CREATE DEFINER = 'sdbadmin'@'%' PACKAGE pkg_body1 IS
+PROCEDURE sp1 ( c1 IN VARCHAR2, c2 IN VARCHAR2, c3 OUT VARCHAR2 );
+END; |
+CREATE OR REPLACE DEFINER = 'sdbadmin'@'%' PACKAGE BODY pkg_body1 COMMENT 'package body comment' SQL SECURITY INVOKER IS
+PROCEDURE sp1 (
+c1 IN VARCHAR2,
+c2 IN VARCHAR2,
+c3 OUT VARCHAR2 )
+AS
+lS NUMBER(10) :=0;
+CURSOR cBPD IS
+SELECT COR, DATE, CHAN, CNO, C1, C2, TIME, AMT
+FROM t1 WHERE JOBN = c2;
+BEGIN
+FOR lbpd IN cBPD
+LOOP
+lS:= lS + 1;
+END LOOP;
+EXCEPTION
+WHEN OTHERS THEN
+BEGIN
+SELECT SQLERRM;
+END;
+END;
+END |
+CREATE PACKAGE pkg_body2 AS
+FUNCTION f1 RETURN INT;
+FUNCTION f2 RETURN TEXT;
+PROCEDURE p1;
+PROCEDURE p2;
+END; |
+CREATE PACKAGE BODY IF NOT EXISTS metasync_pkg.pkg_body2 AS
+-- Public routines
+FUNCTION f1 RETURN TEXT AS
+BEGIN
+RETURN f2();
+END;
+PROCEDURE p1 AS
+BEGIN
+CALL p2();
+END;
+-- Private routines
+FUNCTION f2 RETURN TEXT AS
+BEGIN
+RETURN 'This is pkg_body2.f2';
+END;
+PROCEDURE p2 AS
+BEGIN
+SELECT 'This is pkg_body2.p2';
+END;
+END; |
+connection conn2;
+SET sql_mode=ORACLE;
+USE metasync_pkg;
+SHOW CREATE PACKAGE pkg1;
+Package	sql_mode	Create Package	character_set_client	collation_connection	Database Collation
+pkg1	PIPES_AS_CONCAT,ANSI_QUOTES,IGNORE_SPACE,ORACLE,NO_KEY_OPTIONS,NO_TABLE_OPTIONS,NO_FIELD_OPTIONS,NO_AUTO_CREATE_USER,SIMULTANEOUS_ASSIGNMENT	CREATE DEFINER="x"@"%" PACKAGE "pkg1" AS
+FUNCTION f1 ( id INT ) RETURN DECIMAL(10,2);
+PROCEDURE sp1 ( id INT, amount DECIMAL(10,2) );
+PROCEDURE sp2 ( id INT );
+PROCEDURE sp3 ( name TEXT, salary DECIMAL(10,2) );
+END	latin1	latin1_swedish_ci	utf8mb4_bin
+SHOW CREATE PACKAGE pkg2;
+Package	sql_mode	Create Package	character_set_client	collation_connection	Database Collation
+pkg2	PIPES_AS_CONCAT,ANSI_QUOTES,IGNORE_SPACE,ORACLE,NO_KEY_OPTIONS,NO_TABLE_OPTIONS,NO_FIELD_OPTIONS,NO_AUTO_CREATE_USER,SIMULTANEOUS_ASSIGNMENT	CREATE DEFINER="x"@"%" PACKAGE "pkg2"    SQL SECURITY INVOKER
+    COMMENT 'package comment'
+ IS
+FUNCTION f1 RETURN INT DETERMINISTIC;
+PROCEDURE sp1 ( x INT, y INT  );
+END	latin1	latin1_swedish_ci	utf8mb4_bin
+SHOW CREATE PACKAGE BODY pkg_body1;
+Package body	sql_mode	Create Package Body	character_set_client	collation_connection	Database Collation
+pkg_body1	PIPES_AS_CONCAT,ANSI_QUOTES,IGNORE_SPACE,ORACLE,NO_KEY_OPTIONS,NO_TABLE_OPTIONS,NO_FIELD_OPTIONS,NO_AUTO_CREATE_USER,SIMULTANEOUS_ASSIGNMENT	CREATE DEFINER="x"@"%" PACKAGE BODY "pkg_body1"    SQL SECURITY INVOKER
+    COMMENT 'package body comment'
+ IS
+PROCEDURE sp1 (
+c1 IN VARCHAR2,
+c2 IN VARCHAR2,
+c3 OUT VARCHAR2 )
+AS
+lS NUMBER(10) :=0;
+CURSOR cBPD IS
+SELECT COR, DATE, CHAN, CNO, C1, C2, TIME, AMT
+FROM t1 WHERE JOBN = c2;
+BEGIN
+FOR lbpd IN cBPD
+LOOP
+lS:= lS + 1;
+END LOOP;
+EXCEPTION
+WHEN OTHERS THEN
+BEGIN
+SELECT SQLERRM;
+END;
+END;
+END	latin1	latin1_swedish_ci	utf8mb4_bin
+SHOW CREATE PACKAGE BODY pkg_body2;
+Package body	sql_mode	Create Package Body	character_set_client	collation_connection	Database Collation
+pkg_body2	PIPES_AS_CONCAT,ANSI_QUOTES,IGNORE_SPACE,ORACLE,NO_KEY_OPTIONS,NO_TABLE_OPTIONS,NO_FIELD_OPTIONS,NO_AUTO_CREATE_USER,SIMULTANEOUS_ASSIGNMENT	CREATE DEFINER="x"@"%" PACKAGE BODY "pkg_body2" AS
+-- Public routines
+FUNCTION f1 RETURN TEXT AS
+BEGIN
+RETURN f2();
+END;
+PROCEDURE p1 AS
+BEGIN
+CALL p2();
+END;
+-- Private routines
+FUNCTION f2 RETURN TEXT AS
+BEGIN
+RETURN 'This is pkg_body2.f2';
+END;
+PROCEDURE p2 AS
+BEGIN
+SELECT 'This is pkg_body2.p2';
+END;
+END	latin1	latin1_swedish_ci	utf8mb4_bin
+SELECT pkg_body2.f1();
+pkg_body2.f1()
+This is pkg_body2.f2
+SELECT pkg_body2.f2();
+pkg_body2.f2()
+This is pkg_body2.f2
+CALL pkg_body2.p1();
+This is pkg_body2.p2
+This is pkg_body2.p2
+CALL pkg_body2.p2();
+This is pkg_body2.p2
+This is pkg_body2.p2
+DROP PACKAGE IF EXISTS metasync_pkg.pkg1;
+DROP PACKAGE pkg2;
+DROP PACKAGE BODY IF EXISTS metasync_pkg.pkg_body1;
+DROP PACKAGE BODY pkg_body2;
+SET sql_mode=DEFAULT;
+connection conn1;
+SHOW CREATE PACKAGE pkg1;
+ERROR 42000: PACKAGE pkg1 does not exist
+SHOW CREATE PACKAGE pkg2;
+ERROR 42000: PACKAGE pkg2 does not exist
+SHOW CREATE PACKAGE BODY pkg_body1;
+ERROR 42000: PACKAGE BODY pkg_body1 does not exist
+SHOW CREATE PACKAGE BODY pkg_body2;
+ERROR 42000: PACKAGE BODY pkg_body2 does not exist
+SET sql_mode=DEFAULT;
+connection conn1;
+DROP DATABASE metasync_pkg;
+connection conn2;
+SHOW CREATE DATABASE metasync_pkg;
+ERROR 42000: Unknown database 'metasync_pkg'

@@ -1,0 +1,331 @@
+# Testcase: seqDB-22806
+
+--source include/big_test.inc
+--source include/have_sequoiadb.inc
+
+CREATE DATABASE index_select_sequoiadb_22806;
+USE index_select_sequoiadb_22806;
+
+#
+# seqDB-22806: index select, type: date/datetime/time/timestamp, range query
+#
+
+#
+# table t1, type: date
+#
+create table t1 (a date, b date);
+load data infile '../../std_data/loaddata_large_sequoiadb_6.dat' ignore into table t1 fields terminated by ',';
+alter table t1 add primary key(a);
+alter table t1 add unique index idx_b(b);
+alter table t1 add index idx_ab(a, b);
+alter table t1 add index idx_ba(b, a);
+
+# condition: a<
+--replace_column 10 x
+explain select * from t1 where a < '6491-11-01';
+--sorted_result
+select * from t1 where a < '6491-11-01' limit 5;
+analyze table t1;
+--replace_column 10 x
+explain select * from t1 where a < '6491-11-01';
+--sorted_result
+select * from t1 where a < '6491-11-01' limit 5;
+
+# condition: b>
+--replace_column 10 x
+explain select * from t1 where b >'6491-11-01';
+--sorted_result
+select * from t1 where b >'6491-11-01' limit 5;
+analyze table t1;
+--replace_column 10 x
+explain select * from t1 where b >'6491-11-01';
+--sorted_result
+select * from t1 where b >'6491-11-01' limit 5;
+
+# condition: a> and a<
+--replace_column 10 x
+explain select * from t1 where a > '2407-04-01' and a < '7753-06-01';
+--sorted_result
+select * from t1 where a > '2407-04-01' and a < '7753-06-01' limit 5;
+analyze table t1;
+--replace_column 10 x
+explain select * from t1 where a > '2407-04-01' and a < '7753-06-01';
+--sorted_result
+select * from t1 where a > '2407-04-01' and a < '7753-06-01' limit 5;
+
+# condition: b> and a<
+--replace_column 10 x
+explain select * from t1 where b > '2407-04-01' and a < '7753-06-01';
+--sorted_result
+select * from t1 where b > '2407-04-01' and a < '7753-06-01' limit 5;
+analyze table t1;
+--replace_column 10 x
+explain select * from t1 where b > '2407-04-01' and a < '7753-06-01';
+--sorted_result
+select * from t1 where b > '2407-04-01' and a < '7753-06-01' limit 5;
+
+# condition: in
+--replace_column 10 x
+explain select * from t1 where a in ('2736-09-01', '6470-06-01', '4157-10-01', '8355-01-01', '7283-11-01', '3789-07-01', '4120-08-01', '8349-08-01', '1954-09-01', '4133-08-01');
+--sorted_result
+select * from t1 where a in ('2736-09-01', '6470-06-01', '4157-10-01', '8355-01-01', '7283-11-01', '3789-07-01', '4120-08-01', '8349-08-01', '1954-09-01', '4133-08-01');
+analyze table t1;
+--replace_column 10 x
+explain select * from t1 where a in ('2736-09-01', '6470-06-01', '4157-10-01', '8355-01-01', '7283-11-01', '3789-07-01', '4120-08-01', '8349-08-01', '1954-09-01', '4133-08-01');
+--sorted_result
+select * from t1 where a in ('2736-09-01', '6470-06-01', '4157-10-01', '8355-01-01', '7283-11-01', '3789-07-01', '4120-08-01', '8349-08-01', '1954-09-01', '4133-08-01');
+
+# condition: between
+--replace_column 10 x
+explain select * from t1 where a between '4157-10-01' and '8355-01-01';
+--sorted_result
+select * from t1 where a between '4157-10-01' and '8355-01-01' limit 5;
+analyze table t1;
+--replace_column 10 x
+explain select * from t1 where a between '4157-10-01' and '8355-01-01';
+--sorted_result
+select * from t1 where a between '4157-10-01' and '8355-01-01' limit 5;
+
+drop table t1;
+
+#
+# table t1, type: datetime
+#
+create table t1 (a datetime, b datetime);
+load data infile '../../std_data/loaddata_large_sequoiadb_7.dat' ignore into table t1 fields terminated by ',';
+alter table t1 add primary key(a);
+alter table t1 add unique index idx_b(b);
+alter table t1 add index idx_ab(a, b);
+alter table t1 add index idx_ba(b, a);
+
+# condition: a<
+--replace_column 10 x
+explain select * from t1 where a < '6491-11-01';
+--sorted_result
+select * from t1 where a < '6491-11-01' limit 5;
+analyze table t1;
+--replace_column 10 x
+explain select * from t1 where a < '6491-11-01';
+--sorted_result
+select * from t1 where a < '6491-11-01' limit 5;
+
+# condition: b>
+--replace_column 10 x
+explain select * from t1 where b >'6491-11-01';
+--sorted_result
+select * from t1 where b >'6491-11-01' limit 5;
+analyze table t1;
+--replace_column 10 x
+explain select * from t1 where b >'6491-11-01';
+--sorted_result
+select * from t1 where b >'6491-11-01' limit 5;
+
+# condition: a> and a<
+--replace_column 10 x
+explain select * from t1 where a > '2407-04-01' and a < '7753-06-01';
+--sorted_result
+select * from t1 where a > '2407-04-01' and a < '7753-06-01' limit 5;
+analyze table t1;
+--replace_column 10 x
+explain select * from t1 where a > '2407-04-01' and a < '7753-06-01';
+--sorted_result
+select * from t1 where a > '2407-04-01' and a < '7753-06-01' limit 5;
+
+# condition: b> and a<
+--replace_column 10 x
+explain select * from t1 where b > '2407-04-01' and a < '7753-06-01';
+--sorted_result
+select * from t1 where b > '2407-04-01' and a < '7753-06-01' limit 5;
+analyze table t1;
+--replace_column 10 x
+explain select * from t1 where b > '2407-04-01' and a < '7753-06-01';
+--sorted_result
+select * from t1 where b > '2407-04-01' and a < '7753-06-01' limit 5;
+
+# condition: in
+--replace_column 10 x
+explain select * from t1 where a in ('2736-09-01', '6470-06-01', '4157-10-01', '8355-01-01', '7283-11-01', '3789-07-01', '4120-08-01', '8349-08-01', '1954-09-01', '4133-08-01');
+--sorted_result
+select * from t1 where a in ('2736-09-01', '6470-06-01', '4157-10-01', '8355-01-01', '7283-11-01', '3789-07-01', '4120-08-01', '8349-08-01', '1954-09-01', '4133-08-01');
+analyze table t1;
+--replace_column 10 x
+explain select * from t1 where a in ('2736-09-01', '6470-06-01', '4157-10-01', '8355-01-01', '7283-11-01', '3789-07-01', '4120-08-01', '8349-08-01', '1954-09-01', '4133-08-01');
+--sorted_result
+select * from t1 where a in ('2736-09-01', '6470-06-01', '4157-10-01', '8355-01-01', '7283-11-01', '3789-07-01', '4120-08-01', '8349-08-01', '1954-09-01', '4133-08-01');
+
+# condition: between
+--replace_column 10 x
+explain select * from t1 where a between '4157-10-01' and '8355-01-01';
+--sorted_result
+select * from t1 where a between '4157-10-01' and '8355-01-01' limit 5;
+analyze table t1;
+--replace_column 10 x
+explain select * from t1 where a between '4157-10-01' and '8355-01-01';
+--sorted_result
+select * from t1 where a between '4157-10-01' and '8355-01-01' limit 5;
+
+drop table t1;
+
+#
+# table t1, type: time
+#
+create table t1 (a time, b time);
+load data infile '../../std_data/loaddata_large_sequoiadb_8.dat' ignore into table t1 fields terminated by ',';
+alter table t1 add primary key(a);
+alter table t1 add unique index idx_b(b);
+alter table t1 add index idx_ab(a, b);
+alter table t1 add index idx_ba(b, a);
+
+# condition: a<
+--replace_column 10 x
+explain select * from t1 where a < '269:09:02';
+--sorted_result
+select * from t1 where a < '269:09:02' limit 5;
+analyze table t1;
+--replace_column 10 x
+explain select * from t1 where a < '269:09:02';
+--sorted_result
+select * from t1 where a < '269:09:02' limit 5;
+
+# condition: b>
+--replace_column 10 x
+explain select * from t1 where b >'269:09:02';
+--sorted_result
+select * from t1 where b >'269:09:02' limit 5;
+analyze table t1;
+--replace_column 10 x
+explain select * from t1 where b >'269:09:02';
+--sorted_result
+select * from t1 where b >'269:09:02' limit 5;
+
+# condition: a> and a<
+--replace_column 10 x
+explain select * from t1 where a > '-313:10:04' and a < '789:09:03';
+--sorted_result
+select * from t1 where a > '-313:10:04' and a < '789:09:03' limit 5;
+analyze table t1;
+--replace_column 10 x
+explain select * from t1 where a > '-313:10:04' and a < '789:09:03';
+--sorted_result
+select * from t1 where a > '-313:10:04' and a < '789:09:03' limit 5;
+
+# condition: b> and a<
+--replace_column 10 x
+explain select * from t1 where b > '-313:10:04' and a < '789:09:03';
+--sorted_result
+select * from t1 where b > '-313:10:04' and a < '789:09:03' limit 5;
+analyze table t1;
+--replace_column 10 x
+explain select * from t1 where b > '-313:10:04' and a < '789:09:03';
+--sorted_result
+select * from t1 where b > '-313:10:04' and a < '789:09:03' limit 5;
+
+# condition: in
+--replace_column 10 x
+explain select * from t1 where a in ('-577:11:00', '269:09:02', '-392:09:02', '60:09:02', '552:12:02', '818:08:02', '510:12:01', '-62:01:00', '-18:11:02', '31:12:02');
+--sorted_result
+select * from t1 where a in ('-577:11:00', '269:09:02', '-392:09:02', '60:09:02', '552:12:02', '818:08:02', '510:12:01', '-62:01:00', '-18:11:02', '31:12:02');
+analyze table t1;
+--replace_column 10 x
+explain select * from t1 where a in ('-577:11:00', '269:09:02', '-392:09:02', '60:09:02', '552:12:02', '818:08:02', '510:12:01', '-62:01:00', '-18:11:02', '31:12:02');
+--sorted_result
+select * from t1 where a in ('-577:11:00', '269:09:02', '-392:09:02', '60:09:02', '552:12:02', '818:08:02', '510:12:01', '-62:01:00', '-18:11:02', '31:12:02');
+
+# condition: between
+--replace_column 10 x
+explain select * from t1 where a between '-392:09:02' and '269:09:02';
+--sorted_result
+select * from t1 where a between '-392:09:02' and '269:09:02' limit 5;
+analyze table t1;
+--replace_column 10 x
+explain select * from t1 where a between '-392:09:02' and '269:09:02';
+--sorted_result
+select * from t1 where a between '-392:09:02' and '269:09:02' limit 5;
+
+drop table t1;
+
+#
+# table t1, type: timestamp
+#
+create table t1 (a timestamp, b timestamp);
+load data infile '../../std_data/loaddata_large_sequoiadb_9.dat' ignore into table t1 fields terminated by ',';
+alter table t1 add primary key(a);
+alter table t1 add unique index idx_b(b);
+alter table t1 add index idx_ab(a, b);
+alter table t1 add index idx_ba(b, a);
+
+# condition: a<
+--replace_column 10 x
+explain select * from t1 where a < '1991-05-01 05:00:00';
+--sorted_result
+select * from t1 where a < '1991-05-01 05:00:00' limit 5;
+analyze table t1;
+--replace_column 10 x
+explain select * from t1 where a < '1991-05-01 05:00:00';
+--sorted_result
+select * from t1 where a < '1991-05-01 05:00:00' limit 5;
+
+# condition: b>
+--replace_column 10 x
+explain select * from t1 where b >'1991-05-01 05:00:00';
+--sorted_result
+select * from t1 where b >'1991-05-01 05:00:00' limit 5;
+analyze table t1;
+--replace_column 10 x
+explain select * from t1 where b >'1991-05-01 05:00:00';
+--sorted_result
+select * from t1 where b >'1991-05-01 05:00:00' limit 5;
+
+# condition: a> and a<
+--replace_column 10 x
+explain select * from t1 where a > '1991-05-01 05:00:00' and a < '2029-04-01 04:00:00';
+--sorted_result
+select * from t1 where a > '1991-05-01 05:00:00' and a < '2029-04-01 04:00:00' limit 5;
+analyze table t1;
+--replace_column 10 x
+explain select * from t1 where a > '1991-05-01 05:00:00' and a < '2029-04-01 04:00:00';
+--sorted_result
+select * from t1 where a > '1991-05-01 05:00:00' and a < '2029-04-01 04:00:00' limit 5;
+
+# condition: b> and a<
+--replace_column 10 x
+explain select * from t1 where b > '1991-05-01 05:00:00' and a < '2029-04-01 04:00:00';
+--sorted_result
+select * from t1 where b > '1991-05-01 05:00:00' and a < '2029-04-01 04:00:00' limit 5;
+analyze table t1;
+--replace_column 10 x
+explain select * from t1 where b > '1991-05-01 05:00:00' and a < '2029-04-01 04:00:00';
+--sorted_result
+select * from t1 where b > '1991-05-01 05:00:00' and a < '2029-04-01 04:00:00' limit 5;
+
+# condition: in
+--replace_column 10 x
+explain select * from t1 where a in ('1991-05-01 05:00:00', '2029-04-01 04:00:00', '2034-11-01 10:00:00', '2028-09-01 08:00:00', '2015-03-01 07:00:00', '2031-08-01 12:00:00', '1981-09-01 04:00:00', '2012-03-01 07:00:00', '2009-10-01 01:00:00', '2009-10-01 01:00:00');
+--sorted_result
+select * from t1 where a in ('1991-05-01 05:00:00', '2029-04-01 04:00:00', '2034-11-01 10:00:00', '2028-09-01 08:00:00', '2015-03-01 07:00:00', '2031-08-01 12:00:00', '1981-09-01 04:00:00', '2012-03-01 07:00:00', '2009-10-01 01:00:00', '2009-10-01 01:00:00');
+analyze table t1;
+--replace_column 10 x
+explain select * from t1 where a in ('1991-05-01 05:00:00', '2029-04-01 04:00:00', '2034-11-01 10:00:00', '2028-09-01 08:00:00', '2015-03-01 07:00:00', '2031-08-01 12:00:00', '1981-09-01 04:00:00', '2012-03-01 07:00:00', '2009-10-01 01:00:00', '2009-10-01 01:00:00');
+--sorted_result
+select * from t1 where a in ('1991-05-01 05:00:00', '2029-04-01 04:00:00', '2034-11-01 10:00:00', '2028-09-01 08:00:00', '2015-03-01 07:00:00', '2031-08-01 12:00:00', '1981-09-01 04:00:00', '2012-03-01 07:00:00', '2009-10-01 01:00:00', '2009-10-01 01:00:00');
+
+# condition: between
+--replace_column 10 x
+explain select * from t1 where a between '1981-09-01 04:00:00' and '2012-03-01 07:00:00';
+--sorted_result
+select * from t1 where a between '1981-09-01 04:00:00' and '2012-03-01 07:00:00' limit 5;
+analyze table t1;
+--replace_column 10 x
+explain select * from t1 where a between '1981-09-01 04:00:00' and '2012-03-01 07:00:00';
+--sorted_result
+select * from t1 where a between '1981-09-01 04:00:00' and '2012-03-01 07:00:00' limit 5;
+analyze table t1;
+
+
+#
+# clear env
+#
+DROP DATABASE index_select_sequoiadb_22806;
+
+--source include/uninstall_sequoiadb.inc
+

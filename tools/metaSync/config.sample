@@ -1,0 +1,14 @@
+[mysql]
+hosts = sdb1,sdb2,sdb3
+mysql_password_type = 0
+mysql_user = sdbadmin
+mysql_password = sdbadmin
+port = 3306
+install_dir = /opt/sequoiasql/mysql
+audit_log_directory = /opt/sequoiasql/mysql/database/auditlog
+audit_log_file_name = server_audit.log
+
+[execute]
+interval_time = 1
+ignore_error = true
+max_retry_times = 5

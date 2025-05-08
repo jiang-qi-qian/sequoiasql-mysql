@@ -1,0 +1,9 @@
+create table t1 (d date);
+insert into t1 values ('2012-00-00');
+ERROR 22007: Incorrect date value: '2012-00-00' for column 'd' at row 1
+select * from t1;
+d
+update ignore t1 set d = adddate(d, interval 1 day);
+select * from t1;
+d
+drop table t1;

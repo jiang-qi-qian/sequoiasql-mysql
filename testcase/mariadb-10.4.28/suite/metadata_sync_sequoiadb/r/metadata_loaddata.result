@@ -1,0 +1,18 @@
+connection conn1;
+DROP DATABASE IF EXISTS metasync_loaddata_23088;
+CREATE DATABASE metasync_loaddata_23088;
+USE metasync_loaddata_23088;
+CREATE TABLE t1 ( a int, b int, c int auto_increment key );
+INSERT INTO t1 VALUES (1,1,1),(2,2,2),(3,3,3),(4,4,4),(5,5,5),(6,6,6),(7,7,7),(8,8,8),(9,9,9),(10,10,10);
+connection conn2;
+select * into outfile '$MYSQL_TEST_DIR/../metadata_loaddata.txt' fields terminated by ',' from metasync_loaddata_23088.t1;
+connection conn1;
+DROP TABLE t1;
+connection conn2;
+load data infile '$MYSQL_TEST_DIR/../metadata_loaddata.txt' into table metasync_loaddata_23088.t1 fields terminated by ',';
+ERROR 42S02: Table 'metasync_loaddata_23088.t1' doesn't exist
+connection conn1;
+DROP DATABASE metasync_loaddata_23088;
+connection conn2;
+SHOW CREATE DATABASE metasync_loaddata_23088;
+ERROR 42000: Unknown database 'metasync_loaddata_23088'

@@ -1,0 +1,191 @@
+--source include/have_sequoiadb.inc
+create database delete_test_sequoiadb;
+use delete_test_sequoiadb;
+--disable_query_log
+create table reserved(a int primary key)ENGINE=sequoiadb COMMENT='sequoiadb:{ auto_partition: true }';
+--enable_query_log
+
+#Case 19508
+create table t1(id int auto_increment key, a int, b varchar(255), c varbinary(255));
+insert into t1(a,b,c) values(1000, 'sa', 'sa'), (1, 'ss', 'ss'),(100, 'sq', 'q'),(10, 'sz', 'sz');
+--enable_info
+delete from t1 where a=10;
+--source include/query_pushdown_condition_sequoiadb.inc
+delete from t1 where c='ss';
+--source include/query_pushdown_condition_sequoiadb.inc
+delete from t1 where a=1000 or c='q';
+--source include/query_pushdown_condition_sequoiadb.inc
+--disable_info
+select * from t1 order by id;
+drop table t1;
+
+#Case 19510#Case 19511
+create table t1(id int auto_increment key, a int, b varchar(255) not null default 'test', c varbinary(255))comment="sequoiadb:{ auto_partition: false }";
+insert into t1(a,b,c) values(10, 'sa', 'sa'), (1000, 'ss', 'ss'),(100, 'sq', 'q'),(1, 'sz', 'sz');
+insert into t1(a,b,c) values(11, 'sb', 'sb'), (1001, 'st', 'st'),(102, 'sr', 'r'),(2, 'sy', 'sy');
+--enable_info
+delete from t1 where id=1 order by id;
+--source include/query_pushdown_condition_sequoiadb.inc
+delete from t1 where id=2 order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+delete from t1 where a=100 order by id;
+--source include/query_pushdown_condition_sequoiadb.inc
+delete from t1 where a=1000 order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+delete from t1 order by id;
+--source include/query_pushdown_condition_sequoiadb.inc
+--disable_info
+select * from t1 order by id;
+insert into t1(a,b,c) values(10, 'sa', 'sa'), (1000, 'ss', 'ss'),(100, 'sq', 'q'),(1, 'sz', 'sz');
+insert into t1(a,b,c) values(11, 'sb', 'sb'), (1001, 'st', 'st'),(102, 'sr', 'r'),(2, 'sy', 'sy');
+--enable_info
+delete from t1 where c='sa' order by id;
+--source include/query_pushdown_condition_sequoiadb.inc
+delete from t1 order by id limit 2;
+--source include/query_pushdown_condition_sequoiadb.inc
+delete from t1 where a=1001 order by id limit 1;
+--source include/query_pushdown_condition_sequoiadb.inc
+--disable_info
+select * from t1 order by id;
+--enable_info
+delete from t1 where a>2 limit 1;
+--source include/query_pushdown_condition_sequoiadb.inc
+delete from t1 where c in('sz', 'r', 'sy') limit 1;
+--source include/query_pushdown_condition_sequoiadb.inc
+--disable_info
+select * from t1 order by id;
+drop table t1;
+
+#Case 19512#Case 19513
+create table t1(id int auto_increment key)comment="sequoiadb:{ auto_partition: false }";
+insert into t1 values(),(),(),();
+--enable_info
+delete ignore from t1 where id>2;
+--source include/query_pushdown_condition_sequoiadb.inc
+--disable_info
+select * from t1 order by id;
+--enable_info
+delete low_priority from t1 where id>1;
+--source include/query_pushdown_condition_sequoiadb.inc
+--disable_info
+drop table t1;
+
+#Case 19514
+create temporary table t1(id int auto_increment key, a int, b varchar(255), c varbinary(255))engine=sequoiadb;
+insert into t1(a,b,c) values(1000, 'sa', 'sa'), (1, 'ss', 'ss'),(100, 'sq', 'q'),(10, 'sz', 'sz');
+--enable_info
+delete from t1 where a=10;
+#--source include/query_pushdown_condition_sequoiadb.inc
+--enable_info
+delete from t1 where c='ss';
+#--source include/query_pushdown_condition_sequoiadb.inc
+--disable_info
+select * from t1 order by id;
+drop table t1;
+
+#Case 19515
+create table t1 (i int, j int default 10, k int not null, key (k));
+create table t2 (i int);
+insert into t1 (i, k) values (1, 1);
+insert into t2 values (1);
+create trigger trg3 before delete on t1 for each row set @c:= @c + old.j;
+create trigger trg4 before delete on t2 for each row set @d:= @d + old.i;
+create trigger trg5 after delete on t1 for each row set @e:= "After delete t1 fired";
+create trigger trg6 after delete on t2 for each row set @f:= "After delete t2 fired";
+set @c:= 0, @d:= 0, @e:= "", @f:= "";
+--enable_info
+delete t1, t2 from t1, t2 where t1.i = t2.i;
+--source include/query_pushdown_condition_sequoiadb.inc
+--disable_info
+select * from t1;
+drop table t1,t2;
+
+#Case 19516
+CREATE TABLE t1(a1 INT NOT NULL, a2 INT);
+CREATE TABLE t2(a1 INT NOT NULL, a2 INT);
+INSERT INTO t1 VALUES (1, 1);
+INSERT INTO t2 VALUES (1, 1);
+--enable_info
+delete t1,t2 from t1,t2 where t1.a2=1;
+--source include/query_pushdown_condition_sequoiadb.inc
+--disable_info
+select * from t1;
+select * from t2;
+drop table t1,t2;
+
+#Case 19518#Case 19519
+create table t1(c1 int);
+create table t2(c2 int);
+insert into t1 values (1),(2),(3);
+insert into t2 values (1);
+--enable_info
+delete from t1 WHERE c1 IN (SELECT c2 FROM t2);
+--source include/query_pushdown_condition_sequoiadb.inc
+--disable_info
+select *from t1;
+select *from t2;
+--enable_info
+delete quick from t1 where c1=2;
+--source include/query_pushdown_condition_sequoiadb.inc
+--disable_info
+select * from t1;
+drop table t1,t2;
+
+#Case 19509
+CREATE TABLE t1 (a int, t timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP);
+insert into t1 (a) values(4);
+--enable_info
+delete from t1;
+--source include/query_pushdown_condition_sequoiadb.inc
+--disable_info
+select * from t1;
+drop table t1;
+
+#Case 19507
+create table t1(id int auto_increment key, a int);
+insert into t1(a) values (1),(2),(3);
+--enable_info
+delete from t1;
+--source include/query_pushdown_condition_sequoiadb.inc
+--disable_info
+select *from t1;
+insert into t1(a) values (1),(2),(3);
+begin;
+--enable_info
+delete from t1;
+--disable_info
+rollback;
+select *from t1 order by id;
+begin;
+--enable_info
+delete from t1;
+--disable_info
+commit;
+select *from t1;
+drop table t1;
+
+#Case 24167
+# KEY(a)
+CREATE TABLE t1 ( a CHAR(10), KEY(a) );
+INSERT INTO t1 VALUES ('1'),('2'),('3'),('4');
+--enable_info
+DELETE FROM t1 WHERE a <> '4';
+--disable_info
+--replace_regex /^([^s]*)\[Note\]/[Note]/
+--exec tail -n 2 $MYSQLTEST_VARDIR/log/mysqld.1.err
+SELECT * FROM t1;
+DROP TABLE t1;
+
+# KEY(a), KEY(b)
+CREATE TABLE t1 ( a CHAR(10), b CHAR(10), KEY(a), KEY(b) );
+INSERT INTO t1 VALUES ('1','1'),('2','2'),('3','3'),('4','4');
+--enable_info
+DELETE FROM t1 WHERE a <> '4' AND b <> '4';
+--disable_info
+--replace_regex /^([^s]*)\[Note\]/[Note]/
+--exec tail -n 2 $MYSQLTEST_VARDIR/log/mysqld.1.err
+SELECT * FROM t1;
+DROP TABLE t1;
+
+drop database delete_test_sequoiadb;
+--source include/uninstall_sequoiadb.inc

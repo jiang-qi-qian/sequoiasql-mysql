@@ -1,0 +1,12 @@
+#seqDB-26410 #SEQUOIASQLMAINSTREAM-1338该用例只涉及3.4版本
+--source include/have_partition.inc
+
+--disable_warnings
+drop table if exists alter_with_comment_sequoiadb_26410;
+--enable_warnings
+
+create table alter_with_comment_sequoiadb_26410( a int );
+--error 131
+alter table alter_with_comment_sequoiadb_26410 COMMENT="sequoiadb:{table_options:{ShardingKey: {a: 1}, ShardingType: 'hash'}}" partition by key(a) partitions 4;
+
+drop table alter_with_comment_sequoiadb_26410;

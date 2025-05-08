@@ -1,0 +1,116 @@
+# Testcase: seqDB-22794:单表等值查询索引选择(sequoiadb_stats_cache=OFF)
+
+--source include/big_test.inc
+--source include/have_sequoiadb.inc
+
+CREATE DATABASE index_select_sequoiadb_22794_2;
+use index_select_sequoiadb_22794_2;
+
+#int char
+CREATE TABLE t1 (
+  a INT,
+  b CHAR(64),
+  c int default 1
+);
+LOAD DATA INFILE '../../std_data/loaddata_5w_sequoiadb.dat' INTO TABLE t1(a,b);
+alter table t1 add PRIMARY KEY(a);
+alter table t1 add index b(b);
+alter table t1 add index ab(a,b);
+alter table t1 add index ba(b,a);
+SHOW CREATE TABLE t1;
+--replace_column 9 #
+EXPLAIN SELECT * FROM t1 WHERE a=318387;
+--sorted_result
+SELECT * FROM t1 WHERE a=318387;
+--source include/query_pushdown_condition_sequoiadb.inc
+--replace_column 9 #
+EXPLAIN SELECT * FROM t1 WHERE b="ghiuj";
+--sorted_result
+SELECT * FROM t1 WHERE b="ghiuj";
+--source include/query_pushdown_condition_sequoiadb.inc
+--replace_column 9 #
+EXPLAIN SELECT * FROM t1 WHERE a=183265 AND b="fghiujmklnopqvwxyzEKLMN";
+--sorted_result
+SELECT * FROM t1 WHERE a=183265 AND b="fghiujmklnopqvwxyzEKLMN";
+--source include/query_pushdown_condition_sequoiadb.inc
+--replace_column 9 #
+EXPLAIN SELECT * FROM t1 WHERE b="TQBRCVDUWXYZ" AND a=596115;
+--sorted_result
+SELECT * FROM t1 WHERE b="TQBRCVDUWXYZ" AND a=596115;
+--source include/query_pushdown_condition_sequoiadb.inc
+DROP TABLE t1;
+
+#int set enum
+CREATE TABLE t1 (
+  id INT,
+  a ENUM('1','2','3','4','5'),
+  b SET('a','b','c')
+);
+LOAD DATA INFILE '../../std_data/index_select_sequoiadb_2.dat' INTO TABLE t1 fields terminated by ';';
+alter table t1 add PRIMARY KEY(id);
+alter table t1 add index a(a);
+alter table t1 add index ab(a,b);
+alter table t1 add index ida(id,a);
+alter table t1 add index idab(id,a,b);
+SHOW CREATE TABLE t1;
+--replace_column 9 #
+EXPLAIN SELECT * FROM t1 WHERE id=400812;
+--sorted_result
+SELECT * FROM t1 WHERE id=400812;
+--source include/query_pushdown_condition_sequoiadb.inc
+--replace_column 9 #
+EXPLAIN SELECT * FROM t1 WHERE a=4;
+SELECT COUNT(*) FROM t1 WHERE a=4;
+--source include/query_pushdown_condition_sequoiadb.inc
+--replace_column 9 #
+EXPLAIN SELECT * FROM t1 WHERE a=4 AND b="a,b";
+SELECT COUNT(*) FROM t1 WHERE a=4 AND b="a,b";
+--source include/query_pushdown_condition_sequoiadb.inc
+--replace_column 9 #
+EXPLAIN SELECT * FROM t1 WHERE id=338285 AND a=3;
+--sorted_result
+SELECT * FROM t1 WHERE id=338285 AND a=3;
+--source include/query_pushdown_condition_sequoiadb.inc
+--replace_column 9 #
+EXPLAIN SELECT * FROM t1 WHERE id=338285 AND a=3 AND b="a,b";
+--sorted_result
+SELECT * FROM t1 WHERE id=338285 AND a=3 AND b="a,b";
+--source include/query_pushdown_condition_sequoiadb.inc
+--replace_column 9 #
+EXPLAIN SELECT * FROM t1 WHERE a=3 AND b="a,b" AND id=338285;
+--sorted_result
+SELECT * FROM t1 WHERE a=3 AND b="a,b" AND id=338285;
+--source include/query_pushdown_condition_sequoiadb.inc
+DROP TABLE t1;
+
+#char float date
+CREATE TABLE t1 (
+  a CHAR(10),
+  b FLOAT,
+  c DATE
+);
+LOAD DATA INFILE '../../std_data/index_select_sequoiadb_5.dat' INTO TABLE t1 FIELDS TERMINATED BY ';';
+alter table t1 add PRIMARY KEY(a);
+alter table t1 add index b(b);
+alter table t1 add index ab(a,b);
+alter table t1 add index abc(a,b,c);
+SHOW CREATE TABLE t1;
+--replace_column 9 #
+EXPLAIN SELECT * FROM t1 WHERE a='d58beb7d5' and b=16661.5;
+--sorted_result
+SELECT * FROM t1 WHERE a='d58beb7d5' and b=16661.5;
+--source include/query_pushdown_condition_sequoiadb.inc
+--replace_column 9 #
+EXPLAIN SELECT * FROM t1 WHERE a='4ab272c58' and c='1994-07-13';
+--sorted_result
+SELECT * FROM t1 WHERE a='4ab272c58' and c='1994-07-13';
+--source include/query_pushdown_condition_sequoiadb.inc
+--replace_column 9 #
+EXPLAIN SELECT * FROM t1 WHERE a='d58beb7d5' and b=16661.5 and c='2026-04-10';
+--sorted_result
+SELECT * FROM t1 WHERE a='d58beb7d5' and b=16661.5 and c='2026-04-10';
+--source include/query_pushdown_condition_sequoiadb.inc
+DROP TABLE t1;
+
+DROP DATABASE index_select_sequoiadb_22794_2;
+--source include/uninstall_sequoiadb.inc

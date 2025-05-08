@@ -1,0 +1,263 @@
+CREATE DATABASE generate_column_sequoiadb;
+USE generate_column_sequoiadb;
+CREATE TABLE t1 (a INT, b INT, c INT GENERATED ALWAYS AS (a + 1) VIRTUAL, d INT GENERATED ALWAYS AS (b + 2) STORED );
+INSERT INTO t1 (a, b) VALUES (1,2);
+SELECT * FROM t1;
+a	b	c	d
+1	2	2	4
+UPDATE t1 SET a = 2 WHERE c = 2;
+[Note] SequoiaDB: Query message: condition[{}], selector[{}], order_by[{}], hint[{}], limit[-1], offset[0], table[generate_column_sequoiadb.t1]
+SELECT * FROM t1;
+a	b	c	d
+2	2	3	4
+UPDATE t1 SET a = 4;
+[Note] SequoiaDB: optimizer update: 1, rule: { "$set": { "a": 4 } }, condition: {}, table: generate_column_sequoiadb.t1
+SELECT * FROM t1;
+a	b	c	d
+4	2	5	4
+UPDATE t1 SET b = 4 WHERE d = 4;
+[Note] SequoiaDB: optimizer update: 1, rule: { "$set": { "b": 4, "d": 6 } }, condition: { "d": { "$et": 4 } }, table: generate_column_sequoiadb.t1
+SELECT * FROM t1;
+a	b	c	d
+4	4	5	6
+UPDATE t1 SET b = 8;
+[Note] SequoiaDB: optimizer update: 1, rule: { "$set": { "b": 8, "d": 10 } }, condition: {}, table: generate_column_sequoiadb.t1
+SELECT * FROM t1;
+a	b	c	d
+4	8	5	10
+UPDATE t1 SET a = a + 1;
+[Note] SequoiaDB: optimizer update: 1, rule: { "$inc": { "a": { "Value": 1, "Min": -2147483648, "Max": 2147483647, "Default": null } } }, condition: {}, table: generate_column_sequoiadb.t1
+SELECT * FROM t1;
+a	b	c	d
+5	8	6	10
+UPDATE t1 SET b = b + 1;
+[Note] SequoiaDB: Query message: condition[{}], selector[{}], order_by[{}], hint[{}], limit[-1], offset[0], table[generate_column_sequoiadb.t1]
+SELECT * FROM t1;
+a	b	c	d
+5	9	6	11
+DELETE FROM t1 where d = 11;
+[Note] SequoiaDB: optimizer delete: 1, condition: { "d": { "$et": 11 } }, table: generate_column_sequoiadb.t1
+SELECT * FROM t1;
+a	b	c	d
+DROP TABLE t1;
+CREATE TABLE t1 (a INT, b INT GENERATED ALWAYS AS (a + 1) VIRTUAL, c INT GENERATED ALWAYS AS (b * 20) STORED );
+INSERT INTO t1 (a) VALUES (1);
+SELECT * FROM t1;
+a	b	c
+1	2	40
+UPDATE t1 SET a = 2 WHERE c = 40;
+[Note] SequoiaDB: optimizer update: 1, rule: { "$set": { "a": 2, "c": 60 } }, condition: { "c": { "$et": 40 } }, table: generate_column_sequoiadb.t1
+SELECT * FROM t1;
+a	b	c
+2	3	60
+DROP TABLE t1;
+CREATE TABLE t1 (a INT, b INT GENERATED ALWAYS AS (a + 1) STORED, c INT GENERATED ALWAYS AS (b + 20) VIRTUAL );
+INSERT INTO t1 (a) VALUES (1);
+SELECT * FROM t1;
+a	b	c
+1	2	22
+UPDATE t1 SET a = 2;
+[Note] SequoiaDB: optimizer update: 1, rule: { "$set": { "a": 2, "b": 3 } }, condition: {}, table: generate_column_sequoiadb.t1
+SELECT * FROM t1;
+a	b	c
+2	3	23
+DROP TABLE t1;
+CREATE TABLE t1 (a INT, b INT GENERATED ALWAYS AS (a + 1) VIRTUAL, c INT GENERATED ALWAYS AS (b + 20) VIRTUAL );
+INSERT INTO t1 (a) VALUES (1);
+SELECT * FROM t1;
+a	b	c
+1	2	22
+UPDATE t1 SET a = 2;
+[Note] SequoiaDB: optimizer update: 1, rule: { "$set": { "a": 2 } }, condition: {}, table: generate_column_sequoiadb.t1
+SELECT * FROM t1;
+a	b	c
+2	3	23
+DROP TABLE t1;
+CREATE TABLE t1 (a INT, b INT GENERATED ALWAYS AS (a + 1) STORED, c INT GENERATED ALWAYS AS (b + 20) STORED );
+INSERT INTO t1 (a) VALUES (1);
+SELECT * FROM t1;
+a	b	c
+1	2	22
+UPDATE t1 SET a = 2;
+[Note] SequoiaDB: optimizer update: 1, rule: { "$set": { "a": 2, "b": 3, "c": 23 } }, condition: {}, table: generate_column_sequoiadb.t1
+SELECT * FROM t1;
+a	b	c
+2	3	23
+DROP TABLE t1;
+CREATE TABLE t1 (a INT, b INT GENERATED ALWAYS AS (a + 1) VIRTUAL, c INT GENERATED ALWAYS AS (b + 20) STORED );
+INSERT INTO t1 (a) VALUES (1);
+SELECT * FROM t1;
+a	b	c
+1	2	22
+UPDATE t1 SET a = 2;
+[Note] SequoiaDB: optimizer update: 1, rule: { "$set": { "a": 2, "c": 23 } }, condition: {}, table: generate_column_sequoiadb.t1
+SELECT * FROM t1;
+a	b	c
+2	3	23
+DROP TABLE t1;
+CREATE TABLE t1 (a INT, b INT, c INT GENERATED ALWAYS AS (a + 1) VIRTUAL, d INT GENERATED ALWAYS AS (a + b + 2) STORED, e INT GENERATED ALWAYS AS (b + c) STORED );
+INSERT INTO t1 (a, b) VALUES (1,2);
+UPDATE t1 SET b = 8;
+[Note] SequoiaDB: Query message: condition[{}], selector[{}], order_by[{}], hint[{}], limit[-1], offset[0], table[generate_column_sequoiadb.t1]
+SELECT * FROM t1;
+a	b	c	d	e
+1	8	2	11	10
+UPDATE t1 SET a = 8;
+[Note] SequoiaDB: Query message: condition[{}], selector[{}], order_by[{}], hint[{}], limit[-1], offset[0], table[generate_column_sequoiadb.t1]
+SELECT * FROM t1;
+a	b	c	d	e
+8	8	9	18	17
+UPDATE t1 SET a = 8, b=1;
+[Note] SequoiaDB: optimizer update: 1, rule: { "$set": { "a": 8, "b": 1, "d": 11, "e": 10 } }, condition: {}, table: generate_column_sequoiadb.t1
+SELECT * FROM t1;
+a	b	c	d	e
+8	1	9	11	10
+DROP TABLE t1;
+CREATE TABLE t1 (a INT, b INT);
+INSERT INTO t1 (a,b) VALUES (1,1);
+ALTER TABLE t1 ADD COLUMN (c INT GENERATED ALWAYS AS (a + 1) VIRTUAL), ALGORITHM=INPLACE;
+ALTER TABLE t1 ADD COLUMN (d INT GENERATED ALWAYS AS (a + b + 20) STORED);
+SHOW CREATE TABLE t1;
+Table	Create Table
+t1	CREATE TABLE `t1` (
+  `a` int(11) DEFAULT NULL,
+  `b` int(11) DEFAULT NULL,
+  `c` int(11) GENERATED ALWAYS AS (`a` + 1) VIRTUAL,
+  `d` int(11) GENERATED ALWAYS AS (`a` + `b` + 20) STORED
+) ENGINE=SequoiaDB DEFAULT CHARSET=latin1
+SELECT * FROM t1;
+a	b	c	d
+1	1	2	22
+UPDATE t1 SET a = 2;
+[Note] SequoiaDB: Query message: condition[{}], selector[{}], order_by[{}], hint[{}], limit[-1], offset[0], table[generate_column_sequoiadb.t1]
+UPDATE t1 SET b = 2;
+[Note] SequoiaDB: Query message: condition[{}], selector[{}], order_by[{}], hint[{}], limit[-1], offset[0], table[generate_column_sequoiadb.t1]
+UPDATE t1 SET a = 4, b = 4;
+[Note] SequoiaDB: optimizer update: 1, rule: { "$set": { "a": 4, "b": 4, "d": 28 } }, condition: {}, table: generate_column_sequoiadb.t1
+CREATE INDEX a ON t1(a);
+CREATE INDEX b ON t1(b);
+CREATE INDEX c ON t1(c);
+ERROR HY000: Table storage engine 'SequoiaDB' does not support the create option 'Index on virtual generated column'
+CREATE INDEX d ON t1(d);
+UPDATE t1 SET a =6;
+[Note] SequoiaDB: Query message: condition[{}], selector[{}], order_by[{}], hint[{}], limit[-1], offset[0], table[generate_column_sequoiadb.t1]
+UPDATE t1 SET b =6;
+[Note] SequoiaDB: Query message: condition[{}], selector[{}], order_by[{}], hint[{}], limit[-1], offset[0], table[generate_column_sequoiadb.t1]
+UPDATE t1 SET a = 8, b = 8;
+[Note] SequoiaDB: optimizer update: 1, rule: { "$set": { "a": 8, "b": 8, "d": 36 } }, condition: {}, table: generate_column_sequoiadb.t1
+SELECT * FROM t1;
+a	b	c	d
+8	8	9	36
+ALTER TABLE t1 DROP COLUMN c, ALGORITHM=INPLACE;
+SHOW CREATE TABLE t1;
+Table	Create Table
+t1	CREATE TABLE `t1` (
+  `a` int(11) DEFAULT NULL,
+  `b` int(11) DEFAULT NULL,
+  `d` int(11) GENERATED ALWAYS AS (`a` + `b` + 20) STORED,
+  KEY `a` (`a`),
+  KEY `b` (`b`),
+  KEY `d` (`d`)
+) ENGINE=SequoiaDB DEFAULT CHARSET=latin1
+ALTER TABLE t1 DROP COLUMN d, ALGORITHM=INPLACE;
+SHOW CREATE TABLE t1;
+Table	Create Table
+t1	CREATE TABLE `t1` (
+  `a` int(11) DEFAULT NULL,
+  `b` int(11) DEFAULT NULL,
+  KEY `a` (`a`),
+  KEY `b` (`b`)
+) ENGINE=SequoiaDB DEFAULT CHARSET=latin1
+SELECT * FROM t1;
+a	b
+8	8
+DROP TABLE t1;
+CREATE TABLE t1 (a INT KEY,b int NOT NULL DEFAULT 10 comment 'xxx');
+INSERT INTO t1 (a) VALUES (1);
+ALTER TABLE t1 ADD COLUMN (c INT GENERATED ALWAYS AS (a + 1) VIRTUAL, d INT GENERATED ALWAYS AS (b + 20) VIRTUAL), ALGORITHM=INPLACE;
+ALTER TABLE t1 ADD COLUMN (e INT GENERATED ALWAYS AS (a + 1) VIRTUAL, f INT GENERATED ALWAYS AS (b + 20) VIRTUAL), ALGORITHM=INPLACE;
+ALTER TABLE t1 ADD COLUMN (g INT GENERATED ALWAYS AS (a + 1) STORED, h INT GENERATED ALWAYS AS (b + 20) STORED);
+ALTER TABLE t1 ADD COLUMN (i INT GENERATED ALWAYS AS (a + 1) STORED, j INT GENERATED ALWAYS AS (b + 20) STORED);
+SHOW CREATE TABLE t1;
+Table	Create Table
+t1	CREATE TABLE `t1` (
+  `a` int(11) NOT NULL,
+  `b` int(11) NOT NULL DEFAULT 10 COMMENT 'xxx',
+  `c` int(11) GENERATED ALWAYS AS (`a` + 1) VIRTUAL,
+  `d` int(11) GENERATED ALWAYS AS (`b` + 20) VIRTUAL,
+  `e` int(11) GENERATED ALWAYS AS (`a` + 1) VIRTUAL,
+  `f` int(11) GENERATED ALWAYS AS (`b` + 20) VIRTUAL,
+  `g` int(11) GENERATED ALWAYS AS (`a` + 1) STORED,
+  `h` int(11) GENERATED ALWAYS AS (`b` + 20) STORED,
+  `i` int(11) GENERATED ALWAYS AS (`a` + 1) STORED,
+  `j` int(11) GENERATED ALWAYS AS (`b` + 20) STORED,
+  PRIMARY KEY (`a`)
+) ENGINE=SequoiaDB DEFAULT CHARSET=latin1
+INSERT INTO t1 (a) VALUES (2);
+SELECT * FROM t1;
+a	b	c	d	e	f	g	h	i	j
+1	10	2	30	2	30	2	30	2	30
+2	10	3	30	3	30	3	30	3	30
+ALTER TABLE t1 MODIFY b INT DEFAULT 30, ALGORITHM=INPLACE;
+SELECT * FROM t1;
+a	b	c	d	e	f	g	h	i	j
+1	10	2	30	2	30	2	30	2	30
+2	10	3	30	3	30	3	30	3	30
+DROP TABLE t1;
+CREATE TABLE t1 (a INT KEY AUTO_INCREMENT);
+ALTER TABLE t1 ADD COLUMN (c INT GENERATED ALWAYS AS (a + 1) VIRTUAL, d INT GENERATED ALWAYS AS (a + 20) STORED);
+ERROR HY000: Function or expression 'AUTO_INCREMENT' cannot be used in the GENERATED ALWAYS AS clause of `a`
+DROP TABLE t1;
+CREATE TABLE t1 (a INT, b INT, c INT GENERATED ALWAYS AS (a + 1) VIRTUAL, d INT GENERATED ALWAYS AS (b + 2) STORED );
+INSERT INTO t1 (a,b) VALUES (1,1);
+SELECT * FROM t1;
+a	b	c	d
+1	1	2	3
+ALTER TABLE t1 CHANGE c c1 INT GENERATED ALWAYS AS (a + 10) VIRTUAL;
+ALTER TABLE t1 CHANGE d d1 INT GENERATED ALWAYS AS (b + 20) STORED;
+ALTER TABLE t1 MODIFY c1 DECIMAL GENERATED ALWAYS AS (a + 30) VIRTUAL FIRST, ALGORITHM=INPLACE;
+ALTER TABLE t1 MODIFY d1 DECIMAL GENERATED ALWAYS AS (b + 20) STORED FIRST, ALGORITHM=INPLACE;
+ALTER TABLE t1 MODIFY d1 DECIMAL GENERATED ALWAYS AS (b + 30) STORED;
+SHOW CREATE TABLE t1;
+Table	Create Table
+t1	CREATE TABLE `t1` (
+  `d1` decimal(10,0) GENERATED ALWAYS AS (`b` + 30) STORED,
+  `c1` decimal(10,0) GENERATED ALWAYS AS (`a` + 30) VIRTUAL,
+  `a` int(11) DEFAULT NULL,
+  `b` int(11) DEFAULT NULL
+) ENGINE=SequoiaDB DEFAULT CHARSET=latin1
+SELECT * FROM t1;
+d1	c1	a	b
+31	31	1	1
+DROP TABLE t1;
+CREATE TABLE t1 (a INT, b INT, c INT, d INT, e INT GENERATED ALWAYS AS (a + b + 1) VIRTUAL, f INT GENERATED ALWAYS AS (c + d + 1) STORED);
+INSERT INTO t1 (a, b, c, d) VALUES (1,2,1,2);
+UPDATE t1 SET a = 8;
+[Note] SequoiaDB: optimizer update: 1, rule: { "$set": { "a": 8 } }, condition: {}, table: generate_column_sequoiadb.t1
+SELECT * FROM t1;
+a	b	c	d	e	f
+8	2	1	2	11	4
+UPDATE t1 SET c = 8;
+[Note] SequoiaDB: Query message: condition[{}], selector[{}], order_by[{}], hint[{}], limit[-1], offset[0], table[generate_column_sequoiadb.t1]
+SELECT * FROM t1;
+a	b	c	d	e	f
+8	2	8	2	11	11
+UPDATE t1 SET d = d + 1;
+[Note] SequoiaDB: Query message: condition[{}], selector[{}], order_by[{}], hint[{}], limit[-1], offset[0], table[generate_column_sequoiadb.t1]
+SELECT * FROM t1;
+a	b	c	d	e	f
+8	2	8	3	11	12
+UPDATE t1 SET a = 9, b = 9;
+[Note] SequoiaDB: optimizer update: 1, rule: { "$set": { "a": 9, "b": 9 } }, condition: {}, table: generate_column_sequoiadb.t1
+SELECT * FROM t1;
+a	b	c	d	e	f
+9	9	8	3	19	12
+UPDATE t1 SET c = 9, d = 9;
+[Note] SequoiaDB: optimizer update: 1, rule: { "$set": { "c": 9, "d": 9, "f": 19 } }, condition: {}, table: generate_column_sequoiadb.t1
+SELECT * FROM t1;
+a	b	c	d	e	f
+9	9	9	9	19	19
+DROP TABLE t1;
+CREATE TABLE t1 (a INT, c INT GENERATED ALWAYS AS (a + 1) VIRTUAL) COMMENT 'sequoiadb:{table_options:{ShardingKey:{c:1},ShardingType:"hash"}}';
+ERROR 0A000: Virtual generated column 'c' cannot be used for ShardingKey
+DROP DATABASE generate_column_sequoiadb;

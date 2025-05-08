@@ -1,0 +1,156 @@
+--source include/have_sequoiadb.inc
+--source suite/metadata_sync_sequoiadb/inc/insts_connect_sequoiadb.inc
+
+#seqDB-23106
+#table
+connection conn1;
+--disable_warnings
+drop database if exists metadata_prepare;
+--enable_warnings
+create database metadata_prepare;
+use metadata_prepare;
+
+set @table ='t1';
+set @s = concat('create table ', @table, '(a int)');
+set server_ha_wait_sync_timeout = 10;
+prepare stmt1 from @s;
+execute stmt1;
+deallocate prepare stmt1;
+set server_ha_wait_sync_timeout = 0;
+
+connection conn2;
+use metadata_prepare;
+prepare stmt1 from 'insert into t1 values(1)';
+execute stmt1;
+deallocate prepare stmt1;
+
+connection conn1;
+set server_ha_wait_sync_timeout = 10;
+prepare stmt1 from 'drop table t1';
+execute stmt1;
+deallocate prepare stmt1;
+set server_ha_wait_sync_timeout = 0;
+
+connection conn2;
+--error 1146
+prepare stmt1 from 'insert into t1 values(1)';
+
+#user
+connection conn1;
+CREATE TABLE t1(a INT NOT NULL, b INT, c INT);
+--disable_warnings
+drop user if exists metadata_sync_user_23106;
+--enable_warnings
+prepare stmt1 from "create user 'metadata_sync_user_23106'@'%' IDENTIFIED BY 'metadata_sync_user_23106'";
+execute stmt1;
+deallocate prepare stmt1;
+FLUSH PRIVILEGES;
+
+connection conn2;
+prepare stmt1 from "GRANT create,alter,drop ON t1 TO metadata_sync_user_23106@'%' IDENTIFIED BY 'metadata_sync_user_23106' WITH GRANT OPTION";
+execute stmt1;
+deallocate prepare stmt1;
+FLUSH PRIVILEGES;
+
+connect ( conn3, $mysql_host1, 'metadata_sync_user_23106', 'metadata_sync_user_23106', $mysql_db, $mysql_port1 );
+connection conn3;
+prepare stmt1 from "alter table metadata_prepare.t1 add column d int;";
+execute stmt1;
+deallocate prepare stmt1;
+disconnect conn3;
+
+connection conn1;
+prepare stmt1 from "revoke create,alter,drop on metadata_prepare.t1 from metadata_sync_user_23106@'%'";
+execute stmt1;
+deallocate prepare stmt1;
+flush privileges;
+
+connect ( conn3, $mysql_host1, 'metadata_sync_user_23106', 'metadata_sync_user_23106', $mysql_db, $mysql_port1 );
+connection conn3;
+prepare stmt1 from "alter table metadata_prepare.t1 drop column d";
+--disable_result_log
+--error 1142
+execute stmt1;
+--enable_result_log
+deallocate prepare stmt1;
+disconnect conn3;
+
+connection conn1;
+drop table t1;
+drop user metadata_sync_user_23106;
+flush privileges;
+
+#routine
+connection conn1;
+set server_ha_wait_sync_timeout = 10;
+create table t1 (
+        id   char(16) not null default '',
+        data int not null
+);
+create procedure metadata_sync_ddl_dml_parallel()
+insert into t1 values ("foo", 42);
+set server_ha_wait_sync_timeout = 0;
+  
+connection conn2;
+set server_ha_wait_sync_timeout = 10;
+prepare stmt1 from "call metadata_sync_ddl_dml_parallel()";
+execute stmt1;
+deallocate prepare stmt1;
+set server_ha_wait_sync_timeout = 0;
+select * from t1;
+
+#database、index、view
+connection conn1;
+--disable_warnings
+drop database if exists metadata_prepare_23106;
+--enable_warnings
+
+set server_ha_wait_sync_timeout = 10;
+prepare stmt1 from "create database metadata_prepare_23106";
+execute stmt1;
+deallocate prepare stmt1;
+set server_ha_wait_sync_timeout = 0;
+use metadata_prepare_23106;
+
+connection conn2;
+set server_ha_wait_sync_timeout = 10;
+prepare stmt1 from "create table metadata_prepare_23106.t1(a int)";
+execute stmt1;
+deallocate prepare stmt1;
+set server_ha_wait_sync_timeout = 0;
+use metadata_prepare_23106;
+
+connection conn1;
+set server_ha_wait_sync_timeout = 10;
+prepare stmt1 from "create unique index a on t1(a)";
+execute stmt1;
+deallocate prepare stmt1;
+set server_ha_wait_sync_timeout = 0;
+
+connection conn2;
+set server_ha_wait_sync_timeout = 10;
+prepare stmt1 from "insert into t1 values(1)";
+execute stmt1;
+deallocate prepare stmt1;
+set server_ha_wait_sync_timeout = 0;
+set server_ha_wait_sync_timeout = 10;
+prepare stmt1 from "insert into t1 values(1)";
+--error 1062
+execute stmt1;
+deallocate prepare stmt1;
+set server_ha_wait_sync_timeout = 0;
+
+connection conn1;
+set server_ha_wait_sync_timeout = 10;
+prepare stmt1 from "create view v1 as select * from t1";
+execute stmt1;
+deallocate prepare stmt1;
+set server_ha_wait_sync_timeout = 0;
+
+connection conn2;
+prepare stmt1 from "select * from v1";
+execute stmt1;
+deallocate prepare stmt1;
+
+--source suite/metadata_sync_sequoiadb/inc/insts_disconnect_sequoiadb.inc
+--source include/uninstall_sequoiadb.inc

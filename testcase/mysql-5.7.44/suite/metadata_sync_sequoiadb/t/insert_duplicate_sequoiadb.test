@@ -1,0 +1,72 @@
+# seqDB-32588
+
+--source include/have_sequoiadb.inc
+--source suite/metadata_sync_sequoiadb/inc/insts_connect_sequoiadb.inc
+
+connection conn1;
+set session sequoiadb_debug_log=on;
+
+# clear env
+--disable_warnings
+drop database if exists insert_duplicate_sequoiadb;
+--enable_warnings
+create database insert_duplicate_sequoiadb;
+drop database insert_duplicate_sequoiadb;
+create database insert_duplicate_sequoiadb;
+use insert_duplicate_sequoiadb;
+
+let $i = 2;
+while ($i) {
+  if ($i == 2) {
+    # default sdb is autosplit table
+    create table t1(a int ,b varchar(32),primary key(a));
+  }
+  if ($i == 1) {
+    # sdb is normal table 
+    create table t1(a int ,b varchar(32),primary key(a)) COMMENT='sequoiadb: {table_options: {AutoSplit: false}}';
+  }
+  dec $i;
+  
+  show create table t1;
+  insert into t1 values(2,"2");
+  select * from t1;
+   
+  # insert duplicate
+  # rollback
+  begin;
+  # failed: 1062: Duplicate entry '{ "a": 2 }' for key 'PRIMARY'
+  --source include/write_mysqld_note_log_sequoiadb.inc
+  --error 1062
+  insert into t1 values(1,"1"),(2,"2");
+  --source include/get_mysqld_note_log_sequoiadb.inc
+  select * from t1 order by a;
+  rollback;
+  select * from t1;
+  # commit
+  begin;
+  --source include/write_mysqld_note_log_sequoiadb.inc
+  --error 1062
+  insert into t1 values(1,"1"),(2,"2");
+  --source include/get_mysqld_note_log_sequoiadb.inc
+  select * from t1 order by a;
+  begin;
+  select * from t1 order by a;
+  commit;
+  select * from t1 order by a;
+  drop table t1;
+} 
+
+# insert duplicate update
+create table t1(a int ,b varchar(32),primary key(b),unique key(a));
+insert into t1 values(2,"2");
+begin;  
+let $query = insert into t1 values(1,"1"),(2,"4"),(3,"3") on duplicate key update a=4;
+--source include/query_without_sorted_and_get_mysqld_note_log_sequoiadb.inc
+commit;
+select * from t1 order by a;  
+drop table t1;
+
+drop database insert_duplicate_sequoiadb;
+
+--source suite/metadata_sync_sequoiadb/inc/insts_disconnect_sequoiadb.inc
+

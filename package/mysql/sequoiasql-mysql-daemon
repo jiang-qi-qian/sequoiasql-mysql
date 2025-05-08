@@ -1,0 +1,351 @@
+#!/bin/bash
+
+function get_all_inst()
+{
+   local conf_file=""
+   local inst_name=""
+
+   if [ -d "$SVC_CONF_PATH" ]
+   then
+      for conf_file in `find $SVC_CONF_PATH -name "*.conf"`
+      do
+         conf_file=`basename $conf_file`
+         inst_name=${conf_file%.*}
+         INST_LIST+=($inst_name)
+      done
+   fi
+}
+
+function start_all_inst()
+{
+   local inst_name=""
+
+   print_log "LOG" "Starting all instances attached to the daemon..."
+   for inst_name in "${INST_LIST[@]}"
+   do
+      local exist_process=false
+
+      # check process exist or not
+      local result
+      result=`$BIN_PATH/sdb_sql_ctl status $inst_name`
+      if [ 0 == $? ]; then
+         local process_num=`echo "$result" | awk -F "Run: " '{print $2}'`
+         test 1 == $process_num && exist_process=true
+      fi
+
+      # if process doesn't exist, try to start it
+      if [ false == $exist_process ]; then
+         $BIN_PATH/sdb_sql_ctl start $inst_name
+      fi
+   done
+}
+
+function keep_inst_start()
+{
+
+   local inst_name=""
+
+   for inst_name in "${INST_LIST[@]}"
+   do
+      local exist_pid_file=false
+      local exist_process=false
+
+      # check process exist or not
+      local result
+      result=`$BIN_PATH/sdb_sql_ctl status $inst_name`
+      if [ 0 == $? ]; then
+         local process_num=`echo "$result" | awk -F "Run: " '{print $2}'`
+         test 1 == $process_num && exist_process=true
+      fi
+
+      # check pid file exist or not
+      if [ false == $exist_process ]; then
+         local inst_conf_file="$SVC_CONF_PATH/../instance/$inst_name.conf"
+         . $inst_conf_file
+         local pid_file=`cat $SQLDATA/auto.cnf | grep "pid-file" |awk -F'=' '{print $2 }'`
+         test -f $pid_file && exist_pid_file=true
+      fi
+
+      # if process exists, but pid file doesn't exist, try to start it
+      if [ false == $exist_process -a true == $exist_pid_file ]; then
+         print_log "LOG" "Instance[$inst_name] process doesn't exist, try to start it."
+         $BIN_PATH/sdb_sql_ctl start $inst_name
+      fi
+   done
+}
+
+function print_log()
+{
+   local log_level=$1
+   local log=$2
+   local date=`date "+%Y-%m-%d %H:%M:%S"`
+   echo "$date $log_level: $log"
+}
+
+function show_help()
+{
+   local exit_code=$1
+
+   echo "SequoiaSQL-OLTP Daemon."
+   echo ""
+   echo "Uage: "
+   echo "  sequoiasql-mysql-daemon                        start the daemon"
+   echo "  sequoiasql-mysql-daemon <--stop> [--with-inst] shut the daemon down"
+   echo "  sequoiasql-mysql-daemon <--status>             check daemon exist or not"
+   echo "  sequoiasql-mysql-daemon <--help>               show help information"
+   echo "(Start daemon by: \"setsid ./sequoiasql-mysql-daemon >> [logfile] 2>&1\")"
+   echo ""
+   echo "Options:"
+   echo "  --stop          stop the daemon"
+   echo "  --with-inst     stop all instances attached to this daemon"
+
+   exit $exit_code
+}
+
+function check_daemon_exist()
+{
+   #return
+   #  0     daemon exist, echo PID
+   #  1     daemon does not exist
+
+   local exist=false
+
+   if [ -f "$DAEMON_PID_FILE" ]; then
+      local pid=`cat "$DAEMON_PID_FILE"`
+      ps --pid $pid >> /dev/null 2>&1
+      test $? -eq 0 && { exist=true && echo $pid; }
+   fi
+
+   test true == $exist  && return 0
+   test false == $exist && return 1
+}
+
+function get_status()
+{
+   #exit
+   #  0     daemon exist, echo PID
+   #  1     daemon does not exist
+
+   local result
+   result=`check_daemon_exist`
+   if [ $? -eq 0 ]; then
+      print_log "LOG" "sequoiasql-mysql-daemon (PID: $result) is running."
+      exit 0
+   else
+      print_log "LOG" "sequoiasql-mysql-daemon is not running."
+      exit 1
+   fi
+}
+
+function run_daemon()
+{
+   print_log "LOG" "Start daemon."
+
+   ####### check #######
+   local result
+   result=`check_daemon_exist`
+   if [ $? -eq 0 ]; then
+      local pid=`echo $result`
+      print_log "WARNING" "sequoiasql-mysql-daemon (PID: $pid) has been already started."
+      return
+   fi
+
+   ####### touch pid file #######
+   mkdir -p "$LOG_PATH"
+   echo $$ > "$DAEMON_PID_FILE"
+
+   ####### start all instances #######
+   INST_LIST=()
+   get_all_inst
+   start_all_inst
+   sleep 1
+
+   ####### Keep all instances alive. If instance shutdown #######
+   ####### unexpectly, daemon will restart the instance.  #######
+   while true
+   do
+      INST_LIST=()
+      get_all_inst
+      keep_inst_start
+      sleep 1
+   done
+}
+
+function stop_daemon()
+{
+   print_log "LOG" "Stop daemon."
+
+   ####### check #######
+   check_daemon_exist
+   if [ $? -eq 1 ]; then
+      print_log "WARNING" "sequoiasql-mysql-daemon is not running."
+      return
+   fi
+
+   ####### stop daemon #######
+   local pid=`cat "$DAEMON_PID_FILE"`
+   kill -15 $pid
+
+   ####### Delete pid file. Only if the process does not #######
+   ####### exist, can you delete the file.               #######
+   ps --pid $pid >> /dev/null 2>&1
+   test $? -ne 0 && rm -f $DAEMON_PID_FILE
+}
+
+function stop_all_inst()
+{
+   ####### get instance name #######
+   print_log "LOG" "Stoping all instances attached to the daemon..."
+   get_all_inst
+
+   ####### stop instances #######
+   local inst_name=""
+   for inst_name in "${INST_LIST[@]}"
+   do
+      local exist_process=false
+
+      # check process exist or not
+      local result
+      result=`$BIN_PATH/sdb_sql_ctl status $inst_name`
+      if [ 0 == $? ]; then
+         local process_num=`echo "$result" | awk -F "Run: " '{print $2}'`
+         test 1 == $process_num && exist_process=true
+      fi
+
+      # if process exist, try to stop it
+      if [ true == $exist_process ]; then
+         $BIN_PATH/sdb_sql_ctl stop $inst_name
+      fi
+   done
+}
+
+#The function will set global variable SYS_CONF_FILE
+function get_system_conf_file()
+{
+   cd "$BIN_PATH/../"
+   local cur_install_dir=`pwd`
+
+   local do_find_out=false
+   for file in `find /etc/default -regex ".*sequoiasql-mysql[1-4][0-9]" -o -regex ".*sequoiasql-mysql[1-9]" -o -name "sequoiasql-mysql"`
+   do
+      . $file
+      cd $INSTALL_DIR >> /dev/null 2>&1 && local sys_install_dir=`pwd` || sys_install_dir="$INSTALL_DIR"
+      cd $cur_path >> /dev/null >&1
+      if [ "$cur_install_dir" == "$sys_install_dir" ]
+      then
+         local do_find_out=true
+         break
+      fi
+   done
+
+   if [ $do_find_out == true ]
+   then
+      SYS_CONF_FILE=$file
+   else
+      print_log "ERROR" "No system configure file exist in /etc/default"
+      exit 12
+   fi
+}
+
+function check_user()
+{
+   . $SYS_CONF_FILE
+   PG_USER=$USER
+
+   local cur_user=`whoami`
+   if [ "$cur_user" != "$PG_USER" ]
+   then
+      print_log "ERROR" "sequoiasql-mysql-daemon requires PGUSER [$PG_USER] permission"
+      exit 77
+   fi
+}
+
+# The function will set global variable MODE
+function parse_parameter()
+{
+   ARGS=`getopt -o '' --long help,stop,with-inst,status -n 'sequoiasql-mysql-daemon' -- "$@"`
+   ret=$?
+   test $ret -ne 0 && exit $ret
+
+   eval set -- "${ARGS}"
+
+   has_status_para=false
+   has_stop_para=false
+   has_withinst_para=false
+
+   while true
+   do
+      case "$1" in
+         --status )       has_status_para=true
+                          shift
+                          ;;
+         --stop )         has_stop_para=true
+                          shift
+                          ;;
+         --with-inst )    has_withinst_para=true
+                          shift
+                          ;;
+         --help )         show_help
+                          exit 0
+                          ;;
+         --)              shift
+                          break
+                          ;;
+         *)               echo "Internal error!"
+                          exit 64
+                          ;;
+      esac
+   done
+
+   test true == $has_status_para -a true == $has_stop_para && \
+      echo 'sequoiasql-mysql-daemon: parameter "--stop" and "--status" conflict' >&2
+   test false == $has_stop_para -a true == $has_withinst_para && \
+      echo 'sequoiasql-mysql-daemon: parameter "--with-inst" needs to follow "--stop"' >&2
+
+   MODE="RUN_DAEMON"
+   test true == $has_status_para   && MODE="GET_STATUS"
+   test true == $has_stop_para     && MODE="STOP_DAEMON"
+   test true == $has_withinst_para && MODE="STOP_WITH_INST"
+}
+
+###################### main entry ########################
+
+####### 1. parse paramter #######
+MODE=""
+parse_parameter $*
+
+####### 2. get some path #######
+dir_name=`dirname $0`
+if [[ ${dir_name:0:1} != "/" ]]; then
+   BIN_PATH=$(pwd)/$dir_name  #relative path
+else
+   BIN_PATH=$dir_name         #absolute path
+fi
+SVC_CONF_PATH="$BIN_PATH/../conf/service"
+LOG_PATH="$BIN_PATH/../conf/log"
+LOG_FILE="$LOG_PATH/sequoiasql-mysql-daemon.log"
+DAEMON_PID_FILE="$LOG_PATH/.sequoiasql-mysql-daemon.pid"
+
+####### 3. change user #######
+SYS_CONF_FILE=""
+get_system_conf_file
+check_user
+
+####### 4. excute #######
+case $MODE in
+   "RUN_DAEMON" )       run_daemon
+                        ;;
+   "STOP_DAEMON" )      stop_daemon
+                        ;;
+   "STOP_WITH_INST" )   stop_daemon
+                        stop_all_inst
+                        ;;
+   "GET_STATUS" )       get_status
+                        ;;
+esac
+
+exit 0
+
+
+
+

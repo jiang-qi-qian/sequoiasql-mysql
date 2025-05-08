@@ -1,0 +1,48 @@
+drop database if exists like_combining_funcs_pushdown_sequoiadb;
+create database like_combining_funcs_pushdown_sequoiadb;
+drop database like_combining_funcs_pushdown_sequoiadb;
+create database like_combining_funcs_pushdown_sequoiadb;
+use like_combining_funcs_pushdown_sequoiadb;
+set session sequoiadb_debug_log=on;
+set session sequoiadb_support_mode='';
+drop table if exists t1;
+create table t1(
+a varchar(20) charset utf8mb4 collate utf8mb4_bin
+);
+select concat(replace('pat','a','e'),ltrim('  er'));
+concat(replace('pat','a','e'),ltrim('  er'))
+peter
+insert into t1 values(concat(replace('pat','a','e'),ltrim('  er')));
+select * from t1 where a like concat(replace('pat','a','e'),ltrim('  er')) order by a;
+a
+peter
+[Note] SequoiaDB: Query message: condition[{ "a": { "$regex": "^peter$", "$options": "s" } }], selector[{}], order_by[{ "a": 1 }], hint[{}], limit[-1], offset[0], table[like_combining_funcs_pushdown_sequoiadb.t1]
+select strcmp(ifnull('bingo','zero'),charset(_latin1 'abc'));
+strcmp(ifnull('bingo','zero'),charset(_latin1 'abc'))
+-1
+insert into t1 values(strcmp(ifnull('bingo','zero'),charset(_latin1 'abc')));
+select * from t1 where a like strcmp(ifnull('bingo','zero'),charset(_latin1 'abc')) order by a;
+a
+-1
+[Note] SequoiaDB: Query message: condition[{ "a": { "$regex": "^\\-1$", "$options": "s" } }], selector[{}], order_by[{ "a": 1 }], hint[{}], limit[-1], offset[0], table[like_combining_funcs_pushdown_sequoiadb.t1]
+select length(dayname('2007-02-03'));
+length(dayname('2007-02-03'))
+8
+insert into t1 values(length(dayname('2007-02-03')));
+select * from t1 where a like length(dayname('2007-02-03')) order by a;
+a
+8
+[Note] SequoiaDB: Query message: condition[{ "a": { "$regex": "^8$", "$options": "s" } }], selector[{}], order_by[{ "a": 1 }], hint[{}], limit[-1], offset[0], table[like_combining_funcs_pushdown_sequoiadb.t1]
+select * from t1 where a like concat(rand(),'123') order by a;
+a
+[Note] SequoiaDB: Query message: condition[{}], selector[{}], order_by[{}], hint[{}], limit[-1], offset[0], table[like_combining_funcs_pushdown_sequoiadb.t1]
+select * from t1 where a like round(rand(),3) order by a;
+a
+[Note] SequoiaDB: Query message: condition[{}], selector[{}], order_by[{}], hint[{}], limit[-1], offset[0], table[like_combining_funcs_pushdown_sequoiadb.t1]
+select * from t1 where a like json_contains(adddate(null,'31'),'1','$.a');
+a
+[Note] SequoiaDB: Query message: condition[{}], selector[{}], order_by[{}], hint[{}], limit[-1], offset[0], table[like_combining_funcs_pushdown_sequoiadb.t1]
+set session sequoiadb_debug_log=default;
+set session sequoiadb_support_mode=default;
+drop table t1;
+drop database like_combining_funcs_pushdown_sequoiadb;

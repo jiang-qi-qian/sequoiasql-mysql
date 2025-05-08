@@ -1,0 +1,1009 @@
+#Case 20412#Case 20413#Case 20414#Case 20415#Case 20416#Case 20417#Case 20418
+#Case 20419#Case 20420#Case 20421#Case 20540#Case 22271#Case 22296#Case 22332
+#Case 22333#Case 22334#Case 22370#Case 22271#Case 22335#Case 22336#Case 22337
+#Case 22338#Case 22391#Case 22420#Case 22473#Case 22709#Case 22710#Case 22711
+#Case 22712
+
+--source include/have_sequoiadb.inc
+
+drop database if exists partition_sequoiadb;
+create database partition_sequoiadb;
+# 清理mysql和sdb端的数据库
+drop database partition_sequoiadb;
+create database partition_sequoiadb;
+use partition_sequoiadb;
+
+# seqDB-20412, seqDB-22271
+# RANGE COLUMNS with multiple keys
+CREATE TABLE t1 ( a INT, c CHAR(16), PRIMARY KEY(a,c) )
+PARTITION BY RANGE COLUMNS (a,c) (
+  PARTITION p1 VALUES LESS THAN (10,'h'),
+  PARTITION p2 VALUES LESS THAN (20,'m'),
+  PARTITION p3 VALUES LESS THAN (50,'z')
+);
+SHOW CREATE TABLE t1;
+INSERT INTO t1 PARTITION (p2,p3) VALUES (20,'m'),(22,'j'),(25,'n'),(30,'o'),(40,'t'),(49,'z');
+--error 131
+SELECT * FROM t1 PARTITION (p1);
+--error 131
+UPDATE t1 PARTITION (p3) SET c = 'updatedC' WHERE a = 22;
+--error 131
+DELETE FROM t1 PARTITION (p3) WHERE a > 40;
+SELECT * FROM t1 ORDER BY a;
+DROP TABLE t1;
+
+# RANGE COLUMNS with single key
+CREATE TABLE `t#P#1` ( id INT,  b INT GENERATED ALWAYS AS (id*2) STORED, c CHAR(16) )
+PARTITION BY RANGE COLUMNS (b) (
+  PARTITION p0 VALUES LESS THAN (10),
+  PARTITION p1 VALUES LESS THAN (100),
+  PARTITION p2 VALUES LESS THAN (1000)
+);
+SHOW CREATE TABLE `t#P#1`;
+INSERT INTO `t#P#1` PARTITION (p0,p1,p2)(id,c) VALUES (20,'1'),(9,'2'),(0,'3'),(2,'4'),(4,'5'),(5,'6'),(99,'7'),(25,'8'),(50,'9'),(45,'10'),(150,'11');
+--error 1748
+INSERT INTO `t#P#1` PARTITION (p0)(id,c) VALUES (6,'12');
+--error 40178
+UPDATE `t#P#1` PARTITION (p1) SET id = 60;
+UPDATE `t#P#1` PARTITION (p2) SET c = 'updatedC' WHERE id > 50 AND id < 100;
+SELECT * FROM `t#P#1` PARTITION (p0,p1) WHERE id >= 0 AND c <= '7' ORDER BY id;
+SELECT * FROM `t#P#1` PARTITION (p0,p2) WHERE NOT id >= 50 OR c <= '7' ORDER BY id;
+ALTER TABLE `t#P#1` ADD PRIMARY KEY (b);
+SHOW CREATE TABLE `t#P#1`;
+SELECT * FROM `t#P#1` PARTITION (p0,p1) WHERE id >= 0 AND c <= '7' ORDER BY id;
+SELECT * FROM `t#P#1` PARTITION (p0,p2) WHERE NOT id >= 50 OR c <= '7' ORDER BY id;
+DELETE FROM `t#P#1` PARTITION (p0) WHERE id > 3;
+SELECT * FROM `t#P#1` PARTITION (p0) ORDER BY id;
+DELETE FROM `t#P#1` PARTITION (p0,p2) WHERE id > 0 AND id < 100;
+SELECT * FROM `t#P#1` PARTITION (p0,p1,p2) ORDER BY id;
+SELECT PARTITION_NAME, PARTITION_METHOD, PARTITION_EXPRESSION, TABLE_ROWS
+  FROM INFORMATION_SCHEMA.PARTITIONS WHERE TABLE_SCHEMA LIKE '%partition_sequoiadb%' AND TABLE_NAME = 't#P#1';
+# Partition Management
+ALTER TABLE `t#P#1` ADD PARTITION (
+  PARTITION pmore1 VALUES LESS THAN (5000),
+  PARTITION pmore2 VALUES LESS THAN (10000) 
+);
+SHOW CREATE TABLE `t#P#1`;
+INSERT INTO `t#P#1` PARTITION (pmore1,pmore2)(id,c) VALUES (1000,'12'),(500,'13'),(4000,'14'),(2500,'15');
+ALTER TABLE `t#P#1` REORGANIZE PARTITION p0,p1 INTO (
+  PARTITION p1 VALUES LESS THAN (10), 
+  PARTITION p0 VALUES LESS THAN  (100)
+);
+ALTER TABLE `t#P#1` REORGANIZE PARTITION p2,pmore1 INTO (
+  PARTITION pmix1 VALUES LESS THAN (5000) );
+ALTER TABLE `t#P#1` REORGANIZE PARTITION pmore2 INTO (
+  PARTITION pmore2 VALUES LESS THAN (8000),
+  PARTITION pmore3 VALUES LESS THAN (10000)
+ );
+SHOW CREATE TABLE `t#P#1`;
+INSERT INTO `t#P#1` PARTITION (p0,p1,pmix1,pmore2,pmore3)(id,c) VALUES (3,'16'),(30,'17'),(1500,'18'), (3000,'19'),(4800,'20');
+SELECT * FROM `t#P#1` PARTITION (p0) ORDER BY id; 
+SELECT * FROM `t#P#1` PARTITION (p1) ORDER BY id; 
+SELECT * FROM `t#P#1` PARTITION (pmix1) ORDER BY id;
+SELECT * FROM `t#P#1` PARTITION (pmore2,pmore3) ORDER BY id;
+ALTER TABLE `t#P#1` DROP PARTITION p0,pmore2,pmore3;
+SHOW CREATE TABLE `t#P#1`;
+UPDATE `t#P#1` PARTITION (pmix1) SET c = 'newC';
+SELECT * FROM `t#P#1` PARTITION (p1) ORDER BY id;
+SELECT * FROM `t#P#1` PARTITION (pmix1) ORDER BY id;
+# SeqDB-22709, #SeqDB-22711
+#SEQUOIASQLMAINSTREAM-761
+CREATE TABLE `t#P#1#P#p1` ( `id` int(11) DEFAULT NULL, `b` int(11) GENERATED ALWAYS AS ((`id` * 2)) STORED, `c` char(16), PRIMARY KEY(b) );
+CREATE TABLE `t#P#1#P#pmix1` ( `id` int(11) DEFAULT NULL, `b` int(11) GENERATED ALWAYS AS ((`id` * 2)) STORED, `c` char(16), PRIMARY KEY(b) );
+# insert a mismatched row
+INSERT INTO `t#P#1#P#p1`(id,c) VALUES (3000,'19') ;    
+SELECT * FROM `t#P#1` ORDER BY id;  
+# return error
+--replace_column 1 x
+CHECK TABLE `t#P#1`;
+--replace_column 1 x                
+ALTER TABLE `t#P#1` CHECK PARTITION p1;
+--replace_column 1 x
+ALTER TABLE `t#P#1` CHECK PARTITION pmix1;
+--replace_column 1 x
+REPAIR TABLE `t#P#1`;
+--replace_column 1 x  
+ALTER TABLE `t#P#1` REPAIR PARTITION P1;   
+--replace_column 1 x
+ALTER TABLE `t#P#1` REPAIR PARTITION pmix1;
+ALTER TABLE `t#P#1` REBUILD PARTITION P1;
+DELETE FROM `t#P#1#P#p1` WHERE id = 3000;
+SELECT * FROM `t#P#1` ORDER BY id;     
+--replace_column 1 x
+CHECK TABLE `t#P#1`;     
+#BUG #SEQUOIASQLMAINSTREAM-794 
+# insert a duplicated row
+INSERT INTO `t#P#1#P#pmix1`(id,c) VALUES (3,'20');
+SELECT * FROM `t#P#1` ORDER BY id, c; 
+# return error
+--replace_column 1 x
+CHECK TABLE `t#P#1` MEDIUM;
+--replace_column 1 x
+ALTER TABLE `t#P#1` CHECK PARTITION P1;
+--replace_column 1 x
+ALTER TABLE `t#P#1` CHECK PARTITION pmix1 MEDIUM;
+--replace_column 1 x
+REPAIR TABLE `t#P#1` QUICK;  
+--replace_column 1 x
+REPAIR TABLE `t#P#1` USE_FRM;    
+--replace_column 1 x
+REPAIR TABLE `t#P#1` EXTENDED;
+--replace_column 1 x
+ALTER TABLE `t#P#1` REPAIR PARTITION P1;   
+--replace_column 1 x
+ALTER TABLE `t#P#1` REPAIR PARTITION pmix1 EXTENDED;
+--error ER_DUP_KEY
+# SEQUOIASQLMAINSTREAM-1193
+--error 1062
+ALTER TABLE `t#P#1` REBUILD PARTITION P1;
+# return error
+--replace_column 1 x
+CHECK TABLE `t#P#1`; 
+DELETE FROM `t#P#1#P#pmix1` WHERE id = 3;
+SELECT * FROM `t#P#1` ORDER BY id;    
+--replace_column 1 x
+CHECK TABLE `t#P#1`;  
+# insert a valid row, matched and not duplicated
+INSERT INTO `t#P#1#P#p1`(id,c) VALUES (600,'21') ;
+SELECT * FROM `t#P#1` ORDER BY id;  
+--replace_column 1 x
+CHECK TABLE `t#P#1` EXTENDED;
+--replace_column 1 x
+ALTER TABLE `t#P#1` CHECK PARTITION p1 EXTENDED;    
+--replace_column 1 x
+ALTER TABLE `t#P#1` CHECK PARTITION pmix1;
+--replace_column 1 x
+ALTER TABLE `t#P#1` REPAIR PARTITION ALL;
+ALTER TABLE `t#P#1` REBUILD PARTITION ALL;
+SELECT * FROM `t#P#1` ORDER BY id;
+--replace_column 1 x
+CHECK TABLE `t#P#1`;  
+DROP TABLE `t#P#1`,`t#P#1#P#p1`,`t#P#1#P#pmix1`;
+
+# seqDB-20413, seqDB-22271, seqDB-22391
+# RANGE (expr) / LIST (expr) / LIST COLUMNS (col_list) 
+CREATE TABLE `t1#Range#Expr` ( id INT, d DATE NOT NULL )
+PARTITION BY RANGE ( YEAR(d) ) (
+  PARTITION p0 VALUES LESS THAN (1960),
+  PARTITION p1 VALUES LESS THAN (1980),
+  PARTITION p2 VALUES LESS THAN (2000),
+  PARTITION p3 VALUES LESS THAN (2020),
+  PARTITION p4 VALUES LESS THAN (MAXVALUE)
+);
+CREATE TABLE `t1#List#Expr` ( id INT, a INT NOT NULL, b INT GENERATED ALWAYS AS (a+1) STORED )
+PARTITION BY LIST (b) (
+  PARTITION ptest1 VALUES IN (-4,40,9,-1,0,100,11),
+  PARTITION otest2 VALUES IN (3,50,8,-9,41,99,1),
+  PARTITION qtest3 VALUES IN (36,7,-8,-50,14,13),
+  PARTITION ytest4 VALUES IN (6,16,-7,12,-13,10,101,-99)
+);
+CREATE TABLE `t1#P#List#Columns` ( id INT, a INT GENERATED ALWAYS AS (id-1) STORED, d DATE ) 
+PARTITION BY LIST COLUMNS(a, d) (
+  PARTITION l1 VALUES IN ( (0,'2000-02-01'), (3,'2008-02-01'), (5,'1990-02-01'), (8,'1998-02-01'), (-1,'2001-02-01'), (-9,'2011-02-01'), (10,'2020-02-01') ), 
+  PARTITION l2 VALUES IN ( (-3,'2001-03-01'), (7,'2006-03-01'), (9,'1997-03-01'), (99,'1998-03-01'), (-5,'2002-03-01'), (16,'2009-03-01'), (80,'2020-03-01') ), 
+  PARTITION l3 VALUES IN ( (14,'2001-04-01'), (17,'2005-04-01'), (-99,'1995-04-01'), (-4,'1998-04-01'), (24,'2002-04-01'), (19,'2008-04-01'), (-80,'2019-04-01'),(81, '2020-03-01') ), 
+  PARTITION l4 VALUES IN ( (6,'2018-05-01'), (13,'2004-05-01'), (98,'1995-05-01'), (-98,'1998-05-01'), (23,'2019-05-01'), (-19,'2003-05-01'), (79,'2021-05-01') )
+);
+SHOW CREATE TABLE `t1#Range#Expr`;
+SHOW CREATE TABLE `t1#List#Expr`;
+SHOW CREATE TABLE `t1#P#List#Columns`;
+--error 1748
+INSERT INTO `t1#Range#Expr` PARTITION (p0) VALUES (0,'1960-01-01');
+--error 1748
+INSERT INTO `t1#List#Expr` PARTITION (otest2)(id,a) VALUES (0,-2);
+--error 1748
+INSERT INTO `t1#P#List#Columns` PARTITION (l3)(id,d) VALUES (17,'2009-03-01');
+INSERT INTO `t1#Range#Expr` PARTITION (p0,p3,p4) VALUES (1,'1900-01-01'),(2,'1940-04-04'),(-1,'1950-05-05'),(99,'2000-01-01'),(0,'2010-07-07'),(18,'2018-03-03'),(10,'2020-02-02'),(9,'2037-02-01'),(100,'2019-12-30');
+INSERT INTO `t1#List#Expr` PARTITION (otest2,qtest3,ytest4)(id,a) VALUES (0,0),(40,40),(11,11),(13,13),(12,12),(-8,-8),(100,100),(9,9),(2,2);
+INSERT INTO `t1#P#List#Columns` PARTITION (l1,l2,l3,l4)(id,d) VALUES (4,'2008-02-01'), (6,'1990-02-01'),(0,'2001-02-01'),(8,'2006-03-01'), (-4,'2002-03-01'),(81,'2020-03-01'),(15,'2001-04-01'), (-3,'1998-04-01'),(20,'2008-04-01'),(7,'2018-05-01'),(14,'2004-05-01'),(80,'2021-05-01');
+--error 40178
+UPDATE `t1#Range#Expr` PARTITION (p3) SET d = '1910-01-01';
+--error 40178
+UPDATE `t1#List#Expr` PARTITION (otest2) SET a = -1 WHERE a > 0;
+--error 40178
+UPDATE `t1#P#List#Columns` PARTITION (l1,l2,l3,l4) SET id = id+1 WHERE a = 80 AND d IS NOT NULL;
+UPDATE `t1#List#Expr` PARTITION (ptest1,otest2,ytest4) SET id = id*2 WHERE a >= (SELECT id FROM `t1#Range#Expr` WHERE id > 99);
+UPDATE `t1#Range#Expr` PARTITION (p0,p3,p4) SET id = id + 3 WHERE d > '1970-01-01' AND d < '2020-01-01';
+SELECT * FROM `t1#Range#Expr` PARTITION (p0,p1,p4) WHERE d < '2037-01-01' ORDER BY id;
+SELECT * FROM `t1#List#Expr` PARTITION (otest2,qtest3,ytest4) WHERE a IN (2,99,11) ORDER BY id;
+SELECT t1.id ,t1.d FROM `t1#Range#Expr` AS t1 JOIN `t1#List#Expr` PARTITION (ptest1,otest2,ytest4) AS t2 ON t1.id=t2.id ORDER BY t1.id;
+SELECT * FROM `t1#P#List#Columns` PARTITION (l1,l2,l3,l4) WHERE a NOT IN (3,4,5,80) AND d > '2001-04-01' ORDER BY id;
+ALTER TABLE `t1#Range#Expr` ADD PRIMARY KEY (d);
+ALTER TABLE `t1#List#Expr` ADD UNIQUE KEY (b);
+SHOW CREATE TABLE `t1#Range#Expr`;
+SHOW CREATE TABLE `t1#List#Expr`;
+SHOW CREATE TABLE `t1#P#List#Columns`;
+SELECT * FROM `t1#Range#Expr` PARTITION (p0,p1,p4) WHERE d < '2037-01-01' ORDER BY id;
+SELECT * FROM `t1#List#Expr` PARTITION (otest2,qtest3,ytest4) WHERE a IN (2,99,11) ORDER BY id;
+SELECT t1.id ,t1.d FROM `t1#Range#Expr` AS t1 JOIN `t1#List#Expr` PARTITION (ptest1,otest2,ytest4) AS t2 ON t1.id=t2.id ORDER BY t1.id;
+SELECT * FROM `t1#P#List#Columns` PARTITION (l1,l2,l3,l4) WHERE a NOT IN (3,4,5,80) AND d > '2001-04-01' ORDER BY id;
+DELETE FROM `t1#Range#Expr` PARTITION (p1,p3) WHERE id > 10;
+DELETE FROM `t1#List#Expr` PARTITION (ptest1,otest2,qtest3) WHERE a IN (10,13,90,95,0);
+DELETE FROM `t1#P#List#Columns` PARTITION (l1,l2,l3,l4) WHERE a NOT IN (1,3,4,10,80);
+SELECT * FROM `t1#Range#Expr` PARTITION (p0,p2,p1,p4) ORDER BY id;
+SELECT * FROM `t1#List#Expr` PARTITION (ptest1,otest2,qtest3,ytest4) ORDER BY id;
+SELECT * FROM `t1#P#List#Columns` PARTITION (l1,l3,l2,l4) ORDER BY id;
+SELECT PARTITION_NAME, PARTITION_METHOD, PARTITION_EXPRESSION, TABLE_ROWS 
+  FROM INFORMATION_SCHEMA.PARTITIONS WHERE TABLE_SCHEMA LIKE '%partition_sequoiadb%' AND TABLE_NAME = 't1#Range#Expr';
+SELECT PARTITION_NAME, PARTITION_METHOD, PARTITION_EXPRESSION, TABLE_ROWS 
+  FROM INFORMATION_SCHEMA.PARTITIONS WHERE TABLE_SCHEMA LIKE '%partition_sequoiadb%' AND TABLE_NAME = 't1#List#Expr';
+SELECT PARTITION_NAME, PARTITION_METHOD, PARTITION_EXPRESSION, TABLE_ROWS 
+  FROM INFORMATION_SCHEMA.PARTITIONS WHERE TABLE_SCHEMA LIKE '%partition_sequoiadb%' AND TABLE_NAME = 't1#P#List#Columns';
+# Partition Management
+ALTER TABLE `t1#List#Expr` ADD PARTITION (
+  PARTITION pmore1 VALUES IN (-3,19,21,-2,97),
+  PARTITION pmore2 VALUES IN (32,28,15,4,-10)
+);
+SHOW CREATE TABLE `t1#List#Expr`;
+INSERT INTO `t1#List#Expr` PARTITION (pmore1,pmore2)(id,a) VALUES (-4,-4),(31,31),(20,20),(-3,-3),(3,3),(27,27); 
+ALTER TABLE `t1#List#Expr` REORGANIZE PARTITION otest2,qtest3 INTO (
+  PARTITION qtest3 VALUES IN (35,27,-22,-6,26,88,3,13,41)
+);
+ALTER TABLE `t1#List#Expr` REORGANIZE PARTITION pmore1 INTO (
+  PARTITION pmoren1 VALUES IN (38,5,17,-3),
+  PARTITION pmoren2 VALUES IN (30,-5,21,-2),
+  PARTITION pmoren3 VALUES IN (-30,29,18)
+);
+ALTER TABLE `t1#List#Expr` REORGANIZE PARTITION qtest3,ytest4 INTO (
+  PARTITION ytest4 VALUES IN (35,27,-22,-6,26,88,3,13,41),
+  PARTITION qtest3 VALUES IN (6,16,-7,12,-13,10,101,-99)
+);
+SHOW CREATE TABLE `t1#List#Expr`;
+INSERT INTO `t1#List#Expr` PARTITION (qtest3,ytest4)(id,a) VALUES (-100,-100),(-7,-7),(-23,-23);
+INSERT INTO `t1#List#Expr` PARTITION (pmoren1,pmoren2,pmoren3)(id,a) VALUES (-6,-6),(4,4),(17,17),(16,16);
+SELECT * FROM `t1#List#Expr` PARTITION (qtest3,ytest4) ORDER BY id;
+SELECT * FROM `t1#List#Expr` PARTITION (pmoren1) ORDER BY id;
+SELECT * FROM `t1#List#Expr` PARTITION (pmoren2,pmoren3) ORDER BY id;
+ALTER TABLE `t1#List#Expr` DROP PARTITION qtest3,ytest4,pmoren1,pmore2;
+SHOW CREATE TABLE `t1#List#Expr`;
+#BUG #SEQUOIASQLMAINSTREAM-710
+# REBUILD PARTITION
+ALTER TABLE `t1#Range#Expr` REBUILD PARTITION p0;
+ALTER TABLE `t1#List#Expr` REBUILD PARTITION ALL;
+UPDATE `t1#List#Expr` PARTITION (pmoren2,pmoren3) SET id = 1 WHERE a > 0;
+SELECT * FROM `t1#Range#Expr` PARTITION (p0,p2,p1,p3,p4) ORDER BY id;
+SELECT * FROM `t1#List#Expr` PARTITION (ptest1,pmoren2) ORDER BY id;
+SELECT * FROM `t1#List#Expr` PARTITION (pmoren3) ORDER BY id;
+# SeqDB-22709, #SeqDB-22711
+#SEQUOIASQLMAINSTREAM-761
+CREATE TABLE `t1#List#Expr#P#ptest1` ( id INT, _phid_ BIGINT, a INT NOT NULL, b INT GENERATED ALWAYS AS (a+1) STORED );
+CREATE TABLE `t1#List#Expr#P#pmoren2` ( id INT, _phid_ BIGINT, a INT NOT NULL, b INT GENERATED ALWAYS AS (a+1) STORED );
+CREATE TABLE `t1#List#Expr#P#pmoren3` ( id INT, _phid_ BIGINT, a INT NOT NULL, b INT GENERATED ALWAYS AS (a+1) STORED );
+# insert a mismatched row
+INSERT INTO `t1#List#Expr#P#ptest1`(id,_phid_ ,a) VALUES (101,101,101) ;    
+SELECT * FROM `t1#List#Expr` ORDER BY id, a; 
+# return error
+--replace_column 1 x
+CHECK TABLE `t1#List#Expr`; 
+--replace_column 1 x
+ALTER TABLE `t1#List#Expr` CHECK PARTITION ptest1; 
+--replace_column 1 x
+ALTER TABLE `t1#List#Expr` CHECK PARTITION pmoren2,pmoren3;
+# return error
+--replace_column 1 x
+REPAIR TABLE `t1#List#Expr`;  
+--replace_column 1 x
+ALTER TABLE `t1#List#Expr` REPAIR PARTITION ptest1; 
+--replace_column 1 x
+ALTER TABLE `t1#List#Expr` REPAIR PARTITION pmoren2,pmoren3;
+ALTER TABLE `t1#List#Expr` REBUILD PARTITION ptest1;
+DELETE FROM `t1#List#Expr#P#ptest1` WHERE a = 101;
+SELECT * FROM `t1#List#Expr` ORDER BY id, a;
+--replace_column 1 x 
+CHECK TABLE `t1#List#Expr`;  
+# insert many valid rows, matched and not duplicated 
+INSERT INTO `t1#List#Expr#P#ptest1`(id, _phid_, a) VALUES (29,29,29),(-31,31,-31) ;
+INSERT INTO `t1#List#Expr#P#pmoren2`(id, _phid_, a) VALUES (10,10,10);
+SELECT * FROM `t1#List#Expr` ORDER BY id, a; 
+--replace_column 1 x
+CHECK TABLE `t1#List#Expr` EXTENDED; 
+--replace_column 1 x
+ALTER TABLE `t1#List#Expr` REPAIR PARTITION ptest1 EXTENDED;
+--replace_column 1 x
+ALTER TABLE  `t1#List#Expr` CHECK PARTITION ptest1 EXTENDED;
+--replace_column 1 x
+ALTER TABLE  `t1#List#Expr` CHECK PARTITION pmoren2 MEDIUM;
+--replace_column 1 x
+ALTER TABLE  `t1#List#Expr` CHECK PARTITION pmoren3;
+--replace_column 1 x
+REPAIR TABLE `t1#List#Expr`;
+ALTER TABLE `t1#List#Expr` REBUILD PARTITION ALL;
+SELECT * FROM `t1#List#Expr` ORDER BY id, a; 
+--replace_column 1 x
+CHECK TABLE `t1#List#Expr`;  
+#BUG #SEQUOIASQLMAINSTREAM-794
+# insert contain a duplicated row
+INSERT INTO `t1#List#Expr#P#pmoren2`(id, _phid_, a) VALUES (10,10,10);
+INSERT INTO `t1#List#Expr#P#pmoren3`(id, _phid_, a) VALUES (8,8,8),(99,99,99);
+SELECT * FROM `t1#List#Expr` ORDER BY id, a;
+--replace_column 1 x
+CHECK TABLE `t1#List#Expr`;    
+--replace_column 1 x
+ALTER TABLE `t1#List#Expr` REPAIR PARTITION ALL; 
+--replace_column 1 x
+ALTER TABLE `t1#List#Expr` CHECK PARTITION ALL;
+--error ER_DUP_KEY
+# SEQUOIASQLMAINSTREAM-1193
+--error 1062
+ALTER TABLE `t1#List#Expr` REBUILD PARTITION ALL;
+# return error
+--replace_column 1 x
+CHECK TABLE `t1#List#Expr`;
+DELETE FROM `t1#List#Expr#P#pmoren2` WHERE a = 10;
+DELETE FROM `t1#List#Expr#P#pmoren3` WHERE a = 8 OR a = 99;
+SELECT * FROM `t1#List#Expr` ORDER BY id, a; 
+--replace_column 1 x
+CHECK TABLE `t1#List#Expr`;     
+DROP TABLE `t1#Range#Expr`,`t1#List#Expr`,`t1#P#List#Columns`;
+DROP TABLE `t1#List#Expr#P#ptest1`,`t1#List#Expr#P#pmoren2`,`t1#List#Expr#P#pmoren3`;
+
+#seqDB-20414, seqDB-22335
+# HASH (expr) / KEY (col_list)
+CREATE TABLE `t1#Hash` ( id FLOAT, b INT GENERATED ALWAYS AS (id+1) STORED )
+  PARTITION BY HASH( CEILING(b) ) PARTITIONS 16;
+CREATE TABLE `t1#P#Key#p#` ( id INT NOT NULL AUTO_INCREMENT, tm TIME(4), PRIMARY KEY(id,tm) )
+  PARTITION BY LINEAR KEY (id,tm) PARTITIONS 6;
+SHOW CREATE TABLE `t1#Hash`;
+SHOW CREATE TABLE `t1#P#Key#p#`;
+INSERT INTO `t1#Hash`(id) VALUES (1.19),(-2.94),(0.001),(123.45678901),(10.000011),(-5.667),(9.876),(-1.19);
+INSERT INTO `t1#P#Key#p#`(tm) VALUES (1234559.99),('1'),('1:23'),('1:23:45'), ('10.22'),('10:10:10'),('13:00:00'),('09:00:00');
+SELECT * FROM `t1#Hash` ORDER BY id;
+SELECT * FROM `t1#P#Key#p#` ORDER BY id;
+--error 131
+INSERT INTO `t1#Hash` PARTITION (p0)(id) VALUES (11.11);
+--error 131
+INSERT INTO `t1#P#Key#p#` PARTITION (p0)(tm) VALUES ('23:59:59');
+--error 131
+SELECT * FROM `t1#Hash` PARTITION (p0);
+--error 131
+SELECT * FROM `t1#P#Key#p#` PARTITION (p0);
+--error 131
+UPDATE `t1#Hash` PARTITION (p1) SET id = 1 WHERE b > 10;
+--error 131
+UPDATE `t1#P#Key#p#` PARTITION (p1) SET id = 10 WHERE tm = '10:10:10';
+--error 131
+DELETE FROM `t1#Hash` PARTITION (p3) WHERE id > 1;
+--error 131
+DELETE FROM `t1#P#Key#p#` PARTITION (p3) WHERE id > 10;
+# Partition Management
+ALTER TABLE `t1#P#Key#p#` ADD PARTITION PARTITIONS 6;
+SHOW CREATE TABLE `t1#P#Key#p#`;
+ALTER TABLE `t1#P#Key#p#` COALESCE PARTITION 10;
+SHOW CREATE TABLE `t1#P#Key#p#`;
+#BUG #SEQUOIASQLMAINSTREAM-710
+#BUG #SEQUOIASQLMAINSTREAM-789
+# REBUILD PARTITION
+--error 131
+ALTER TABLE `t1#Hash` REBUILD PARTITION p15;
+ALTER TABLE `t1#P#Key#p#` REBUILD PARTITION ALL;
+INSERT INTO `t1#P#Key#p#`(tm) VALUES ('837:00:00'),('838:00:00'); 
+SELECT * FROM `t1#Hash` ORDER BY id;
+SELECT * FROM `t1#P#Key#p#` ORDER BY id;
+# SeqDB-22710, #SeqDB-22712
+#SEQUOIASQLMAINSTREAM-761
+--replace_column 1 x
+CHECK TABLE `t1#Hash`;    
+--replace_column 1 x
+CHECK TABLE `t1#P#Key#p#` QUICK;   
+--replace_column 1 x
+REPAIR TABLE `t1#Hash` USE_FRM;  
+--replace_column 1 x
+REPAIR TABLE  `t1#P#Key#p#`;
+#BUG #SEQUOIASQLMAINSTREAM-789
+--replace_column 1 x
+ALTER TABLE `t1#Hash` CHECK PARTITION p1 EXTENDED;
+--replace_column 1 x
+ALTER TABLE `t1#P#Key#p#` CHECK PARTITION p1 FAST;  
+--replace_column 1 x
+ALTER TABLE `t1#Hash` REPAIR PARTITION p2 USE_FRM; 
+--replace_column 1 x
+ALTER TABLE `t1#P#Key#p#` REPAIR PARTITION p1; 
+DROP TABLE `t1#Hash`,`t1#P#Key#p#`;
+
+# seqDB-20415, seqDB-22271, seqDB-22391
+# SUBPARTITION
+CREATE TABLE `t1#Sub#` ( id INT(11) NOT NULL, f1 INT AUTO_INCREMENT, f2 INT GENERATED ALWAYS AS (id-10) STORED, PRIMARY KEY(f1,f2) )
+  PARTITION BY RANGE( ABS(f2) ) PARTITIONS 3
+  SUBPARTITION BY LINEAR KEY(f1)
+  SUBPARTITIONS 2 (
+    PARTITION p01 VALUES LESS THAN (100),
+    PARTITION p11 VALUES LESS THAN (200),
+    PARTITION p21 VALUES LESS THAN MAXVALUE );
+CREATE TABLE `t1#P#Sub#` ( a INT, b INT GENERATED ALWAYS AS (a*10) STORED, c INT, PRIMARY KEY (a,b,c) )
+  PARTITION BY RANGE COLUMNS (b,c)
+  SUBPARTITION BY hash (a+b)
+  (PARTITION x1 VALUES LESS THAN (1, 100)
+    (SUBPARTITION x11,
+     SUBPARTITION x12),
+   PARTITION x2 VALUES LESS THAN (100, 500)
+    (SUBPARTITION x21,
+     SUBPARTITION x22),
+   PARTITION x3 VALUES LESS THAN (1000, 900)
+    (SUBPARTITION x31,
+     SUBPARTITION x32));
+SHOW CREATE TABLE `t1#Sub#`;
+SHOW CREATE TABLE `t1#P#Sub#`;
+INSERT INTO `t1#Sub#` PARTITION (p01,p11,p21)(id) VALUES (20),(-185),(0),(2),(199),(5),(99),(135),(50),(45),(350),(175),(1010),(1000);
+INSERT INTO `t1#P#Sub#` PARTITION (x1,x2,x3)(a,c) VALUES (1,8),(-9,19),(4,-9),(0,0),(99,-99),(99,410),(5,610),(6,320),(7,50),(-4,8),(14,-5);
+--error 1748
+INSERT INTO `t1#Sub#` PARTITION (p01)(id) VALUES (-90);
+--error 1748
+INSERT INTO `t1#P#Sub#` PARTITION (x1)(a,c) VALUES (2,-2);
+--error 40178
+UPDATE `t1#Sub#` PARTITION (p01) SET id = 160;
+UPDATE `t1#Sub#` PARTITION (p01) SET id = -1 WHERE f1 = 6;
+--error 131
+UPDATE `t1#P#Sub#` PARTITION (x1) SET a = 45 WHERE c > 10;
+SELECT * FROM `t1#Sub#` PARTITION (p01,p11) WHERE id > -10 OR f2 > 99 ORDER BY id;
+--error 131
+SELECT * FROM `t1#P#Sub#` PARTITION (x1,x3) WHERE NOT a < 0 OR c >= 50 ORDER BY c;
+DELETE FROM `t1#Sub#` PARTITION (p11) WHERE id < 0 ;
+--error 131
+DELETE FROM `t1#P#Sub#` PARTITION (x1,x3) WHERE a > 1 AND c < 100;
+SELECT * FROM `t1#Sub#` PARTITION (p01,p11,p21) ORDER BY id;
+SELECT * FROM `t1#P#Sub#` PARTITION (x1,x2,x3) ORDER BY b,c;
+--error 131
+INSERT INTO `t1#P#Sub#` PARTITION (x11)(a,c) VALUES (-10,10);
+--error 131
+SELECT * FROM `t1#P#Sub#` PARTITION (x11);
+--error 131
+DELETE FROM `t1#P#Sub#` PARTITION (x11);
+--error 131
+UPDATE `t1#P#Sub#` PARTITION (x21) SET a = 10;
+SELECT PARTITION_NAME, SUBPARTITION_NAME, PARTITION_METHOD, SUBPARTITION_METHOD, PARTITION_EXPRESSION, SUBPARTITION_EXPRESSION, TABLE_ROWS 
+  FROM INFORMATION_SCHEMA.PARTITIONS WHERE TABLE_SCHEMA LIKE '%partition_sequoiadb%' AND TABLE_NAME = 't1#Sub#';
+SELECT PARTITION_NAME, SUBPARTITION_NAME, PARTITION_METHOD, SUBPARTITION_METHOD, PARTITION_EXPRESSION, SUBPARTITION_EXPRESSION, TABLE_ROWS 
+  FROM INFORMATION_SCHEMA.PARTITIONS WHERE TABLE_SCHEMA LIKE '%partition_sequoiadb%' AND TABLE_NAME = 't1#P#Sub#';
+# Partition Management
+ALTER TABLE `t1#P#Sub#` ADD PARTITION (
+  PARTITION pmore1 VALUES LESS THAN (2000,800),
+  PARTITION pmore2 VALUES LESS THAN (3000,400)
+);
+SHOW CREATE TABLE `t1#P#Sub#`;
+INSERT INTO `t1#P#Sub#` PARTITION (pmore1,pmore2)(a,c) VALUES (150,200),(300,300),(250,100),(200,200);
+#BUG #SEQUOIASQLMAINSTREAM-706
+ALTER TABLE `t1#P#Sub#` REORGANIZE PARTITION x2,x3,pmore1 INTO (
+  PARTITION pmore1 VALUES LESS THAN (2000,800)
+);
+SHOW CREATE TABLE `t1#P#Sub#`;
+INSERT INTO `t1#P#Sub#` PARTITION (x1,pmore1,pmore2)(a,c) VALUES (8,80),(-10,70),(120,600),(200,600),(250,300),(220,350);
+SELECT * FROM `t1#P#Sub#` ORDER BY a,c;
+ALTER TABLE `t1#P#Sub#` REORGANIZE PARTITION pmore1 INTO (
+  PARTITION pmore1 VALUES LESS THAN (500,600),
+  PARTITION pmore1_1 VALUES LESS THAN (1300,400),
+  PARTITION pmore1_2 VALUES LESS THAN (2000,800)
+);
+SHOW CREATE TABLE `t1#P#Sub#`;
+INSERT INTO `t1#P#Sub#` PARTITION (pmore1,pmore1_1,pmore1_2)(a,c) VALUES (40,80),(35,70),(115,300),(95,400),(130,650),(175,350);
+SELECT * FROM `t1#P#Sub#` ORDER BY a,c;
+ALTER TABLE `t1#P#Sub#` DROP PARTITION pmore1;
+SHOW CREATE TABLE `t1#P#Sub#`;
+#BUG #SEQUOIASQLMAINSTREAM-710
+# REBUILD PARTITION
+ALTER TABLE `t1#Sub#` REBUILD PARTITION p01,p11,p21;
+ALTER TABLE `t1#P#Sub#` REBUILD PARTITION ALL;
+DELETE FROM `t1#P#Sub#` WHERE c > 10 AND c < 300;
+#BUG #SEQUOIASQLMAINSTREAM-714
+SELECT * FROM `t1#Sub#` PARTITION (p01,p11,p21) ORDER BY id;
+SELECT * FROM `t1#P#Sub#` ORDER BY a,c;
+# SeqDB-22709, #SeqDB-22711 
+#SEQUOIASQLMAINSTREAM-761
+CREATE TABLE `t1#Sub##P#p01` ( id INT(11) NOT NULL, _phid_ BIGINT, f1 INT AUTO_INCREMENT, f2 INT GENERATED ALWAYS AS (id-10) STORED, PRIMARY KEY(f1,f2,_phid_)  );
+CREATE TABLE `t1#Sub##P#p11` ( id INT(11) NOT NULL, _phid_ BIGINT, f1 INT AUTO_INCREMENT, f2 INT GENERATED ALWAYS AS (id-10) STORED, PRIMARY KEY(f1,f2,_phid_) );
+CREATE TABLE `t1#Sub##P#p21` ( id INT(11) NOT NULL, _phid_ BIGINT, f1 INT AUTO_INCREMENT, f2 INT GENERATED ALWAYS AS (id-10) STORED, PRIMARY KEY(f1,f2,_phid_) );
+# insert many valid rows, matched and not duplicated
+INSERT INTO `t1#Sub##P#p01`(id,f1,_phid_) VALUES (300,300,300);
+INSERT INTO `t1#Sub##P#p21`(id,f1,_phid_) VALUES (80,80,80);
+SELECT * FROM `t1#Sub#` ORDER BY id;  
+--replace_column 1 x
+CHECK TABLE `t1#Sub#`;    
+--replace_column 1 x
+ALTER TABLE  `t1#Sub#` CHECK PARTITION p01 MEDIUM;  
+--replace_column 1 x
+ALTER TABLE  `t1#Sub#` CHECK PARTITION p11 MEDIUM;
+#BUG #SEQUOIASQLMAINSTREAM-793
+--replace_column 1 x
+ALTER TABLE  `t1#Sub#` CHECK PARTITION p21 MEDIUM;
+--replace_column 1 x
+REPAIR TABLE `t1#Sub#` USE_FRM; 
+--replace_column 1 x
+ALTER TABLE `t1#Sub#` REPAIR PARTITION p01; 
+#BUG #SEQUOIASQLMAINSTREAM-793
+--replace_column 1 x
+CHECK TABLE `t1#Sub#` MEDIUM;
+--replace_column 1 x
+REPAIR TABLE `t1#Sub#` EXTENDED;
+--replace_column 1 x
+CHECK TABLE `t1#Sub#`;
+ALTER TABLE `t1#Sub#` REBUILD PARTITION ALL; 
+SELECT * FROM `t1#Sub#` ORDER BY id; 
+#BUG #SEQUOIASQLMAINSTREAM-794
+# insert contain a duplicated row
+INSERT INTO `t1#Sub##P#p01`(id, f1, _phid_) VALUES (200,30,200),(150,40,150),(175,12,175); 
+INSERT INTO `t1#Sub##P#p11`(id, f1, _phid_) VALUES (2000,2000,2000);
+SELECT * FROM `t1#Sub#` ORDER BY id;
+--replace_column 1 x
+--replace_regex /f1:[0-9]* f2:[0-9]*/f1:x f2:x/ 
+CHECK TABLE `t1#Sub#`;  
+--replace_column 1 x
+--replace_regex /f1:[0-9]* f2:[0-9]*/f1:x f2:x/
+ALTER TABLE  `t1#Sub#` CHECK PARTITION p01;
+#BUG #SEQUOIASQLMAINSTREAM-793
+--replace_column 1 x
+ALTER TABLE  `t1#Sub#` CHECK PARTITION p11;
+--replace_column 1 x
+ALTER TABLE  `t1#Sub#` CHECK PARTITION p21;
+--replace_column 1 x
+REPAIR TABLE `t1#Sub#` EXTENDED; 
+--replace_column 1 x
+ALTER TABLE `t1#Sub#` REPAIR PARTITION p01 EXTENDED; 
+--replace_column 1 x
+--replace_regex /f1:[0-9]* f2:[0-9]*/f1:x f2:x/
+ALTER TABLE  `t1#Sub#` CHECK PARTITION p01;
+--replace_column 1 x
+ALTER TABLE  `t1#Sub#` CHECK PARTITION p11;
+# --error ER_DUP_KEY
+# SEQUOIASQLMAINSTREAM-1193
+--error 1062
+ALTER TABLE `t1#Sub#` REBUILD PARTITION ALL;
+# return error
+--replace_column 1 x
+REPAIR TABLE `t1#Sub#`;
+--replace_column 1 x
+--replace_regex /f1:[0-9]* f2:[0-9]*/f1:x f2:x/
+ALTER TABLE  `t1#Sub#` CHECK PARTITION p01;
+--replace_column 1 x
+ALTER TABLE  `t1#Sub#` CHECK PARTITION p11;
+DELETE FROM `t1#Sub##P#p01` WHERE f1 = 12;
+DELETE FROM `t1#Sub##P#p11` WHERE f1 = 2000;
+SELECT * FROM `t1#Sub#` ORDER BY id;
+--replace_column 1 x
+REPAIR TABLE `t1#Sub#`; 
+--replace_column 1 x
+CHECK TABLE `t1#Sub#`;
+DROP TABLE `t1#Sub#`,`t1#P#Sub#`;
+DROP TABLE `t1#Sub##P#p01`,`t1#Sub##P#p11`,`t1#Sub##P#p21`;
+
+#seqDB-20417
+CREATE TABLE t1 (col1 INT, col2 CHAR(5), col3 DATE) COMMENT 'sequoiadb:{ table_options: { ReplSize: 2 } }'
+    PARTITION BY LINEAR HASH( YEAR(col3) ) 
+    PARTITIONS 6;
+SHOW CREATE TABLE t1;
+ALTER TABLE t1 COMMENT 'sequoiadb:{ table_options: { ReplSize: -1 } }';
+SHOW CREATE TABLE t1;
+--error 1210
+ALTER TABLE t1 COMMENT 'sequoiadb:{ table_options: { ReplSize: 0 }, partition_options: {Partition: 8192} }';
+SHOW CREATE TABLE t1;
+DROP TABLE t1;
+--error 140
+CREATE TABLE t1 (col1 INT, col2 CHAR(5), col3 DATE) COMMENT 'sequoiadb:{ partition_options: { Partition: 8192} }'
+    PARTITION BY LINEAR HASH( YEAR(col3) )
+    PARTITIONS 6;
+
+#seqDB-20418
+CREATE TABLE t1 (
+    col1 INT NOT NULL,
+    col2 CHAR(5),
+    col3 DATE
+) COMMENT 'sequoiadb:{ table_options: { ReplSize: 2 } }'
+PARTITION BY LINEAR KEY (col1)
+PARTITIONS 3;
+SHOW CREATE TABLE t1;
+ALTER TABLE t1 COMMENT 'sequoiadb:{ table_options: { ReplSize: -1 } }';
+SHOW CREATE TABLE t1;
+--error 1210
+ALTER TABLE t1 COMMENT 'sequoiadb:{ table_options: { ReplSize: 0 }, partition_options: {Partition: 8192} }';
+SHOW CREATE TABLE t1;
+DROP TABLE t1;
+#Bug #SEQUOIASQLMAINSTREAM-699
+--error 140
+CREATE TABLE t1 (
+    col1 INT NOT NULL,
+    col2 CHAR(5),
+    col3 DATE
+) COMMENT 'sequoiadb:{ partition_options: {Partition: 8192} }'
+PARTITION BY LINEAR KEY (col1)
+PARTITIONS 3;
+
+#seqDB-20419
+CREATE TABLE t1 ( id INT, purchased DATE ) COMMENT 'sequoiadb:{ table_options: { ReplSize: 0 }, partition_options: {Partition: 8192} }'
+    PARTITION BY RANGE( YEAR(purchased) )
+    SUBPARTITION BY LINEAR HASH( TO_DAYS(purchased) )
+    SUBPARTITIONS 2 (
+        PARTITION p0 VALUES LESS THAN (1990),
+        PARTITION p1 VALUES LESS THAN (2000),
+        PARTITION p2 VALUES LESS THAN MAXVALUE
+    );
+CREATE TABLE t2 (id INT, purchased DATE)
+    PARTITION BY RANGE( YEAR(purchased) )
+    SUBPARTITION BY HASH( TO_DAYS(purchased) ) (
+        PARTITION p0 VALUES LESS THAN (1990) (
+            SUBPARTITION s0,
+            SUBPARTITION s1
+        ),
+        PARTITION p1 VALUES LESS THAN (2000) (
+            SUBPARTITION s2,
+            SUBPARTITION s3
+        ),
+        PARTITION p2 VALUES LESS THAN MAXVALUE (
+            SUBPARTITION s4,
+            SUBPARTITION s5
+        )
+);
+SHOW CREATE TABLE t1;
+SHOW CREATE TABLE t2;
+DROP TABLE t1,t2;
+
+#seqDB-20420
+CREATE TABLE t1 ( id INT, purchased DATE ) COMMENT 'sequoiadb:{ table_options: { ReplSize: 0 }, partition_options: {Partition: 8192} }'
+    PARTITION BY LIST( id )
+    SUBPARTITION BY LINEAR KEY ( id )
+    SUBPARTITIONS 2 (
+        PARTITION p0 VALUES IN (10),
+        PARTITION p1 VALUES IN (20),
+        PARTITION p2 VALUES IN (30)
+    ); 
+SHOW CREATE TABLE t1;
+DROP TABLE t1;
+
+#seqDB-20421
+CREATE TABLE t1 ( id INT, purchased DATE )
+    COMMENT 'sequoiadb: { table_options: { ReplSize: -1}, partition_options: { Partition: 1024 }}'
+    PARTITION BY RANGE( YEAR(purchased) )
+    SUBPARTITION BY HASH( TO_DAYS(purchased) )
+    SUBPARTITIONS 2 (
+        PARTITION p0 VALUES LESS THAN(1990)
+            COMMENT 'sequoiadb: { partition_options : { Partition: 1024, ReplSize: 2 } }',
+        PARTITION p1 VALUES LESS THAN(2000)
+            COMMENT 'sequoiadb: { partition_options : { Partition: 2048, Compressed: true, CompressionType:"snappy" } }',   
+        PARTITION p2 VALUES LESS THAN MAXVALUE
+            COMMENT 'sequoiadb: { partition_options : { Partition: 8192, ReplSize: 3, StrictDataMode: true } }'  
+    );		       
+SHOW CREATE TABLE t1;
+--error 40032
+ALTER TABLE t1 COMMENT 'sequoiadb: { table_options: {ReplSize: 1, StrictDataMode: true, AutoIndexId: true, AutoSplit: false}}';
+--error 40032
+ALTER TABLE t1 COMMENT 'sequoiadb: { partition_options: {ReplSize: 1, StrictDataMode: true, AutoIndexId: true, AutoSplit: false}}';
+
+ALTER TABLE t1 COMMENT 'sequoiadb: { table_options: {ReplSize: 1}}';
+ALTER TABLE t1 COMMENT 'sequoiadb: { table_options: {ReplSize: 2}, partition_options: {ReplSize: 1, AutoIndexId: true, AutoSplit: true, Compressed:true, StrictDataMode: true, Partition: 8192}}';
+
+DROP TABLE t1;
+
+--error 1210
+CREATE TABLE t1 ( id INT, purchased DATE )
+    COMMENT 'sequoiadb: { table_options: { ReplSize: -1}, partition_options: { Partition: 1024 }}'
+    PARTITION BY RANGE( YEAR(purchased) )
+    SUBPARTITION BY HASH( TO_DAYS(purchased) )
+    SUBPARTITIONS 2 (
+        PARTITION p0 VALUES LESS THAN(1990)
+            COMMENT 'sequoiadb: { table_options : { Partition: 1024, ReplSize: 2 } }',
+        PARTITION p1 VALUES LESS THAN(2000)
+            COMMENT 'sequoiadb: { partition_options : { Partition: 2048, Compressed: true, CompressionType:"snappy" } }',   
+        PARTITION p2 VALUES LESS THAN MAXVALUE
+            COMMENT 'sequoiadb: { partition_options : { Partition: 8192, ReplSize: 3, StrictDataMode: true } }'  
+    );
+
+#seqDB-20540
+CREATE TABLE t1 (
+    id INT NOT NULL PRIMARY KEY,
+    name VARCHAR(20)
+)
+PARTITION BY KEY()
+PARTITIONS 2;
+
+CREATE TABLE t2 (
+    id INT NOT NULL UNIQUE KEY,
+    name VARCHAR(20)
+)
+PARTITION BY KEY()
+PARTITIONS 2;
+SHOW CREATE TABLE t1;
+SHOW CREATE TABLE t2;
+DROP TABLE t1,t2;
+
+#seqDB-22271
+CREATE TABLE `t1#P#pp` ( 
+    id INT NOT NULL, 
+    produced_date DATE
+) 
+PARTITION BY RANGE COLUMNS (produced_date) ( 
+    PARTITION p0 VALUES LESS THAN ('1990-01-01'), 
+    PARTITION p1 VALUES LESS THAN ('2000-01-01'), 
+    PARTITION p2 VALUES LESS THAN ('2010-01-01'), 
+    PARTITION p3 VALUES LESS THAN ('2020-01-01') 
+); 
+CREATE TABLE `t2#P#pp` ( 
+    id INT NOT NULL, 
+    c INT,
+    PRIMARY KEY(id,c)
+) 
+PARTITION BY LIST (id)
+SUBPARTITION BY HASH(c)
+SUBPARTITIONS 2
+(PARTITION p0 VALUES IN (0),
+ PARTITION p1 VALUES IN (100),
+ PARTITION p2 VALUES IN (1000),
+ PARTITION p3 VALUES IN (10000)
+);
+INSERT INTO `t1#P#pp` VALUES (1, '1989-01-01'), (2, '1999-01-01'),(3, '2009-01-01'),(4, '2019-01-01');
+INSERT INTO `t2#P#pp` VALUES (0, 0),(100, 100),(1000, 1000),(10000, 10000);
+SHOW CREATE TABLE `t1#P#pp`;
+SHOW CREATE TABLE `t2#P#pp`;
+ALTER TABLE `t1#P#pp` DROP PARTITION p3; 
+ALTER TABLE `t2#P#pp` DROP PARTITION p1,p2; 
+SHOW CREATE TABLE `t1#P#pp`;
+SHOW CREATE TABLE `t2#P#pp`;
+SELECT * FROM `t1#P#pp` ORDER BY id;
+SELECT * FROM `t2#P#pp` ORDER BY id;
+DROP TABLE `t1#P#pp`,`t2#P#pp`;
+
+
+#seqDB-22296
+CREATE TABLE t1 ( 
+id INT, 
+dt DATE
+) 
+PARTITION BY LIST(YEAR(dt)) # TEST _phid_
+(PARTITION p1 VALUES IN (1970,1990), 
+PARTITION p2 VALUES IN (2000,2008), 
+PARTITION p3 VALUES IN (2020)); 
+# FAIL TO ADD UNIQUE KEY WITHOUT SHARDINGKEY
+--error 40177
+ALTER TABLE t1 ADD UNIQUE INDEX uid (id); 
+SHOW CREATE TABLE t1;
+ALTER TABLE t1 PARTITION BY RANGE COLUMNS (dt) ( # TEST col_list
+    PARTITION d1 VALUES LESS THAN ('1970-01-01'),
+    PARTITION d2 VALUES LESS THAN ('2000-02-02'),
+    PARTITION d3 VALUES LESS THAN ('2020-03-03')
+);
+--error 40177
+ALTER TABLE t1 ADD UNIQUE INDEX uid (id);
+SHOW CREATE TABLE t1;
+DROP TABLE t1;
+
+#seqDB-22332
+CREATE TABLE t1(a INT) COMMENT 'sequoiadb:{ table_options: { ReplSize: 2 } }';
+SHOW CREATE TABLE t1;
+ALTER TABLE t1 COMMENT 'sequoiadb:{ table_options: { ReplSize: 1 } }';
+SHOW CREATE TABLE t1;
+--error 1210
+ALTER TABLE t1 COMMENT 'sequoiadb:{ table_options: { ReplSize: 0 }, partition_options: { Partition: 8192 } }';
+DROP TABLE t1;
+--error 1210
+CREATE TABLE t1(a INT) COMMENT 'sequoiadb:{ partition_options: { Partition: 8192 } }';
+
+#seqDB-22393
+CREATE TABLE t1 (
+    id INT NOT NULL,
+    produced_date DATE,
+    name VARCHAR(100),
+    company VARCHAR(100)
+)COMPRESSION "None"
+COMMENT 'sequoiadb:{ partition_options: { Compressed : true, CompressionType: "snappy" } }'
+PARTITION BY RANGE COLUMNS (produced_date)
+SUBPARTITION BY KEY (id)
+SUBPARTITIONS 2 (
+    PARTITION p0 VALUES LESS THAN ('1990-01-01') COMMENT 'sequoiadb:{ partition_options: { Compressed: true, CompressionType: "lzw" } }',
+    PARTITION p1 VALUES LESS THAN ('2000-01-01'),
+    PARTITION p2 VALUES LESS THAN ('2010-01-01')
+);
+SHOW CREATE TABLE t1; 
+ALTER TABLE t1 COMPRESSION "None" COMMENT 'sequoiadb:{ partition_options: { Compressed : true, CompressionType: "lzw" } }';
+SHOW CREATE TABLE t1; 
+DROP TABLE t1;
+
+#Bug #SEQUOIASQLMAINSTREAM-715
+CREATE TABLE t1 (
+    id INT NOT NULL,
+    produced_date DATE,
+    name VARCHAR(100),
+    company VARCHAR(100)
+)COMPRESSION "lzw"
+COMMENT 'sequoiadb:{ partition_options: { Compressed: false } }'
+PARTITION BY RANGE COLUMNS (produced_date)
+SUBPARTITION BY KEY (id)
+SUBPARTITIONS 2 (
+    PARTITION p0 VALUES LESS THAN ('1990-01-01'),
+    PARTITION p1 VALUES LESS THAN ('2000-01-01'),
+    PARTITION p2 VALUES LESS THAN ('2010-01-01')
+); 
+drop table t1;
+
+#Bug #SEQUOIASQLMAINSTREAM-715
+CREATE TABLE t1 (
+    id INT NOT NULL,
+    produced_date DATE,
+    name VARCHAR(100),
+    company VARCHAR(100)
+)COMPRESSION "lzw"
+PARTITION BY RANGE COLUMNS (produced_date)
+SUBPARTITION BY KEY (id)
+SUBPARTITIONS 2 (
+    PARTITION p0 VALUES LESS THAN ('1990-01-01') COMMENT 'sequoiadb:{ partition_options: { Compressed: false } }',
+    PARTITION p1 VALUES LESS THAN ('2000-01-01'),
+    PARTITION p2 VALUES LESS THAN ('2010-01-01')
+); 
+drop table t1;
+
+#seqDB-22333
+--error 1166
+CREATE TABLE t1(
+   id INT,
+   _phid_ INT
+)
+PARTITION BY RANGE COLUMNS (_phid_) (
+    PARTITION p0 VALUES LESS THAN (6),
+    PARTITION p1 VALUES LESS THAN (11),
+    PARTITION p2 VALUES LESS THAN (16),
+    PARTITION p3 VALUES LESS THAN (21)
+);
+
+--error 1166
+CREATE TABLE t1(
+   id INT,
+   _phid_ INT
+)
+PARTITION BY RANGE (_phid_) (
+    PARTITION p0 VALUES LESS THAN (6),
+    PARTITION p1 VALUES LESS THAN (11),
+    PARTITION p2 VALUES LESS THAN (16),
+    PARTITION p3 VALUES LESS THAN (21)
+);
+
+--error 1166
+CREATE TABLE t1(
+   id INT,
+   _phid_ INT
+)
+PARTITION BY KEY (_phid_)
+PARTITIONS 4;
+
+#seqDB-22334
+--error 140
+CREATE TABLE t1(
+   id int auto_increment primary key
+)
+PARTITION BY RANGE COLUMNS ( id ) (
+    PARTITION p0 VALUES LESS THAN (6),
+    PARTITION p1 VALUES LESS THAN (11),
+    PARTITION p2 VALUES LESS THAN (16),
+    PARTITION p3 VALUES LESS THAN (21)
+);
+
+#seqDB-22370
+CREATE TABLE t1(id int, a int) COMMENT 'sequoiadb:{ partition_options: { ShardingKey: {a:1} } }'
+PARTITION BY LIST ( id ) (
+    PARTITION p0 VALUES IN (1,3,5),
+    PARTITION p1 VALUES IN (2,4,8),
+    PARTITION p2 VALUES IN (6,10),
+    PARTITION p3 VALUES IN (7,9)
+);
+SHOW CREATE TABLE t1;
+DROP TABLE t1;
+
+--error 1210
+CREATE TABLE t1(id int, a int) COMMENT 'sequoiadb:{ table_options: { ShardingKey: {a:1} } }'
+PARTITION BY LIST ( id ) (
+    PARTITION p0 VALUES IN (1,3,5),
+    PARTITION p1 VALUES IN (2,4,8),
+    PARTITION p2 VALUES IN (6,10),
+    PARTITION p3 VALUES IN (7,9)
+);
+
+#seqDB-22336
+CREATE TABLE t1 (
+    age INT,
+    city VARCHAR(15)
+);
+SHOW CREATE TABLE t1;
+INSERT INTO t1 VALUES(2,'a'),(6,'b'),(7,'c');
+SELECT * FROM t1 ORDER BY age;
+ALTER TABLE t1 PARTITION BY LIST ( age ) (
+    PARTITION p0 VALUES IN (1,3,5),
+    PARTITION p1 VALUES IN (2,4,8),
+    PARTITION p2 VALUES IN (6,10),
+    PARTITION p3 VALUES IN (7,9)
+);
+SHOW CREATE TABLE t1;
+SELECT * FROM t1 ORDER BY age;
+INSERT INTO t1 PARTITION(p0) VALUES(1,'d');
+SELECT * FROM t1 PARTITION(p0);
+UPDATE t1 PARTITION(p1) SET city = 'e';
+SELECT * FROM t1 PARTITION(p1);
+DELETE FROM t1 PARTITION(p2) WHERE age > 3;
+SELECT * FROM t1 PARTITION(p2);
+
+ALTER TABLE t1 PARTITION BY HASH( age ) PARTITIONS 4;
+SHOW CREATE TABLE t1;
+SELECT * FROM t1 ORDER BY age;
+INSERT INTO t1 VALUES(200,'w');
+SELECT * FROM t1 ORDER BY age;
+UPDATE t1 SET city = 'ccc' WHERE age > 100;
+SELECT * FROM t1 ORDER BY age;
+DELETE FROM t1 WHERE age > 60;
+SELECT * FROM t1 ORDER BY age;
+
+ALTER TABLE t1 REMOVE PARTITIONING;
+SHOW CREATE TABLE t1;
+SELECT * FROM t1 ORDER BY age;
+INSERT INTO t1 VALUES(555,'666');
+SELECT * FROM t1 ORDER BY age;
+DROP TABLE t1;
+
+#seqDB-22337
+CREATE TABLE t1 (
+    age INT,
+    name VARCHAR(15)
+)
+PARTITION BY LIST ( age ) (
+    PARTITION p0 VALUES IN (1,3,5),
+    PARTITION p1 VALUES IN (2,4,8),
+    PARTITION p2 VALUES IN (6,10),
+    PARTITION p3 VALUES IN (7,9)
+);
+SHOW CREATE TABLE t1;
+INSERT INTO t1 VALUES(1,'1'),(2,'2'),(6,'6'),(7,'7');
+SELECT * FROM t1 PARTITION(p0);
+ALTER TABLE t1 TRUNCATE PARTITION p0;
+SELECT * FROM t1 PARTITION(p0);
+SELECT * FROM t1 ORDER BY age;
+ALTER TABLE t1 TRUNCATE PARTITION all;
+SELECT * FROM t1 ORDER BY age;
+DROP TABLE t1;
+
+#seqDB-22338
+CREATE TABLE t1 (
+    id INT NOT NULL PRIMARY KEY,
+    name VARCHAR(20)
+)
+PARTITION BY KEY(id)
+PARTITIONS 2;
+SHOW CREATE TABLE t1;
+INSERT INTO t1 VALUES(1,'a'),(2,'b'),(3,'c'),(4,'b'),(5,'f');
+SELECT * FROM t1 ORDER BY id;
+--error 131
+ALTER TABLE t1 TRUNCATE PARTITION p0;
+#BUG #SEQUOIASQLMAINSTREAM-712
+ALTER TABLE t1 TRUNCATE PARTITION all;
+SELECT * FROM t1 ORDER BY id;
+DROP TABLE t1;
+
+#seqDB-22420
+# SEQUOIASQLMAINSTREAM-1089
+# failed: 1506: Foreign keys are not yet supported in conjunction with partitioning
+--error 1506
+CREATE TABLE t2 (c1 INT, PRIMARY KEY (c1), FOREIGN KEY (c1) REFERENCES t1 (c1) ON DELETE CASCADE)
+   PARTITION BY HASH(c1) PARTITIONS 5;
+
+#seqDB-22473,sharding key is _phid_
+--error 138
+CREATE TABLE t1 (
+   id INT GENERATED ALWAYS AS (year(start) + 1) VIRTUAL,
+   start DATE NOT NULL DEFAULT '1970-01-01',
+   end DATE NOT NULL DEFAULT '9999-12-31',
+   COMMENT VARCHAR(255),
+   flag INT
+   )
+   PARTITION BY LIST (flag + id + 1) (
+   PARTITION p0 VALUES IN (1, 3),
+   PARTITION p1 VALUES IN (2, 5, 7),
+   PARTITION p2 VALUES IN (4, 6)
+   );
+
+--error 138
+CREATE TABLE t1 (
+   id INT GENERATED ALWAYS AS (year(start) + 1) VIRTUAL,
+   start DATE NOT NULL DEFAULT '1970-01-01',
+   end DATE NOT NULL DEFAULT '9999-12-31',
+   COMMENT VARCHAR(255),
+   flag INT
+   )
+   PARTITION BY RANGE COLUMNS (id) (
+   PARTITION p0 VALUES LESS THAN (100),
+   PARTITION p1 VALUES LESS THAN (200)
+   );
+
+drop database partition_sequoiadb;
+
+--source include/uninstall_sequoiadb.inc

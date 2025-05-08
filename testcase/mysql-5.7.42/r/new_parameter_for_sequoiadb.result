@@ -1,0 +1,93 @@
+drop table if exists t1;
+CREATE TABLE t1 ( a INT );
+set session sequoiadb_execute_only_in_mysql=on;
+drop table t1;
+CREATE TABLE t1 ( a INT );
+SELECT * FROM t1;
+a
+INSERT INTO t1 VALUES(1),(2),(3),(4);
+UPDATE t1 SET a = a+10;
+DELETE FROM t1 WHERE a = 11;
+SELECT * FROM t1 ORDER BY a;
+a
+set session sequoiadb_execute_only_in_mysql=off;
+DROP TABLE t1;
+CREATE TABLE t1 ( a INT );
+INSERT INTO t1 VALUES(1),(2),(3),(4);
+set session sequoiadb_execute_only_in_mysql=on;
+UPDATE t1 SET a = a+10;
+DELETE FROM t1 WHERE a = 11;
+SELECT * FROM t1 ORDER BY a;
+a
+CREATE INDEX a ON t1(a);
+INSERT INTO t1 VALUES(5);
+UPDATE t1 SET a = a+11;
+DELETE FROM t1 WHERE a = 24;
+SELECT * FROM t1 ORDER BY a;
+a
+set session sequoiadb_execute_only_in_mysql=off;
+SELECT * FROM t1 ORDER BY a;
+a
+1
+2
+3
+4
+DROP TABLE t1;
+set session sequoiadb_execute_only_in_mysql=on;
+CREATE TABLE t1 ( a INT PRIMARY KEY);
+INSERT INTO t1 VALUES (1),(2);
+ANALYZE TABLE t1;
+SHOW CREATE TABLE t1;
+Table	Create Table
+t1	CREATE TABLE `t1` (
+  `a` int(11) NOT NULL,
+  PRIMARY KEY (`a`)
+) ENGINE=SequoiaDB DEFAULT CHARSET=latin1
+DROP TABLE t1;
+set session sequoiadb_execute_only_in_mysql=off;
+CREATE TABLE t1 ( a INT PRIMARY KEY);
+INSERT INTO t1 VALUES (1),(2);
+set session sequoiadb_execute_only_in_mysql=on;
+ANALYZE TABLE t1;
+SHOW CREATE TABLE t1;
+Table	Create Table
+t1	CREATE TABLE `t1` (
+  `a` int(11) NOT NULL,
+  PRIMARY KEY (`a`)
+) ENGINE=SequoiaDB DEFAULT CHARSET=latin1
+set session sequoiadb_execute_only_in_mysql=off;
+DROP TABLE t1;
+set session sequoiadb_execute_only_in_mysql=on;
+CREATE TABLE t1 ( a INT PRIMARY KEY);
+INSERT INTO t1 VALUES (1),(2);
+TRUNCATE TABLE t1;
+SELECT * FROM t1 ORDER BY a;
+a
+DROP TABLE t1;
+set session sequoiadb_execute_only_in_mysql=off;
+CREATE TABLE t1 ( a INT PRIMARY KEY);
+INSERT INTO t1 VALUES (1),(2);
+set session sequoiadb_execute_only_in_mysql=on;
+TRUNCATE TABLE t1;
+SELECT * FROM t1 ORDER BY a;
+a
+set session sequoiadb_execute_only_in_mysql=off;
+SELECT * FROM t1 ORDER BY a;
+a
+1
+2
+DROP TABLE t1;
+CREATE TABLE t1( a int, b char(255), c char(255), d char(255), e char(255), f char(255) );
+INSERT INTO t1 VALUES( 1, 'b', 'c', 'd', 'e', 'f' );
+SELECT * FROM t1 ORDER BY a DESC;
+a	b	c	d	e	f
+1	b	c	d	e	f
+FLUSH TABLE t1;
+set session sequoiadb_execute_only_in_mysql=on;
+SELECT * FROM t1 ORDER BY a DESC;
+a	b	c	d	e	f
+set session sequoiadb_execute_only_in_mysql=off;
+SELECT * FROM t1 ORDER BY a DESC;
+a	b	c	d	e	f
+1	b	c	d	e	f
+DROP TABLE t1;

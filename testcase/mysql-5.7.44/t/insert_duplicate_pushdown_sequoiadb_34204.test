@@ -1,0 +1,30 @@
+--source include/have_sequoiadb.inc
+
+--disable_warnings
+drop database if exists insert_duplicate_pushdown_sequoiadb_34204;
+--enable_warnings
+
+create database insert_duplicate_pushdown_sequoiadb_34204;
+drop database insert_duplicate_pushdown_sequoiadb_34204;
+create database insert_duplicate_pushdown_sequoiadb_34204;
+use insert_duplicate_pushdown_sequoiadb_34204;
+
+SET session sequoiadb_debug_log = ON;
+
+CREATE TABLE t1 (
+  `pk` int(11) NOT NULL,
+  `i` int(11) DEFAULT NULL,
+  PRIMARY KEY (`pk`)
+);
+
+# can pushdown 
+let $query = INSERT INTO t1 VALUES (1, 1) ON DUPLICATE KEY UPDATE i = i + i;
+--source include/query_without_sorted_and_get_mysqld_note_log_sequoiadb.inc
+
+# cannot pushdown
+let $query = INSERT INTO t1 VALUES (1, 1) ON DUPLICATE KEY UPDATE i = i * RAND();
+--source include/query_without_sorted_and_get_mysqld_note_log_sequoiadb.inc
+
+set session sequoiadb_debug_log = off;
+drop database insert_duplicate_pushdown_sequoiadb_34204;
+--source include/uninstall_sequoiadb.inc

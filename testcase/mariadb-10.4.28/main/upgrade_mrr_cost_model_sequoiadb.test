@@ -1,0 +1,40 @@
+# seqDB-32368
+
+select @@upgrade_mrr_cost_model;
+
+set upgrade_mrr_cost_model=default;
+select @@upgrade_mrr_cost_model;
+
+set upgrade_mrr_cost_model=true;
+select @@upgrade_mrr_cost_model;
+
+set upgrade_mrr_cost_model=false;
+select @@upgrade_mrr_cost_model;
+
+set upgrade_mrr_cost_model=1;
+select @@upgrade_mrr_cost_model;
+
+set upgrade_mrr_cost_model=0;
+select @@upgrade_mrr_cost_model;
+
+# failed: 1231: Variable 'upgrade_mrr_cost_model' can't be set to the value of '
+--error 1231
+set upgrade_mrr_cost_model=2;
+select @@upgrade_mrr_cost_model;
+
+--error 1231
+set upgrade_mrr_cost_model="true";
+select @@upgrade_mrr_cost_model;
+
+set session upgrade_mrr_cost_model=0;
+select @@upgrade_mrr_cost_model;
+
+set global upgrade_mrr_cost_model=default;
+connect (con1,localhost,root,,);
+connection con1;
+select @@upgrade_mrr_cost_model;
+disconnect con1;
+
+connection default;
+show variables like "upgrade_mrr_cost_model";
+

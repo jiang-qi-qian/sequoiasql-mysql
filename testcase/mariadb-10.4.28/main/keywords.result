@@ -1,0 +1,818 @@
+DROP DATABASE IF EXISTS test_keywords;
+CREATE DATABASE test_keywords;
+USE test_keywords;
+drop table if exists t1;
+create table t1 (time time, date date, timestamp timestamp,
+quarter int, week int, year int, timestampadd int, timestampdiff int);
+insert into t1 values ("12:22:22","97:02:03","1997-01-02",1,2,3,4,5);
+select * from t1;
+time	date	timestamp	quarter	week	year	timestampadd	timestampdiff
+12:22:22	1997-02-03	1997-01-02 00:00:00	1	2	3	4	5
+select t1.time+0,t1.date+0,t1.timestamp+0,concat(date," ",time),
+t1.quarter+t1.week, t1.year+timestampadd,  timestampdiff from t1;
+t1.time+0	t1.date+0	t1.timestamp+0	concat(date," ",time)	t1.quarter+t1.week	t1.year+timestampadd	timestampdiff
+122222	19970203	19970102000000	1997-02-03 12:22:22	3	7	5
+drop table t1;
+create table events(binlog int);
+insert into events values(1);
+select events.binlog from events;
+binlog
+1
+drop table events;
+create procedure p1()
+begin
+declare n int default 2;
+authors: while n > 0 do
+set n = n -1;
+end while authors;
+end|
+create procedure p2()
+begin
+declare n int default 2;
+contributors: while n > 0 do
+set n = n -1;
+end while contributors;
+end|
+drop procedure p1;
+drop procedure p2;
+create table t1 (connection int, b int);
+create procedure p1()
+begin
+declare connection int;
+select max(t1.connection) into connection from t1;
+select concat("max=",connection) 'p1';
+end|
+insert into t1 (connection) values (1);
+call p1();
+p1
+max=1
+drop procedure p1;
+drop table t1;
+CREATE TABLE slow (slow INT, general INT, master_heartbeat_period INT, ignore_server_ids INT);
+INSERT INTO slow(slow, general, master_heartbeat_period, ignore_server_ids) VALUES (1,2,3,4), (5,6,7,8);
+INSERT INTO slow(slow, general, master_heartbeat_period) VALUES (1,2,3), (5,6,7);
+INSERT INTO slow(slow, general) VALUES (1,2), (5,6);
+INSERT INTO slow(slow) VALUES (1), (5);
+SELECT slow, general, master_heartbeat_period, ignore_server_ids FROM slow ORDER BY slow;
+slow	general	master_heartbeat_period	ignore_server_ids
+1	2	3	4
+1	2	3	NULL
+1	2	NULL	NULL
+1	NULL	NULL	NULL
+5	6	7	8
+5	6	7	NULL
+5	6	NULL	NULL
+5	NULL	NULL	NULL
+SELECT slow, general, master_heartbeat_period FROM slow ORDER BY slow;
+slow	general	master_heartbeat_period
+1	2	3
+1	2	3
+1	2	NULL
+1	NULL	NULL
+5	6	7
+5	6	7
+5	6	NULL
+5	NULL	NULL
+SELECT slow, master_heartbeat_period FROM slow ORDER BY slow;
+slow	master_heartbeat_period
+1	3
+1	3
+1	NULL
+1	NULL
+5	7
+5	7
+5	NULL
+5	NULL
+SELECT slow FROM slow ORDER BY slow;
+slow
+1
+1
+1
+1
+5
+5
+5
+5
+DROP TABLE slow;
+CREATE TABLE general (slow INT, general INT, master_heartbeat_period INT, ignore_server_ids INT);
+INSERT INTO general(slow, general, master_heartbeat_period, ignore_server_ids) VALUES (1,2,3,4), (5,6,7,8);
+INSERT INTO general(slow, general, master_heartbeat_period) VALUES (1,2,3), (5,6,7);
+INSERT INTO general(slow, general) VALUES (1,2), (5,6);
+INSERT INTO general(slow) VALUES (1), (5);
+SELECT slow, general, master_heartbeat_period, ignore_server_ids FROM general ORDER BY slow;
+slow	general	master_heartbeat_period	ignore_server_ids
+1	2	3	4
+1	2	3	NULL
+1	2	NULL	NULL
+1	NULL	NULL	NULL
+5	6	7	8
+5	6	7	NULL
+5	6	NULL	NULL
+5	NULL	NULL	NULL
+SELECT slow, general, master_heartbeat_period FROM general ORDER BY slow;
+slow	general	master_heartbeat_period
+1	2	3
+1	2	3
+1	2	NULL
+1	NULL	NULL
+5	6	7
+5	6	7
+5	6	NULL
+5	NULL	NULL
+SELECT slow, master_heartbeat_period FROM general ORDER BY slow;
+slow	master_heartbeat_period
+1	3
+1	3
+1	NULL
+1	NULL
+5	7
+5	7
+5	NULL
+5	NULL
+SELECT slow FROM general ORDER BY slow;
+slow
+1
+1
+1
+1
+5
+5
+5
+5
+DROP TABLE general;
+CREATE TABLE master_heartbeat_period (slow INT, general INT, master_heartbeat_period INT, ignore_server_ids INT);
+INSERT INTO master_heartbeat_period(slow, general, master_heartbeat_period, ignore_server_ids) VALUES (1,2,3,4), (5,6,7,8);
+INSERT INTO master_heartbeat_period(slow, general, master_heartbeat_period) VALUES (1,2,3), (5,6,7);
+INSERT INTO master_heartbeat_period(slow, general) VALUES (1,2), (5,6);
+INSERT INTO master_heartbeat_period(slow) VALUES (1), (5);
+SELECT slow, general, master_heartbeat_period, ignore_server_ids FROM master_heartbeat_period ORDER BY slow;
+slow	general	master_heartbeat_period	ignore_server_ids
+1	2	3	4
+1	2	3	NULL
+1	2	NULL	NULL
+1	NULL	NULL	NULL
+5	6	7	8
+5	6	7	NULL
+5	6	NULL	NULL
+5	NULL	NULL	NULL
+SELECT slow, general, master_heartbeat_period FROM master_heartbeat_period ORDER BY slow;
+slow	general	master_heartbeat_period
+1	2	3
+1	2	3
+1	2	NULL
+1	NULL	NULL
+5	6	7
+5	6	7
+5	6	NULL
+5	NULL	NULL
+SELECT slow, master_heartbeat_period FROM master_heartbeat_period ORDER BY slow;
+slow	master_heartbeat_period
+1	3
+1	3
+1	NULL
+1	NULL
+5	7
+5	7
+5	NULL
+5	NULL
+SELECT slow FROM master_heartbeat_period ORDER BY slow;
+slow
+1
+1
+1
+1
+5
+5
+5
+5
+DROP TABLE master_heartbeat_period;
+CREATE TABLE ignore_server_ids (slow INT, general INT, master_heartbeat_period INT, ignore_server_ids INT);
+INSERT INTO ignore_server_ids(slow, general, master_heartbeat_period, ignore_server_ids) VALUES (1,2,3,4), (5,6,7,8);
+INSERT INTO ignore_server_ids(slow, general, master_heartbeat_period) VALUES (1,2,3), (5,6,7);
+INSERT INTO ignore_server_ids(slow, general) VALUES (1,2), (5,6);
+INSERT INTO ignore_server_ids(slow) VALUES (1), (5);
+SELECT slow, general, master_heartbeat_period, ignore_server_ids FROM ignore_server_ids ORDER BY slow;
+slow	general	master_heartbeat_period	ignore_server_ids
+1	2	3	4
+1	2	3	NULL
+1	2	NULL	NULL
+1	NULL	NULL	NULL
+5	6	7	8
+5	6	7	NULL
+5	6	NULL	NULL
+5	NULL	NULL	NULL
+SELECT slow, general, master_heartbeat_period FROM ignore_server_ids ORDER BY slow;
+slow	general	master_heartbeat_period
+1	2	3
+1	2	3
+1	2	NULL
+1	NULL	NULL
+5	6	7
+5	6	7
+5	6	NULL
+5	NULL	NULL
+SELECT slow, master_heartbeat_period FROM ignore_server_ids ORDER BY slow;
+slow	master_heartbeat_period
+1	3
+1	3
+1	NULL
+1	NULL
+5	7
+5	7
+5	NULL
+5	NULL
+SELECT slow FROM ignore_server_ids ORDER BY slow;
+slow
+1
+1
+1
+1
+5
+5
+5
+5
+DROP TABLE ignore_server_ids;
+CREATE TABLE t1 (slow INT, general INT, ignore_server_ids INT, master_heartbeat_period INT);
+INSERT INTO t1 VALUES (1,2,3,4);
+CREATE PROCEDURE p1()
+BEGIN
+DECLARE slow INT;
+DECLARE general INT;
+DECLARE ignore_server_ids INT;
+DECLARE master_heartbeat_period INT;
+SELECT max(t1.slow) INTO slow FROM t1;
+SELECT max(t1.general) INTO general FROM t1;
+SELECT max(t1.ignore_server_ids) INTO ignore_server_ids FROM t1;
+SELECT max(t1.master_heartbeat_period) INTO master_heartbeat_period FROM t1;
+SELECT slow, general, ignore_server_ids, master_heartbeat_period;
+END|
+CREATE PROCEDURE p2()
+BEGIN
+DECLARE n INT DEFAULT 2;
+general: WHILE n > 0 DO 
+SET n = n -1;
+END WHILE general;
+SET n = 2;
+slow: WHILE n > 0 DO 
+SET n = n -1;
+END WHILE slow;
+SET n = 2;
+ignore_server_ids: WHILE n > 0 DO 
+SET n = n -1;
+END WHILE ignore_server_ids;
+SET n = 2;
+master_heartbeat_period: WHILE n > 0 DO 
+SET n = n -1;
+END WHILE master_heartbeat_period;
+END|
+CALL p1();
+slow	general	ignore_server_ids	master_heartbeat_period
+1	2	3	4
+call p2();
+DROP PROCEDURE p1;
+DROP PROCEDURE p2;
+DROP TABLE t1;
+create table option (option int not null);
+drop table option;
+set option=1;
+ERROR HY000: Unknown system variable 'option'
+set option option=1;
+ERROR 42000: You have an error in your SQL syntax; check the manual that corresponds to your MariaDB server version for the right syntax to use near 'option=1' at line 1
+#
+# MDEV-9979 Keywords UNBOUNDED, PRECEDING, FOLLOWING, TIES, OTHERS should be non-reserved
+#
+CREATE TABLE EXCLUDE (EXCLUDE INT);
+SELECT EXCLUDE FROM EXCLUDE;
+EXCLUDE
+SELECT EXCLUDE EXCLUDE FROM EXCLUDE;
+EXCLUDE
+SELECT EXCLUDE AS EXCLUDE FROM EXCLUDE;
+EXCLUDE
+DROP TABLE EXCLUDE;
+CREATE TABLE UNBOUNDED (UNBOUNDED INT);
+SELECT UNBOUNDED FROM UNBOUNDED;
+UNBOUNDED
+SELECT UNBOUNDED UNBOUNDEX FROM UNBOUNDED;
+UNBOUNDEX
+SELECT UNBOUNDED AS UNBOUNDEX FROM UNBOUNDED;
+UNBOUNDEX
+DROP TABLE UNBOUNDED;
+CREATE TABLE PRECEDING (PRECEDING INT);
+SELECT PRECEDING FROM PRECEDING;
+PRECEDING
+SELECT PRECEDING PRECEDING FROM PRECEDING;
+PRECEDING
+SELECT PRECEDING AS PRECEDING FROM PRECEDING;
+PRECEDING
+DROP TABLE PRECEDING;
+CREATE TABLE FOLLOWING (FOLLOWING INT);
+SELECT FOLLOWING FROM FOLLOWING;
+FOLLOWING
+SELECT FOLLOWING FOLLOWING FROM FOLLOWING;
+FOLLOWING
+SELECT FOLLOWING AS FOLLOWING FROM FOLLOWING;
+FOLLOWING
+DROP TABLE FOLLOWING;
+CREATE TABLE TIES (TIES INT);
+SELECT TIES FROM TIES;
+TIES
+SELECT TIES TIES FROM TIES;
+TIES
+SELECT TIES AS TIES FROM TIES;
+TIES
+DROP TABLE TIES;
+CREATE TABLE OTHERS (OTHERS INT);
+SELECT OTHERS FROM OTHERS;
+OTHERS
+SELECT OTHERS OTHERS FROM OTHERS;
+OTHERS
+SELECT OTHERS AS OTHERS FROM OTHERS;
+OTHERS
+DROP TABLE OTHERS;
+#
+# MDEV-10585 EXECUTE IMMEDIATE statement
+#
+CREATE TABLE immediate (immediate int);
+DROP TABLE immediate;
+#
+# MDEV-10142 Pluggable parser
+# Testing keywords that were added into lex.h for Oracle compatibility
+# that are not reserved keywords in MariaDB
+#
+CREATE TABLE clob (clob int);
+DROP TABLE clob;
+CREATE TABLE elsif (elsif INT);
+DROP TABLE elsif;
+CREATE TABLE exception (exception INT);
+DROP TABLE exception;
+CREATE TABLE raw (raw int);
+DROP TABLE raw;
+CREATE TABLE varchar2 (varchar2 int);
+DROP TABLE varchar2;
+CREATE TABLE decode (decode int);
+DROP TABLE decode;
+CREATE TABLE rowcount (rowcount int);
+DROP TABLE rowcount;
+CREATE TABLE isopen (isopen int);
+DROP TABLE isopen;
+CREATE TABLE notfound (notfound int);
+DROP TABLE notfound;
+CREATE TABLE raise (raise int);
+DROP TABLE raise;
+CREATE TABLE reuse (reuse int);
+DROP TABLE reuse;
+#
+# MDEV-17363 Compressed columns cannot be restored from dump
+# COMPRESSED is not valid as an SP label any more
+# but is still valid as an SP variable name.
+#
+BEGIN NOT ATOMIC
+compressed:
+BEGIN
+SELECT 1 AS a;
+END;
+END
+$$
+ERROR 42000: You have an error in your SQL syntax; check the manual that corresponds to your MariaDB server version for the right syntax to use near 'compressed:
+BEGIN
+SELECT 1 AS a;
+END;
+END' at line 2
+BEGIN NOT ATOMIC
+`compressed`:
+BEGIN
+SELECT 1 AS a;
+END;
+END
+$$
+a
+1
+BEGIN NOT ATOMIC
+DECLARE compressed INT DEFAULT 1;
+SELECT compressed;
+END
+$$
+compressed
+1
+#
+# Testing various keywords in various contexts
+#
+CREATE PROCEDURE p1(query TEXT, var TEXT)
+BEGIN
+DECLARE errmsg TEXT DEFAULT '';
+DECLARE CONTINUE HANDLER
+FOR SQLEXCEPTION
+BEGIN
+GET DIAGNOSTICS CONDITION 1 errmsg = MESSAGE_TEXT;
+SET errmsg= REPLACE(errmsg, 'You have an error in your SQL ', '..');
+SET errmsg= REPLACE(errmsg, '; check the manual that corresponds to your MariaDB server version for the right syntax to use', '..');
+END;
+SET query=REPLACE(query, '$(VAR)', var);
+EXECUTE IMMEDIATE query;
+SELECT CONCAT(query, '; -- ', LEFT(COALESCE(errmsg,''),40)) AS `--------`;
+END;
+$$
+CREATE PROCEDURE p2(query TEXT)
+BEGIN
+FOR row IN (SELECT word FROM t1 ORDER BY category, word)
+DO
+CALL p1(query, row.word);
+END FOR;
+END;
+$$
+CREATE TABLE t1 (word TEXT, category TEXT);
+INSERT INTO t1 VALUES ('non_keyword', '00 Simple identifier');
+INSERT INTO t1 VALUES ('lpad', '01 Built-in native function');
+INSERT INTO t1 VALUES ('rpad', '01 Built-in native function');
+INSERT INTO t1 VALUES ('adddate',     '02 function_call_nonkeyword');
+INSERT INTO t1 VALUES ('substr',      '02 function_call_nonkeyword');
+INSERT INTO t1 VALUES ('substring',   '02 function_call_nonkeyword');
+INSERT INTO t1 VALUES ('trim_oracle', '02 function_call_nonkeyword');
+INSERT INTO t1 VALUES ('ascii',         '03 function_call_conflict');
+INSERT INTO t1 VALUES ('replace',       '03 function_call_conflict');
+INSERT INTO t1 VALUES ('weight_string', '03 function_call_conflict');
+INSERT INTO t1 VALUES ('char', '04 function_call_keyword');
+INSERT INTO t1 VALUES ('trim', '04 function_call_keyword');
+INSERT INTO t1 VALUES ('year', '04 function_call_keyword');
+INSERT INTO t1 VALUES ('create', '05 Reserved keyword');
+CALL p2('SELECT @@$(VAR)');
+--------
+SELECT @@non_keyword; -- Unknown system variable 'non_keyword'
+--------
+SELECT @@lpad; -- Unknown system variable 'lpad'
+--------
+SELECT @@rpad; -- Unknown system variable 'rpad'
+--------
+SELECT @@adddate; -- Unknown system variable 'adddate'
+--------
+SELECT @@substr; -- Unknown system variable 'substr'
+--------
+SELECT @@substring; -- Unknown system variable 'substring'
+--------
+SELECT @@trim_oracle; -- Unknown system variable 'trim_oracle'
+--------
+SELECT @@ascii; -- Unknown system variable 'ascii'
+--------
+SELECT @@replace; -- ..syntax.. near 'replace' at line 1
+--------
+SELECT @@weight_string; -- Unknown system variable 'weight_string'
+--------
+SELECT @@char; -- ..syntax.. near 'char' at line 1
+--------
+SELECT @@trim; -- Unknown system variable 'trim'
+--------
+SELECT @@year; -- Unknown system variable 'year'
+--------
+SELECT @@create; -- ..syntax.. near 'create' at line 1
+CALL p2('SELECT @@global.$(VAR)');
+--------
+SELECT @@global.non_keyword; -- Unknown system variable 'non_keyword'
+--------
+SELECT @@global.lpad; -- Unknown system variable 'lpad'
+--------
+SELECT @@global.rpad; -- Unknown system variable 'rpad'
+--------
+SELECT @@global.adddate; -- Unknown system variable 'adddate'
+--------
+SELECT @@global.substr; -- Unknown system variable 'substr'
+--------
+SELECT @@global.substring; -- Unknown system variable 'substring'
+--------
+SELECT @@global.trim_oracle; -- Unknown system variable 'trim_oracle'
+--------
+SELECT @@global.ascii; -- Unknown system variable 'ascii'
+--------
+SELECT @@global.replace; -- Unknown system variable 'replace'
+--------
+SELECT @@global.weight_string; -- Unknown system variable 'weight_string'
+--------
+SELECT @@global.char; -- Unknown system variable 'char'
+--------
+SELECT @@global.trim; -- Unknown system variable 'trim'
+--------
+SELECT @@global.year; -- Unknown system variable 'year'
+--------
+SELECT @@global.create; -- Unknown system variable 'create'
+CALL p2('SELECT @@global.$(VAR)()');
+--------
+SELECT @@global.non_keyword(); -- Unknown system variable 'non_keyword'
+--------
+SELECT @@global.lpad(); -- Unknown system variable 'lpad'
+--------
+SELECT @@global.rpad(); -- Unknown system variable 'rpad'
+--------
+SELECT @@global.adddate(); -- Unknown system variable 'adddate'
+--------
+SELECT @@global.substr(); -- Unknown system variable 'substr'
+--------
+SELECT @@global.substring(); -- Unknown system variable 'substring'
+--------
+SELECT @@global.trim_oracle(); -- Unknown system variable 'trim_oracle'
+--------
+SELECT @@global.ascii(); -- Unknown system variable 'ascii'
+--------
+SELECT @@global.replace(); -- Unknown system variable 'replace'
+--------
+SELECT @@global.weight_string(); -- Unknown system variable 'weight_string'
+--------
+SELECT @@global.char(); -- Unknown system variable 'char'
+--------
+SELECT @@global.trim(); -- Unknown system variable 'trim'
+--------
+SELECT @@global.year(); -- Unknown system variable 'year'
+--------
+SELECT @@global.create(); -- Unknown system variable 'create'
+CALL p2('SELECT $(VAR)()');
+--------
+SELECT non_keyword(); -- FUNCTION test_keywords.non_keyword does 
+--------
+SELECT lpad(); -- Incorrect parameter count in the call to
+--------
+SELECT rpad(); -- Incorrect parameter count in the call to
+--------
+SELECT adddate(); -- ..syntax.. near ')' at line 1
+--------
+SELECT substr(); -- ..syntax.. near ')' at line 1
+--------
+SELECT substring(); -- ..syntax.. near ')' at line 1
+--------
+SELECT trim_oracle(); -- ..syntax.. near ')' at line 1
+--------
+SELECT ascii(); -- ..syntax.. near ')' at line 1
+--------
+SELECT replace(); -- ..syntax.. near ')' at line 1
+--------
+SELECT weight_string(); -- ..syntax.. near ')' at line 1
+--------
+SELECT char(); -- ..syntax.. near ')' at line 1
+--------
+SELECT trim(); -- ..syntax.. near ')' at line 1
+--------
+SELECT year(); -- ..syntax.. near ')' at line 1
+--------
+SELECT create(); -- ..syntax.. near 'create()' at line 1
+CALL p2('SELECT test_keywords.$(VAR)()');
+--------
+SELECT test_keywords.non_keyword(); -- FUNCTION test_keywords.non_keyword does 
+--------
+SELECT test_keywords.lpad(); -- FUNCTION test_keywords.lpad does not exi
+--------
+SELECT test_keywords.rpad(); -- FUNCTION test_keywords.rpad does not exi
+--------
+SELECT test_keywords.adddate(); -- FUNCTION test_keywords.adddate does not 
+--------
+SELECT test_keywords.substr(); -- FUNCTION test_keywords.substr does not e
+--------
+SELECT test_keywords.substring(); -- FUNCTION test_keywords.substring does no
+--------
+SELECT test_keywords.trim_oracle(); -- FUNCTION test_keywords.trim_oracle does 
+--------
+SELECT test_keywords.ascii(); -- FUNCTION test_keywords.ascii does not ex
+--------
+SELECT test_keywords.replace(); -- FUNCTION test_keywords.replace does not 
+--------
+SELECT test_keywords.weight_string(); -- FUNCTION test_keywords.weight_string doe
+--------
+SELECT test_keywords.char(); -- FUNCTION test_keywords.char does not exi
+--------
+SELECT test_keywords.trim(); -- FUNCTION test_keywords.trim does not exi
+--------
+SELECT test_keywords.year(); -- FUNCTION test_keywords.year does not exi
+--------
+SELECT test_keywords.create(); -- FUNCTION test_keywords.create does not e
+CALL p2('SELECT $(VAR) FROM t1');
+--------
+SELECT non_keyword FROM t1; -- Unknown column 'non_keyword' in 'field l
+--------
+SELECT lpad FROM t1; -- Unknown column 'lpad' in 'field list'
+--------
+SELECT rpad FROM t1; -- Unknown column 'rpad' in 'field list'
+--------
+SELECT adddate FROM t1; -- Unknown column 'adddate' in 'field list'
+--------
+SELECT substr FROM t1; -- Unknown column 'substr' in 'field list'
+--------
+SELECT substring FROM t1; -- Unknown column 'substring' in 'field lis
+--------
+SELECT trim_oracle FROM t1; -- Unknown column 'trim_oracle' in 'field l
+--------
+SELECT ascii FROM t1; -- Unknown column 'ascii' in 'field list'
+--------
+SELECT replace FROM t1; -- ..syntax.. near 'FROM t1' at line 1
+--------
+SELECT weight_string FROM t1; -- Unknown column 'weight_string' in 'field
+--------
+SELECT char FROM t1; -- ..syntax.. near 'FROM t1' at line 1
+--------
+SELECT trim FROM t1; -- Unknown column 'trim' in 'field list'
+--------
+SELECT year FROM t1; -- Unknown column 'year' in 'field list'
+--------
+SELECT create FROM t1; -- ..syntax.. near 'create FROM t1' at line
+CALL p2('SELECT t1.$(VAR) FROM t1');
+--------
+SELECT t1.non_keyword FROM t1; -- Unknown column 't1.non_keyword' in 'fiel
+--------
+SELECT t1.lpad FROM t1; -- Unknown column 't1.lpad' in 'field list'
+--------
+SELECT t1.rpad FROM t1; -- Unknown column 't1.rpad' in 'field list'
+--------
+SELECT t1.adddate FROM t1; -- Unknown column 't1.adddate' in 'field li
+--------
+SELECT t1.substr FROM t1; -- Unknown column 't1.substr' in 'field lis
+--------
+SELECT t1.substring FROM t1; -- Unknown column 't1.substring' in 'field 
+--------
+SELECT t1.trim_oracle FROM t1; -- Unknown column 't1.trim_oracle' in 'fiel
+--------
+SELECT t1.ascii FROM t1; -- Unknown column 't1.ascii' in 'field list
+--------
+SELECT t1.replace FROM t1; -- Unknown column 't1.replace' in 'field li
+--------
+SELECT t1.weight_string FROM t1; -- Unknown column 't1.weight_string' in 'fi
+--------
+SELECT t1.char FROM t1; -- Unknown column 't1.char' in 'field list'
+--------
+SELECT t1.trim FROM t1; -- Unknown column 't1.trim' in 'field list'
+--------
+SELECT t1.year FROM t1; -- Unknown column 't1.year' in 'field list'
+--------
+SELECT t1.create FROM t1; -- Unknown column 't1.create' in 'field lis
+CALL p2('DROP TABLE $(VAR)');
+--------
+DROP TABLE non_keyword; -- Unknown table 'test_keywords.non_keyword
+--------
+DROP TABLE lpad; -- Unknown table 'test_keywords.lpad'
+--------
+DROP TABLE rpad; -- Unknown table 'test_keywords.rpad'
+--------
+DROP TABLE adddate; -- Unknown table 'test_keywords.adddate'
+--------
+DROP TABLE substr; -- Unknown table 'test_keywords.substr'
+--------
+DROP TABLE substring; -- Unknown table 'test_keywords.substring'
+--------
+DROP TABLE trim_oracle; -- Unknown table 'test_keywords.trim_oracle
+--------
+DROP TABLE ascii; -- Unknown table 'test_keywords.ascii'
+--------
+DROP TABLE replace; -- ..syntax.. near 'replace' at line 1
+--------
+DROP TABLE weight_string; -- Unknown table 'test_keywords.weight_stri
+--------
+DROP TABLE char; -- ..syntax.. near 'char' at line 1
+--------
+DROP TABLE trim; -- Unknown table 'test_keywords.trim'
+--------
+DROP TABLE year; -- Unknown table 'test_keywords.year'
+--------
+DROP TABLE create; -- ..syntax.. near 'create' at line 1
+CALL p2('DROP TABLE test_keywords.$(VAR)');
+--------
+DROP TABLE test_keywords.non_keyword; -- Unknown table 'test_keywords.non_keyword
+--------
+DROP TABLE test_keywords.lpad; -- Unknown table 'test_keywords.lpad'
+--------
+DROP TABLE test_keywords.rpad; -- Unknown table 'test_keywords.rpad'
+--------
+DROP TABLE test_keywords.adddate; -- Unknown table 'test_keywords.adddate'
+--------
+DROP TABLE test_keywords.substr; -- Unknown table 'test_keywords.substr'
+--------
+DROP TABLE test_keywords.substring; -- Unknown table 'test_keywords.substring'
+--------
+DROP TABLE test_keywords.trim_oracle; -- Unknown table 'test_keywords.trim_oracle
+--------
+DROP TABLE test_keywords.ascii; -- Unknown table 'test_keywords.ascii'
+--------
+DROP TABLE test_keywords.replace; -- Unknown table 'test_keywords.replace'
+--------
+DROP TABLE test_keywords.weight_string; -- Unknown table 'test_keywords.weight_stri
+--------
+DROP TABLE test_keywords.char; -- Unknown table 'test_keywords.char'
+--------
+DROP TABLE test_keywords.trim; -- Unknown table 'test_keywords.trim'
+--------
+DROP TABLE test_keywords.year; -- Unknown table 'test_keywords.year'
+--------
+DROP TABLE test_keywords.create; -- Unknown table 'test_keywords.create'
+CALL p2('CREATE FUNCTION $(VAR)() RETURNS OOPS');
+--------
+CREATE FUNCTION non_keyword() RETURNS OOPS; -- ..syntax.. near 'OOPS' at line 1
+--------
+CREATE FUNCTION lpad() RETURNS OOPS; -- ..syntax.. near 'OOPS' at line 1
+--------
+CREATE FUNCTION rpad() RETURNS OOPS; -- ..syntax.. near 'OOPS' at line 1
+--------
+CREATE FUNCTION adddate() RETURNS OOPS; -- ..syntax.. near 'OOPS' at line 1
+--------
+CREATE FUNCTION substr() RETURNS OOPS; -- ..syntax.. near 'substr() RETURNS OOPS' 
+--------
+CREATE FUNCTION substring() RETURNS OOPS; -- ..syntax.. near 'substring() RETURNS OOP
+--------
+CREATE FUNCTION trim_oracle() RETURNS OOPS; -- ..syntax.. near 'OOPS' at line 1
+--------
+CREATE FUNCTION ascii() RETURNS OOPS; -- ..syntax.. near 'OOPS' at line 1
+--------
+CREATE FUNCTION replace() RETURNS OOPS; -- ..syntax.. near 'replace() RETURNS OOPS'
+--------
+CREATE FUNCTION weight_string() RETURNS OOPS; -- ..syntax.. near 'OOPS' at line 1
+--------
+CREATE FUNCTION char() RETURNS OOPS; -- ..syntax.. near 'char() RETURNS OOPS' at
+--------
+CREATE FUNCTION trim() RETURNS OOPS; -- ..syntax.. near 'trim() RETURNS OOPS' at
+--------
+CREATE FUNCTION year() RETURNS OOPS; -- ..syntax.. near 'OOPS' at line 1
+--------
+CREATE FUNCTION create() RETURNS OOPS; -- ..syntax.. near 'create() RETURNS OOPS' 
+CALL p2('CREATE FUNCTION test_keywords.$(VAR)() RETURNS OOPS');
+--------
+CREATE FUNCTION test_keywords.non_keyword() RETURNS OOPS; -- ..syntax.. near 'OOPS' at line 1
+--------
+CREATE FUNCTION test_keywords.lpad() RETURNS OOPS; -- ..syntax.. near 'OOPS' at line 1
+--------
+CREATE FUNCTION test_keywords.rpad() RETURNS OOPS; -- ..syntax.. near 'OOPS' at line 1
+--------
+CREATE FUNCTION test_keywords.adddate() RETURNS OOPS; -- ..syntax.. near 'OOPS' at line 1
+--------
+CREATE FUNCTION test_keywords.substr() RETURNS OOPS; -- ..syntax.. near 'OOPS' at line 1
+--------
+CREATE FUNCTION test_keywords.substring() RETURNS OOPS; -- ..syntax.. near 'OOPS' at line 1
+--------
+CREATE FUNCTION test_keywords.trim_oracle() RETURNS OOPS; -- ..syntax.. near 'OOPS' at line 1
+--------
+CREATE FUNCTION test_keywords.ascii() RETURNS OOPS; -- ..syntax.. near 'OOPS' at line 1
+--------
+CREATE FUNCTION test_keywords.replace() RETURNS OOPS; -- ..syntax.. near 'OOPS' at line 1
+--------
+CREATE FUNCTION test_keywords.weight_string() RETURNS OOPS; -- ..syntax.. near 'OOPS' at line 1
+--------
+CREATE FUNCTION test_keywords.char() RETURNS OOPS; -- ..syntax.. near 'OOPS' at line 1
+--------
+CREATE FUNCTION test_keywords.trim() RETURNS OOPS; -- ..syntax.. near 'OOPS' at line 1
+--------
+CREATE FUNCTION test_keywords.year() RETURNS OOPS; -- ..syntax.. near 'OOPS' at line 1
+--------
+CREATE FUNCTION test_keywords.create() RETURNS OOPS; -- ..syntax.. near 'OOPS' at line 1
+CALL p2('DROP FUNCTION $(VAR)');
+--------
+DROP FUNCTION non_keyword; -- This command is not supported in the pre
+--------
+DROP FUNCTION lpad; -- This command is not supported in the pre
+--------
+DROP FUNCTION rpad; -- This command is not supported in the pre
+--------
+DROP FUNCTION adddate; -- This command is not supported in the pre
+--------
+DROP FUNCTION substr; -- This command is not supported in the pre
+--------
+DROP FUNCTION substring; -- This command is not supported in the pre
+--------
+DROP FUNCTION trim_oracle; -- This command is not supported in the pre
+--------
+DROP FUNCTION ascii; -- This command is not supported in the pre
+--------
+DROP FUNCTION replace; -- ..syntax.. near 'replace' at line 1
+--------
+DROP FUNCTION weight_string; -- This command is not supported in the pre
+--------
+DROP FUNCTION char; -- ..syntax.. near 'char' at line 1
+--------
+DROP FUNCTION trim; -- This command is not supported in the pre
+--------
+DROP FUNCTION year; -- This command is not supported in the pre
+--------
+DROP FUNCTION create; -- ..syntax.. near 'create' at line 1
+CALL p2('DROP FUNCTION test_keywords.$(VAR)');
+--------
+DROP FUNCTION test_keywords.non_keyword; -- This command is not supported in the pre
+--------
+DROP FUNCTION test_keywords.lpad; -- This command is not supported in the pre
+--------
+DROP FUNCTION test_keywords.rpad; -- This command is not supported in the pre
+--------
+DROP FUNCTION test_keywords.adddate; -- This command is not supported in the pre
+--------
+DROP FUNCTION test_keywords.substr; -- This command is not supported in the pre
+--------
+DROP FUNCTION test_keywords.substring; -- This command is not supported in the pre
+--------
+DROP FUNCTION test_keywords.trim_oracle; -- This command is not supported in the pre
+--------
+DROP FUNCTION test_keywords.ascii; -- This command is not supported in the pre
+--------
+DROP FUNCTION test_keywords.replace; -- This command is not supported in the pre
+--------
+DROP FUNCTION test_keywords.weight_string; -- This command is not supported in the pre
+--------
+DROP FUNCTION test_keywords.char; -- This command is not supported in the pre
+--------
+DROP FUNCTION test_keywords.trim; -- This command is not supported in the pre
+--------
+DROP FUNCTION test_keywords.year; -- This command is not supported in the pre
+--------
+DROP FUNCTION test_keywords.create; -- This command is not supported in the pre
+DROP TABLE t1;
+DROP PROCEDURE p1;
+DROP PROCEDURE p2;
+DROP DATABASE test_keywords;

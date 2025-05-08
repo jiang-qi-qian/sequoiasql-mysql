@@ -1,0 +1,3064 @@
+set session optimizer_switch="index_merge_intersection=on";
+drop database if exists index_merge_sequoiadb_noswitch;
+create database index_merge_sequoiadb_noswitch;
+drop database index_merge_sequoiadb_noswitch;
+create database index_merge_sequoiadb_noswitch;
+use index_merge_sequoiadb_noswitch;
+create table t1(
+a   int,
+b   varchar(10),
+c   varchar(10),
+d   varchar(10),
+key idx_a(a),
+key idx_b(b),
+key idx_c(c),
+key idx_d(d)
+);
+create table t2(
+e   int,
+f   varchar(10),
+g   varchar(10),
+h   varchar(10),
+key idx_e(e),
+key idx_f(f),
+key idx_g(g),
+key idx_h(h)
+);
+create table t3
+(
+col1 int,
+col2 varchar(10)
+);
+create table t4
+(
+col3 int,
+col4 varchar(10)
+);
+insert into t1 value 
+(1,'2','1','4'),(1,'2','1','4'),(1,'2','1','4'),(1,'2','1','4'),(1,'2','1','4'),
+(1,'2','2','4'),(1,'2','2','4'),(1,'2','2','4'),(1,'2','2','4'),(1,'2','2','4'),
+(1,'1','3','4'),(1,'1','3','4'),(1,'1','3','4'),(1,'1','3','4'),(1,'1','3','4'),
+(2,'3','4','5'),(2,'3','4','5'),(2,'3','4','5'),(2,'3','4','5'),(2,'3','4','5'),
+(3,'1','5','5'),(3,'1','5','5'),(3,'1','5','5'),(3,'1','5','5'),(3,'1','5','5');
+insert into t2 value
+(1,'2','1','4'),(1,'2','1','4'),(1,'2','1','4'),(1,'2','1','4'),(1,'2','1','4'),
+(1,'2','2','4'),(1,'2','2','4'),(1,'2','2','4'),(1,'2','2','4'),(1,'2','2','4'),
+(1,'1','3','4'),(1,'1','3','4'),(1,'1','3','4'),(1,'1','3','4'),(1,'1','3','4'),
+(2,'3','4','5'),(2,'3','4','5'),(2,'3','4','5'),(2,'3','4','5'),(2,'3','4','5'),
+(3,'1','5','5'),(3,'1','5','5'),(3,'1','5','5'),(3,'1','5','5'),(3,'1','5','5');
+insert into t3 value (1,'a'),(2,'b'),(3,'c'),(4,'d'),(5,'e');
+insert into t4 value (1,'x'),(2,'y'),(3,'z'),(4,'w'),(5,'v');
+explain select * from t1 force index(idx_a,idx_b) where a = 1 or b = '2';
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	index_merge	idx_a,idx_b	idx_a,idx_b	5,13	NULL	4	100.00	Using sdb_union(idx_a,idx_b); Using where with pushed condition ((`index_merge_sequoiadb_noswitch`.`t1`.`a` = 1) or (`index_merge_sequoiadb_noswitch`.`t1`.`b` = '2'))
+Warnings:
+Note	1003	/* select#1 */ select `index_merge_sequoiadb_noswitch`.`t1`.`a` AS `a`,`index_merge_sequoiadb_noswitch`.`t1`.`b` AS `b`,`index_merge_sequoiadb_noswitch`.`t1`.`c` AS `c`,`index_merge_sequoiadb_noswitch`.`t1`.`d` AS `d` from `index_merge_sequoiadb_noswitch`.`t1` FORCE INDEX (`idx_b`) FORCE INDEX (`idx_a`) where ((`index_merge_sequoiadb_noswitch`.`t1`.`a` = 1) or (`index_merge_sequoiadb_noswitch`.`t1`.`b` = '2'))
+select * from t1 force index(idx_a,idx_b)  where a=1 or b = '2';
+a	b	c	d
+1	1	3	4
+1	1	3	4
+1	1	3	4
+1	1	3	4
+1	1	3	4
+1	2	1	4
+1	2	1	4
+1	2	1	4
+1	2	1	4
+1	2	1	4
+1	2	2	4
+1	2	2	4
+1	2	2	4
+1	2	2	4
+1	2	2	4
+explain select * from t1 force index(idx_a,idx_b) where a = 1 or b = '1';
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	index_merge	idx_a,idx_b	idx_a,idx_b	5,13	NULL	4	100.00	Using sdb_union(idx_a,idx_b); Using where with pushed condition ((`index_merge_sequoiadb_noswitch`.`t1`.`a` = 1) or (`index_merge_sequoiadb_noswitch`.`t1`.`b` = '1'))
+Warnings:
+Note	1003	/* select#1 */ select `index_merge_sequoiadb_noswitch`.`t1`.`a` AS `a`,`index_merge_sequoiadb_noswitch`.`t1`.`b` AS `b`,`index_merge_sequoiadb_noswitch`.`t1`.`c` AS `c`,`index_merge_sequoiadb_noswitch`.`t1`.`d` AS `d` from `index_merge_sequoiadb_noswitch`.`t1` FORCE INDEX (`idx_b`) FORCE INDEX (`idx_a`) where ((`index_merge_sequoiadb_noswitch`.`t1`.`a` = 1) or (`index_merge_sequoiadb_noswitch`.`t1`.`b` = '1'))
+select * from t1 force index(idx_a,idx_b) where a=1 or b = '1';
+a	b	c	d
+1	1	3	4
+1	1	3	4
+1	1	3	4
+1	1	3	4
+1	1	3	4
+1	2	1	4
+1	2	1	4
+1	2	1	4
+1	2	1	4
+1	2	1	4
+1	2	2	4
+1	2	2	4
+1	2	2	4
+1	2	2	4
+1	2	2	4
+3	1	5	5
+3	1	5	5
+3	1	5	5
+3	1	5	5
+3	1	5	5
+explain select * from t1 force index(idx_a,idx_b) where a < 2 or b < '3';
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	index_merge	idx_a,idx_b	idx_a,idx_b	5,13	NULL	14	100.00	Using sdb_sort_union(idx_a,idx_b); Using where with pushed condition ((`index_merge_sequoiadb_noswitch`.`t1`.`a` < 2) or (`index_merge_sequoiadb_noswitch`.`t1`.`b` < '3'))
+Warnings:
+Note	1003	/* select#1 */ select `index_merge_sequoiadb_noswitch`.`t1`.`a` AS `a`,`index_merge_sequoiadb_noswitch`.`t1`.`b` AS `b`,`index_merge_sequoiadb_noswitch`.`t1`.`c` AS `c`,`index_merge_sequoiadb_noswitch`.`t1`.`d` AS `d` from `index_merge_sequoiadb_noswitch`.`t1` FORCE INDEX (`idx_b`) FORCE INDEX (`idx_a`) where ((`index_merge_sequoiadb_noswitch`.`t1`.`a` < 2) or (`index_merge_sequoiadb_noswitch`.`t1`.`b` < '3'))
+select * from t1 force index(idx_a,idx_b) where a < 2 or b < '3';
+a	b	c	d
+1	1	3	4
+1	1	3	4
+1	1	3	4
+1	1	3	4
+1	1	3	4
+1	2	1	4
+1	2	1	4
+1	2	1	4
+1	2	1	4
+1	2	1	4
+1	2	2	4
+1	2	2	4
+1	2	2	4
+1	2	2	4
+1	2	2	4
+3	1	5	5
+3	1	5	5
+3	1	5	5
+3	1	5	5
+3	1	5	5
+explain select * from t1 force index(idx_a,idx_b) where a < 2 or b < '2';
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	index_merge	idx_a,idx_b	idx_a,idx_b	5,13	NULL	14	100.00	Using sdb_sort_union(idx_a,idx_b); Using where with pushed condition ((`index_merge_sequoiadb_noswitch`.`t1`.`a` < 2) or (`index_merge_sequoiadb_noswitch`.`t1`.`b` < '2'))
+Warnings:
+Note	1003	/* select#1 */ select `index_merge_sequoiadb_noswitch`.`t1`.`a` AS `a`,`index_merge_sequoiadb_noswitch`.`t1`.`b` AS `b`,`index_merge_sequoiadb_noswitch`.`t1`.`c` AS `c`,`index_merge_sequoiadb_noswitch`.`t1`.`d` AS `d` from `index_merge_sequoiadb_noswitch`.`t1` FORCE INDEX (`idx_b`) FORCE INDEX (`idx_a`) where ((`index_merge_sequoiadb_noswitch`.`t1`.`a` < 2) or (`index_merge_sequoiadb_noswitch`.`t1`.`b` < '2'))
+select * from t1 force index(idx_a,idx_b) where a < 2 or b < '2';
+a	b	c	d
+1	1	3	4
+1	1	3	4
+1	1	3	4
+1	1	3	4
+1	1	3	4
+1	2	1	4
+1	2	1	4
+1	2	1	4
+1	2	1	4
+1	2	1	4
+1	2	2	4
+1	2	2	4
+1	2	2	4
+1	2	2	4
+1	2	2	4
+3	1	5	5
+3	1	5	5
+3	1	5	5
+3	1	5	5
+3	1	5	5
+explain select * from t1 force index(idx_a,idx_b) where ( a = 1 and c = '3') or (b = '2' and d = '4');
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	index_merge	idx_a,idx_b	idx_a,idx_b	5,13	NULL	4	19.00	Using sdb_union(idx_a,idx_b); Using where with pushed condition (((`index_merge_sequoiadb_noswitch`.`t1`.`c` = '3') and (`index_merge_sequoiadb_noswitch`.`t1`.`a` = 1)) or ((`index_merge_sequoiadb_noswitch`.`t1`.`d` = '4') and (`index_merge_sequoiadb_noswitch`.`t1`.`b` = '2')))
+Warnings:
+Note	1003	/* select#1 */ select `index_merge_sequoiadb_noswitch`.`t1`.`a` AS `a`,`index_merge_sequoiadb_noswitch`.`t1`.`b` AS `b`,`index_merge_sequoiadb_noswitch`.`t1`.`c` AS `c`,`index_merge_sequoiadb_noswitch`.`t1`.`d` AS `d` from `index_merge_sequoiadb_noswitch`.`t1` FORCE INDEX (`idx_b`) FORCE INDEX (`idx_a`) where (((`index_merge_sequoiadb_noswitch`.`t1`.`c` = '3') and (`index_merge_sequoiadb_noswitch`.`t1`.`a` = 1)) or ((`index_merge_sequoiadb_noswitch`.`t1`.`d` = '4') and (`index_merge_sequoiadb_noswitch`.`t1`.`b` = '2')))
+select * from t1 force index(idx_a,idx_b) where ( a = 1 and c = '3') or (b = '2' and d = '4');
+a	b	c	d
+1	1	3	4
+1	1	3	4
+1	1	3	4
+1	1	3	4
+1	1	3	4
+1	2	1	4
+1	2	1	4
+1	2	1	4
+1	2	1	4
+1	2	1	4
+1	2	2	4
+1	2	2	4
+1	2	2	4
+1	2	2	4
+1	2	2	4
+explain select * from t1 force index(idx_a,idx_b) where ( a = 1 and c = '3') or (b = '1' and d = '4');
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	index_merge	idx_a,idx_b	idx_a,idx_b	5,13	NULL	4	19.00	Using sdb_union(idx_a,idx_b); Using where with pushed condition (((`index_merge_sequoiadb_noswitch`.`t1`.`c` = '3') and (`index_merge_sequoiadb_noswitch`.`t1`.`a` = 1)) or ((`index_merge_sequoiadb_noswitch`.`t1`.`d` = '4') and (`index_merge_sequoiadb_noswitch`.`t1`.`b` = '1')))
+Warnings:
+Note	1003	/* select#1 */ select `index_merge_sequoiadb_noswitch`.`t1`.`a` AS `a`,`index_merge_sequoiadb_noswitch`.`t1`.`b` AS `b`,`index_merge_sequoiadb_noswitch`.`t1`.`c` AS `c`,`index_merge_sequoiadb_noswitch`.`t1`.`d` AS `d` from `index_merge_sequoiadb_noswitch`.`t1` FORCE INDEX (`idx_b`) FORCE INDEX (`idx_a`) where (((`index_merge_sequoiadb_noswitch`.`t1`.`c` = '3') and (`index_merge_sequoiadb_noswitch`.`t1`.`a` = 1)) or ((`index_merge_sequoiadb_noswitch`.`t1`.`d` = '4') and (`index_merge_sequoiadb_noswitch`.`t1`.`b` = '1')))
+select * from t1 force index(idx_a,idx_b) where ( a = 1 and c = '3') or (b = '1' and d = '4');
+a	b	c	d
+1	1	3	4
+1	1	3	4
+1	1	3	4
+1	1	3	4
+1	1	3	4
+explain select * from t1 force index(idx_a,idx_b) where ( a < 2 and c < '999') or (b < '3' and d < '999');
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	index_merge	idx_a,idx_b	idx_a,idx_b	5,13	NULL	14	55.55	Using sdb_sort_union(idx_a,idx_b); Using where with pushed condition (((`index_merge_sequoiadb_noswitch`.`t1`.`a` < 2) and (`index_merge_sequoiadb_noswitch`.`t1`.`c` < '999')) or ((`index_merge_sequoiadb_noswitch`.`t1`.`b` < '3') and (`index_merge_sequoiadb_noswitch`.`t1`.`d` < '999')))
+Warnings:
+Note	1003	/* select#1 */ select `index_merge_sequoiadb_noswitch`.`t1`.`a` AS `a`,`index_merge_sequoiadb_noswitch`.`t1`.`b` AS `b`,`index_merge_sequoiadb_noswitch`.`t1`.`c` AS `c`,`index_merge_sequoiadb_noswitch`.`t1`.`d` AS `d` from `index_merge_sequoiadb_noswitch`.`t1` FORCE INDEX (`idx_b`) FORCE INDEX (`idx_a`) where (((`index_merge_sequoiadb_noswitch`.`t1`.`a` < 2) and (`index_merge_sequoiadb_noswitch`.`t1`.`c` < '999')) or ((`index_merge_sequoiadb_noswitch`.`t1`.`b` < '3') and (`index_merge_sequoiadb_noswitch`.`t1`.`d` < '999')))
+select * from t1 force index(idx_a,idx_b) where ( a < 2 and c < '999') or (b < '3' and d < '999');
+a	b	c	d
+1	1	3	4
+1	1	3	4
+1	1	3	4
+1	1	3	4
+1	1	3	4
+1	2	1	4
+1	2	1	4
+1	2	1	4
+1	2	1	4
+1	2	1	4
+1	2	2	4
+1	2	2	4
+1	2	2	4
+1	2	2	4
+1	2	2	4
+3	1	5	5
+3	1	5	5
+3	1	5	5
+3	1	5	5
+3	1	5	5
+explain select * from t1 force index(idx_a,idx_b) where ( a < 2 and c < '999') or (b < '2' and d < '999');
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	index_merge	idx_a,idx_b	idx_a,idx_b	5,13	NULL	14	55.55	Using sdb_sort_union(idx_a,idx_b); Using where with pushed condition (((`index_merge_sequoiadb_noswitch`.`t1`.`a` < 2) and (`index_merge_sequoiadb_noswitch`.`t1`.`c` < '999')) or ((`index_merge_sequoiadb_noswitch`.`t1`.`b` < '2') and (`index_merge_sequoiadb_noswitch`.`t1`.`d` < '999')))
+Warnings:
+Note	1003	/* select#1 */ select `index_merge_sequoiadb_noswitch`.`t1`.`a` AS `a`,`index_merge_sequoiadb_noswitch`.`t1`.`b` AS `b`,`index_merge_sequoiadb_noswitch`.`t1`.`c` AS `c`,`index_merge_sequoiadb_noswitch`.`t1`.`d` AS `d` from `index_merge_sequoiadb_noswitch`.`t1` FORCE INDEX (`idx_b`) FORCE INDEX (`idx_a`) where (((`index_merge_sequoiadb_noswitch`.`t1`.`a` < 2) and (`index_merge_sequoiadb_noswitch`.`t1`.`c` < '999')) or ((`index_merge_sequoiadb_noswitch`.`t1`.`b` < '2') and (`index_merge_sequoiadb_noswitch`.`t1`.`d` < '999')))
+select * from t1 force index(idx_a,idx_b) where ( a < 2 and c < '999') or (b < '2' and d < '999');
+a	b	c	d
+1	1	3	4
+1	1	3	4
+1	1	3	4
+1	1	3	4
+1	1	3	4
+1	2	1	4
+1	2	1	4
+1	2	1	4
+1	2	1	4
+1	2	1	4
+1	2	2	4
+1	2	2	4
+1	2	2	4
+1	2	2	4
+1	2	2	4
+3	1	5	5
+3	1	5	5
+3	1	5	5
+3	1	5	5
+3	1	5	5
+explain select * from t1 force index(idx_a,idx_b) inner join t2 on ( a = 1 and e = 1) or (b = '1' and f = '1');
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	index_merge	idx_a,idx_b	idx_a,idx_b	5,13	NULL	4	100.00	Using sdb_union(idx_a,idx_b); Using where with pushed condition ((`index_merge_sequoiadb_noswitch`.`t1`.`a` = 1) or (`index_merge_sequoiadb_noswitch`.`t1`.`b` = '1'))
+1	SIMPLE	t2	NULL	index_merge	idx_e,idx_f	idx_e,idx_f	5,13	NULL	4	100.00	Using sdb_union(idx_e,idx_f); Using where with pushed condition ((`index_merge_sequoiadb_noswitch`.`t2`.`e` = 1) or (`index_merge_sequoiadb_noswitch`.`t2`.`f` = '1')); Using join buffer (Block Nested Loop)
+Warnings:
+Note	1003	/* select#1 */ select `index_merge_sequoiadb_noswitch`.`t1`.`a` AS `a`,`index_merge_sequoiadb_noswitch`.`t1`.`b` AS `b`,`index_merge_sequoiadb_noswitch`.`t1`.`c` AS `c`,`index_merge_sequoiadb_noswitch`.`t1`.`d` AS `d`,`index_merge_sequoiadb_noswitch`.`t2`.`e` AS `e`,`index_merge_sequoiadb_noswitch`.`t2`.`f` AS `f`,`index_merge_sequoiadb_noswitch`.`t2`.`g` AS `g`,`index_merge_sequoiadb_noswitch`.`t2`.`h` AS `h` from `index_merge_sequoiadb_noswitch`.`t1` FORCE INDEX (`idx_b`) FORCE INDEX (`idx_a`) join `index_merge_sequoiadb_noswitch`.`t2` where (((`index_merge_sequoiadb_noswitch`.`t2`.`e` = 1) and (`index_merge_sequoiadb_noswitch`.`t1`.`a` = 1)) or ((`index_merge_sequoiadb_noswitch`.`t2`.`f` = '1') and (`index_merge_sequoiadb_noswitch`.`t1`.`b` = '1')))
+select * from t1 force index(idx_a,idx_b) inner join t2 on ( a = 1 and e = 1) or (b = '1' and f = '1');
+a	b	c	d	e	f	g	h
+1	1	3	4	1	1	3	4
+1	1	3	4	1	1	3	4
+1	1	3	4	1	1	3	4
+1	1	3	4	1	1	3	4
+1	1	3	4	1	1	3	4
+1	1	3	4	1	1	3	4
+1	1	3	4	1	1	3	4
+1	1	3	4	1	1	3	4
+1	1	3	4	1	1	3	4
+1	1	3	4	1	1	3	4
+1	1	3	4	1	1	3	4
+1	1	3	4	1	1	3	4
+1	1	3	4	1	1	3	4
+1	1	3	4	1	1	3	4
+1	1	3	4	1	1	3	4
+1	1	3	4	1	1	3	4
+1	1	3	4	1	1	3	4
+1	1	3	4	1	1	3	4
+1	1	3	4	1	1	3	4
+1	1	3	4	1	1	3	4
+1	1	3	4	1	1	3	4
+1	1	3	4	1	1	3	4
+1	1	3	4	1	1	3	4
+1	1	3	4	1	1	3	4
+1	1	3	4	1	1	3	4
+1	1	3	4	1	2	1	4
+1	1	3	4	1	2	1	4
+1	1	3	4	1	2	1	4
+1	1	3	4	1	2	1	4
+1	1	3	4	1	2	1	4
+1	1	3	4	1	2	1	4
+1	1	3	4	1	2	1	4
+1	1	3	4	1	2	1	4
+1	1	3	4	1	2	1	4
+1	1	3	4	1	2	1	4
+1	1	3	4	1	2	1	4
+1	1	3	4	1	2	1	4
+1	1	3	4	1	2	1	4
+1	1	3	4	1	2	1	4
+1	1	3	4	1	2	1	4
+1	1	3	4	1	2	1	4
+1	1	3	4	1	2	1	4
+1	1	3	4	1	2	1	4
+1	1	3	4	1	2	1	4
+1	1	3	4	1	2	1	4
+1	1	3	4	1	2	1	4
+1	1	3	4	1	2	1	4
+1	1	3	4	1	2	1	4
+1	1	3	4	1	2	1	4
+1	1	3	4	1	2	1	4
+1	1	3	4	1	2	2	4
+1	1	3	4	1	2	2	4
+1	1	3	4	1	2	2	4
+1	1	3	4	1	2	2	4
+1	1	3	4	1	2	2	4
+1	1	3	4	1	2	2	4
+1	1	3	4	1	2	2	4
+1	1	3	4	1	2	2	4
+1	1	3	4	1	2	2	4
+1	1	3	4	1	2	2	4
+1	1	3	4	1	2	2	4
+1	1	3	4	1	2	2	4
+1	1	3	4	1	2	2	4
+1	1	3	4	1	2	2	4
+1	1	3	4	1	2	2	4
+1	1	3	4	1	2	2	4
+1	1	3	4	1	2	2	4
+1	1	3	4	1	2	2	4
+1	1	3	4	1	2	2	4
+1	1	3	4	1	2	2	4
+1	1	3	4	1	2	2	4
+1	1	3	4	1	2	2	4
+1	1	3	4	1	2	2	4
+1	1	3	4	1	2	2	4
+1	1	3	4	1	2	2	4
+1	1	3	4	3	1	5	5
+1	1	3	4	3	1	5	5
+1	1	3	4	3	1	5	5
+1	1	3	4	3	1	5	5
+1	1	3	4	3	1	5	5
+1	1	3	4	3	1	5	5
+1	1	3	4	3	1	5	5
+1	1	3	4	3	1	5	5
+1	1	3	4	3	1	5	5
+1	1	3	4	3	1	5	5
+1	1	3	4	3	1	5	5
+1	1	3	4	3	1	5	5
+1	1	3	4	3	1	5	5
+1	1	3	4	3	1	5	5
+1	1	3	4	3	1	5	5
+1	1	3	4	3	1	5	5
+1	1	3	4	3	1	5	5
+1	1	3	4	3	1	5	5
+1	1	3	4	3	1	5	5
+1	1	3	4	3	1	5	5
+1	1	3	4	3	1	5	5
+1	1	3	4	3	1	5	5
+1	1	3	4	3	1	5	5
+1	1	3	4	3	1	5	5
+1	1	3	4	3	1	5	5
+1	2	1	4	1	1	3	4
+1	2	1	4	1	1	3	4
+1	2	1	4	1	1	3	4
+1	2	1	4	1	1	3	4
+1	2	1	4	1	1	3	4
+1	2	1	4	1	1	3	4
+1	2	1	4	1	1	3	4
+1	2	1	4	1	1	3	4
+1	2	1	4	1	1	3	4
+1	2	1	4	1	1	3	4
+1	2	1	4	1	1	3	4
+1	2	1	4	1	1	3	4
+1	2	1	4	1	1	3	4
+1	2	1	4	1	1	3	4
+1	2	1	4	1	1	3	4
+1	2	1	4	1	1	3	4
+1	2	1	4	1	1	3	4
+1	2	1	4	1	1	3	4
+1	2	1	4	1	1	3	4
+1	2	1	4	1	1	3	4
+1	2	1	4	1	1	3	4
+1	2	1	4	1	1	3	4
+1	2	1	4	1	1	3	4
+1	2	1	4	1	1	3	4
+1	2	1	4	1	1	3	4
+1	2	1	4	1	2	1	4
+1	2	1	4	1	2	1	4
+1	2	1	4	1	2	1	4
+1	2	1	4	1	2	1	4
+1	2	1	4	1	2	1	4
+1	2	1	4	1	2	1	4
+1	2	1	4	1	2	1	4
+1	2	1	4	1	2	1	4
+1	2	1	4	1	2	1	4
+1	2	1	4	1	2	1	4
+1	2	1	4	1	2	1	4
+1	2	1	4	1	2	1	4
+1	2	1	4	1	2	1	4
+1	2	1	4	1	2	1	4
+1	2	1	4	1	2	1	4
+1	2	1	4	1	2	1	4
+1	2	1	4	1	2	1	4
+1	2	1	4	1	2	1	4
+1	2	1	4	1	2	1	4
+1	2	1	4	1	2	1	4
+1	2	1	4	1	2	1	4
+1	2	1	4	1	2	1	4
+1	2	1	4	1	2	1	4
+1	2	1	4	1	2	1	4
+1	2	1	4	1	2	1	4
+1	2	1	4	1	2	2	4
+1	2	1	4	1	2	2	4
+1	2	1	4	1	2	2	4
+1	2	1	4	1	2	2	4
+1	2	1	4	1	2	2	4
+1	2	1	4	1	2	2	4
+1	2	1	4	1	2	2	4
+1	2	1	4	1	2	2	4
+1	2	1	4	1	2	2	4
+1	2	1	4	1	2	2	4
+1	2	1	4	1	2	2	4
+1	2	1	4	1	2	2	4
+1	2	1	4	1	2	2	4
+1	2	1	4	1	2	2	4
+1	2	1	4	1	2	2	4
+1	2	1	4	1	2	2	4
+1	2	1	4	1	2	2	4
+1	2	1	4	1	2	2	4
+1	2	1	4	1	2	2	4
+1	2	1	4	1	2	2	4
+1	2	1	4	1	2	2	4
+1	2	1	4	1	2	2	4
+1	2	1	4	1	2	2	4
+1	2	1	4	1	2	2	4
+1	2	1	4	1	2	2	4
+1	2	2	4	1	1	3	4
+1	2	2	4	1	1	3	4
+1	2	2	4	1	1	3	4
+1	2	2	4	1	1	3	4
+1	2	2	4	1	1	3	4
+1	2	2	4	1	1	3	4
+1	2	2	4	1	1	3	4
+1	2	2	4	1	1	3	4
+1	2	2	4	1	1	3	4
+1	2	2	4	1	1	3	4
+1	2	2	4	1	1	3	4
+1	2	2	4	1	1	3	4
+1	2	2	4	1	1	3	4
+1	2	2	4	1	1	3	4
+1	2	2	4	1	1	3	4
+1	2	2	4	1	1	3	4
+1	2	2	4	1	1	3	4
+1	2	2	4	1	1	3	4
+1	2	2	4	1	1	3	4
+1	2	2	4	1	1	3	4
+1	2	2	4	1	1	3	4
+1	2	2	4	1	1	3	4
+1	2	2	4	1	1	3	4
+1	2	2	4	1	1	3	4
+1	2	2	4	1	1	3	4
+1	2	2	4	1	2	1	4
+1	2	2	4	1	2	1	4
+1	2	2	4	1	2	1	4
+1	2	2	4	1	2	1	4
+1	2	2	4	1	2	1	4
+1	2	2	4	1	2	1	4
+1	2	2	4	1	2	1	4
+1	2	2	4	1	2	1	4
+1	2	2	4	1	2	1	4
+1	2	2	4	1	2	1	4
+1	2	2	4	1	2	1	4
+1	2	2	4	1	2	1	4
+1	2	2	4	1	2	1	4
+1	2	2	4	1	2	1	4
+1	2	2	4	1	2	1	4
+1	2	2	4	1	2	1	4
+1	2	2	4	1	2	1	4
+1	2	2	4	1	2	1	4
+1	2	2	4	1	2	1	4
+1	2	2	4	1	2	1	4
+1	2	2	4	1	2	1	4
+1	2	2	4	1	2	1	4
+1	2	2	4	1	2	1	4
+1	2	2	4	1	2	1	4
+1	2	2	4	1	2	1	4
+1	2	2	4	1	2	2	4
+1	2	2	4	1	2	2	4
+1	2	2	4	1	2	2	4
+1	2	2	4	1	2	2	4
+1	2	2	4	1	2	2	4
+1	2	2	4	1	2	2	4
+1	2	2	4	1	2	2	4
+1	2	2	4	1	2	2	4
+1	2	2	4	1	2	2	4
+1	2	2	4	1	2	2	4
+1	2	2	4	1	2	2	4
+1	2	2	4	1	2	2	4
+1	2	2	4	1	2	2	4
+1	2	2	4	1	2	2	4
+1	2	2	4	1	2	2	4
+1	2	2	4	1	2	2	4
+1	2	2	4	1	2	2	4
+1	2	2	4	1	2	2	4
+1	2	2	4	1	2	2	4
+1	2	2	4	1	2	2	4
+1	2	2	4	1	2	2	4
+1	2	2	4	1	2	2	4
+1	2	2	4	1	2	2	4
+1	2	2	4	1	2	2	4
+1	2	2	4	1	2	2	4
+3	1	5	5	1	1	3	4
+3	1	5	5	1	1	3	4
+3	1	5	5	1	1	3	4
+3	1	5	5	1	1	3	4
+3	1	5	5	1	1	3	4
+3	1	5	5	1	1	3	4
+3	1	5	5	1	1	3	4
+3	1	5	5	1	1	3	4
+3	1	5	5	1	1	3	4
+3	1	5	5	1	1	3	4
+3	1	5	5	1	1	3	4
+3	1	5	5	1	1	3	4
+3	1	5	5	1	1	3	4
+3	1	5	5	1	1	3	4
+3	1	5	5	1	1	3	4
+3	1	5	5	1	1	3	4
+3	1	5	5	1	1	3	4
+3	1	5	5	1	1	3	4
+3	1	5	5	1	1	3	4
+3	1	5	5	1	1	3	4
+3	1	5	5	1	1	3	4
+3	1	5	5	1	1	3	4
+3	1	5	5	1	1	3	4
+3	1	5	5	1	1	3	4
+3	1	5	5	1	1	3	4
+3	1	5	5	3	1	5	5
+3	1	5	5	3	1	5	5
+3	1	5	5	3	1	5	5
+3	1	5	5	3	1	5	5
+3	1	5	5	3	1	5	5
+3	1	5	5	3	1	5	5
+3	1	5	5	3	1	5	5
+3	1	5	5	3	1	5	5
+3	1	5	5	3	1	5	5
+3	1	5	5	3	1	5	5
+3	1	5	5	3	1	5	5
+3	1	5	5	3	1	5	5
+3	1	5	5	3	1	5	5
+3	1	5	5	3	1	5	5
+3	1	5	5	3	1	5	5
+3	1	5	5	3	1	5	5
+3	1	5	5	3	1	5	5
+3	1	5	5	3	1	5	5
+3	1	5	5	3	1	5	5
+3	1	5	5	3	1	5	5
+3	1	5	5	3	1	5	5
+3	1	5	5	3	1	5	5
+3	1	5	5	3	1	5	5
+3	1	5	5	3	1	5	5
+3	1	5	5	3	1	5	5
+explain select * from t1 force index(idx_a,idx_b) inner join t2 on a = e or b = f where ( a = 1 and e = 1) or (b = '1' and f = '1');
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	index_merge	idx_a,idx_b	idx_a,idx_b	5,13	NULL	4	100.00	Using sdb_union(idx_a,idx_b); Using where with pushed condition ((`index_merge_sequoiadb_noswitch`.`t1`.`a` = 1) or (`index_merge_sequoiadb_noswitch`.`t1`.`b` = '1'))
+1	SIMPLE	t2	NULL	index_merge	idx_e,idx_f	idx_e,idx_f	5,13	NULL	4	100.00	Using sdb_union(idx_e,idx_f); Using where with pushed condition ((`index_merge_sequoiadb_noswitch`.`t2`.`e` = 1) or (`index_merge_sequoiadb_noswitch`.`t2`.`f` = '1')); Using join buffer (Block Nested Loop)
+Warnings:
+Note	1003	/* select#1 */ select `index_merge_sequoiadb_noswitch`.`t1`.`a` AS `a`,`index_merge_sequoiadb_noswitch`.`t1`.`b` AS `b`,`index_merge_sequoiadb_noswitch`.`t1`.`c` AS `c`,`index_merge_sequoiadb_noswitch`.`t1`.`d` AS `d`,`index_merge_sequoiadb_noswitch`.`t2`.`e` AS `e`,`index_merge_sequoiadb_noswitch`.`t2`.`f` AS `f`,`index_merge_sequoiadb_noswitch`.`t2`.`g` AS `g`,`index_merge_sequoiadb_noswitch`.`t2`.`h` AS `h` from `index_merge_sequoiadb_noswitch`.`t1` FORCE INDEX (`idx_b`) FORCE INDEX (`idx_a`) join `index_merge_sequoiadb_noswitch`.`t2` where ((((`index_merge_sequoiadb_noswitch`.`t2`.`e` = 1) and (`index_merge_sequoiadb_noswitch`.`t1`.`a` = 1)) or ((`index_merge_sequoiadb_noswitch`.`t2`.`f` = '1') and (`index_merge_sequoiadb_noswitch`.`t1`.`b` = '1'))) and ((`index_merge_sequoiadb_noswitch`.`t2`.`e` = `index_merge_sequoiadb_noswitch`.`t1`.`a`) or (`index_merge_sequoiadb_noswitch`.`t2`.`f` = `index_merge_sequoiadb_noswitch`.`t1`.`b`)))
+select * from t1 force index(idx_a,idx_b) inner join t2 on a = e or b = f where ( a = 1 and e = 1) or (b = '1' and f = '1');
+a	b	c	d	e	f	g	h
+1	1	3	4	1	1	3	4
+1	1	3	4	1	1	3	4
+1	1	3	4	1	1	3	4
+1	1	3	4	1	1	3	4
+1	1	3	4	1	1	3	4
+1	1	3	4	1	1	3	4
+1	1	3	4	1	1	3	4
+1	1	3	4	1	1	3	4
+1	1	3	4	1	1	3	4
+1	1	3	4	1	1	3	4
+1	1	3	4	1	1	3	4
+1	1	3	4	1	1	3	4
+1	1	3	4	1	1	3	4
+1	1	3	4	1	1	3	4
+1	1	3	4	1	1	3	4
+1	1	3	4	1	1	3	4
+1	1	3	4	1	1	3	4
+1	1	3	4	1	1	3	4
+1	1	3	4	1	1	3	4
+1	1	3	4	1	1	3	4
+1	1	3	4	1	1	3	4
+1	1	3	4	1	1	3	4
+1	1	3	4	1	1	3	4
+1	1	3	4	1	1	3	4
+1	1	3	4	1	1	3	4
+1	1	3	4	1	2	1	4
+1	1	3	4	1	2	1	4
+1	1	3	4	1	2	1	4
+1	1	3	4	1	2	1	4
+1	1	3	4	1	2	1	4
+1	1	3	4	1	2	1	4
+1	1	3	4	1	2	1	4
+1	1	3	4	1	2	1	4
+1	1	3	4	1	2	1	4
+1	1	3	4	1	2	1	4
+1	1	3	4	1	2	1	4
+1	1	3	4	1	2	1	4
+1	1	3	4	1	2	1	4
+1	1	3	4	1	2	1	4
+1	1	3	4	1	2	1	4
+1	1	3	4	1	2	1	4
+1	1	3	4	1	2	1	4
+1	1	3	4	1	2	1	4
+1	1	3	4	1	2	1	4
+1	1	3	4	1	2	1	4
+1	1	3	4	1	2	1	4
+1	1	3	4	1	2	1	4
+1	1	3	4	1	2	1	4
+1	1	3	4	1	2	1	4
+1	1	3	4	1	2	1	4
+1	1	3	4	1	2	2	4
+1	1	3	4	1	2	2	4
+1	1	3	4	1	2	2	4
+1	1	3	4	1	2	2	4
+1	1	3	4	1	2	2	4
+1	1	3	4	1	2	2	4
+1	1	3	4	1	2	2	4
+1	1	3	4	1	2	2	4
+1	1	3	4	1	2	2	4
+1	1	3	4	1	2	2	4
+1	1	3	4	1	2	2	4
+1	1	3	4	1	2	2	4
+1	1	3	4	1	2	2	4
+1	1	3	4	1	2	2	4
+1	1	3	4	1	2	2	4
+1	1	3	4	1	2	2	4
+1	1	3	4	1	2	2	4
+1	1	3	4	1	2	2	4
+1	1	3	4	1	2	2	4
+1	1	3	4	1	2	2	4
+1	1	3	4	1	2	2	4
+1	1	3	4	1	2	2	4
+1	1	3	4	1	2	2	4
+1	1	3	4	1	2	2	4
+1	1	3	4	1	2	2	4
+1	1	3	4	3	1	5	5
+1	1	3	4	3	1	5	5
+1	1	3	4	3	1	5	5
+1	1	3	4	3	1	5	5
+1	1	3	4	3	1	5	5
+1	1	3	4	3	1	5	5
+1	1	3	4	3	1	5	5
+1	1	3	4	3	1	5	5
+1	1	3	4	3	1	5	5
+1	1	3	4	3	1	5	5
+1	1	3	4	3	1	5	5
+1	1	3	4	3	1	5	5
+1	1	3	4	3	1	5	5
+1	1	3	4	3	1	5	5
+1	1	3	4	3	1	5	5
+1	1	3	4	3	1	5	5
+1	1	3	4	3	1	5	5
+1	1	3	4	3	1	5	5
+1	1	3	4	3	1	5	5
+1	1	3	4	3	1	5	5
+1	1	3	4	3	1	5	5
+1	1	3	4	3	1	5	5
+1	1	3	4	3	1	5	5
+1	1	3	4	3	1	5	5
+1	1	3	4	3	1	5	5
+1	2	1	4	1	1	3	4
+1	2	1	4	1	1	3	4
+1	2	1	4	1	1	3	4
+1	2	1	4	1	1	3	4
+1	2	1	4	1	1	3	4
+1	2	1	4	1	1	3	4
+1	2	1	4	1	1	3	4
+1	2	1	4	1	1	3	4
+1	2	1	4	1	1	3	4
+1	2	1	4	1	1	3	4
+1	2	1	4	1	1	3	4
+1	2	1	4	1	1	3	4
+1	2	1	4	1	1	3	4
+1	2	1	4	1	1	3	4
+1	2	1	4	1	1	3	4
+1	2	1	4	1	1	3	4
+1	2	1	4	1	1	3	4
+1	2	1	4	1	1	3	4
+1	2	1	4	1	1	3	4
+1	2	1	4	1	1	3	4
+1	2	1	4	1	1	3	4
+1	2	1	4	1	1	3	4
+1	2	1	4	1	1	3	4
+1	2	1	4	1	1	3	4
+1	2	1	4	1	1	3	4
+1	2	1	4	1	2	1	4
+1	2	1	4	1	2	1	4
+1	2	1	4	1	2	1	4
+1	2	1	4	1	2	1	4
+1	2	1	4	1	2	1	4
+1	2	1	4	1	2	1	4
+1	2	1	4	1	2	1	4
+1	2	1	4	1	2	1	4
+1	2	1	4	1	2	1	4
+1	2	1	4	1	2	1	4
+1	2	1	4	1	2	1	4
+1	2	1	4	1	2	1	4
+1	2	1	4	1	2	1	4
+1	2	1	4	1	2	1	4
+1	2	1	4	1	2	1	4
+1	2	1	4	1	2	1	4
+1	2	1	4	1	2	1	4
+1	2	1	4	1	2	1	4
+1	2	1	4	1	2	1	4
+1	2	1	4	1	2	1	4
+1	2	1	4	1	2	1	4
+1	2	1	4	1	2	1	4
+1	2	1	4	1	2	1	4
+1	2	1	4	1	2	1	4
+1	2	1	4	1	2	1	4
+1	2	1	4	1	2	2	4
+1	2	1	4	1	2	2	4
+1	2	1	4	1	2	2	4
+1	2	1	4	1	2	2	4
+1	2	1	4	1	2	2	4
+1	2	1	4	1	2	2	4
+1	2	1	4	1	2	2	4
+1	2	1	4	1	2	2	4
+1	2	1	4	1	2	2	4
+1	2	1	4	1	2	2	4
+1	2	1	4	1	2	2	4
+1	2	1	4	1	2	2	4
+1	2	1	4	1	2	2	4
+1	2	1	4	1	2	2	4
+1	2	1	4	1	2	2	4
+1	2	1	4	1	2	2	4
+1	2	1	4	1	2	2	4
+1	2	1	4	1	2	2	4
+1	2	1	4	1	2	2	4
+1	2	1	4	1	2	2	4
+1	2	1	4	1	2	2	4
+1	2	1	4	1	2	2	4
+1	2	1	4	1	2	2	4
+1	2	1	4	1	2	2	4
+1	2	1	4	1	2	2	4
+1	2	2	4	1	1	3	4
+1	2	2	4	1	1	3	4
+1	2	2	4	1	1	3	4
+1	2	2	4	1	1	3	4
+1	2	2	4	1	1	3	4
+1	2	2	4	1	1	3	4
+1	2	2	4	1	1	3	4
+1	2	2	4	1	1	3	4
+1	2	2	4	1	1	3	4
+1	2	2	4	1	1	3	4
+1	2	2	4	1	1	3	4
+1	2	2	4	1	1	3	4
+1	2	2	4	1	1	3	4
+1	2	2	4	1	1	3	4
+1	2	2	4	1	1	3	4
+1	2	2	4	1	1	3	4
+1	2	2	4	1	1	3	4
+1	2	2	4	1	1	3	4
+1	2	2	4	1	1	3	4
+1	2	2	4	1	1	3	4
+1	2	2	4	1	1	3	4
+1	2	2	4	1	1	3	4
+1	2	2	4	1	1	3	4
+1	2	2	4	1	1	3	4
+1	2	2	4	1	1	3	4
+1	2	2	4	1	2	1	4
+1	2	2	4	1	2	1	4
+1	2	2	4	1	2	1	4
+1	2	2	4	1	2	1	4
+1	2	2	4	1	2	1	4
+1	2	2	4	1	2	1	4
+1	2	2	4	1	2	1	4
+1	2	2	4	1	2	1	4
+1	2	2	4	1	2	1	4
+1	2	2	4	1	2	1	4
+1	2	2	4	1	2	1	4
+1	2	2	4	1	2	1	4
+1	2	2	4	1	2	1	4
+1	2	2	4	1	2	1	4
+1	2	2	4	1	2	1	4
+1	2	2	4	1	2	1	4
+1	2	2	4	1	2	1	4
+1	2	2	4	1	2	1	4
+1	2	2	4	1	2	1	4
+1	2	2	4	1	2	1	4
+1	2	2	4	1	2	1	4
+1	2	2	4	1	2	1	4
+1	2	2	4	1	2	1	4
+1	2	2	4	1	2	1	4
+1	2	2	4	1	2	1	4
+1	2	2	4	1	2	2	4
+1	2	2	4	1	2	2	4
+1	2	2	4	1	2	2	4
+1	2	2	4	1	2	2	4
+1	2	2	4	1	2	2	4
+1	2	2	4	1	2	2	4
+1	2	2	4	1	2	2	4
+1	2	2	4	1	2	2	4
+1	2	2	4	1	2	2	4
+1	2	2	4	1	2	2	4
+1	2	2	4	1	2	2	4
+1	2	2	4	1	2	2	4
+1	2	2	4	1	2	2	4
+1	2	2	4	1	2	2	4
+1	2	2	4	1	2	2	4
+1	2	2	4	1	2	2	4
+1	2	2	4	1	2	2	4
+1	2	2	4	1	2	2	4
+1	2	2	4	1	2	2	4
+1	2	2	4	1	2	2	4
+1	2	2	4	1	2	2	4
+1	2	2	4	1	2	2	4
+1	2	2	4	1	2	2	4
+1	2	2	4	1	2	2	4
+1	2	2	4	1	2	2	4
+3	1	5	5	1	1	3	4
+3	1	5	5	1	1	3	4
+3	1	5	5	1	1	3	4
+3	1	5	5	1	1	3	4
+3	1	5	5	1	1	3	4
+3	1	5	5	1	1	3	4
+3	1	5	5	1	1	3	4
+3	1	5	5	1	1	3	4
+3	1	5	5	1	1	3	4
+3	1	5	5	1	1	3	4
+3	1	5	5	1	1	3	4
+3	1	5	5	1	1	3	4
+3	1	5	5	1	1	3	4
+3	1	5	5	1	1	3	4
+3	1	5	5	1	1	3	4
+3	1	5	5	1	1	3	4
+3	1	5	5	1	1	3	4
+3	1	5	5	1	1	3	4
+3	1	5	5	1	1	3	4
+3	1	5	5	1	1	3	4
+3	1	5	5	1	1	3	4
+3	1	5	5	1	1	3	4
+3	1	5	5	1	1	3	4
+3	1	5	5	1	1	3	4
+3	1	5	5	1	1	3	4
+3	1	5	5	3	1	5	5
+3	1	5	5	3	1	5	5
+3	1	5	5	3	1	5	5
+3	1	5	5	3	1	5	5
+3	1	5	5	3	1	5	5
+3	1	5	5	3	1	5	5
+3	1	5	5	3	1	5	5
+3	1	5	5	3	1	5	5
+3	1	5	5	3	1	5	5
+3	1	5	5	3	1	5	5
+3	1	5	5	3	1	5	5
+3	1	5	5	3	1	5	5
+3	1	5	5	3	1	5	5
+3	1	5	5	3	1	5	5
+3	1	5	5	3	1	5	5
+3	1	5	5	3	1	5	5
+3	1	5	5	3	1	5	5
+3	1	5	5	3	1	5	5
+3	1	5	5	3	1	5	5
+3	1	5	5	3	1	5	5
+3	1	5	5	3	1	5	5
+3	1	5	5	3	1	5	5
+3	1	5	5	3	1	5	5
+3	1	5	5	3	1	5	5
+3	1	5	5	3	1	5	5
+explain select * from t1 force index(idx_a,idx_b) inner join t2 on ( a < 2 and e < 2) or (b < '2' and f < '2');
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	index_merge	idx_a,idx_b	idx_a,idx_b	5,13	NULL	14	100.00	Using sdb_sort_union(idx_a,idx_b); Using where with pushed condition ((`index_merge_sequoiadb_noswitch`.`t1`.`a` < 2) or (`index_merge_sequoiadb_noswitch`.`t1`.`b` < '2'))
+1	SIMPLE	t2	NULL	ALL	idx_e,idx_f	NULL	NULL	NULL	25	55.55	Using where with pushed condition ((`index_merge_sequoiadb_noswitch`.`t2`.`e` < 2) or (`index_merge_sequoiadb_noswitch`.`t2`.`f` < '2')); Using join buffer (Block Nested Loop)
+Warnings:
+Note	1003	/* select#1 */ select `index_merge_sequoiadb_noswitch`.`t1`.`a` AS `a`,`index_merge_sequoiadb_noswitch`.`t1`.`b` AS `b`,`index_merge_sequoiadb_noswitch`.`t1`.`c` AS `c`,`index_merge_sequoiadb_noswitch`.`t1`.`d` AS `d`,`index_merge_sequoiadb_noswitch`.`t2`.`e` AS `e`,`index_merge_sequoiadb_noswitch`.`t2`.`f` AS `f`,`index_merge_sequoiadb_noswitch`.`t2`.`g` AS `g`,`index_merge_sequoiadb_noswitch`.`t2`.`h` AS `h` from `index_merge_sequoiadb_noswitch`.`t1` FORCE INDEX (`idx_b`) FORCE INDEX (`idx_a`) join `index_merge_sequoiadb_noswitch`.`t2` where (((`index_merge_sequoiadb_noswitch`.`t1`.`a` < 2) and (`index_merge_sequoiadb_noswitch`.`t2`.`e` < 2)) or ((`index_merge_sequoiadb_noswitch`.`t1`.`b` < '2') and (`index_merge_sequoiadb_noswitch`.`t2`.`f` < '2')))
+select * from t1 force index(idx_a,idx_b) inner join t2 on ( a < 2 and e < 2) or (b < '2' and f < '2');
+a	b	c	d	e	f	g	h
+1	1	3	4	1	1	3	4
+1	1	3	4	1	1	3	4
+1	1	3	4	1	1	3	4
+1	1	3	4	1	1	3	4
+1	1	3	4	1	1	3	4
+1	1	3	4	1	1	3	4
+1	1	3	4	1	1	3	4
+1	1	3	4	1	1	3	4
+1	1	3	4	1	1	3	4
+1	1	3	4	1	1	3	4
+1	1	3	4	1	1	3	4
+1	1	3	4	1	1	3	4
+1	1	3	4	1	1	3	4
+1	1	3	4	1	1	3	4
+1	1	3	4	1	1	3	4
+1	1	3	4	1	1	3	4
+1	1	3	4	1	1	3	4
+1	1	3	4	1	1	3	4
+1	1	3	4	1	1	3	4
+1	1	3	4	1	1	3	4
+1	1	3	4	1	1	3	4
+1	1	3	4	1	1	3	4
+1	1	3	4	1	1	3	4
+1	1	3	4	1	1	3	4
+1	1	3	4	1	1	3	4
+1	1	3	4	1	2	1	4
+1	1	3	4	1	2	1	4
+1	1	3	4	1	2	1	4
+1	1	3	4	1	2	1	4
+1	1	3	4	1	2	1	4
+1	1	3	4	1	2	1	4
+1	1	3	4	1	2	1	4
+1	1	3	4	1	2	1	4
+1	1	3	4	1	2	1	4
+1	1	3	4	1	2	1	4
+1	1	3	4	1	2	1	4
+1	1	3	4	1	2	1	4
+1	1	3	4	1	2	1	4
+1	1	3	4	1	2	1	4
+1	1	3	4	1	2	1	4
+1	1	3	4	1	2	1	4
+1	1	3	4	1	2	1	4
+1	1	3	4	1	2	1	4
+1	1	3	4	1	2	1	4
+1	1	3	4	1	2	1	4
+1	1	3	4	1	2	1	4
+1	1	3	4	1	2	1	4
+1	1	3	4	1	2	1	4
+1	1	3	4	1	2	1	4
+1	1	3	4	1	2	1	4
+1	1	3	4	1	2	2	4
+1	1	3	4	1	2	2	4
+1	1	3	4	1	2	2	4
+1	1	3	4	1	2	2	4
+1	1	3	4	1	2	2	4
+1	1	3	4	1	2	2	4
+1	1	3	4	1	2	2	4
+1	1	3	4	1	2	2	4
+1	1	3	4	1	2	2	4
+1	1	3	4	1	2	2	4
+1	1	3	4	1	2	2	4
+1	1	3	4	1	2	2	4
+1	1	3	4	1	2	2	4
+1	1	3	4	1	2	2	4
+1	1	3	4	1	2	2	4
+1	1	3	4	1	2	2	4
+1	1	3	4	1	2	2	4
+1	1	3	4	1	2	2	4
+1	1	3	4	1	2	2	4
+1	1	3	4	1	2	2	4
+1	1	3	4	1	2	2	4
+1	1	3	4	1	2	2	4
+1	1	3	4	1	2	2	4
+1	1	3	4	1	2	2	4
+1	1	3	4	1	2	2	4
+1	1	3	4	3	1	5	5
+1	1	3	4	3	1	5	5
+1	1	3	4	3	1	5	5
+1	1	3	4	3	1	5	5
+1	1	3	4	3	1	5	5
+1	1	3	4	3	1	5	5
+1	1	3	4	3	1	5	5
+1	1	3	4	3	1	5	5
+1	1	3	4	3	1	5	5
+1	1	3	4	3	1	5	5
+1	1	3	4	3	1	5	5
+1	1	3	4	3	1	5	5
+1	1	3	4	3	1	5	5
+1	1	3	4	3	1	5	5
+1	1	3	4	3	1	5	5
+1	1	3	4	3	1	5	5
+1	1	3	4	3	1	5	5
+1	1	3	4	3	1	5	5
+1	1	3	4	3	1	5	5
+1	1	3	4	3	1	5	5
+1	1	3	4	3	1	5	5
+1	1	3	4	3	1	5	5
+1	1	3	4	3	1	5	5
+1	1	3	4	3	1	5	5
+1	1	3	4	3	1	5	5
+1	2	1	4	1	1	3	4
+1	2	1	4	1	1	3	4
+1	2	1	4	1	1	3	4
+1	2	1	4	1	1	3	4
+1	2	1	4	1	1	3	4
+1	2	1	4	1	1	3	4
+1	2	1	4	1	1	3	4
+1	2	1	4	1	1	3	4
+1	2	1	4	1	1	3	4
+1	2	1	4	1	1	3	4
+1	2	1	4	1	1	3	4
+1	2	1	4	1	1	3	4
+1	2	1	4	1	1	3	4
+1	2	1	4	1	1	3	4
+1	2	1	4	1	1	3	4
+1	2	1	4	1	1	3	4
+1	2	1	4	1	1	3	4
+1	2	1	4	1	1	3	4
+1	2	1	4	1	1	3	4
+1	2	1	4	1	1	3	4
+1	2	1	4	1	1	3	4
+1	2	1	4	1	1	3	4
+1	2	1	4	1	1	3	4
+1	2	1	4	1	1	3	4
+1	2	1	4	1	1	3	4
+1	2	1	4	1	2	1	4
+1	2	1	4	1	2	1	4
+1	2	1	4	1	2	1	4
+1	2	1	4	1	2	1	4
+1	2	1	4	1	2	1	4
+1	2	1	4	1	2	1	4
+1	2	1	4	1	2	1	4
+1	2	1	4	1	2	1	4
+1	2	1	4	1	2	1	4
+1	2	1	4	1	2	1	4
+1	2	1	4	1	2	1	4
+1	2	1	4	1	2	1	4
+1	2	1	4	1	2	1	4
+1	2	1	4	1	2	1	4
+1	2	1	4	1	2	1	4
+1	2	1	4	1	2	1	4
+1	2	1	4	1	2	1	4
+1	2	1	4	1	2	1	4
+1	2	1	4	1	2	1	4
+1	2	1	4	1	2	1	4
+1	2	1	4	1	2	1	4
+1	2	1	4	1	2	1	4
+1	2	1	4	1	2	1	4
+1	2	1	4	1	2	1	4
+1	2	1	4	1	2	1	4
+1	2	1	4	1	2	2	4
+1	2	1	4	1	2	2	4
+1	2	1	4	1	2	2	4
+1	2	1	4	1	2	2	4
+1	2	1	4	1	2	2	4
+1	2	1	4	1	2	2	4
+1	2	1	4	1	2	2	4
+1	2	1	4	1	2	2	4
+1	2	1	4	1	2	2	4
+1	2	1	4	1	2	2	4
+1	2	1	4	1	2	2	4
+1	2	1	4	1	2	2	4
+1	2	1	4	1	2	2	4
+1	2	1	4	1	2	2	4
+1	2	1	4	1	2	2	4
+1	2	1	4	1	2	2	4
+1	2	1	4	1	2	2	4
+1	2	1	4	1	2	2	4
+1	2	1	4	1	2	2	4
+1	2	1	4	1	2	2	4
+1	2	1	4	1	2	2	4
+1	2	1	4	1	2	2	4
+1	2	1	4	1	2	2	4
+1	2	1	4	1	2	2	4
+1	2	1	4	1	2	2	4
+1	2	2	4	1	1	3	4
+1	2	2	4	1	1	3	4
+1	2	2	4	1	1	3	4
+1	2	2	4	1	1	3	4
+1	2	2	4	1	1	3	4
+1	2	2	4	1	1	3	4
+1	2	2	4	1	1	3	4
+1	2	2	4	1	1	3	4
+1	2	2	4	1	1	3	4
+1	2	2	4	1	1	3	4
+1	2	2	4	1	1	3	4
+1	2	2	4	1	1	3	4
+1	2	2	4	1	1	3	4
+1	2	2	4	1	1	3	4
+1	2	2	4	1	1	3	4
+1	2	2	4	1	1	3	4
+1	2	2	4	1	1	3	4
+1	2	2	4	1	1	3	4
+1	2	2	4	1	1	3	4
+1	2	2	4	1	1	3	4
+1	2	2	4	1	1	3	4
+1	2	2	4	1	1	3	4
+1	2	2	4	1	1	3	4
+1	2	2	4	1	1	3	4
+1	2	2	4	1	1	3	4
+1	2	2	4	1	2	1	4
+1	2	2	4	1	2	1	4
+1	2	2	4	1	2	1	4
+1	2	2	4	1	2	1	4
+1	2	2	4	1	2	1	4
+1	2	2	4	1	2	1	4
+1	2	2	4	1	2	1	4
+1	2	2	4	1	2	1	4
+1	2	2	4	1	2	1	4
+1	2	2	4	1	2	1	4
+1	2	2	4	1	2	1	4
+1	2	2	4	1	2	1	4
+1	2	2	4	1	2	1	4
+1	2	2	4	1	2	1	4
+1	2	2	4	1	2	1	4
+1	2	2	4	1	2	1	4
+1	2	2	4	1	2	1	4
+1	2	2	4	1	2	1	4
+1	2	2	4	1	2	1	4
+1	2	2	4	1	2	1	4
+1	2	2	4	1	2	1	4
+1	2	2	4	1	2	1	4
+1	2	2	4	1	2	1	4
+1	2	2	4	1	2	1	4
+1	2	2	4	1	2	1	4
+1	2	2	4	1	2	2	4
+1	2	2	4	1	2	2	4
+1	2	2	4	1	2	2	4
+1	2	2	4	1	2	2	4
+1	2	2	4	1	2	2	4
+1	2	2	4	1	2	2	4
+1	2	2	4	1	2	2	4
+1	2	2	4	1	2	2	4
+1	2	2	4	1	2	2	4
+1	2	2	4	1	2	2	4
+1	2	2	4	1	2	2	4
+1	2	2	4	1	2	2	4
+1	2	2	4	1	2	2	4
+1	2	2	4	1	2	2	4
+1	2	2	4	1	2	2	4
+1	2	2	4	1	2	2	4
+1	2	2	4	1	2	2	4
+1	2	2	4	1	2	2	4
+1	2	2	4	1	2	2	4
+1	2	2	4	1	2	2	4
+1	2	2	4	1	2	2	4
+1	2	2	4	1	2	2	4
+1	2	2	4	1	2	2	4
+1	2	2	4	1	2	2	4
+1	2	2	4	1	2	2	4
+3	1	5	5	1	1	3	4
+3	1	5	5	1	1	3	4
+3	1	5	5	1	1	3	4
+3	1	5	5	1	1	3	4
+3	1	5	5	1	1	3	4
+3	1	5	5	1	1	3	4
+3	1	5	5	1	1	3	4
+3	1	5	5	1	1	3	4
+3	1	5	5	1	1	3	4
+3	1	5	5	1	1	3	4
+3	1	5	5	1	1	3	4
+3	1	5	5	1	1	3	4
+3	1	5	5	1	1	3	4
+3	1	5	5	1	1	3	4
+3	1	5	5	1	1	3	4
+3	1	5	5	1	1	3	4
+3	1	5	5	1	1	3	4
+3	1	5	5	1	1	3	4
+3	1	5	5	1	1	3	4
+3	1	5	5	1	1	3	4
+3	1	5	5	1	1	3	4
+3	1	5	5	1	1	3	4
+3	1	5	5	1	1	3	4
+3	1	5	5	1	1	3	4
+3	1	5	5	1	1	3	4
+3	1	5	5	3	1	5	5
+3	1	5	5	3	1	5	5
+3	1	5	5	3	1	5	5
+3	1	5	5	3	1	5	5
+3	1	5	5	3	1	5	5
+3	1	5	5	3	1	5	5
+3	1	5	5	3	1	5	5
+3	1	5	5	3	1	5	5
+3	1	5	5	3	1	5	5
+3	1	5	5	3	1	5	5
+3	1	5	5	3	1	5	5
+3	1	5	5	3	1	5	5
+3	1	5	5	3	1	5	5
+3	1	5	5	3	1	5	5
+3	1	5	5	3	1	5	5
+3	1	5	5	3	1	5	5
+3	1	5	5	3	1	5	5
+3	1	5	5	3	1	5	5
+3	1	5	5	3	1	5	5
+3	1	5	5	3	1	5	5
+3	1	5	5	3	1	5	5
+3	1	5	5	3	1	5	5
+3	1	5	5	3	1	5	5
+3	1	5	5	3	1	5	5
+3	1	5	5	3	1	5	5
+explain select * from t1 force index(idx_a,idx_b) inner join t2 on a = e or b = f where ( a < 2 and e < 2) or (b < '2' and f < '2');
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	index_merge	idx_a,idx_b	idx_a,idx_b	5,13	NULL	14	100.00	Using sdb_sort_union(idx_a,idx_b); Using where with pushed condition ((`index_merge_sequoiadb_noswitch`.`t1`.`a` < 2) or (`index_merge_sequoiadb_noswitch`.`t1`.`b` < '2'))
+1	SIMPLE	t2	NULL	ALL	idx_e,idx_f	NULL	NULL	NULL	25	10.55	Using where with pushed condition ((`index_merge_sequoiadb_noswitch`.`t2`.`e` < 2) or (`index_merge_sequoiadb_noswitch`.`t2`.`f` < '2')); Using join buffer (Block Nested Loop)
+Warnings:
+Note	1003	/* select#1 */ select `index_merge_sequoiadb_noswitch`.`t1`.`a` AS `a`,`index_merge_sequoiadb_noswitch`.`t1`.`b` AS `b`,`index_merge_sequoiadb_noswitch`.`t1`.`c` AS `c`,`index_merge_sequoiadb_noswitch`.`t1`.`d` AS `d`,`index_merge_sequoiadb_noswitch`.`t2`.`e` AS `e`,`index_merge_sequoiadb_noswitch`.`t2`.`f` AS `f`,`index_merge_sequoiadb_noswitch`.`t2`.`g` AS `g`,`index_merge_sequoiadb_noswitch`.`t2`.`h` AS `h` from `index_merge_sequoiadb_noswitch`.`t1` FORCE INDEX (`idx_b`) FORCE INDEX (`idx_a`) join `index_merge_sequoiadb_noswitch`.`t2` where ((((`index_merge_sequoiadb_noswitch`.`t1`.`a` < 2) and (`index_merge_sequoiadb_noswitch`.`t2`.`e` < 2)) or ((`index_merge_sequoiadb_noswitch`.`t1`.`b` < '2') and (`index_merge_sequoiadb_noswitch`.`t2`.`f` < '2'))) and ((`index_merge_sequoiadb_noswitch`.`t2`.`e` = `index_merge_sequoiadb_noswitch`.`t1`.`a`) or (`index_merge_sequoiadb_noswitch`.`t2`.`f` = `index_merge_sequoiadb_noswitch`.`t1`.`b`)))
+select * from t1 force index(idx_a,idx_b) inner join t2 on a = e or b = f where ( a < 2 and e < 2) or (b < '2' and f < '2');
+a	b	c	d	e	f	g	h
+1	1	3	4	1	1	3	4
+1	1	3	4	1	1	3	4
+1	1	3	4	1	1	3	4
+1	1	3	4	1	1	3	4
+1	1	3	4	1	1	3	4
+1	1	3	4	1	1	3	4
+1	1	3	4	1	1	3	4
+1	1	3	4	1	1	3	4
+1	1	3	4	1	1	3	4
+1	1	3	4	1	1	3	4
+1	1	3	4	1	1	3	4
+1	1	3	4	1	1	3	4
+1	1	3	4	1	1	3	4
+1	1	3	4	1	1	3	4
+1	1	3	4	1	1	3	4
+1	1	3	4	1	1	3	4
+1	1	3	4	1	1	3	4
+1	1	3	4	1	1	3	4
+1	1	3	4	1	1	3	4
+1	1	3	4	1	1	3	4
+1	1	3	4	1	1	3	4
+1	1	3	4	1	1	3	4
+1	1	3	4	1	1	3	4
+1	1	3	4	1	1	3	4
+1	1	3	4	1	1	3	4
+1	1	3	4	1	2	1	4
+1	1	3	4	1	2	1	4
+1	1	3	4	1	2	1	4
+1	1	3	4	1	2	1	4
+1	1	3	4	1	2	1	4
+1	1	3	4	1	2	1	4
+1	1	3	4	1	2	1	4
+1	1	3	4	1	2	1	4
+1	1	3	4	1	2	1	4
+1	1	3	4	1	2	1	4
+1	1	3	4	1	2	1	4
+1	1	3	4	1	2	1	4
+1	1	3	4	1	2	1	4
+1	1	3	4	1	2	1	4
+1	1	3	4	1	2	1	4
+1	1	3	4	1	2	1	4
+1	1	3	4	1	2	1	4
+1	1	3	4	1	2	1	4
+1	1	3	4	1	2	1	4
+1	1	3	4	1	2	1	4
+1	1	3	4	1	2	1	4
+1	1	3	4	1	2	1	4
+1	1	3	4	1	2	1	4
+1	1	3	4	1	2	1	4
+1	1	3	4	1	2	1	4
+1	1	3	4	1	2	2	4
+1	1	3	4	1	2	2	4
+1	1	3	4	1	2	2	4
+1	1	3	4	1	2	2	4
+1	1	3	4	1	2	2	4
+1	1	3	4	1	2	2	4
+1	1	3	4	1	2	2	4
+1	1	3	4	1	2	2	4
+1	1	3	4	1	2	2	4
+1	1	3	4	1	2	2	4
+1	1	3	4	1	2	2	4
+1	1	3	4	1	2	2	4
+1	1	3	4	1	2	2	4
+1	1	3	4	1	2	2	4
+1	1	3	4	1	2	2	4
+1	1	3	4	1	2	2	4
+1	1	3	4	1	2	2	4
+1	1	3	4	1	2	2	4
+1	1	3	4	1	2	2	4
+1	1	3	4	1	2	2	4
+1	1	3	4	1	2	2	4
+1	1	3	4	1	2	2	4
+1	1	3	4	1	2	2	4
+1	1	3	4	1	2	2	4
+1	1	3	4	1	2	2	4
+1	1	3	4	3	1	5	5
+1	1	3	4	3	1	5	5
+1	1	3	4	3	1	5	5
+1	1	3	4	3	1	5	5
+1	1	3	4	3	1	5	5
+1	1	3	4	3	1	5	5
+1	1	3	4	3	1	5	5
+1	1	3	4	3	1	5	5
+1	1	3	4	3	1	5	5
+1	1	3	4	3	1	5	5
+1	1	3	4	3	1	5	5
+1	1	3	4	3	1	5	5
+1	1	3	4	3	1	5	5
+1	1	3	4	3	1	5	5
+1	1	3	4	3	1	5	5
+1	1	3	4	3	1	5	5
+1	1	3	4	3	1	5	5
+1	1	3	4	3	1	5	5
+1	1	3	4	3	1	5	5
+1	1	3	4	3	1	5	5
+1	1	3	4	3	1	5	5
+1	1	3	4	3	1	5	5
+1	1	3	4	3	1	5	5
+1	1	3	4	3	1	5	5
+1	1	3	4	3	1	5	5
+1	2	1	4	1	1	3	4
+1	2	1	4	1	1	3	4
+1	2	1	4	1	1	3	4
+1	2	1	4	1	1	3	4
+1	2	1	4	1	1	3	4
+1	2	1	4	1	1	3	4
+1	2	1	4	1	1	3	4
+1	2	1	4	1	1	3	4
+1	2	1	4	1	1	3	4
+1	2	1	4	1	1	3	4
+1	2	1	4	1	1	3	4
+1	2	1	4	1	1	3	4
+1	2	1	4	1	1	3	4
+1	2	1	4	1	1	3	4
+1	2	1	4	1	1	3	4
+1	2	1	4	1	1	3	4
+1	2	1	4	1	1	3	4
+1	2	1	4	1	1	3	4
+1	2	1	4	1	1	3	4
+1	2	1	4	1	1	3	4
+1	2	1	4	1	1	3	4
+1	2	1	4	1	1	3	4
+1	2	1	4	1	1	3	4
+1	2	1	4	1	1	3	4
+1	2	1	4	1	1	3	4
+1	2	1	4	1	2	1	4
+1	2	1	4	1	2	1	4
+1	2	1	4	1	2	1	4
+1	2	1	4	1	2	1	4
+1	2	1	4	1	2	1	4
+1	2	1	4	1	2	1	4
+1	2	1	4	1	2	1	4
+1	2	1	4	1	2	1	4
+1	2	1	4	1	2	1	4
+1	2	1	4	1	2	1	4
+1	2	1	4	1	2	1	4
+1	2	1	4	1	2	1	4
+1	2	1	4	1	2	1	4
+1	2	1	4	1	2	1	4
+1	2	1	4	1	2	1	4
+1	2	1	4	1	2	1	4
+1	2	1	4	1	2	1	4
+1	2	1	4	1	2	1	4
+1	2	1	4	1	2	1	4
+1	2	1	4	1	2	1	4
+1	2	1	4	1	2	1	4
+1	2	1	4	1	2	1	4
+1	2	1	4	1	2	1	4
+1	2	1	4	1	2	1	4
+1	2	1	4	1	2	1	4
+1	2	1	4	1	2	2	4
+1	2	1	4	1	2	2	4
+1	2	1	4	1	2	2	4
+1	2	1	4	1	2	2	4
+1	2	1	4	1	2	2	4
+1	2	1	4	1	2	2	4
+1	2	1	4	1	2	2	4
+1	2	1	4	1	2	2	4
+1	2	1	4	1	2	2	4
+1	2	1	4	1	2	2	4
+1	2	1	4	1	2	2	4
+1	2	1	4	1	2	2	4
+1	2	1	4	1	2	2	4
+1	2	1	4	1	2	2	4
+1	2	1	4	1	2	2	4
+1	2	1	4	1	2	2	4
+1	2	1	4	1	2	2	4
+1	2	1	4	1	2	2	4
+1	2	1	4	1	2	2	4
+1	2	1	4	1	2	2	4
+1	2	1	4	1	2	2	4
+1	2	1	4	1	2	2	4
+1	2	1	4	1	2	2	4
+1	2	1	4	1	2	2	4
+1	2	1	4	1	2	2	4
+1	2	2	4	1	1	3	4
+1	2	2	4	1	1	3	4
+1	2	2	4	1	1	3	4
+1	2	2	4	1	1	3	4
+1	2	2	4	1	1	3	4
+1	2	2	4	1	1	3	4
+1	2	2	4	1	1	3	4
+1	2	2	4	1	1	3	4
+1	2	2	4	1	1	3	4
+1	2	2	4	1	1	3	4
+1	2	2	4	1	1	3	4
+1	2	2	4	1	1	3	4
+1	2	2	4	1	1	3	4
+1	2	2	4	1	1	3	4
+1	2	2	4	1	1	3	4
+1	2	2	4	1	1	3	4
+1	2	2	4	1	1	3	4
+1	2	2	4	1	1	3	4
+1	2	2	4	1	1	3	4
+1	2	2	4	1	1	3	4
+1	2	2	4	1	1	3	4
+1	2	2	4	1	1	3	4
+1	2	2	4	1	1	3	4
+1	2	2	4	1	1	3	4
+1	2	2	4	1	1	3	4
+1	2	2	4	1	2	1	4
+1	2	2	4	1	2	1	4
+1	2	2	4	1	2	1	4
+1	2	2	4	1	2	1	4
+1	2	2	4	1	2	1	4
+1	2	2	4	1	2	1	4
+1	2	2	4	1	2	1	4
+1	2	2	4	1	2	1	4
+1	2	2	4	1	2	1	4
+1	2	2	4	1	2	1	4
+1	2	2	4	1	2	1	4
+1	2	2	4	1	2	1	4
+1	2	2	4	1	2	1	4
+1	2	2	4	1	2	1	4
+1	2	2	4	1	2	1	4
+1	2	2	4	1	2	1	4
+1	2	2	4	1	2	1	4
+1	2	2	4	1	2	1	4
+1	2	2	4	1	2	1	4
+1	2	2	4	1	2	1	4
+1	2	2	4	1	2	1	4
+1	2	2	4	1	2	1	4
+1	2	2	4	1	2	1	4
+1	2	2	4	1	2	1	4
+1	2	2	4	1	2	1	4
+1	2	2	4	1	2	2	4
+1	2	2	4	1	2	2	4
+1	2	2	4	1	2	2	4
+1	2	2	4	1	2	2	4
+1	2	2	4	1	2	2	4
+1	2	2	4	1	2	2	4
+1	2	2	4	1	2	2	4
+1	2	2	4	1	2	2	4
+1	2	2	4	1	2	2	4
+1	2	2	4	1	2	2	4
+1	2	2	4	1	2	2	4
+1	2	2	4	1	2	2	4
+1	2	2	4	1	2	2	4
+1	2	2	4	1	2	2	4
+1	2	2	4	1	2	2	4
+1	2	2	4	1	2	2	4
+1	2	2	4	1	2	2	4
+1	2	2	4	1	2	2	4
+1	2	2	4	1	2	2	4
+1	2	2	4	1	2	2	4
+1	2	2	4	1	2	2	4
+1	2	2	4	1	2	2	4
+1	2	2	4	1	2	2	4
+1	2	2	4	1	2	2	4
+1	2	2	4	1	2	2	4
+3	1	5	5	1	1	3	4
+3	1	5	5	1	1	3	4
+3	1	5	5	1	1	3	4
+3	1	5	5	1	1	3	4
+3	1	5	5	1	1	3	4
+3	1	5	5	1	1	3	4
+3	1	5	5	1	1	3	4
+3	1	5	5	1	1	3	4
+3	1	5	5	1	1	3	4
+3	1	5	5	1	1	3	4
+3	1	5	5	1	1	3	4
+3	1	5	5	1	1	3	4
+3	1	5	5	1	1	3	4
+3	1	5	5	1	1	3	4
+3	1	5	5	1	1	3	4
+3	1	5	5	1	1	3	4
+3	1	5	5	1	1	3	4
+3	1	5	5	1	1	3	4
+3	1	5	5	1	1	3	4
+3	1	5	5	1	1	3	4
+3	1	5	5	1	1	3	4
+3	1	5	5	1	1	3	4
+3	1	5	5	1	1	3	4
+3	1	5	5	1	1	3	4
+3	1	5	5	1	1	3	4
+3	1	5	5	3	1	5	5
+3	1	5	5	3	1	5	5
+3	1	5	5	3	1	5	5
+3	1	5	5	3	1	5	5
+3	1	5	5	3	1	5	5
+3	1	5	5	3	1	5	5
+3	1	5	5	3	1	5	5
+3	1	5	5	3	1	5	5
+3	1	5	5	3	1	5	5
+3	1	5	5	3	1	5	5
+3	1	5	5	3	1	5	5
+3	1	5	5	3	1	5	5
+3	1	5	5	3	1	5	5
+3	1	5	5	3	1	5	5
+3	1	5	5	3	1	5	5
+3	1	5	5	3	1	5	5
+3	1	5	5	3	1	5	5
+3	1	5	5	3	1	5	5
+3	1	5	5	3	1	5	5
+3	1	5	5	3	1	5	5
+3	1	5	5	3	1	5	5
+3	1	5	5	3	1	5	5
+3	1	5	5	3	1	5	5
+3	1	5	5	3	1	5	5
+3	1	5	5	3	1	5	5
+explain select * from t1 force index(idx_a,idx_b) right join t2 on ( a = 1 and e = 1) or (b = '1' and f = '1');
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t2	NULL	ALL	NULL	NULL	NULL	NULL	25	100.00	NULL
+1	SIMPLE	t1	NULL	index_merge	idx_a,idx_b	idx_a,idx_b	5,13	NULL	4	100.00	Using sdb_union(idx_a,idx_b); Using where; Using join buffer (Block Nested Loop)
+Warnings:
+Note	1003	/* select#1 */ select `index_merge_sequoiadb_noswitch`.`t1`.`a` AS `a`,`index_merge_sequoiadb_noswitch`.`t1`.`b` AS `b`,`index_merge_sequoiadb_noswitch`.`t1`.`c` AS `c`,`index_merge_sequoiadb_noswitch`.`t1`.`d` AS `d`,`index_merge_sequoiadb_noswitch`.`t2`.`e` AS `e`,`index_merge_sequoiadb_noswitch`.`t2`.`f` AS `f`,`index_merge_sequoiadb_noswitch`.`t2`.`g` AS `g`,`index_merge_sequoiadb_noswitch`.`t2`.`h` AS `h` from `index_merge_sequoiadb_noswitch`.`t2` left join `index_merge_sequoiadb_noswitch`.`t1` FORCE INDEX (`idx_b`) FORCE INDEX (`idx_a`) on((((`index_merge_sequoiadb_noswitch`.`t2`.`e` = 1) and (`index_merge_sequoiadb_noswitch`.`t1`.`a` = 1)) or ((`index_merge_sequoiadb_noswitch`.`t2`.`f` = '1') and (`index_merge_sequoiadb_noswitch`.`t1`.`b` = '1')))) where 1
+select * from t1 force index(idx_a,idx_b) right join t2 on ( a = 1 and e = 1) or (b = '1' and f = '1');
+a	b	c	d	e	f	g	h
+1	1	3	4	1	1	3	4
+1	1	3	4	1	1	3	4
+1	1	3	4	1	1	3	4
+1	1	3	4	1	1	3	4
+1	1	3	4	1	1	3	4
+1	1	3	4	1	1	3	4
+1	1	3	4	1	1	3	4
+1	1	3	4	1	1	3	4
+1	1	3	4	1	1	3	4
+1	1	3	4	1	1	3	4
+1	1	3	4	1	1	3	4
+1	1	3	4	1	1	3	4
+1	1	3	4	1	1	3	4
+1	1	3	4	1	1	3	4
+1	1	3	4	1	1	3	4
+1	1	3	4	1	1	3	4
+1	1	3	4	1	1	3	4
+1	1	3	4	1	1	3	4
+1	1	3	4	1	1	3	4
+1	1	3	4	1	1	3	4
+1	1	3	4	1	1	3	4
+1	1	3	4	1	1	3	4
+1	1	3	4	1	1	3	4
+1	1	3	4	1	1	3	4
+1	1	3	4	1	1	3	4
+1	1	3	4	1	2	1	4
+1	1	3	4	1	2	1	4
+1	1	3	4	1	2	1	4
+1	1	3	4	1	2	1	4
+1	1	3	4	1	2	1	4
+1	1	3	4	1	2	1	4
+1	1	3	4	1	2	1	4
+1	1	3	4	1	2	1	4
+1	1	3	4	1	2	1	4
+1	1	3	4	1	2	1	4
+1	1	3	4	1	2	1	4
+1	1	3	4	1	2	1	4
+1	1	3	4	1	2	1	4
+1	1	3	4	1	2	1	4
+1	1	3	4	1	2	1	4
+1	1	3	4	1	2	1	4
+1	1	3	4	1	2	1	4
+1	1	3	4	1	2	1	4
+1	1	3	4	1	2	1	4
+1	1	3	4	1	2	1	4
+1	1	3	4	1	2	1	4
+1	1	3	4	1	2	1	4
+1	1	3	4	1	2	1	4
+1	1	3	4	1	2	1	4
+1	1	3	4	1	2	1	4
+1	1	3	4	1	2	2	4
+1	1	3	4	1	2	2	4
+1	1	3	4	1	2	2	4
+1	1	3	4	1	2	2	4
+1	1	3	4	1	2	2	4
+1	1	3	4	1	2	2	4
+1	1	3	4	1	2	2	4
+1	1	3	4	1	2	2	4
+1	1	3	4	1	2	2	4
+1	1	3	4	1	2	2	4
+1	1	3	4	1	2	2	4
+1	1	3	4	1	2	2	4
+1	1	3	4	1	2	2	4
+1	1	3	4	1	2	2	4
+1	1	3	4	1	2	2	4
+1	1	3	4	1	2	2	4
+1	1	3	4	1	2	2	4
+1	1	3	4	1	2	2	4
+1	1	3	4	1	2	2	4
+1	1	3	4	1	2	2	4
+1	1	3	4	1	2	2	4
+1	1	3	4	1	2	2	4
+1	1	3	4	1	2	2	4
+1	1	3	4	1	2	2	4
+1	1	3	4	1	2	2	4
+1	1	3	4	3	1	5	5
+1	1	3	4	3	1	5	5
+1	1	3	4	3	1	5	5
+1	1	3	4	3	1	5	5
+1	1	3	4	3	1	5	5
+1	1	3	4	3	1	5	5
+1	1	3	4	3	1	5	5
+1	1	3	4	3	1	5	5
+1	1	3	4	3	1	5	5
+1	1	3	4	3	1	5	5
+1	1	3	4	3	1	5	5
+1	1	3	4	3	1	5	5
+1	1	3	4	3	1	5	5
+1	1	3	4	3	1	5	5
+1	1	3	4	3	1	5	5
+1	1	3	4	3	1	5	5
+1	1	3	4	3	1	5	5
+1	1	3	4	3	1	5	5
+1	1	3	4	3	1	5	5
+1	1	3	4	3	1	5	5
+1	1	3	4	3	1	5	5
+1	1	3	4	3	1	5	5
+1	1	3	4	3	1	5	5
+1	1	3	4	3	1	5	5
+1	1	3	4	3	1	5	5
+1	2	1	4	1	1	3	4
+1	2	1	4	1	1	3	4
+1	2	1	4	1	1	3	4
+1	2	1	4	1	1	3	4
+1	2	1	4	1	1	3	4
+1	2	1	4	1	1	3	4
+1	2	1	4	1	1	3	4
+1	2	1	4	1	1	3	4
+1	2	1	4	1	1	3	4
+1	2	1	4	1	1	3	4
+1	2	1	4	1	1	3	4
+1	2	1	4	1	1	3	4
+1	2	1	4	1	1	3	4
+1	2	1	4	1	1	3	4
+1	2	1	4	1	1	3	4
+1	2	1	4	1	1	3	4
+1	2	1	4	1	1	3	4
+1	2	1	4	1	1	3	4
+1	2	1	4	1	1	3	4
+1	2	1	4	1	1	3	4
+1	2	1	4	1	1	3	4
+1	2	1	4	1	1	3	4
+1	2	1	4	1	1	3	4
+1	2	1	4	1	1	3	4
+1	2	1	4	1	1	3	4
+1	2	1	4	1	2	1	4
+1	2	1	4	1	2	1	4
+1	2	1	4	1	2	1	4
+1	2	1	4	1	2	1	4
+1	2	1	4	1	2	1	4
+1	2	1	4	1	2	1	4
+1	2	1	4	1	2	1	4
+1	2	1	4	1	2	1	4
+1	2	1	4	1	2	1	4
+1	2	1	4	1	2	1	4
+1	2	1	4	1	2	1	4
+1	2	1	4	1	2	1	4
+1	2	1	4	1	2	1	4
+1	2	1	4	1	2	1	4
+1	2	1	4	1	2	1	4
+1	2	1	4	1	2	1	4
+1	2	1	4	1	2	1	4
+1	2	1	4	1	2	1	4
+1	2	1	4	1	2	1	4
+1	2	1	4	1	2	1	4
+1	2	1	4	1	2	1	4
+1	2	1	4	1	2	1	4
+1	2	1	4	1	2	1	4
+1	2	1	4	1	2	1	4
+1	2	1	4	1	2	1	4
+1	2	1	4	1	2	2	4
+1	2	1	4	1	2	2	4
+1	2	1	4	1	2	2	4
+1	2	1	4	1	2	2	4
+1	2	1	4	1	2	2	4
+1	2	1	4	1	2	2	4
+1	2	1	4	1	2	2	4
+1	2	1	4	1	2	2	4
+1	2	1	4	1	2	2	4
+1	2	1	4	1	2	2	4
+1	2	1	4	1	2	2	4
+1	2	1	4	1	2	2	4
+1	2	1	4	1	2	2	4
+1	2	1	4	1	2	2	4
+1	2	1	4	1	2	2	4
+1	2	1	4	1	2	2	4
+1	2	1	4	1	2	2	4
+1	2	1	4	1	2	2	4
+1	2	1	4	1	2	2	4
+1	2	1	4	1	2	2	4
+1	2	1	4	1	2	2	4
+1	2	1	4	1	2	2	4
+1	2	1	4	1	2	2	4
+1	2	1	4	1	2	2	4
+1	2	1	4	1	2	2	4
+1	2	2	4	1	1	3	4
+1	2	2	4	1	1	3	4
+1	2	2	4	1	1	3	4
+1	2	2	4	1	1	3	4
+1	2	2	4	1	1	3	4
+1	2	2	4	1	1	3	4
+1	2	2	4	1	1	3	4
+1	2	2	4	1	1	3	4
+1	2	2	4	1	1	3	4
+1	2	2	4	1	1	3	4
+1	2	2	4	1	1	3	4
+1	2	2	4	1	1	3	4
+1	2	2	4	1	1	3	4
+1	2	2	4	1	1	3	4
+1	2	2	4	1	1	3	4
+1	2	2	4	1	1	3	4
+1	2	2	4	1	1	3	4
+1	2	2	4	1	1	3	4
+1	2	2	4	1	1	3	4
+1	2	2	4	1	1	3	4
+1	2	2	4	1	1	3	4
+1	2	2	4	1	1	3	4
+1	2	2	4	1	1	3	4
+1	2	2	4	1	1	3	4
+1	2	2	4	1	1	3	4
+1	2	2	4	1	2	1	4
+1	2	2	4	1	2	1	4
+1	2	2	4	1	2	1	4
+1	2	2	4	1	2	1	4
+1	2	2	4	1	2	1	4
+1	2	2	4	1	2	1	4
+1	2	2	4	1	2	1	4
+1	2	2	4	1	2	1	4
+1	2	2	4	1	2	1	4
+1	2	2	4	1	2	1	4
+1	2	2	4	1	2	1	4
+1	2	2	4	1	2	1	4
+1	2	2	4	1	2	1	4
+1	2	2	4	1	2	1	4
+1	2	2	4	1	2	1	4
+1	2	2	4	1	2	1	4
+1	2	2	4	1	2	1	4
+1	2	2	4	1	2	1	4
+1	2	2	4	1	2	1	4
+1	2	2	4	1	2	1	4
+1	2	2	4	1	2	1	4
+1	2	2	4	1	2	1	4
+1	2	2	4	1	2	1	4
+1	2	2	4	1	2	1	4
+1	2	2	4	1	2	1	4
+1	2	2	4	1	2	2	4
+1	2	2	4	1	2	2	4
+1	2	2	4	1	2	2	4
+1	2	2	4	1	2	2	4
+1	2	2	4	1	2	2	4
+1	2	2	4	1	2	2	4
+1	2	2	4	1	2	2	4
+1	2	2	4	1	2	2	4
+1	2	2	4	1	2	2	4
+1	2	2	4	1	2	2	4
+1	2	2	4	1	2	2	4
+1	2	2	4	1	2	2	4
+1	2	2	4	1	2	2	4
+1	2	2	4	1	2	2	4
+1	2	2	4	1	2	2	4
+1	2	2	4	1	2	2	4
+1	2	2	4	1	2	2	4
+1	2	2	4	1	2	2	4
+1	2	2	4	1	2	2	4
+1	2	2	4	1	2	2	4
+1	2	2	4	1	2	2	4
+1	2	2	4	1	2	2	4
+1	2	2	4	1	2	2	4
+1	2	2	4	1	2	2	4
+1	2	2	4	1	2	2	4
+3	1	5	5	1	1	3	4
+3	1	5	5	1	1	3	4
+3	1	5	5	1	1	3	4
+3	1	5	5	1	1	3	4
+3	1	5	5	1	1	3	4
+3	1	5	5	1	1	3	4
+3	1	5	5	1	1	3	4
+3	1	5	5	1	1	3	4
+3	1	5	5	1	1	3	4
+3	1	5	5	1	1	3	4
+3	1	5	5	1	1	3	4
+3	1	5	5	1	1	3	4
+3	1	5	5	1	1	3	4
+3	1	5	5	1	1	3	4
+3	1	5	5	1	1	3	4
+3	1	5	5	1	1	3	4
+3	1	5	5	1	1	3	4
+3	1	5	5	1	1	3	4
+3	1	5	5	1	1	3	4
+3	1	5	5	1	1	3	4
+3	1	5	5	1	1	3	4
+3	1	5	5	1	1	3	4
+3	1	5	5	1	1	3	4
+3	1	5	5	1	1	3	4
+3	1	5	5	1	1	3	4
+3	1	5	5	3	1	5	5
+3	1	5	5	3	1	5	5
+3	1	5	5	3	1	5	5
+3	1	5	5	3	1	5	5
+3	1	5	5	3	1	5	5
+3	1	5	5	3	1	5	5
+3	1	5	5	3	1	5	5
+3	1	5	5	3	1	5	5
+3	1	5	5	3	1	5	5
+3	1	5	5	3	1	5	5
+3	1	5	5	3	1	5	5
+3	1	5	5	3	1	5	5
+3	1	5	5	3	1	5	5
+3	1	5	5	3	1	5	5
+3	1	5	5	3	1	5	5
+3	1	5	5	3	1	5	5
+3	1	5	5	3	1	5	5
+3	1	5	5	3	1	5	5
+3	1	5	5	3	1	5	5
+3	1	5	5	3	1	5	5
+3	1	5	5	3	1	5	5
+3	1	5	5	3	1	5	5
+3	1	5	5	3	1	5	5
+3	1	5	5	3	1	5	5
+3	1	5	5	3	1	5	5
+NULL	NULL	NULL	NULL	2	3	4	5
+NULL	NULL	NULL	NULL	2	3	4	5
+NULL	NULL	NULL	NULL	2	3	4	5
+NULL	NULL	NULL	NULL	2	3	4	5
+NULL	NULL	NULL	NULL	2	3	4	5
+explain select * from t1 force index(idx_a,idx_b) right join t2 on a = e or b = f where ( a = 1 and e = 1) or (b = '1' and f = '1');
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	index_merge	idx_a,idx_b	idx_a,idx_b	5,13	NULL	4	100.00	Using sdb_union(idx_a,idx_b); Using where with pushed condition ((`index_merge_sequoiadb_noswitch`.`t1`.`a` = 1) or (`index_merge_sequoiadb_noswitch`.`t1`.`b` = '1'))
+1	SIMPLE	t2	NULL	index_merge	idx_e,idx_f	idx_e,idx_f	5,13	NULL	4	100.00	Using sdb_union(idx_e,idx_f); Using where with pushed condition ((`index_merge_sequoiadb_noswitch`.`t2`.`e` = 1) or (`index_merge_sequoiadb_noswitch`.`t2`.`f` = '1')); Using join buffer (Block Nested Loop)
+Warnings:
+Note	1003	/* select#1 */ select `index_merge_sequoiadb_noswitch`.`t1`.`a` AS `a`,`index_merge_sequoiadb_noswitch`.`t1`.`b` AS `b`,`index_merge_sequoiadb_noswitch`.`t1`.`c` AS `c`,`index_merge_sequoiadb_noswitch`.`t1`.`d` AS `d`,`index_merge_sequoiadb_noswitch`.`t2`.`e` AS `e`,`index_merge_sequoiadb_noswitch`.`t2`.`f` AS `f`,`index_merge_sequoiadb_noswitch`.`t2`.`g` AS `g`,`index_merge_sequoiadb_noswitch`.`t2`.`h` AS `h` from `index_merge_sequoiadb_noswitch`.`t2` join `index_merge_sequoiadb_noswitch`.`t1` FORCE INDEX (`idx_b`) FORCE INDEX (`idx_a`) where ((((`index_merge_sequoiadb_noswitch`.`t2`.`e` = 1) and (`index_merge_sequoiadb_noswitch`.`t1`.`a` = 1)) or ((`index_merge_sequoiadb_noswitch`.`t2`.`f` = '1') and (`index_merge_sequoiadb_noswitch`.`t1`.`b` = '1'))) and ((`index_merge_sequoiadb_noswitch`.`t2`.`e` = `index_merge_sequoiadb_noswitch`.`t1`.`a`) or (`index_merge_sequoiadb_noswitch`.`t2`.`f` = `index_merge_sequoiadb_noswitch`.`t1`.`b`)))
+select * from t1 force index(idx_a,idx_b) right join t2 on a = e or b = f where ( a = 1 and e = 1) or (b = '1' and f = '1');
+a	b	c	d	e	f	g	h
+1	1	3	4	1	1	3	4
+1	1	3	4	1	1	3	4
+1	1	3	4	1	1	3	4
+1	1	3	4	1	1	3	4
+1	1	3	4	1	1	3	4
+1	1	3	4	1	1	3	4
+1	1	3	4	1	1	3	4
+1	1	3	4	1	1	3	4
+1	1	3	4	1	1	3	4
+1	1	3	4	1	1	3	4
+1	1	3	4	1	1	3	4
+1	1	3	4	1	1	3	4
+1	1	3	4	1	1	3	4
+1	1	3	4	1	1	3	4
+1	1	3	4	1	1	3	4
+1	1	3	4	1	1	3	4
+1	1	3	4	1	1	3	4
+1	1	3	4	1	1	3	4
+1	1	3	4	1	1	3	4
+1	1	3	4	1	1	3	4
+1	1	3	4	1	1	3	4
+1	1	3	4	1	1	3	4
+1	1	3	4	1	1	3	4
+1	1	3	4	1	1	3	4
+1	1	3	4	1	1	3	4
+1	1	3	4	1	2	1	4
+1	1	3	4	1	2	1	4
+1	1	3	4	1	2	1	4
+1	1	3	4	1	2	1	4
+1	1	3	4	1	2	1	4
+1	1	3	4	1	2	1	4
+1	1	3	4	1	2	1	4
+1	1	3	4	1	2	1	4
+1	1	3	4	1	2	1	4
+1	1	3	4	1	2	1	4
+1	1	3	4	1	2	1	4
+1	1	3	4	1	2	1	4
+1	1	3	4	1	2	1	4
+1	1	3	4	1	2	1	4
+1	1	3	4	1	2	1	4
+1	1	3	4	1	2	1	4
+1	1	3	4	1	2	1	4
+1	1	3	4	1	2	1	4
+1	1	3	4	1	2	1	4
+1	1	3	4	1	2	1	4
+1	1	3	4	1	2	1	4
+1	1	3	4	1	2	1	4
+1	1	3	4	1	2	1	4
+1	1	3	4	1	2	1	4
+1	1	3	4	1	2	1	4
+1	1	3	4	1	2	2	4
+1	1	3	4	1	2	2	4
+1	1	3	4	1	2	2	4
+1	1	3	4	1	2	2	4
+1	1	3	4	1	2	2	4
+1	1	3	4	1	2	2	4
+1	1	3	4	1	2	2	4
+1	1	3	4	1	2	2	4
+1	1	3	4	1	2	2	4
+1	1	3	4	1	2	2	4
+1	1	3	4	1	2	2	4
+1	1	3	4	1	2	2	4
+1	1	3	4	1	2	2	4
+1	1	3	4	1	2	2	4
+1	1	3	4	1	2	2	4
+1	1	3	4	1	2	2	4
+1	1	3	4	1	2	2	4
+1	1	3	4	1	2	2	4
+1	1	3	4	1	2	2	4
+1	1	3	4	1	2	2	4
+1	1	3	4	1	2	2	4
+1	1	3	4	1	2	2	4
+1	1	3	4	1	2	2	4
+1	1	3	4	1	2	2	4
+1	1	3	4	1	2	2	4
+1	1	3	4	3	1	5	5
+1	1	3	4	3	1	5	5
+1	1	3	4	3	1	5	5
+1	1	3	4	3	1	5	5
+1	1	3	4	3	1	5	5
+1	1	3	4	3	1	5	5
+1	1	3	4	3	1	5	5
+1	1	3	4	3	1	5	5
+1	1	3	4	3	1	5	5
+1	1	3	4	3	1	5	5
+1	1	3	4	3	1	5	5
+1	1	3	4	3	1	5	5
+1	1	3	4	3	1	5	5
+1	1	3	4	3	1	5	5
+1	1	3	4	3	1	5	5
+1	1	3	4	3	1	5	5
+1	1	3	4	3	1	5	5
+1	1	3	4	3	1	5	5
+1	1	3	4	3	1	5	5
+1	1	3	4	3	1	5	5
+1	1	3	4	3	1	5	5
+1	1	3	4	3	1	5	5
+1	1	3	4	3	1	5	5
+1	1	3	4	3	1	5	5
+1	1	3	4	3	1	5	5
+1	2	1	4	1	1	3	4
+1	2	1	4	1	1	3	4
+1	2	1	4	1	1	3	4
+1	2	1	4	1	1	3	4
+1	2	1	4	1	1	3	4
+1	2	1	4	1	1	3	4
+1	2	1	4	1	1	3	4
+1	2	1	4	1	1	3	4
+1	2	1	4	1	1	3	4
+1	2	1	4	1	1	3	4
+1	2	1	4	1	1	3	4
+1	2	1	4	1	1	3	4
+1	2	1	4	1	1	3	4
+1	2	1	4	1	1	3	4
+1	2	1	4	1	1	3	4
+1	2	1	4	1	1	3	4
+1	2	1	4	1	1	3	4
+1	2	1	4	1	1	3	4
+1	2	1	4	1	1	3	4
+1	2	1	4	1	1	3	4
+1	2	1	4	1	1	3	4
+1	2	1	4	1	1	3	4
+1	2	1	4	1	1	3	4
+1	2	1	4	1	1	3	4
+1	2	1	4	1	1	3	4
+1	2	1	4	1	2	1	4
+1	2	1	4	1	2	1	4
+1	2	1	4	1	2	1	4
+1	2	1	4	1	2	1	4
+1	2	1	4	1	2	1	4
+1	2	1	4	1	2	1	4
+1	2	1	4	1	2	1	4
+1	2	1	4	1	2	1	4
+1	2	1	4	1	2	1	4
+1	2	1	4	1	2	1	4
+1	2	1	4	1	2	1	4
+1	2	1	4	1	2	1	4
+1	2	1	4	1	2	1	4
+1	2	1	4	1	2	1	4
+1	2	1	4	1	2	1	4
+1	2	1	4	1	2	1	4
+1	2	1	4	1	2	1	4
+1	2	1	4	1	2	1	4
+1	2	1	4	1	2	1	4
+1	2	1	4	1	2	1	4
+1	2	1	4	1	2	1	4
+1	2	1	4	1	2	1	4
+1	2	1	4	1	2	1	4
+1	2	1	4	1	2	1	4
+1	2	1	4	1	2	1	4
+1	2	1	4	1	2	2	4
+1	2	1	4	1	2	2	4
+1	2	1	4	1	2	2	4
+1	2	1	4	1	2	2	4
+1	2	1	4	1	2	2	4
+1	2	1	4	1	2	2	4
+1	2	1	4	1	2	2	4
+1	2	1	4	1	2	2	4
+1	2	1	4	1	2	2	4
+1	2	1	4	1	2	2	4
+1	2	1	4	1	2	2	4
+1	2	1	4	1	2	2	4
+1	2	1	4	1	2	2	4
+1	2	1	4	1	2	2	4
+1	2	1	4	1	2	2	4
+1	2	1	4	1	2	2	4
+1	2	1	4	1	2	2	4
+1	2	1	4	1	2	2	4
+1	2	1	4	1	2	2	4
+1	2	1	4	1	2	2	4
+1	2	1	4	1	2	2	4
+1	2	1	4	1	2	2	4
+1	2	1	4	1	2	2	4
+1	2	1	4	1	2	2	4
+1	2	1	4	1	2	2	4
+1	2	2	4	1	1	3	4
+1	2	2	4	1	1	3	4
+1	2	2	4	1	1	3	4
+1	2	2	4	1	1	3	4
+1	2	2	4	1	1	3	4
+1	2	2	4	1	1	3	4
+1	2	2	4	1	1	3	4
+1	2	2	4	1	1	3	4
+1	2	2	4	1	1	3	4
+1	2	2	4	1	1	3	4
+1	2	2	4	1	1	3	4
+1	2	2	4	1	1	3	4
+1	2	2	4	1	1	3	4
+1	2	2	4	1	1	3	4
+1	2	2	4	1	1	3	4
+1	2	2	4	1	1	3	4
+1	2	2	4	1	1	3	4
+1	2	2	4	1	1	3	4
+1	2	2	4	1	1	3	4
+1	2	2	4	1	1	3	4
+1	2	2	4	1	1	3	4
+1	2	2	4	1	1	3	4
+1	2	2	4	1	1	3	4
+1	2	2	4	1	1	3	4
+1	2	2	4	1	1	3	4
+1	2	2	4	1	2	1	4
+1	2	2	4	1	2	1	4
+1	2	2	4	1	2	1	4
+1	2	2	4	1	2	1	4
+1	2	2	4	1	2	1	4
+1	2	2	4	1	2	1	4
+1	2	2	4	1	2	1	4
+1	2	2	4	1	2	1	4
+1	2	2	4	1	2	1	4
+1	2	2	4	1	2	1	4
+1	2	2	4	1	2	1	4
+1	2	2	4	1	2	1	4
+1	2	2	4	1	2	1	4
+1	2	2	4	1	2	1	4
+1	2	2	4	1	2	1	4
+1	2	2	4	1	2	1	4
+1	2	2	4	1	2	1	4
+1	2	2	4	1	2	1	4
+1	2	2	4	1	2	1	4
+1	2	2	4	1	2	1	4
+1	2	2	4	1	2	1	4
+1	2	2	4	1	2	1	4
+1	2	2	4	1	2	1	4
+1	2	2	4	1	2	1	4
+1	2	2	4	1	2	1	4
+1	2	2	4	1	2	2	4
+1	2	2	4	1	2	2	4
+1	2	2	4	1	2	2	4
+1	2	2	4	1	2	2	4
+1	2	2	4	1	2	2	4
+1	2	2	4	1	2	2	4
+1	2	2	4	1	2	2	4
+1	2	2	4	1	2	2	4
+1	2	2	4	1	2	2	4
+1	2	2	4	1	2	2	4
+1	2	2	4	1	2	2	4
+1	2	2	4	1	2	2	4
+1	2	2	4	1	2	2	4
+1	2	2	4	1	2	2	4
+1	2	2	4	1	2	2	4
+1	2	2	4	1	2	2	4
+1	2	2	4	1	2	2	4
+1	2	2	4	1	2	2	4
+1	2	2	4	1	2	2	4
+1	2	2	4	1	2	2	4
+1	2	2	4	1	2	2	4
+1	2	2	4	1	2	2	4
+1	2	2	4	1	2	2	4
+1	2	2	4	1	2	2	4
+1	2	2	4	1	2	2	4
+3	1	5	5	1	1	3	4
+3	1	5	5	1	1	3	4
+3	1	5	5	1	1	3	4
+3	1	5	5	1	1	3	4
+3	1	5	5	1	1	3	4
+3	1	5	5	1	1	3	4
+3	1	5	5	1	1	3	4
+3	1	5	5	1	1	3	4
+3	1	5	5	1	1	3	4
+3	1	5	5	1	1	3	4
+3	1	5	5	1	1	3	4
+3	1	5	5	1	1	3	4
+3	1	5	5	1	1	3	4
+3	1	5	5	1	1	3	4
+3	1	5	5	1	1	3	4
+3	1	5	5	1	1	3	4
+3	1	5	5	1	1	3	4
+3	1	5	5	1	1	3	4
+3	1	5	5	1	1	3	4
+3	1	5	5	1	1	3	4
+3	1	5	5	1	1	3	4
+3	1	5	5	1	1	3	4
+3	1	5	5	1	1	3	4
+3	1	5	5	1	1	3	4
+3	1	5	5	1	1	3	4
+3	1	5	5	3	1	5	5
+3	1	5	5	3	1	5	5
+3	1	5	5	3	1	5	5
+3	1	5	5	3	1	5	5
+3	1	5	5	3	1	5	5
+3	1	5	5	3	1	5	5
+3	1	5	5	3	1	5	5
+3	1	5	5	3	1	5	5
+3	1	5	5	3	1	5	5
+3	1	5	5	3	1	5	5
+3	1	5	5	3	1	5	5
+3	1	5	5	3	1	5	5
+3	1	5	5	3	1	5	5
+3	1	5	5	3	1	5	5
+3	1	5	5	3	1	5	5
+3	1	5	5	3	1	5	5
+3	1	5	5	3	1	5	5
+3	1	5	5	3	1	5	5
+3	1	5	5	3	1	5	5
+3	1	5	5	3	1	5	5
+3	1	5	5	3	1	5	5
+3	1	5	5	3	1	5	5
+3	1	5	5	3	1	5	5
+3	1	5	5	3	1	5	5
+3	1	5	5	3	1	5	5
+explain select * from t1 force index(idx_a,idx_b) right join t2 on ( a < 2 and e < 2) or (b < '2' and f < '2');
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t2	NULL	ALL	NULL	NULL	NULL	NULL	25	100.00	NULL
+1	SIMPLE	t1	NULL	index_merge	idx_a,idx_b	idx_a,idx_b	5,13	NULL	14	100.00	Using sdb_sort_union(idx_a,idx_b); Using where; Using join buffer (Block Nested Loop)
+Warnings:
+Note	1003	/* select#1 */ select `index_merge_sequoiadb_noswitch`.`t1`.`a` AS `a`,`index_merge_sequoiadb_noswitch`.`t1`.`b` AS `b`,`index_merge_sequoiadb_noswitch`.`t1`.`c` AS `c`,`index_merge_sequoiadb_noswitch`.`t1`.`d` AS `d`,`index_merge_sequoiadb_noswitch`.`t2`.`e` AS `e`,`index_merge_sequoiadb_noswitch`.`t2`.`f` AS `f`,`index_merge_sequoiadb_noswitch`.`t2`.`g` AS `g`,`index_merge_sequoiadb_noswitch`.`t2`.`h` AS `h` from `index_merge_sequoiadb_noswitch`.`t2` left join `index_merge_sequoiadb_noswitch`.`t1` FORCE INDEX (`idx_b`) FORCE INDEX (`idx_a`) on((((`index_merge_sequoiadb_noswitch`.`t1`.`a` < 2) and (`index_merge_sequoiadb_noswitch`.`t2`.`e` < 2)) or ((`index_merge_sequoiadb_noswitch`.`t1`.`b` < '2') and (`index_merge_sequoiadb_noswitch`.`t2`.`f` < '2')))) where 1
+select * from t1 force index(idx_a,idx_b) right join t2 on ( a < 2 and e < 2) or (b < '2' and f < '2');
+a	b	c	d	e	f	g	h
+1	1	3	4	1	1	3	4
+1	1	3	4	1	1	3	4
+1	1	3	4	1	1	3	4
+1	1	3	4	1	1	3	4
+1	1	3	4	1	1	3	4
+1	1	3	4	1	1	3	4
+1	1	3	4	1	1	3	4
+1	1	3	4	1	1	3	4
+1	1	3	4	1	1	3	4
+1	1	3	4	1	1	3	4
+1	1	3	4	1	1	3	4
+1	1	3	4	1	1	3	4
+1	1	3	4	1	1	3	4
+1	1	3	4	1	1	3	4
+1	1	3	4	1	1	3	4
+1	1	3	4	1	1	3	4
+1	1	3	4	1	1	3	4
+1	1	3	4	1	1	3	4
+1	1	3	4	1	1	3	4
+1	1	3	4	1	1	3	4
+1	1	3	4	1	1	3	4
+1	1	3	4	1	1	3	4
+1	1	3	4	1	1	3	4
+1	1	3	4	1	1	3	4
+1	1	3	4	1	1	3	4
+1	1	3	4	1	2	1	4
+1	1	3	4	1	2	1	4
+1	1	3	4	1	2	1	4
+1	1	3	4	1	2	1	4
+1	1	3	4	1	2	1	4
+1	1	3	4	1	2	1	4
+1	1	3	4	1	2	1	4
+1	1	3	4	1	2	1	4
+1	1	3	4	1	2	1	4
+1	1	3	4	1	2	1	4
+1	1	3	4	1	2	1	4
+1	1	3	4	1	2	1	4
+1	1	3	4	1	2	1	4
+1	1	3	4	1	2	1	4
+1	1	3	4	1	2	1	4
+1	1	3	4	1	2	1	4
+1	1	3	4	1	2	1	4
+1	1	3	4	1	2	1	4
+1	1	3	4	1	2	1	4
+1	1	3	4	1	2	1	4
+1	1	3	4	1	2	1	4
+1	1	3	4	1	2	1	4
+1	1	3	4	1	2	1	4
+1	1	3	4	1	2	1	4
+1	1	3	4	1	2	1	4
+1	1	3	4	1	2	2	4
+1	1	3	4	1	2	2	4
+1	1	3	4	1	2	2	4
+1	1	3	4	1	2	2	4
+1	1	3	4	1	2	2	4
+1	1	3	4	1	2	2	4
+1	1	3	4	1	2	2	4
+1	1	3	4	1	2	2	4
+1	1	3	4	1	2	2	4
+1	1	3	4	1	2	2	4
+1	1	3	4	1	2	2	4
+1	1	3	4	1	2	2	4
+1	1	3	4	1	2	2	4
+1	1	3	4	1	2	2	4
+1	1	3	4	1	2	2	4
+1	1	3	4	1	2	2	4
+1	1	3	4	1	2	2	4
+1	1	3	4	1	2	2	4
+1	1	3	4	1	2	2	4
+1	1	3	4	1	2	2	4
+1	1	3	4	1	2	2	4
+1	1	3	4	1	2	2	4
+1	1	3	4	1	2	2	4
+1	1	3	4	1	2	2	4
+1	1	3	4	1	2	2	4
+1	1	3	4	3	1	5	5
+1	1	3	4	3	1	5	5
+1	1	3	4	3	1	5	5
+1	1	3	4	3	1	5	5
+1	1	3	4	3	1	5	5
+1	1	3	4	3	1	5	5
+1	1	3	4	3	1	5	5
+1	1	3	4	3	1	5	5
+1	1	3	4	3	1	5	5
+1	1	3	4	3	1	5	5
+1	1	3	4	3	1	5	5
+1	1	3	4	3	1	5	5
+1	1	3	4	3	1	5	5
+1	1	3	4	3	1	5	5
+1	1	3	4	3	1	5	5
+1	1	3	4	3	1	5	5
+1	1	3	4	3	1	5	5
+1	1	3	4	3	1	5	5
+1	1	3	4	3	1	5	5
+1	1	3	4	3	1	5	5
+1	1	3	4	3	1	5	5
+1	1	3	4	3	1	5	5
+1	1	3	4	3	1	5	5
+1	1	3	4	3	1	5	5
+1	1	3	4	3	1	5	5
+1	2	1	4	1	1	3	4
+1	2	1	4	1	1	3	4
+1	2	1	4	1	1	3	4
+1	2	1	4	1	1	3	4
+1	2	1	4	1	1	3	4
+1	2	1	4	1	1	3	4
+1	2	1	4	1	1	3	4
+1	2	1	4	1	1	3	4
+1	2	1	4	1	1	3	4
+1	2	1	4	1	1	3	4
+1	2	1	4	1	1	3	4
+1	2	1	4	1	1	3	4
+1	2	1	4	1	1	3	4
+1	2	1	4	1	1	3	4
+1	2	1	4	1	1	3	4
+1	2	1	4	1	1	3	4
+1	2	1	4	1	1	3	4
+1	2	1	4	1	1	3	4
+1	2	1	4	1	1	3	4
+1	2	1	4	1	1	3	4
+1	2	1	4	1	1	3	4
+1	2	1	4	1	1	3	4
+1	2	1	4	1	1	3	4
+1	2	1	4	1	1	3	4
+1	2	1	4	1	1	3	4
+1	2	1	4	1	2	1	4
+1	2	1	4	1	2	1	4
+1	2	1	4	1	2	1	4
+1	2	1	4	1	2	1	4
+1	2	1	4	1	2	1	4
+1	2	1	4	1	2	1	4
+1	2	1	4	1	2	1	4
+1	2	1	4	1	2	1	4
+1	2	1	4	1	2	1	4
+1	2	1	4	1	2	1	4
+1	2	1	4	1	2	1	4
+1	2	1	4	1	2	1	4
+1	2	1	4	1	2	1	4
+1	2	1	4	1	2	1	4
+1	2	1	4	1	2	1	4
+1	2	1	4	1	2	1	4
+1	2	1	4	1	2	1	4
+1	2	1	4	1	2	1	4
+1	2	1	4	1	2	1	4
+1	2	1	4	1	2	1	4
+1	2	1	4	1	2	1	4
+1	2	1	4	1	2	1	4
+1	2	1	4	1	2	1	4
+1	2	1	4	1	2	1	4
+1	2	1	4	1	2	1	4
+1	2	1	4	1	2	2	4
+1	2	1	4	1	2	2	4
+1	2	1	4	1	2	2	4
+1	2	1	4	1	2	2	4
+1	2	1	4	1	2	2	4
+1	2	1	4	1	2	2	4
+1	2	1	4	1	2	2	4
+1	2	1	4	1	2	2	4
+1	2	1	4	1	2	2	4
+1	2	1	4	1	2	2	4
+1	2	1	4	1	2	2	4
+1	2	1	4	1	2	2	4
+1	2	1	4	1	2	2	4
+1	2	1	4	1	2	2	4
+1	2	1	4	1	2	2	4
+1	2	1	4	1	2	2	4
+1	2	1	4	1	2	2	4
+1	2	1	4	1	2	2	4
+1	2	1	4	1	2	2	4
+1	2	1	4	1	2	2	4
+1	2	1	4	1	2	2	4
+1	2	1	4	1	2	2	4
+1	2	1	4	1	2	2	4
+1	2	1	4	1	2	2	4
+1	2	1	4	1	2	2	4
+1	2	2	4	1	1	3	4
+1	2	2	4	1	1	3	4
+1	2	2	4	1	1	3	4
+1	2	2	4	1	1	3	4
+1	2	2	4	1	1	3	4
+1	2	2	4	1	1	3	4
+1	2	2	4	1	1	3	4
+1	2	2	4	1	1	3	4
+1	2	2	4	1	1	3	4
+1	2	2	4	1	1	3	4
+1	2	2	4	1	1	3	4
+1	2	2	4	1	1	3	4
+1	2	2	4	1	1	3	4
+1	2	2	4	1	1	3	4
+1	2	2	4	1	1	3	4
+1	2	2	4	1	1	3	4
+1	2	2	4	1	1	3	4
+1	2	2	4	1	1	3	4
+1	2	2	4	1	1	3	4
+1	2	2	4	1	1	3	4
+1	2	2	4	1	1	3	4
+1	2	2	4	1	1	3	4
+1	2	2	4	1	1	3	4
+1	2	2	4	1	1	3	4
+1	2	2	4	1	1	3	4
+1	2	2	4	1	2	1	4
+1	2	2	4	1	2	1	4
+1	2	2	4	1	2	1	4
+1	2	2	4	1	2	1	4
+1	2	2	4	1	2	1	4
+1	2	2	4	1	2	1	4
+1	2	2	4	1	2	1	4
+1	2	2	4	1	2	1	4
+1	2	2	4	1	2	1	4
+1	2	2	4	1	2	1	4
+1	2	2	4	1	2	1	4
+1	2	2	4	1	2	1	4
+1	2	2	4	1	2	1	4
+1	2	2	4	1	2	1	4
+1	2	2	4	1	2	1	4
+1	2	2	4	1	2	1	4
+1	2	2	4	1	2	1	4
+1	2	2	4	1	2	1	4
+1	2	2	4	1	2	1	4
+1	2	2	4	1	2	1	4
+1	2	2	4	1	2	1	4
+1	2	2	4	1	2	1	4
+1	2	2	4	1	2	1	4
+1	2	2	4	1	2	1	4
+1	2	2	4	1	2	1	4
+1	2	2	4	1	2	2	4
+1	2	2	4	1	2	2	4
+1	2	2	4	1	2	2	4
+1	2	2	4	1	2	2	4
+1	2	2	4	1	2	2	4
+1	2	2	4	1	2	2	4
+1	2	2	4	1	2	2	4
+1	2	2	4	1	2	2	4
+1	2	2	4	1	2	2	4
+1	2	2	4	1	2	2	4
+1	2	2	4	1	2	2	4
+1	2	2	4	1	2	2	4
+1	2	2	4	1	2	2	4
+1	2	2	4	1	2	2	4
+1	2	2	4	1	2	2	4
+1	2	2	4	1	2	2	4
+1	2	2	4	1	2	2	4
+1	2	2	4	1	2	2	4
+1	2	2	4	1	2	2	4
+1	2	2	4	1	2	2	4
+1	2	2	4	1	2	2	4
+1	2	2	4	1	2	2	4
+1	2	2	4	1	2	2	4
+1	2	2	4	1	2	2	4
+1	2	2	4	1	2	2	4
+3	1	5	5	1	1	3	4
+3	1	5	5	1	1	3	4
+3	1	5	5	1	1	3	4
+3	1	5	5	1	1	3	4
+3	1	5	5	1	1	3	4
+3	1	5	5	1	1	3	4
+3	1	5	5	1	1	3	4
+3	1	5	5	1	1	3	4
+3	1	5	5	1	1	3	4
+3	1	5	5	1	1	3	4
+3	1	5	5	1	1	3	4
+3	1	5	5	1	1	3	4
+3	1	5	5	1	1	3	4
+3	1	5	5	1	1	3	4
+3	1	5	5	1	1	3	4
+3	1	5	5	1	1	3	4
+3	1	5	5	1	1	3	4
+3	1	5	5	1	1	3	4
+3	1	5	5	1	1	3	4
+3	1	5	5	1	1	3	4
+3	1	5	5	1	1	3	4
+3	1	5	5	1	1	3	4
+3	1	5	5	1	1	3	4
+3	1	5	5	1	1	3	4
+3	1	5	5	1	1	3	4
+3	1	5	5	3	1	5	5
+3	1	5	5	3	1	5	5
+3	1	5	5	3	1	5	5
+3	1	5	5	3	1	5	5
+3	1	5	5	3	1	5	5
+3	1	5	5	3	1	5	5
+3	1	5	5	3	1	5	5
+3	1	5	5	3	1	5	5
+3	1	5	5	3	1	5	5
+3	1	5	5	3	1	5	5
+3	1	5	5	3	1	5	5
+3	1	5	5	3	1	5	5
+3	1	5	5	3	1	5	5
+3	1	5	5	3	1	5	5
+3	1	5	5	3	1	5	5
+3	1	5	5	3	1	5	5
+3	1	5	5	3	1	5	5
+3	1	5	5	3	1	5	5
+3	1	5	5	3	1	5	5
+3	1	5	5	3	1	5	5
+3	1	5	5	3	1	5	5
+3	1	5	5	3	1	5	5
+3	1	5	5	3	1	5	5
+3	1	5	5	3	1	5	5
+3	1	5	5	3	1	5	5
+NULL	NULL	NULL	NULL	2	3	4	5
+NULL	NULL	NULL	NULL	2	3	4	5
+NULL	NULL	NULL	NULL	2	3	4	5
+NULL	NULL	NULL	NULL	2	3	4	5
+NULL	NULL	NULL	NULL	2	3	4	5
+explain select * from t1 force index(idx_a,idx_b) right join t2 on a = e or b = f where ( a < 2 and e < 2) or (b < '2' and f < '2');
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	index_merge	idx_a,idx_b	idx_a,idx_b	5,13	NULL	14	100.00	Using sdb_sort_union(idx_a,idx_b); Using where with pushed condition ((`index_merge_sequoiadb_noswitch`.`t1`.`a` < 2) or (`index_merge_sequoiadb_noswitch`.`t1`.`b` < '2'))
+1	SIMPLE	t2	NULL	ALL	idx_e,idx_f	NULL	NULL	NULL	25	10.55	Using where with pushed condition ((`index_merge_sequoiadb_noswitch`.`t2`.`e` < 2) or (`index_merge_sequoiadb_noswitch`.`t2`.`f` < '2')); Using join buffer (Block Nested Loop)
+Warnings:
+Note	1003	/* select#1 */ select `index_merge_sequoiadb_noswitch`.`t1`.`a` AS `a`,`index_merge_sequoiadb_noswitch`.`t1`.`b` AS `b`,`index_merge_sequoiadb_noswitch`.`t1`.`c` AS `c`,`index_merge_sequoiadb_noswitch`.`t1`.`d` AS `d`,`index_merge_sequoiadb_noswitch`.`t2`.`e` AS `e`,`index_merge_sequoiadb_noswitch`.`t2`.`f` AS `f`,`index_merge_sequoiadb_noswitch`.`t2`.`g` AS `g`,`index_merge_sequoiadb_noswitch`.`t2`.`h` AS `h` from `index_merge_sequoiadb_noswitch`.`t2` join `index_merge_sequoiadb_noswitch`.`t1` FORCE INDEX (`idx_b`) FORCE INDEX (`idx_a`) where ((((`index_merge_sequoiadb_noswitch`.`t1`.`a` < 2) and (`index_merge_sequoiadb_noswitch`.`t2`.`e` < 2)) or ((`index_merge_sequoiadb_noswitch`.`t1`.`b` < '2') and (`index_merge_sequoiadb_noswitch`.`t2`.`f` < '2'))) and ((`index_merge_sequoiadb_noswitch`.`t2`.`e` = `index_merge_sequoiadb_noswitch`.`t1`.`a`) or (`index_merge_sequoiadb_noswitch`.`t2`.`f` = `index_merge_sequoiadb_noswitch`.`t1`.`b`)))
+select * from t1 force index(idx_a,idx_b) right join t2 on a = e or b = f where ( a < 2 and e < 2) or (b < '2' and f < '2');
+a	b	c	d	e	f	g	h
+1	1	3	4	1	1	3	4
+1	1	3	4	1	1	3	4
+1	1	3	4	1	1	3	4
+1	1	3	4	1	1	3	4
+1	1	3	4	1	1	3	4
+1	1	3	4	1	1	3	4
+1	1	3	4	1	1	3	4
+1	1	3	4	1	1	3	4
+1	1	3	4	1	1	3	4
+1	1	3	4	1	1	3	4
+1	1	3	4	1	1	3	4
+1	1	3	4	1	1	3	4
+1	1	3	4	1	1	3	4
+1	1	3	4	1	1	3	4
+1	1	3	4	1	1	3	4
+1	1	3	4	1	1	3	4
+1	1	3	4	1	1	3	4
+1	1	3	4	1	1	3	4
+1	1	3	4	1	1	3	4
+1	1	3	4	1	1	3	4
+1	1	3	4	1	1	3	4
+1	1	3	4	1	1	3	4
+1	1	3	4	1	1	3	4
+1	1	3	4	1	1	3	4
+1	1	3	4	1	1	3	4
+1	1	3	4	1	2	1	4
+1	1	3	4	1	2	1	4
+1	1	3	4	1	2	1	4
+1	1	3	4	1	2	1	4
+1	1	3	4	1	2	1	4
+1	1	3	4	1	2	1	4
+1	1	3	4	1	2	1	4
+1	1	3	4	1	2	1	4
+1	1	3	4	1	2	1	4
+1	1	3	4	1	2	1	4
+1	1	3	4	1	2	1	4
+1	1	3	4	1	2	1	4
+1	1	3	4	1	2	1	4
+1	1	3	4	1	2	1	4
+1	1	3	4	1	2	1	4
+1	1	3	4	1	2	1	4
+1	1	3	4	1	2	1	4
+1	1	3	4	1	2	1	4
+1	1	3	4	1	2	1	4
+1	1	3	4	1	2	1	4
+1	1	3	4	1	2	1	4
+1	1	3	4	1	2	1	4
+1	1	3	4	1	2	1	4
+1	1	3	4	1	2	1	4
+1	1	3	4	1	2	1	4
+1	1	3	4	1	2	2	4
+1	1	3	4	1	2	2	4
+1	1	3	4	1	2	2	4
+1	1	3	4	1	2	2	4
+1	1	3	4	1	2	2	4
+1	1	3	4	1	2	2	4
+1	1	3	4	1	2	2	4
+1	1	3	4	1	2	2	4
+1	1	3	4	1	2	2	4
+1	1	3	4	1	2	2	4
+1	1	3	4	1	2	2	4
+1	1	3	4	1	2	2	4
+1	1	3	4	1	2	2	4
+1	1	3	4	1	2	2	4
+1	1	3	4	1	2	2	4
+1	1	3	4	1	2	2	4
+1	1	3	4	1	2	2	4
+1	1	3	4	1	2	2	4
+1	1	3	4	1	2	2	4
+1	1	3	4	1	2	2	4
+1	1	3	4	1	2	2	4
+1	1	3	4	1	2	2	4
+1	1	3	4	1	2	2	4
+1	1	3	4	1	2	2	4
+1	1	3	4	1	2	2	4
+1	1	3	4	3	1	5	5
+1	1	3	4	3	1	5	5
+1	1	3	4	3	1	5	5
+1	1	3	4	3	1	5	5
+1	1	3	4	3	1	5	5
+1	1	3	4	3	1	5	5
+1	1	3	4	3	1	5	5
+1	1	3	4	3	1	5	5
+1	1	3	4	3	1	5	5
+1	1	3	4	3	1	5	5
+1	1	3	4	3	1	5	5
+1	1	3	4	3	1	5	5
+1	1	3	4	3	1	5	5
+1	1	3	4	3	1	5	5
+1	1	3	4	3	1	5	5
+1	1	3	4	3	1	5	5
+1	1	3	4	3	1	5	5
+1	1	3	4	3	1	5	5
+1	1	3	4	3	1	5	5
+1	1	3	4	3	1	5	5
+1	1	3	4	3	1	5	5
+1	1	3	4	3	1	5	5
+1	1	3	4	3	1	5	5
+1	1	3	4	3	1	5	5
+1	1	3	4	3	1	5	5
+1	2	1	4	1	1	3	4
+1	2	1	4	1	1	3	4
+1	2	1	4	1	1	3	4
+1	2	1	4	1	1	3	4
+1	2	1	4	1	1	3	4
+1	2	1	4	1	1	3	4
+1	2	1	4	1	1	3	4
+1	2	1	4	1	1	3	4
+1	2	1	4	1	1	3	4
+1	2	1	4	1	1	3	4
+1	2	1	4	1	1	3	4
+1	2	1	4	1	1	3	4
+1	2	1	4	1	1	3	4
+1	2	1	4	1	1	3	4
+1	2	1	4	1	1	3	4
+1	2	1	4	1	1	3	4
+1	2	1	4	1	1	3	4
+1	2	1	4	1	1	3	4
+1	2	1	4	1	1	3	4
+1	2	1	4	1	1	3	4
+1	2	1	4	1	1	3	4
+1	2	1	4	1	1	3	4
+1	2	1	4	1	1	3	4
+1	2	1	4	1	1	3	4
+1	2	1	4	1	1	3	4
+1	2	1	4	1	2	1	4
+1	2	1	4	1	2	1	4
+1	2	1	4	1	2	1	4
+1	2	1	4	1	2	1	4
+1	2	1	4	1	2	1	4
+1	2	1	4	1	2	1	4
+1	2	1	4	1	2	1	4
+1	2	1	4	1	2	1	4
+1	2	1	4	1	2	1	4
+1	2	1	4	1	2	1	4
+1	2	1	4	1	2	1	4
+1	2	1	4	1	2	1	4
+1	2	1	4	1	2	1	4
+1	2	1	4	1	2	1	4
+1	2	1	4	1	2	1	4
+1	2	1	4	1	2	1	4
+1	2	1	4	1	2	1	4
+1	2	1	4	1	2	1	4
+1	2	1	4	1	2	1	4
+1	2	1	4	1	2	1	4
+1	2	1	4	1	2	1	4
+1	2	1	4	1	2	1	4
+1	2	1	4	1	2	1	4
+1	2	1	4	1	2	1	4
+1	2	1	4	1	2	1	4
+1	2	1	4	1	2	2	4
+1	2	1	4	1	2	2	4
+1	2	1	4	1	2	2	4
+1	2	1	4	1	2	2	4
+1	2	1	4	1	2	2	4
+1	2	1	4	1	2	2	4
+1	2	1	4	1	2	2	4
+1	2	1	4	1	2	2	4
+1	2	1	4	1	2	2	4
+1	2	1	4	1	2	2	4
+1	2	1	4	1	2	2	4
+1	2	1	4	1	2	2	4
+1	2	1	4	1	2	2	4
+1	2	1	4	1	2	2	4
+1	2	1	4	1	2	2	4
+1	2	1	4	1	2	2	4
+1	2	1	4	1	2	2	4
+1	2	1	4	1	2	2	4
+1	2	1	4	1	2	2	4
+1	2	1	4	1	2	2	4
+1	2	1	4	1	2	2	4
+1	2	1	4	1	2	2	4
+1	2	1	4	1	2	2	4
+1	2	1	4	1	2	2	4
+1	2	1	4	1	2	2	4
+1	2	2	4	1	1	3	4
+1	2	2	4	1	1	3	4
+1	2	2	4	1	1	3	4
+1	2	2	4	1	1	3	4
+1	2	2	4	1	1	3	4
+1	2	2	4	1	1	3	4
+1	2	2	4	1	1	3	4
+1	2	2	4	1	1	3	4
+1	2	2	4	1	1	3	4
+1	2	2	4	1	1	3	4
+1	2	2	4	1	1	3	4
+1	2	2	4	1	1	3	4
+1	2	2	4	1	1	3	4
+1	2	2	4	1	1	3	4
+1	2	2	4	1	1	3	4
+1	2	2	4	1	1	3	4
+1	2	2	4	1	1	3	4
+1	2	2	4	1	1	3	4
+1	2	2	4	1	1	3	4
+1	2	2	4	1	1	3	4
+1	2	2	4	1	1	3	4
+1	2	2	4	1	1	3	4
+1	2	2	4	1	1	3	4
+1	2	2	4	1	1	3	4
+1	2	2	4	1	1	3	4
+1	2	2	4	1	2	1	4
+1	2	2	4	1	2	1	4
+1	2	2	4	1	2	1	4
+1	2	2	4	1	2	1	4
+1	2	2	4	1	2	1	4
+1	2	2	4	1	2	1	4
+1	2	2	4	1	2	1	4
+1	2	2	4	1	2	1	4
+1	2	2	4	1	2	1	4
+1	2	2	4	1	2	1	4
+1	2	2	4	1	2	1	4
+1	2	2	4	1	2	1	4
+1	2	2	4	1	2	1	4
+1	2	2	4	1	2	1	4
+1	2	2	4	1	2	1	4
+1	2	2	4	1	2	1	4
+1	2	2	4	1	2	1	4
+1	2	2	4	1	2	1	4
+1	2	2	4	1	2	1	4
+1	2	2	4	1	2	1	4
+1	2	2	4	1	2	1	4
+1	2	2	4	1	2	1	4
+1	2	2	4	1	2	1	4
+1	2	2	4	1	2	1	4
+1	2	2	4	1	2	1	4
+1	2	2	4	1	2	2	4
+1	2	2	4	1	2	2	4
+1	2	2	4	1	2	2	4
+1	2	2	4	1	2	2	4
+1	2	2	4	1	2	2	4
+1	2	2	4	1	2	2	4
+1	2	2	4	1	2	2	4
+1	2	2	4	1	2	2	4
+1	2	2	4	1	2	2	4
+1	2	2	4	1	2	2	4
+1	2	2	4	1	2	2	4
+1	2	2	4	1	2	2	4
+1	2	2	4	1	2	2	4
+1	2	2	4	1	2	2	4
+1	2	2	4	1	2	2	4
+1	2	2	4	1	2	2	4
+1	2	2	4	1	2	2	4
+1	2	2	4	1	2	2	4
+1	2	2	4	1	2	2	4
+1	2	2	4	1	2	2	4
+1	2	2	4	1	2	2	4
+1	2	2	4	1	2	2	4
+1	2	2	4	1	2	2	4
+1	2	2	4	1	2	2	4
+1	2	2	4	1	2	2	4
+3	1	5	5	1	1	3	4
+3	1	5	5	1	1	3	4
+3	1	5	5	1	1	3	4
+3	1	5	5	1	1	3	4
+3	1	5	5	1	1	3	4
+3	1	5	5	1	1	3	4
+3	1	5	5	1	1	3	4
+3	1	5	5	1	1	3	4
+3	1	5	5	1	1	3	4
+3	1	5	5	1	1	3	4
+3	1	5	5	1	1	3	4
+3	1	5	5	1	1	3	4
+3	1	5	5	1	1	3	4
+3	1	5	5	1	1	3	4
+3	1	5	5	1	1	3	4
+3	1	5	5	1	1	3	4
+3	1	5	5	1	1	3	4
+3	1	5	5	1	1	3	4
+3	1	5	5	1	1	3	4
+3	1	5	5	1	1	3	4
+3	1	5	5	1	1	3	4
+3	1	5	5	1	1	3	4
+3	1	5	5	1	1	3	4
+3	1	5	5	1	1	3	4
+3	1	5	5	1	1	3	4
+3	1	5	5	3	1	5	5
+3	1	5	5	3	1	5	5
+3	1	5	5	3	1	5	5
+3	1	5	5	3	1	5	5
+3	1	5	5	3	1	5	5
+3	1	5	5	3	1	5	5
+3	1	5	5	3	1	5	5
+3	1	5	5	3	1	5	5
+3	1	5	5	3	1	5	5
+3	1	5	5	3	1	5	5
+3	1	5	5	3	1	5	5
+3	1	5	5	3	1	5	5
+3	1	5	5	3	1	5	5
+3	1	5	5	3	1	5	5
+3	1	5	5	3	1	5	5
+3	1	5	5	3	1	5	5
+3	1	5	5	3	1	5	5
+3	1	5	5	3	1	5	5
+3	1	5	5	3	1	5	5
+3	1	5	5	3	1	5	5
+3	1	5	5	3	1	5	5
+3	1	5	5	3	1	5	5
+3	1	5	5	3	1	5	5
+3	1	5	5	3	1	5	5
+3	1	5	5	3	1	5	5
+explain select *,count(c) as i from t1 force index(idx_a,idx_b) inner join t2 on a = e or b = f where ( a = 1 and e = 1) or (b = '1' and f = '1') group by c,a,b,d,e,f,g,h;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	index_merge	idx_a,idx_b	idx_a,idx_b	5,13	NULL	4	100.00	Using sdb_union(idx_a,idx_b); Using where with pushed condition ((`index_merge_sequoiadb_noswitch`.`t1`.`a` = 1) or (`index_merge_sequoiadb_noswitch`.`t1`.`b` = '1')); Using temporary; Using filesort
+1	SIMPLE	t2	NULL	index_merge	idx_e,idx_f	idx_e,idx_f	5,13	NULL	4	100.00	Using sdb_union(idx_e,idx_f); Using where with pushed condition ((`index_merge_sequoiadb_noswitch`.`t2`.`e` = 1) or (`index_merge_sequoiadb_noswitch`.`t2`.`f` = '1'))
+Warnings:
+Note	1003	/* select#1 */ select `index_merge_sequoiadb_noswitch`.`t1`.`a` AS `a`,`index_merge_sequoiadb_noswitch`.`t1`.`b` AS `b`,`index_merge_sequoiadb_noswitch`.`t1`.`c` AS `c`,`index_merge_sequoiadb_noswitch`.`t1`.`d` AS `d`,`index_merge_sequoiadb_noswitch`.`t2`.`e` AS `e`,`index_merge_sequoiadb_noswitch`.`t2`.`f` AS `f`,`index_merge_sequoiadb_noswitch`.`t2`.`g` AS `g`,`index_merge_sequoiadb_noswitch`.`t2`.`h` AS `h`,count(`index_merge_sequoiadb_noswitch`.`t1`.`c`) AS `i` from `index_merge_sequoiadb_noswitch`.`t1` FORCE INDEX (`idx_b`) FORCE INDEX (`idx_a`) join `index_merge_sequoiadb_noswitch`.`t2` where ((((`index_merge_sequoiadb_noswitch`.`t2`.`e` = 1) and (`index_merge_sequoiadb_noswitch`.`t1`.`a` = 1)) or ((`index_merge_sequoiadb_noswitch`.`t2`.`f` = '1') and (`index_merge_sequoiadb_noswitch`.`t1`.`b` = '1'))) and ((`index_merge_sequoiadb_noswitch`.`t2`.`e` = `index_merge_sequoiadb_noswitch`.`t1`.`a`) or (`index_merge_sequoiadb_noswitch`.`t2`.`f` = `index_merge_sequoiadb_noswitch`.`t1`.`b`))) group by `index_merge_sequoiadb_noswitch`.`t1`.`c`,`index_merge_sequoiadb_noswitch`.`t1`.`a`,`index_merge_sequoiadb_noswitch`.`t1`.`b`,`index_merge_sequoiadb_noswitch`.`t1`.`d`,`index_merge_sequoiadb_noswitch`.`t2`.`e`,`index_merge_sequoiadb_noswitch`.`t2`.`f`,`index_merge_sequoiadb_noswitch`.`t2`.`g`,`index_merge_sequoiadb_noswitch`.`t2`.`h`
+select *,count(c) as i from t1 force index(idx_a,idx_b) inner join t2 on a = e or b = f where ( a = 1 and e = 1) or (b = '1' and f = '1') group by c,a,b,d,e,f,g,h;
+a	b	c	d	e	f	g	h	i
+1	1	3	4	1	1	3	4	25
+1	1	3	4	1	2	1	4	25
+1	1	3	4	1	2	2	4	25
+1	1	3	4	3	1	5	5	25
+1	2	1	4	1	1	3	4	25
+1	2	1	4	1	2	1	4	25
+1	2	1	4	1	2	2	4	25
+1	2	2	4	1	1	3	4	25
+1	2	2	4	1	2	1	4	25
+1	2	2	4	1	2	2	4	25
+3	1	5	5	1	1	3	4	25
+3	1	5	5	3	1	5	5	25
+explain 
+select *,count(c) as i from t1 force index(idx_a,idx_b) 
+inner join t2 on a = e or b = f 
+where ( a = 1 and e = 1) or (b = '1' and f = '1') 
+group by c,a,b,d,e,f,g,h having d !='5';
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	index_merge	idx_a,idx_b	idx_a,idx_b	5,13	NULL	4	100.00	Using sdb_union(idx_a,idx_b); Using where with pushed condition ((`index_merge_sequoiadb_noswitch`.`t1`.`a` = 1) or (`index_merge_sequoiadb_noswitch`.`t1`.`b` = '1')); Using temporary; Using filesort
+1	SIMPLE	t2	NULL	index_merge	idx_e,idx_f	idx_e,idx_f	5,13	NULL	4	100.00	Using sdb_union(idx_e,idx_f); Using where with pushed condition ((`index_merge_sequoiadb_noswitch`.`t2`.`e` = 1) or (`index_merge_sequoiadb_noswitch`.`t2`.`f` = '1'))
+Warnings:
+Note	1003	/* select#1 */ select `index_merge_sequoiadb_noswitch`.`t1`.`a` AS `a`,`index_merge_sequoiadb_noswitch`.`t1`.`b` AS `b`,`index_merge_sequoiadb_noswitch`.`t1`.`c` AS `c`,`index_merge_sequoiadb_noswitch`.`t1`.`d` AS `d`,`index_merge_sequoiadb_noswitch`.`t2`.`e` AS `e`,`index_merge_sequoiadb_noswitch`.`t2`.`f` AS `f`,`index_merge_sequoiadb_noswitch`.`t2`.`g` AS `g`,`index_merge_sequoiadb_noswitch`.`t2`.`h` AS `h`,count(`index_merge_sequoiadb_noswitch`.`t1`.`c`) AS `i` from `index_merge_sequoiadb_noswitch`.`t1` FORCE INDEX (`idx_b`) FORCE INDEX (`idx_a`) join `index_merge_sequoiadb_noswitch`.`t2` where ((((`index_merge_sequoiadb_noswitch`.`t2`.`e` = 1) and (`index_merge_sequoiadb_noswitch`.`t1`.`a` = 1)) or ((`index_merge_sequoiadb_noswitch`.`t2`.`f` = '1') and (`index_merge_sequoiadb_noswitch`.`t1`.`b` = '1'))) and ((`index_merge_sequoiadb_noswitch`.`t2`.`e` = `index_merge_sequoiadb_noswitch`.`t1`.`a`) or (`index_merge_sequoiadb_noswitch`.`t2`.`f` = `index_merge_sequoiadb_noswitch`.`t1`.`b`))) group by `index_merge_sequoiadb_noswitch`.`t1`.`c`,`index_merge_sequoiadb_noswitch`.`t1`.`a`,`index_merge_sequoiadb_noswitch`.`t1`.`b`,`index_merge_sequoiadb_noswitch`.`t1`.`d`,`index_merge_sequoiadb_noswitch`.`t2`.`e`,`index_merge_sequoiadb_noswitch`.`t2`.`f`,`index_merge_sequoiadb_noswitch`.`t2`.`g`,`index_merge_sequoiadb_noswitch`.`t2`.`h` having (`index_merge_sequoiadb_noswitch`.`t1`.`d` <> '5')
+select *,count(c) as i from t1 force index(idx_a,idx_b) 
+inner join t2 on a = e or b = f 
+where ( a = 1 and e = 1) or (b = '1' and f = '1') 
+group by c,a,b,d,e,f,g,h having d !='5';
+a	b	c	d	e	f	g	h	i
+1	1	3	4	1	1	3	4	25
+1	1	3	4	1	2	1	4	25
+1	1	3	4	1	2	2	4	25
+1	1	3	4	3	1	5	5	25
+1	2	1	4	1	1	3	4	25
+1	2	1	4	1	2	1	4	25
+1	2	1	4	1	2	2	4	25
+1	2	2	4	1	1	3	4	25
+1	2	2	4	1	2	1	4	25
+1	2	2	4	1	2	2	4	25
+explain select *,count(c) as i from t1 force index(idx_a,idx_b) inner join t2 on a = e or b = f where ( a < 2 and e < 2) or (b < '2' and f < '2') group by c,a,b,d,e,f,g,h;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	index_merge	idx_a,idx_b	idx_a,idx_b	5,13	NULL	14	100.00	Using sdb_sort_union(idx_a,idx_b); Using where with pushed condition ((`index_merge_sequoiadb_noswitch`.`t1`.`a` < 2) or (`index_merge_sequoiadb_noswitch`.`t1`.`b` < '2')); Using temporary; Using filesort
+1	SIMPLE	t2	NULL	ALL	idx_e,idx_f	NULL	NULL	NULL	25	10.55	Using where with pushed condition ((`index_merge_sequoiadb_noswitch`.`t2`.`e` < 2) or (`index_merge_sequoiadb_noswitch`.`t2`.`f` < '2'))
+Warnings:
+Note	1003	/* select#1 */ select `index_merge_sequoiadb_noswitch`.`t1`.`a` AS `a`,`index_merge_sequoiadb_noswitch`.`t1`.`b` AS `b`,`index_merge_sequoiadb_noswitch`.`t1`.`c` AS `c`,`index_merge_sequoiadb_noswitch`.`t1`.`d` AS `d`,`index_merge_sequoiadb_noswitch`.`t2`.`e` AS `e`,`index_merge_sequoiadb_noswitch`.`t2`.`f` AS `f`,`index_merge_sequoiadb_noswitch`.`t2`.`g` AS `g`,`index_merge_sequoiadb_noswitch`.`t2`.`h` AS `h`,count(`index_merge_sequoiadb_noswitch`.`t1`.`c`) AS `i` from `index_merge_sequoiadb_noswitch`.`t1` FORCE INDEX (`idx_b`) FORCE INDEX (`idx_a`) join `index_merge_sequoiadb_noswitch`.`t2` where ((((`index_merge_sequoiadb_noswitch`.`t1`.`a` < 2) and (`index_merge_sequoiadb_noswitch`.`t2`.`e` < 2)) or ((`index_merge_sequoiadb_noswitch`.`t1`.`b` < '2') and (`index_merge_sequoiadb_noswitch`.`t2`.`f` < '2'))) and ((`index_merge_sequoiadb_noswitch`.`t2`.`e` = `index_merge_sequoiadb_noswitch`.`t1`.`a`) or (`index_merge_sequoiadb_noswitch`.`t2`.`f` = `index_merge_sequoiadb_noswitch`.`t1`.`b`))) group by `index_merge_sequoiadb_noswitch`.`t1`.`c`,`index_merge_sequoiadb_noswitch`.`t1`.`a`,`index_merge_sequoiadb_noswitch`.`t1`.`b`,`index_merge_sequoiadb_noswitch`.`t1`.`d`,`index_merge_sequoiadb_noswitch`.`t2`.`e`,`index_merge_sequoiadb_noswitch`.`t2`.`f`,`index_merge_sequoiadb_noswitch`.`t2`.`g`,`index_merge_sequoiadb_noswitch`.`t2`.`h`
+select *,count(c) as i from t1 force index(idx_a,idx_b) inner join t2 on a = e or b = f where ( a < 2 and e < 2) or (b < '2' and f < '2') group by c,a,b,d,e,f,g,h;
+a	b	c	d	e	f	g	h	i
+1	1	3	4	1	1	3	4	25
+1	1	3	4	1	2	1	4	25
+1	1	3	4	1	2	2	4	25
+1	1	3	4	3	1	5	5	25
+1	2	1	4	1	1	3	4	25
+1	2	1	4	1	2	1	4	25
+1	2	1	4	1	2	2	4	25
+1	2	2	4	1	1	3	4	25
+1	2	2	4	1	2	1	4	25
+1	2	2	4	1	2	2	4	25
+3	1	5	5	1	1	3	4	25
+3	1	5	5	3	1	5	5	25
+explain 
+select *,count(c) as i from t1 force index(idx_a,idx_b) 
+inner join t2 on a = e or b = f 
+where ( a < 2 and e < 2) or (b < '2' and f < '2') 
+group by c,a,b,d,e,f,g,h having d !='5';
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	index_merge	idx_a,idx_b	idx_a,idx_b	5,13	NULL	14	100.00	Using sdb_sort_union(idx_a,idx_b); Using where with pushed condition ((`index_merge_sequoiadb_noswitch`.`t1`.`a` < 2) or (`index_merge_sequoiadb_noswitch`.`t1`.`b` < '2')); Using temporary; Using filesort
+1	SIMPLE	t2	NULL	ALL	idx_e,idx_f	NULL	NULL	NULL	25	10.55	Using where with pushed condition ((`index_merge_sequoiadb_noswitch`.`t2`.`e` < 2) or (`index_merge_sequoiadb_noswitch`.`t2`.`f` < '2'))
+Warnings:
+Note	1003	/* select#1 */ select `index_merge_sequoiadb_noswitch`.`t1`.`a` AS `a`,`index_merge_sequoiadb_noswitch`.`t1`.`b` AS `b`,`index_merge_sequoiadb_noswitch`.`t1`.`c` AS `c`,`index_merge_sequoiadb_noswitch`.`t1`.`d` AS `d`,`index_merge_sequoiadb_noswitch`.`t2`.`e` AS `e`,`index_merge_sequoiadb_noswitch`.`t2`.`f` AS `f`,`index_merge_sequoiadb_noswitch`.`t2`.`g` AS `g`,`index_merge_sequoiadb_noswitch`.`t2`.`h` AS `h`,count(`index_merge_sequoiadb_noswitch`.`t1`.`c`) AS `i` from `index_merge_sequoiadb_noswitch`.`t1` FORCE INDEX (`idx_b`) FORCE INDEX (`idx_a`) join `index_merge_sequoiadb_noswitch`.`t2` where ((((`index_merge_sequoiadb_noswitch`.`t1`.`a` < 2) and (`index_merge_sequoiadb_noswitch`.`t2`.`e` < 2)) or ((`index_merge_sequoiadb_noswitch`.`t1`.`b` < '2') and (`index_merge_sequoiadb_noswitch`.`t2`.`f` < '2'))) and ((`index_merge_sequoiadb_noswitch`.`t2`.`e` = `index_merge_sequoiadb_noswitch`.`t1`.`a`) or (`index_merge_sequoiadb_noswitch`.`t2`.`f` = `index_merge_sequoiadb_noswitch`.`t1`.`b`))) group by `index_merge_sequoiadb_noswitch`.`t1`.`c`,`index_merge_sequoiadb_noswitch`.`t1`.`a`,`index_merge_sequoiadb_noswitch`.`t1`.`b`,`index_merge_sequoiadb_noswitch`.`t1`.`d`,`index_merge_sequoiadb_noswitch`.`t2`.`e`,`index_merge_sequoiadb_noswitch`.`t2`.`f`,`index_merge_sequoiadb_noswitch`.`t2`.`g`,`index_merge_sequoiadb_noswitch`.`t2`.`h` having (`index_merge_sequoiadb_noswitch`.`t1`.`d` <> '5')
+select *,count(c) as i from t1 force index(idx_a,idx_b) 
+inner join t2 on a = e or b = f 
+where ( a < 2 and e < 2) or (b < '2' and f < '2') 
+group by c,a,b,d,e,f,g,h having d !='5';
+a	b	c	d	e	f	g	h	i
+1	1	3	4	1	1	3	4	25
+1	1	3	4	1	2	1	4	25
+1	1	3	4	1	2	2	4	25
+1	1	3	4	3	1	5	5	25
+1	2	1	4	1	1	3	4	25
+1	2	1	4	1	2	1	4	25
+1	2	1	4	1	2	2	4	25
+1	2	2	4	1	1	3	4	25
+1	2	2	4	1	2	1	4	25
+1	2	2	4	1	2	2	4	25
+explain select *,count(c) as i from t1 force index(idx_a,idx_b) 
+inner join t2 on a = e or b = f 
+where ( a = 1 and e = 1) or (b = '1' and f = '1') 
+group by c,a,b,d,e,f,g,h having d !='5' 
+order by i,g,h,b,c desc;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	index_merge	idx_a,idx_b	idx_a,idx_b	5,13	NULL	4	100.00	Using sdb_union(idx_a,idx_b); Using where with pushed condition ((`index_merge_sequoiadb_noswitch`.`t1`.`a` = 1) or (`index_merge_sequoiadb_noswitch`.`t1`.`b` = '1')); Using temporary; Using filesort
+1	SIMPLE	t2	NULL	index_merge	idx_e,idx_f	idx_e,idx_f	5,13	NULL	4	100.00	Using sdb_union(idx_e,idx_f); Using where with pushed condition ((`index_merge_sequoiadb_noswitch`.`t2`.`e` = 1) or (`index_merge_sequoiadb_noswitch`.`t2`.`f` = '1'))
+Warnings:
+Note	1003	/* select#1 */ select `index_merge_sequoiadb_noswitch`.`t1`.`a` AS `a`,`index_merge_sequoiadb_noswitch`.`t1`.`b` AS `b`,`index_merge_sequoiadb_noswitch`.`t1`.`c` AS `c`,`index_merge_sequoiadb_noswitch`.`t1`.`d` AS `d`,`index_merge_sequoiadb_noswitch`.`t2`.`e` AS `e`,`index_merge_sequoiadb_noswitch`.`t2`.`f` AS `f`,`index_merge_sequoiadb_noswitch`.`t2`.`g` AS `g`,`index_merge_sequoiadb_noswitch`.`t2`.`h` AS `h`,count(`index_merge_sequoiadb_noswitch`.`t1`.`c`) AS `i` from `index_merge_sequoiadb_noswitch`.`t1` FORCE INDEX (`idx_b`) FORCE INDEX (`idx_a`) join `index_merge_sequoiadb_noswitch`.`t2` where ((((`index_merge_sequoiadb_noswitch`.`t2`.`e` = 1) and (`index_merge_sequoiadb_noswitch`.`t1`.`a` = 1)) or ((`index_merge_sequoiadb_noswitch`.`t2`.`f` = '1') and (`index_merge_sequoiadb_noswitch`.`t1`.`b` = '1'))) and ((`index_merge_sequoiadb_noswitch`.`t2`.`e` = `index_merge_sequoiadb_noswitch`.`t1`.`a`) or (`index_merge_sequoiadb_noswitch`.`t2`.`f` = `index_merge_sequoiadb_noswitch`.`t1`.`b`))) group by `index_merge_sequoiadb_noswitch`.`t1`.`c`,`index_merge_sequoiadb_noswitch`.`t1`.`a`,`index_merge_sequoiadb_noswitch`.`t1`.`b`,`index_merge_sequoiadb_noswitch`.`t1`.`d`,`index_merge_sequoiadb_noswitch`.`t2`.`e`,`index_merge_sequoiadb_noswitch`.`t2`.`f`,`index_merge_sequoiadb_noswitch`.`t2`.`g`,`index_merge_sequoiadb_noswitch`.`t2`.`h` having (`index_merge_sequoiadb_noswitch`.`t1`.`d` <> '5') order by `i`,`index_merge_sequoiadb_noswitch`.`t2`.`g`,`index_merge_sequoiadb_noswitch`.`t2`.`h`,`index_merge_sequoiadb_noswitch`.`t1`.`b`,`index_merge_sequoiadb_noswitch`.`t1`.`c` desc
+select *,count(c) as i from t1 force index(idx_a,idx_b) 
+inner join t2 on a = e or b = f 
+where ( a = 1 and e = 1) or (b = '1' and f = '1') 
+group by c,a,b,d,e,f,g,h having d !='5' 
+order by i,g,h,b,c desc;
+a	b	c	d	e	f	g	h	i
+1	1	3	4	1	2	1	4	25
+1	2	2	4	1	2	1	4	25
+1	2	1	4	1	2	1	4	25
+1	1	3	4	1	2	2	4	25
+1	2	2	4	1	2	2	4	25
+1	2	1	4	1	2	2	4	25
+1	1	3	4	1	1	3	4	25
+1	2	2	4	1	1	3	4	25
+1	2	1	4	1	1	3	4	25
+1	1	3	4	3	1	5	5	25
+explain 
+select *,count(c) as i from t1 force index(idx_a,idx_b) 
+inner join t2 on a = e or b = f where ( a < 2 and e < 2) or (b < '2' and f < '2') 
+group by c,a,b,d,e,f,g,h having d !='5' 
+order by i,g,h,b,c desc;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	index_merge	idx_a,idx_b	idx_a,idx_b	5,13	NULL	14	100.00	Using sdb_sort_union(idx_a,idx_b); Using where with pushed condition ((`index_merge_sequoiadb_noswitch`.`t1`.`a` < 2) or (`index_merge_sequoiadb_noswitch`.`t1`.`b` < '2')); Using temporary; Using filesort
+1	SIMPLE	t2	NULL	ALL	idx_e,idx_f	NULL	NULL	NULL	25	10.55	Using where with pushed condition ((`index_merge_sequoiadb_noswitch`.`t2`.`e` < 2) or (`index_merge_sequoiadb_noswitch`.`t2`.`f` < '2'))
+Warnings:
+Note	1003	/* select#1 */ select `index_merge_sequoiadb_noswitch`.`t1`.`a` AS `a`,`index_merge_sequoiadb_noswitch`.`t1`.`b` AS `b`,`index_merge_sequoiadb_noswitch`.`t1`.`c` AS `c`,`index_merge_sequoiadb_noswitch`.`t1`.`d` AS `d`,`index_merge_sequoiadb_noswitch`.`t2`.`e` AS `e`,`index_merge_sequoiadb_noswitch`.`t2`.`f` AS `f`,`index_merge_sequoiadb_noswitch`.`t2`.`g` AS `g`,`index_merge_sequoiadb_noswitch`.`t2`.`h` AS `h`,count(`index_merge_sequoiadb_noswitch`.`t1`.`c`) AS `i` from `index_merge_sequoiadb_noswitch`.`t1` FORCE INDEX (`idx_b`) FORCE INDEX (`idx_a`) join `index_merge_sequoiadb_noswitch`.`t2` where ((((`index_merge_sequoiadb_noswitch`.`t1`.`a` < 2) and (`index_merge_sequoiadb_noswitch`.`t2`.`e` < 2)) or ((`index_merge_sequoiadb_noswitch`.`t1`.`b` < '2') and (`index_merge_sequoiadb_noswitch`.`t2`.`f` < '2'))) and ((`index_merge_sequoiadb_noswitch`.`t2`.`e` = `index_merge_sequoiadb_noswitch`.`t1`.`a`) or (`index_merge_sequoiadb_noswitch`.`t2`.`f` = `index_merge_sequoiadb_noswitch`.`t1`.`b`))) group by `index_merge_sequoiadb_noswitch`.`t1`.`c`,`index_merge_sequoiadb_noswitch`.`t1`.`a`,`index_merge_sequoiadb_noswitch`.`t1`.`b`,`index_merge_sequoiadb_noswitch`.`t1`.`d`,`index_merge_sequoiadb_noswitch`.`t2`.`e`,`index_merge_sequoiadb_noswitch`.`t2`.`f`,`index_merge_sequoiadb_noswitch`.`t2`.`g`,`index_merge_sequoiadb_noswitch`.`t2`.`h` having (`index_merge_sequoiadb_noswitch`.`t1`.`d` <> '5') order by `i`,`index_merge_sequoiadb_noswitch`.`t2`.`g`,`index_merge_sequoiadb_noswitch`.`t2`.`h`,`index_merge_sequoiadb_noswitch`.`t1`.`b`,`index_merge_sequoiadb_noswitch`.`t1`.`c` desc
+select *,count(c) as i from t1 force index(idx_a,idx_b) 
+inner join t2 on a = e or b = f 
+where ( a < 2 and e < 2) or (b < '2' and f < '2') 
+group by c,a,b,d,e,f,g,h having d !='5' 
+order by i,g,h,b,c desc;
+a	b	c	d	e	f	g	h	i
+1	1	3	4	1	2	1	4	25
+1	2	2	4	1	2	1	4	25
+1	2	1	4	1	2	1	4	25
+1	1	3	4	1	2	2	4	25
+1	2	2	4	1	2	2	4	25
+1	2	1	4	1	2	2	4	25
+1	1	3	4	1	1	3	4	25
+1	2	2	4	1	1	3	4	25
+1	2	1	4	1	1	3	4	25
+1	1	3	4	3	1	5	5	25
+explain
+select *, count(c) as i
+from t1 force index(idx_a,idx_b) 
+inner join t2
+on a = e or b = f
+inner join t3 on c = col1
+inner join t4 on d = col3
+where ( a = 1 and e = 1) or (b = '1' and f = '1')
+group by c,a,b,d,e,f,g,h,col1,col2,col3,col4
+having d !='5'
+order by i,g,h,b,c desc;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	index_merge	idx_a,idx_b	idx_a,idx_b	5,13	NULL	4	100.00	Using sdb_union(idx_a,idx_b); Using where with pushed condition ((`index_merge_sequoiadb_noswitch`.`t1`.`a` = 1) or (`index_merge_sequoiadb_noswitch`.`t1`.`b` = '1')); Using temporary; Using filesort
+1	SIMPLE	t3	NULL	ALL	NULL	NULL	NULL	NULL	5	20.00	Using where
+1	SIMPLE	t4	NULL	ALL	NULL	NULL	NULL	NULL	5	20.00	Using where
+1	SIMPLE	t2	NULL	index_merge	idx_e,idx_f	idx_e,idx_f	5,13	NULL	4	100.00	Using sdb_union(idx_e,idx_f); Using where with pushed condition ((`index_merge_sequoiadb_noswitch`.`t2`.`e` = 1) or (`index_merge_sequoiadb_noswitch`.`t2`.`f` = '1'))
+Warnings:
+Note	1003	/* select#1 */ select `index_merge_sequoiadb_noswitch`.`t1`.`a` AS `a`,`index_merge_sequoiadb_noswitch`.`t1`.`b` AS `b`,`index_merge_sequoiadb_noswitch`.`t1`.`c` AS `c`,`index_merge_sequoiadb_noswitch`.`t1`.`d` AS `d`,`index_merge_sequoiadb_noswitch`.`t2`.`e` AS `e`,`index_merge_sequoiadb_noswitch`.`t2`.`f` AS `f`,`index_merge_sequoiadb_noswitch`.`t2`.`g` AS `g`,`index_merge_sequoiadb_noswitch`.`t2`.`h` AS `h`,`index_merge_sequoiadb_noswitch`.`t3`.`col1` AS `col1`,`index_merge_sequoiadb_noswitch`.`t3`.`col2` AS `col2`,`index_merge_sequoiadb_noswitch`.`t4`.`col3` AS `col3`,`index_merge_sequoiadb_noswitch`.`t4`.`col4` AS `col4`,count(`index_merge_sequoiadb_noswitch`.`t1`.`c`) AS `i` from `index_merge_sequoiadb_noswitch`.`t1` FORCE INDEX (`idx_b`) FORCE INDEX (`idx_a`) join `index_merge_sequoiadb_noswitch`.`t2` join `index_merge_sequoiadb_noswitch`.`t3` join `index_merge_sequoiadb_noswitch`.`t4` where ((((`index_merge_sequoiadb_noswitch`.`t2`.`e` = 1) and (`index_merge_sequoiadb_noswitch`.`t1`.`a` = 1)) or ((`index_merge_sequoiadb_noswitch`.`t2`.`f` = '1') and (`index_merge_sequoiadb_noswitch`.`t1`.`b` = '1'))) and (`index_merge_sequoiadb_noswitch`.`t1`.`d` = `index_merge_sequoiadb_noswitch`.`t4`.`col3`) and (`index_merge_sequoiadb_noswitch`.`t1`.`c` = `index_merge_sequoiadb_noswitch`.`t3`.`col1`) and ((`index_merge_sequoiadb_noswitch`.`t2`.`e` = `index_merge_sequoiadb_noswitch`.`t1`.`a`) or (`index_merge_sequoiadb_noswitch`.`t2`.`f` = `index_merge_sequoiadb_noswitch`.`t1`.`b`))) group by `index_merge_sequoiadb_noswitch`.`t1`.`c`,`index_merge_sequoiadb_noswitch`.`t1`.`a`,`index_merge_sequoiadb_noswitch`.`t1`.`b`,`index_merge_sequoiadb_noswitch`.`t1`.`d`,`index_merge_sequoiadb_noswitch`.`t2`.`e`,`index_merge_sequoiadb_noswitch`.`t2`.`f`,`index_merge_sequoiadb_noswitch`.`t2`.`g`,`index_merge_sequoiadb_noswitch`.`t2`.`h`,`index_merge_sequoiadb_noswitch`.`t3`.`col1`,`index_merge_sequoiadb_noswitch`.`t3`.`col2`,`index_merge_sequoiadb_noswitch`.`t4`.`col3`,`index_merge_sequoiadb_noswitch`.`t4`.`col4` having (`index_merge_sequoiadb_noswitch`.`t1`.`d` <> '5') order by `i`,`index_merge_sequoiadb_noswitch`.`t2`.`g`,`index_merge_sequoiadb_noswitch`.`t2`.`h`,`index_merge_sequoiadb_noswitch`.`t1`.`b`,`index_merge_sequoiadb_noswitch`.`t1`.`c` desc
+select *, count(c) as i
+from t1 force index(idx_a,idx_b) 
+inner join t2 on a = e or b = f
+inner join t3 on c = col1
+inner join t4 on d = col3
+where ( a = 1 and e = 1) or (b = '1' and f = '1')
+group by c,a,b,d,e,f,g,h,col1,col2,col3,col4
+having d !='5'
+order by i,g,h,b,c desc;
+a	b	c	d	e	f	g	h	col1	col2	col3	col4	i
+1	1	3	4	1	2	1	4	3	c	4	w	25
+1	2	2	4	1	2	1	4	2	b	4	w	25
+1	2	1	4	1	2	1	4	1	a	4	w	25
+1	1	3	4	1	2	2	4	3	c	4	w	25
+1	2	2	4	1	2	2	4	2	b	4	w	25
+1	2	1	4	1	2	2	4	1	a	4	w	25
+1	1	3	4	1	1	3	4	3	c	4	w	25
+1	2	2	4	1	1	3	4	2	b	4	w	25
+1	2	1	4	1	1	3	4	1	a	4	w	25
+1	1	3	4	3	1	5	5	3	c	4	w	25
+explain
+select *, count(c) as i
+from t1 force index(idx_a,idx_b) 
+inner join t2 on a = e or b = f
+inner join t3 on c = col1
+inner join t4 on d = col3
+where ( a < 2 and e < 2) or (b < '2' and f < '2')
+group by c,a,b,d,e,f,g,h,col1,col2,col3,col4
+having d !='5'
+order by i,g,h,b,c desc;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t3	NULL	ALL	NULL	NULL	NULL	NULL	5	100.00	Using temporary; Using filesort
+1	SIMPLE	t1	NULL	index_merge	idx_a,idx_b	idx_a,idx_b	5,13	NULL	14	10.00	Using sdb_sort_union(idx_a,idx_b); Using where with pushed condition ((`index_merge_sequoiadb_noswitch`.`t1`.`a` < 2) or (`index_merge_sequoiadb_noswitch`.`t1`.`b` < '2')); Using join buffer (Block Nested Loop)
+1	SIMPLE	t4	NULL	ALL	NULL	NULL	NULL	NULL	5	20.00	Using where; Using join buffer (Block Nested Loop)
+1	SIMPLE	t2	NULL	ALL	idx_e,idx_f	NULL	NULL	NULL	25	10.55	Using where with pushed condition ((`index_merge_sequoiadb_noswitch`.`t2`.`e` < 2) or (`index_merge_sequoiadb_noswitch`.`t2`.`f` < '2')); Using join buffer (Block Nested Loop)
+Warnings:
+Note	1003	/* select#1 */ select `index_merge_sequoiadb_noswitch`.`t1`.`a` AS `a`,`index_merge_sequoiadb_noswitch`.`t1`.`b` AS `b`,`index_merge_sequoiadb_noswitch`.`t1`.`c` AS `c`,`index_merge_sequoiadb_noswitch`.`t1`.`d` AS `d`,`index_merge_sequoiadb_noswitch`.`t2`.`e` AS `e`,`index_merge_sequoiadb_noswitch`.`t2`.`f` AS `f`,`index_merge_sequoiadb_noswitch`.`t2`.`g` AS `g`,`index_merge_sequoiadb_noswitch`.`t2`.`h` AS `h`,`index_merge_sequoiadb_noswitch`.`t3`.`col1` AS `col1`,`index_merge_sequoiadb_noswitch`.`t3`.`col2` AS `col2`,`index_merge_sequoiadb_noswitch`.`t4`.`col3` AS `col3`,`index_merge_sequoiadb_noswitch`.`t4`.`col4` AS `col4`,count(`index_merge_sequoiadb_noswitch`.`t1`.`c`) AS `i` from `index_merge_sequoiadb_noswitch`.`t1` FORCE INDEX (`idx_b`) FORCE INDEX (`idx_a`) join `index_merge_sequoiadb_noswitch`.`t2` join `index_merge_sequoiadb_noswitch`.`t3` join `index_merge_sequoiadb_noswitch`.`t4` where ((((`index_merge_sequoiadb_noswitch`.`t1`.`a` < 2) and (`index_merge_sequoiadb_noswitch`.`t2`.`e` < 2)) or ((`index_merge_sequoiadb_noswitch`.`t1`.`b` < '2') and (`index_merge_sequoiadb_noswitch`.`t2`.`f` < '2'))) and (`index_merge_sequoiadb_noswitch`.`t1`.`d` = `index_merge_sequoiadb_noswitch`.`t4`.`col3`) and (`index_merge_sequoiadb_noswitch`.`t1`.`c` = `index_merge_sequoiadb_noswitch`.`t3`.`col1`) and ((`index_merge_sequoiadb_noswitch`.`t2`.`e` = `index_merge_sequoiadb_noswitch`.`t1`.`a`) or (`index_merge_sequoiadb_noswitch`.`t2`.`f` = `index_merge_sequoiadb_noswitch`.`t1`.`b`))) group by `index_merge_sequoiadb_noswitch`.`t1`.`c`,`index_merge_sequoiadb_noswitch`.`t1`.`a`,`index_merge_sequoiadb_noswitch`.`t1`.`b`,`index_merge_sequoiadb_noswitch`.`t1`.`d`,`index_merge_sequoiadb_noswitch`.`t2`.`e`,`index_merge_sequoiadb_noswitch`.`t2`.`f`,`index_merge_sequoiadb_noswitch`.`t2`.`g`,`index_merge_sequoiadb_noswitch`.`t2`.`h`,`index_merge_sequoiadb_noswitch`.`t3`.`col1`,`index_merge_sequoiadb_noswitch`.`t3`.`col2`,`index_merge_sequoiadb_noswitch`.`t4`.`col3`,`index_merge_sequoiadb_noswitch`.`t4`.`col4` having (`index_merge_sequoiadb_noswitch`.`t1`.`d` <> '5') order by `i`,`index_merge_sequoiadb_noswitch`.`t2`.`g`,`index_merge_sequoiadb_noswitch`.`t2`.`h`,`index_merge_sequoiadb_noswitch`.`t1`.`b`,`index_merge_sequoiadb_noswitch`.`t1`.`c` desc
+select *, count(c) as i
+from t1 force index(idx_a,idx_b) 
+inner join t2 on a = e or b = f
+inner join t3 on c = col1
+inner join t4 on d = col3
+where ( a < 2 and e < 2) or (b < '2' and f < '2')
+group by c,a,b,d,e,f,g,h,col1,col2,col3,col4
+having d !='5'
+order by i,g,h,b,c desc;
+a	b	c	d	e	f	g	h	col1	col2	col3	col4	i
+1	1	3	4	1	2	1	4	3	c	4	w	25
+1	2	2	4	1	2	1	4	2	b	4	w	25
+1	2	1	4	1	2	1	4	1	a	4	w	25
+1	1	3	4	1	2	2	4	3	c	4	w	25
+1	2	2	4	1	2	2	4	2	b	4	w	25
+1	2	1	4	1	2	2	4	1	a	4	w	25
+1	1	3	4	1	1	3	4	3	c	4	w	25
+1	2	2	4	1	1	3	4	2	b	4	w	25
+1	2	1	4	1	1	3	4	1	a	4	w	25
+1	1	3	4	3	1	5	5	3	c	4	w	25
+explain
+select *, count(c) as i
+from t1 force index(idx_a,idx_b) 
+inner join t2 on a = e or b = f
+inner join t3 on c = col1
+inner join t4 on d = col3
+where ( a = 1 and e = 1) or (b = '1' and f = '1')
+group by c,a,b,d,e,f,g,h,col1,col2,col3,col4
+having d !='5'
+union
+select *, count(c) as i
+from t1 force index(idx_a,idx_b) 
+inner join t2 on a = e or b = f
+inner join t3 on c = col1
+inner join t4 on d = col3
+where ( a < 2 and e < 2) or (b < '2' and f < '2')
+group by c,a,b,d,e,f,g,h,col1,col2,col3,col4
+having d !='5'
+order by i,g,h,b,c desc;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	PRIMARY	t1	NULL	index_merge	idx_a,idx_b	idx_a,idx_b	5,13	NULL	4	100.00	Using sdb_union(idx_a,idx_b); Using where with pushed condition ((`index_merge_sequoiadb_noswitch`.`t1`.`a` = 1) or (`index_merge_sequoiadb_noswitch`.`t1`.`b` = '1')); Using temporary; Using filesort
+1	PRIMARY	t3	NULL	ALL	NULL	NULL	NULL	NULL	5	20.00	Using where
+1	PRIMARY	t4	NULL	ALL	NULL	NULL	NULL	NULL	5	20.00	Using where
+1	PRIMARY	t2	NULL	index_merge	idx_e,idx_f	idx_e,idx_f	5,13	NULL	4	100.00	Using sdb_union(idx_e,idx_f); Using where with pushed condition ((`index_merge_sequoiadb_noswitch`.`t2`.`e` = 1) or (`index_merge_sequoiadb_noswitch`.`t2`.`f` = '1'))
+2	UNION	t3	NULL	ALL	NULL	NULL	NULL	NULL	5	100.00	Using temporary; Using filesort
+2	UNION	t1	NULL	index_merge	idx_a,idx_b	idx_a,idx_b	5,13	NULL	14	10.00	Using sdb_sort_union(idx_a,idx_b); Using where with pushed condition ((`index_merge_sequoiadb_noswitch`.`t1`.`a` < 2) or (`index_merge_sequoiadb_noswitch`.`t1`.`b` < '2')); Using join buffer (Block Nested Loop)
+2	UNION	t4	NULL	ALL	NULL	NULL	NULL	NULL	5	20.00	Using where; Using join buffer (Block Nested Loop)
+2	UNION	t2	NULL	ALL	idx_e,idx_f	NULL	NULL	NULL	25	10.55	Using where with pushed condition ((`index_merge_sequoiadb_noswitch`.`t2`.`e` < 2) or (`index_merge_sequoiadb_noswitch`.`t2`.`f` < '2')); Using join buffer (Block Nested Loop)
+NULL	UNION RESULT	<union1,2>	NULL	ALL	NULL	NULL	NULL	NULL	NULL	NULL	Using temporary; Using filesort
+Warnings:
+Note	1003	/* select#1 */ select `index_merge_sequoiadb_noswitch`.`t1`.`a` AS `a`,`index_merge_sequoiadb_noswitch`.`t1`.`b` AS `b`,`index_merge_sequoiadb_noswitch`.`t1`.`c` AS `c`,`index_merge_sequoiadb_noswitch`.`t1`.`d` AS `d`,`index_merge_sequoiadb_noswitch`.`t2`.`e` AS `e`,`index_merge_sequoiadb_noswitch`.`t2`.`f` AS `f`,`index_merge_sequoiadb_noswitch`.`t2`.`g` AS `g`,`index_merge_sequoiadb_noswitch`.`t2`.`h` AS `h`,`index_merge_sequoiadb_noswitch`.`t3`.`col1` AS `col1`,`index_merge_sequoiadb_noswitch`.`t3`.`col2` AS `col2`,`index_merge_sequoiadb_noswitch`.`t4`.`col3` AS `col3`,`index_merge_sequoiadb_noswitch`.`t4`.`col4` AS `col4`,count(`index_merge_sequoiadb_noswitch`.`t1`.`c`) AS `i` from `index_merge_sequoiadb_noswitch`.`t1` FORCE INDEX (`idx_b`) FORCE INDEX (`idx_a`) join `index_merge_sequoiadb_noswitch`.`t2` join `index_merge_sequoiadb_noswitch`.`t3` join `index_merge_sequoiadb_noswitch`.`t4` where ((((`index_merge_sequoiadb_noswitch`.`t2`.`e` = 1) and (`index_merge_sequoiadb_noswitch`.`t1`.`a` = 1)) or ((`index_merge_sequoiadb_noswitch`.`t2`.`f` = '1') and (`index_merge_sequoiadb_noswitch`.`t1`.`b` = '1'))) and (`index_merge_sequoiadb_noswitch`.`t1`.`d` = `index_merge_sequoiadb_noswitch`.`t4`.`col3`) and (`index_merge_sequoiadb_noswitch`.`t1`.`c` = `index_merge_sequoiadb_noswitch`.`t3`.`col1`) and ((`index_merge_sequoiadb_noswitch`.`t2`.`e` = `index_merge_sequoiadb_noswitch`.`t1`.`a`) or (`index_merge_sequoiadb_noswitch`.`t2`.`f` = `index_merge_sequoiadb_noswitch`.`t1`.`b`))) group by `index_merge_sequoiadb_noswitch`.`t1`.`c`,`index_merge_sequoiadb_noswitch`.`t1`.`a`,`index_merge_sequoiadb_noswitch`.`t1`.`b`,`index_merge_sequoiadb_noswitch`.`t1`.`d`,`index_merge_sequoiadb_noswitch`.`t2`.`e`,`index_merge_sequoiadb_noswitch`.`t2`.`f`,`index_merge_sequoiadb_noswitch`.`t2`.`g`,`index_merge_sequoiadb_noswitch`.`t2`.`h`,`index_merge_sequoiadb_noswitch`.`t3`.`col1`,`index_merge_sequoiadb_noswitch`.`t3`.`col2`,`index_merge_sequoiadb_noswitch`.`t4`.`col3`,`index_merge_sequoiadb_noswitch`.`t4`.`col4` having (`index_merge_sequoiadb_noswitch`.`t1`.`d` <> '5') union /* select#2 */ select `index_merge_sequoiadb_noswitch`.`t1`.`a` AS `a`,`index_merge_sequoiadb_noswitch`.`t1`.`b` AS `b`,`index_merge_sequoiadb_noswitch`.`t1`.`c` AS `c`,`index_merge_sequoiadb_noswitch`.`t1`.`d` AS `d`,`index_merge_sequoiadb_noswitch`.`t2`.`e` AS `e`,`index_merge_sequoiadb_noswitch`.`t2`.`f` AS `f`,`index_merge_sequoiadb_noswitch`.`t2`.`g` AS `g`,`index_merge_sequoiadb_noswitch`.`t2`.`h` AS `h`,`index_merge_sequoiadb_noswitch`.`t3`.`col1` AS `col1`,`index_merge_sequoiadb_noswitch`.`t3`.`col2` AS `col2`,`index_merge_sequoiadb_noswitch`.`t4`.`col3` AS `col3`,`index_merge_sequoiadb_noswitch`.`t4`.`col4` AS `col4`,count(`index_merge_sequoiadb_noswitch`.`t1`.`c`) AS `i` from `index_merge_sequoiadb_noswitch`.`t1` FORCE INDEX (`idx_b`) FORCE INDEX (`idx_a`) join `index_merge_sequoiadb_noswitch`.`t2` join `index_merge_sequoiadb_noswitch`.`t3` join `index_merge_sequoiadb_noswitch`.`t4` where ((((`index_merge_sequoiadb_noswitch`.`t1`.`a` < 2) and (`index_merge_sequoiadb_noswitch`.`t2`.`e` < 2)) or ((`index_merge_sequoiadb_noswitch`.`t1`.`b` < '2') and (`index_merge_sequoiadb_noswitch`.`t2`.`f` < '2'))) and (`index_merge_sequoiadb_noswitch`.`t1`.`d` = `index_merge_sequoiadb_noswitch`.`t4`.`col3`) and (`index_merge_sequoiadb_noswitch`.`t1`.`c` = `index_merge_sequoiadb_noswitch`.`t3`.`col1`) and ((`index_merge_sequoiadb_noswitch`.`t2`.`e` = `index_merge_sequoiadb_noswitch`.`t1`.`a`) or (`index_merge_sequoiadb_noswitch`.`t2`.`f` = `index_merge_sequoiadb_noswitch`.`t1`.`b`))) group by `index_merge_sequoiadb_noswitch`.`t1`.`c`,`index_merge_sequoiadb_noswitch`.`t1`.`a`,`index_merge_sequoiadb_noswitch`.`t1`.`b`,`index_merge_sequoiadb_noswitch`.`t1`.`d`,`index_merge_sequoiadb_noswitch`.`t2`.`e`,`index_merge_sequoiadb_noswitch`.`t2`.`f`,`index_merge_sequoiadb_noswitch`.`t2`.`g`,`index_merge_sequoiadb_noswitch`.`t2`.`h`,`index_merge_sequoiadb_noswitch`.`t3`.`col1`,`index_merge_sequoiadb_noswitch`.`t3`.`col2`,`index_merge_sequoiadb_noswitch`.`t4`.`col3`,`index_merge_sequoiadb_noswitch`.`t4`.`col4` having (`index_merge_sequoiadb_noswitch`.`t1`.`d` <> '5') order by `i`,`g`,`h`,`b`,`c` desc
+select *, count(c) as i
+from t1 force index(idx_a,idx_b) 
+inner join t2 on a = e or b = f
+inner join t3 on c = col1
+inner join t4 on d = col3
+where ( a = 1 and e = 1) or (b = '1' and f = '1')
+group by c,a,b,d,e,f,g,h,col1,col2,col3,col4
+having d !='5'
+union
+select *, count(c) as i
+from t1 force index(idx_a,idx_b) 
+inner join t2 on a = e or b = f
+inner join t3 on c = col1
+inner join t4 on d = col3
+where ( a < 2 and e < 2) or (b < '2' and f < '2')
+group by c,a,b,d,e,f,g,h,col1,col2,col3,col4
+having d !='5'
+order by i,g,h,b,c desc;
+a	b	c	d	e	f	g	h	col1	col2	col3	col4	i
+1	1	3	4	1	2	1	4	3	c	4	w	25
+1	2	2	4	1	2	1	4	2	b	4	w	25
+1	2	1	4	1	2	1	4	1	a	4	w	25
+1	1	3	4	1	2	2	4	3	c	4	w	25
+1	2	2	4	1	2	2	4	2	b	4	w	25
+1	2	1	4	1	2	2	4	1	a	4	w	25
+1	1	3	4	1	1	3	4	3	c	4	w	25
+1	2	2	4	1	1	3	4	2	b	4	w	25
+1	2	1	4	1	1	3	4	1	a	4	w	25
+1	1	3	4	3	1	5	5	3	c	4	w	25
+explain
+select *, count(c) as i
+from t1 force index(idx_a,idx_b) 
+inner join t2 on a = e or b = f
+inner join t3 on c = col1
+inner join t4 on d = col3
+where ( a = 1 and e = 1) or (b = '1' and f = '1')
+group by c,a,b,d,e,f,g,h,col1,col2,col3,col4
+having d !='5'
+union all 
+select *, count(c) as i
+from t1 force index(idx_a,idx_b) 
+inner join t2 on a = e or b = f
+inner join t3 on c = col1
+inner join t4 on d = col3
+where ( a < 2 and e < 2) or (b < '2' and f < '2')
+group by c,a,b,d,e,f,g,h,col1,col2,col3,col4
+having d !='5'
+order by i,g,h,b,c desc;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	PRIMARY	t1	NULL	index_merge	idx_a,idx_b	idx_a,idx_b	5,13	NULL	4	100.00	Using sdb_union(idx_a,idx_b); Using where with pushed condition ((`index_merge_sequoiadb_noswitch`.`t1`.`a` = 1) or (`index_merge_sequoiadb_noswitch`.`t1`.`b` = '1')); Using temporary; Using filesort
+1	PRIMARY	t3	NULL	ALL	NULL	NULL	NULL	NULL	5	20.00	Using where
+1	PRIMARY	t4	NULL	ALL	NULL	NULL	NULL	NULL	5	20.00	Using where
+1	PRIMARY	t2	NULL	index_merge	idx_e,idx_f	idx_e,idx_f	5,13	NULL	4	100.00	Using sdb_union(idx_e,idx_f); Using where with pushed condition ((`index_merge_sequoiadb_noswitch`.`t2`.`e` = 1) or (`index_merge_sequoiadb_noswitch`.`t2`.`f` = '1'))
+2	UNION	t3	NULL	ALL	NULL	NULL	NULL	NULL	5	100.00	Using temporary; Using filesort
+2	UNION	t1	NULL	index_merge	idx_a,idx_b	idx_a,idx_b	5,13	NULL	14	10.00	Using sdb_sort_union(idx_a,idx_b); Using where with pushed condition ((`index_merge_sequoiadb_noswitch`.`t1`.`a` < 2) or (`index_merge_sequoiadb_noswitch`.`t1`.`b` < '2')); Using join buffer (Block Nested Loop)
+2	UNION	t4	NULL	ALL	NULL	NULL	NULL	NULL	5	20.00	Using where; Using join buffer (Block Nested Loop)
+2	UNION	t2	NULL	ALL	idx_e,idx_f	NULL	NULL	NULL	25	10.55	Using where with pushed condition ((`index_merge_sequoiadb_noswitch`.`t2`.`e` < 2) or (`index_merge_sequoiadb_noswitch`.`t2`.`f` < '2')); Using join buffer (Block Nested Loop)
+NULL	UNION RESULT	<union1,2>	NULL	ALL	NULL	NULL	NULL	NULL	NULL	NULL	Using temporary; Using filesort
+Warnings:
+Note	1003	/* select#1 */ select `index_merge_sequoiadb_noswitch`.`t1`.`a` AS `a`,`index_merge_sequoiadb_noswitch`.`t1`.`b` AS `b`,`index_merge_sequoiadb_noswitch`.`t1`.`c` AS `c`,`index_merge_sequoiadb_noswitch`.`t1`.`d` AS `d`,`index_merge_sequoiadb_noswitch`.`t2`.`e` AS `e`,`index_merge_sequoiadb_noswitch`.`t2`.`f` AS `f`,`index_merge_sequoiadb_noswitch`.`t2`.`g` AS `g`,`index_merge_sequoiadb_noswitch`.`t2`.`h` AS `h`,`index_merge_sequoiadb_noswitch`.`t3`.`col1` AS `col1`,`index_merge_sequoiadb_noswitch`.`t3`.`col2` AS `col2`,`index_merge_sequoiadb_noswitch`.`t4`.`col3` AS `col3`,`index_merge_sequoiadb_noswitch`.`t4`.`col4` AS `col4`,count(`index_merge_sequoiadb_noswitch`.`t1`.`c`) AS `i` from `index_merge_sequoiadb_noswitch`.`t1` FORCE INDEX (`idx_b`) FORCE INDEX (`idx_a`) join `index_merge_sequoiadb_noswitch`.`t2` join `index_merge_sequoiadb_noswitch`.`t3` join `index_merge_sequoiadb_noswitch`.`t4` where ((((`index_merge_sequoiadb_noswitch`.`t2`.`e` = 1) and (`index_merge_sequoiadb_noswitch`.`t1`.`a` = 1)) or ((`index_merge_sequoiadb_noswitch`.`t2`.`f` = '1') and (`index_merge_sequoiadb_noswitch`.`t1`.`b` = '1'))) and (`index_merge_sequoiadb_noswitch`.`t1`.`d` = `index_merge_sequoiadb_noswitch`.`t4`.`col3`) and (`index_merge_sequoiadb_noswitch`.`t1`.`c` = `index_merge_sequoiadb_noswitch`.`t3`.`col1`) and ((`index_merge_sequoiadb_noswitch`.`t2`.`e` = `index_merge_sequoiadb_noswitch`.`t1`.`a`) or (`index_merge_sequoiadb_noswitch`.`t2`.`f` = `index_merge_sequoiadb_noswitch`.`t1`.`b`))) group by `index_merge_sequoiadb_noswitch`.`t1`.`c`,`index_merge_sequoiadb_noswitch`.`t1`.`a`,`index_merge_sequoiadb_noswitch`.`t1`.`b`,`index_merge_sequoiadb_noswitch`.`t1`.`d`,`index_merge_sequoiadb_noswitch`.`t2`.`e`,`index_merge_sequoiadb_noswitch`.`t2`.`f`,`index_merge_sequoiadb_noswitch`.`t2`.`g`,`index_merge_sequoiadb_noswitch`.`t2`.`h`,`index_merge_sequoiadb_noswitch`.`t3`.`col1`,`index_merge_sequoiadb_noswitch`.`t3`.`col2`,`index_merge_sequoiadb_noswitch`.`t4`.`col3`,`index_merge_sequoiadb_noswitch`.`t4`.`col4` having (`index_merge_sequoiadb_noswitch`.`t1`.`d` <> '5') union all /* select#2 */ select `index_merge_sequoiadb_noswitch`.`t1`.`a` AS `a`,`index_merge_sequoiadb_noswitch`.`t1`.`b` AS `b`,`index_merge_sequoiadb_noswitch`.`t1`.`c` AS `c`,`index_merge_sequoiadb_noswitch`.`t1`.`d` AS `d`,`index_merge_sequoiadb_noswitch`.`t2`.`e` AS `e`,`index_merge_sequoiadb_noswitch`.`t2`.`f` AS `f`,`index_merge_sequoiadb_noswitch`.`t2`.`g` AS `g`,`index_merge_sequoiadb_noswitch`.`t2`.`h` AS `h`,`index_merge_sequoiadb_noswitch`.`t3`.`col1` AS `col1`,`index_merge_sequoiadb_noswitch`.`t3`.`col2` AS `col2`,`index_merge_sequoiadb_noswitch`.`t4`.`col3` AS `col3`,`index_merge_sequoiadb_noswitch`.`t4`.`col4` AS `col4`,count(`index_merge_sequoiadb_noswitch`.`t1`.`c`) AS `i` from `index_merge_sequoiadb_noswitch`.`t1` FORCE INDEX (`idx_b`) FORCE INDEX (`idx_a`) join `index_merge_sequoiadb_noswitch`.`t2` join `index_merge_sequoiadb_noswitch`.`t3` join `index_merge_sequoiadb_noswitch`.`t4` where ((((`index_merge_sequoiadb_noswitch`.`t1`.`a` < 2) and (`index_merge_sequoiadb_noswitch`.`t2`.`e` < 2)) or ((`index_merge_sequoiadb_noswitch`.`t1`.`b` < '2') and (`index_merge_sequoiadb_noswitch`.`t2`.`f` < '2'))) and (`index_merge_sequoiadb_noswitch`.`t1`.`d` = `index_merge_sequoiadb_noswitch`.`t4`.`col3`) and (`index_merge_sequoiadb_noswitch`.`t1`.`c` = `index_merge_sequoiadb_noswitch`.`t3`.`col1`) and ((`index_merge_sequoiadb_noswitch`.`t2`.`e` = `index_merge_sequoiadb_noswitch`.`t1`.`a`) or (`index_merge_sequoiadb_noswitch`.`t2`.`f` = `index_merge_sequoiadb_noswitch`.`t1`.`b`))) group by `index_merge_sequoiadb_noswitch`.`t1`.`c`,`index_merge_sequoiadb_noswitch`.`t1`.`a`,`index_merge_sequoiadb_noswitch`.`t1`.`b`,`index_merge_sequoiadb_noswitch`.`t1`.`d`,`index_merge_sequoiadb_noswitch`.`t2`.`e`,`index_merge_sequoiadb_noswitch`.`t2`.`f`,`index_merge_sequoiadb_noswitch`.`t2`.`g`,`index_merge_sequoiadb_noswitch`.`t2`.`h`,`index_merge_sequoiadb_noswitch`.`t3`.`col1`,`index_merge_sequoiadb_noswitch`.`t3`.`col2`,`index_merge_sequoiadb_noswitch`.`t4`.`col3`,`index_merge_sequoiadb_noswitch`.`t4`.`col4` having (`index_merge_sequoiadb_noswitch`.`t1`.`d` <> '5') order by `i`,`g`,`h`,`b`,`c` desc
+select *, count(c) as i
+from t1 force index(idx_a,idx_b) 
+inner join t2 on a = e or b = f
+inner join t3 on c = col1
+inner join t4 on d = col3
+where ( a = 1 and e = 1) or (b = '1' and f = '1')
+group by c,a,b,d,e,f,g,h,col1,col2,col3,col4
+having d !='5'
+union all
+select *, count(c) as i
+from t1 force index(idx_a,idx_b) 
+inner join t2 on a = e or b = f
+inner join t3 on c = col1
+inner join t4 on d = col3
+where ( a < 2 and e < 2) or (b < '2' and f < '2')
+group by c,a,b,d,e,f,g,h,col1,col2,col3,col4
+having d !='5'
+order by i,g,h,b,c desc;
+a	b	c	d	e	f	g	h	col1	col2	col3	col4	i
+1	1	3	4	1	2	1	4	3	c	4	w	25
+1	1	3	4	1	2	1	4	3	c	4	w	25
+1	2	2	4	1	2	1	4	2	b	4	w	25
+1	2	2	4	1	2	1	4	2	b	4	w	25
+1	2	1	4	1	2	1	4	1	a	4	w	25
+1	2	1	4	1	2	1	4	1	a	4	w	25
+1	1	3	4	1	2	2	4	3	c	4	w	25
+1	1	3	4	1	2	2	4	3	c	4	w	25
+1	2	2	4	1	2	2	4	2	b	4	w	25
+1	2	2	4	1	2	2	4	2	b	4	w	25
+1	2	1	4	1	2	2	4	1	a	4	w	25
+1	2	1	4	1	2	2	4	1	a	4	w	25
+1	1	3	4	1	1	3	4	3	c	4	w	25
+1	1	3	4	1	1	3	4	3	c	4	w	25
+1	2	2	4	1	1	3	4	2	b	4	w	25
+1	2	2	4	1	1	3	4	2	b	4	w	25
+1	2	1	4	1	1	3	4	1	a	4	w	25
+1	2	1	4	1	1	3	4	1	a	4	w	25
+1	1	3	4	3	1	5	5	3	c	4	w	25
+1	1	3	4	3	1	5	5	3	c	4	w	25
+drop database index_merge_sequoiadb_noswitch;
+set session optimizer_switch="index_merge_intersection=default";

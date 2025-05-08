@@ -1,0 +1,72 @@
+CREATE DATABASE test_sql_pushdown;
+USE test_sql_pushdown;
+SHOW VARIABLES LIKE "sequoiadb_execute_only_in_mysql";
+Variable_name	Value
+sequoiadb_execute_only_in_mysql	OFF
+SET SESSION sequoiadb_sql_push_down = ON;
+CREATE TABLE t1 (a int, b int, c int, key(a), key(b));
+INSERT INTO t1 VALUES (1,3,0), (2,2,0), (3,2,0);
+/*+sql_pushdown=sdb*/ INSERT INTO test_sql_pushdown.t1 VALUES (10,10,10);
+ERROR 42000: You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near 'INSERT INTO test_sql_pushdown.t1 VALUES (10,10,10);set session `sequoiadb_execut' at line 1
+SELECT * FROM test_sql_pushdown.t1 ORDER BY a;
+a	b	c
+1	3	0
+2	2	0
+3	2	0
+SHOW VARIABLES LIKE "sequoiadb_execute_only_in_mysql";
+Variable_name	Value
+sequoiadb_execute_only_in_mysql	OFF
+/*+sql_pushdown=sdb*/ INSERT INTO test_sql_pushdown.t1 VALUES (20,20,20);
+ERROR 42000: You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near 'INSERT INTO test_sql_pushdown.t1 VALUES (20,20,20);set session `sequoiadb_execut' at line 1
+SELECT * FROM test_sql_pushdown.t1;
+a	b	c
+1	3	0
+2	2	0
+3	2	0
+SHOW VARIABLES LIKE "sequoiadb_execute_only_in_mysql";
+Variable_name	Value
+sequoiadb_execute_only_in_mysql	OFF
+PREPARE stmt1 FROM "SELECT /*+sql_pushdown=sdb*/ a FROM test_sql_pushdown.t1 WHERE a > 1";
+ERROR 42000: You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near 'PREPARE stmt1 FROM "SELECT  a FROM test_sql_pushdown.t1 WHERE a > 1";set session' at line 1
+SELECT * FROM test_sql_pushdown.t1 ORDER BY a;
+a	b	c
+1	3	0
+2	2	0
+3	2	0
+SHOW VARIABLES LIKE "sequoiadb_execute_only_in_mysql";
+Variable_name	Value
+sequoiadb_execute_only_in_mysql	OFF
+DROP TABLE t1;
+SET SESSION sequoiadb_sql_push_down = DEFAULT;
+SET SESSION sequoiadb_sql_push_down = ON;
+CREATE TABLE t1 (a int, b int, c int, key(a), key(b));
+INSERT INTO t1 VALUES (1,3,0), (2,2,0);
+/*+sql_pushdown=sdb1*/ SELECT t1.a FROM test_sql_pushdown.t1 AS t1 WHERE t1.a > 1;
+a
+2
+[Note] SequoiaDB: Query message: condition[{ "a": { "$gt": 1 } }], selector[{ "a": null }], order_by[{ "a": 1 }], hint[{ "": "a" }], limit[-1], offset[0], table[test_sql_pushdown.t1]
+/*+sql_pushdown=sdba*/ SELECT t1.a FROM test_sql_pushdown.t1 AS t1 WHERE t1.a > 1;
+a
+2
+[Note] SequoiaDB: Query message: condition[{ "a": { "$gt": 1 } }], selector[{ "a": null }], order_by[{ "a": 1 }], hint[{ "": "a" }], limit[-1], offset[0], table[test_sql_pushdown.t1]
+/*+sql_pushdown = sdb*/ SELECT t1.a FROM test_sql_pushdown.t1 AS t1 WHERE t1.a > 1;
+a
+2
+[Note] SequoiaDB: Query message: condition[{ "a": { "$gt": 1 } }], selector[{ "a": null }], order_by[{ "a": 1 }], hint[{ "": "a" }], limit[-1], offset[0], table[test_sql_pushdown.t1]
+SELECT /*+sql_pushdown=sdb1*/ t1.a FROM test_sql_pushdown.t1 AS t1 WHERE t1.a > 1;
+a
+2
+[Note] SequoiaDB: Query message: condition[{ "a": { "$gt": 1 } }], selector[{ "a": null }], order_by[{ "a": 1 }], hint[{ "": "a" }], limit[-1], offset[0], table[test_sql_pushdown.t1]
+SELECT /*+2sql_pushdown=sdb*/ t1.a FROM test_sql_pushdown.t1 AS t1 WHERE t1.a > 1;
+a
+2
+[Note] SequoiaDB: Query message: condition[{ "a": { "$gt": 1 } }], selector[{ "a": null }], order_by[{ "a": 1 }], hint[{ "": "a" }], limit[-1], offset[0], table[test_sql_pushdown.t1]
+/*+sql_pushdown=sdb*/ SELECT t1.a FROM test_sql_pushdown.t1 AS t1 WHERE t1.a > 1;
+a
+2
+SELECT /*+sql_pushdown=sdb*/ t1.a FROM test_sql_pushdown.t1 AS t1 WHERE t1.a > 1;
+a
+2
+DROP TABLE t1;
+SET SESSION sequoiadb_sql_push_down = DEFAULT;
+DROP DATABASE test_sql_pushdown;

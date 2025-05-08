@@ -1,0 +1,73 @@
+#check table scan and index scan,when query condition pushdown to sequoiadb
+#Case 14728#Case 14729#Case 14730#Case 14731#Case 14732#Case 14733#Case 14734#Case 14735#Case 14736#Case 14737#Case 14738
+#Case 14739#Case 14740#Case 14741#Case 14742#Case 16817#Case 14711#Case 14712#Case 14713#Case 14714#Case 14715#Case 14717
+#Case 14718#Case 14719#Case 14720#Case 14721#Case 16818#Case 16819#Case 15650#Case 15651#Case 15685#Case 16820#Case 16821
+#Case 16822#Case 16823#Case 16824#Case 16825#Case 16826#Case 16827#Case 16835#Case 16836#Case 16865#Case 16866#Case 16867
+#Case 16868#Case 16869#Case 14922#Case 14923#Case 14924#Case 14925#Case 14926#Case 14927#Case 14928#Case 14929#Case 14930
+#Case 14931#Case 15145#Case 15146#Case 22379#Case 22380#Case 22381#Case 22382#Case 22383#Case 22384#Case 22385#Case 22386
+#Case 22387#Case 22388#Case 22389#Case 18648#Case 14743#Case 14744#Case 14745#Case 14746#Case 14747#Case 14748#Case 14749
+#Case 14750#Case 14751#Case 14752#Case 14753#Case 14754#Case 14755#Case 14756#Case 14757#Case 22578#Case 22759#Case 22760
+#Case 22761#Case 22762#Case 22763#Case 22764#Case 22765#Case 22766#Case 22767#Case 22768#Case 22769#Case 22770#Case 22771
+#Case 23037#Case 23510#Case 23511#Case 23512#Case 23513#Case 23514#Case 23515#Case 23516#Case 23517#Case 23521#Case 22801#Case 22803
+--source include/have_sequoiadb.inc
+
+CREATE DATABASE query_pushdown_test_sequoiadb;
+USE query_pushdown_test_sequoiadb;
+
+--disable_query_log
+create table reserved(a int primary key)ENGINE=sequoiadb COMMENT='sequoiadb:{ auto_partition: true }';
+--enable_query_log
+
+#
+# query condition pushdown testing for all datatype and index
+#
+--source include/query_condition_pushdown_sequoiadb.inc
+
+#
+# operator pushdown testing
+#
+--source include/operator_pushdown_sequoiadb.inc
+
+#
+# limit pushdown testing
+#
+--source include/limit_offset_pushdown_sequoiadb.inc
+
+#
+# selector pushdown testing
+#
+--source include/selector_pushdown_sequoiadb.inc
+
+#
+# and-or-not pushdown testing
+#
+--source include/logical_operator_pushdown_sequoiadb.inc
+
+#
+# QUERY WITH 'LIKE' PUSHDOWN TESTING
+#
+--source include/query_like_pushdown_sequoiadb.inc
+
+#
+# QUERY WITH ORDER BY/GROUP BY PUSHDOWN TESTING
+#
+--source include/sort_pushdown_sequoiadb.inc
+
+#
+# FIELD NAME CASE SENSITIVITY PUSHDOWN TESTING
+#
+--source include/field_name_sensitivity_pushdown_sequoiadb.inc
+
+#
+# QUERY FOR COUNT TESTING
+#
+--source include/count_pushdown_sequoiadb.inc
+
+#
+# INDEX OPTIMIZER TESTING
+#
+--source include/index_pushdown_sequoiadb.inc
+
+DROP DATABASE query_pushdown_test_sequoiadb;
+
+--source include/uninstall_sequoiadb.inc

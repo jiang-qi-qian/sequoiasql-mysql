@@ -1,0 +1,117 @@
+install plugin server_audit soname 'server_audit.so';
+drop database if exists server_audit;
+create database server_audit;
+drop database server_audit;
+create database server_audit;
+show databases like "server_audit";
+Database (server_audit)
+server_audit
+use server_audit;
+show variables like 'server_audit%';
+Variable_name	Value
+server_audit_events	
+server_audit_excl_users	
+server_audit_file_path	server_audit.log
+server_audit_file_rotate_now	OFF
+server_audit_file_rotate_size	1000000
+server_audit_file_rotations	9
+server_audit_incl_users	
+server_audit_loc_info	
+server_audit_logging	OFF
+server_audit_mode	1
+server_audit_output_type	file
+server_audit_query_log_limit	1024
+server_audit_syslog_facility	LOG_USER
+server_audit_syslog_ident	mysql-server_auditing
+server_audit_syslog_info	
+server_audit_syslog_priority	LOG_INFO
+set global server_audit_file_rotate_now=OFF;
+set global server_audit_file_rotate_size=10485760;
+set global server_audit_file_rotations=999;
+set global server_audit_query_log_limit=102400;
+set global server_audit_file_path='server_audit.log';
+set global server_audit_output_type=file;
+set global server_audit_logging=on;
+create table t1(id int,name varchar(20));
+show tables;
+Tables_in_server_audit
+t1
+insert into t1 values (1,"John");
+select * from t1;
+id	name
+1	John
+update t1 set name="Mike" where id=1;
+select * from t1;
+id	name
+1	Mike
+delete from t1 where id=1;
+select * from t1;
+id	name
+CREATE USER u1 IDENTIFIED BY 'pwd-123';
+SET PASSWORD FOR u1 = PASSWORD('pwd-321');
+Warnings:
+Warning	1287	'SET PASSWORD FOR <user> = PASSWORD('<plaintext_password>')' is deprecated and will be removed in a future release. Please use SET PASSWORD FOR <user> = '<plaintext_password>' instead
+SET PASSWORD FOR u1=<secret>;
+ERROR 42000: You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near '=<secret>' at line 1
+GRANT ALL ON server_audit.`t1` TO u2 IDENTIFIED BY "pwd-456";
+Warnings:
+Warning	1287	Using GRANT for creating new user is deprecated and will be removed in future release. Create new user with CREATE USER statement.
+SHOW GRANTS FOR u2;
+Grants for u2@%
+GRANT USAGE ON *.* TO 'u2'@'%'
+GRANT ALL PRIVILEGES ON `server_audit`.`t1` TO 'u2'@'%'
+REVOKE UPDATE ON server_audit.`t1` from u2;
+SHOW GRANTS FOR u2;
+Grants for u2@%
+GRANT USAGE ON *.* TO 'u2'@'%'
+GRANT SELECT, INSERT, DELETE, CREATE, DROP, REFERENCES, INDEX, ALTER, CREATE VIEW, SHOW VIEW, TRIGGER ON `server_audit`.`t1` TO 'u2'@'%'
+CREATE USER u3 IDENTIFIED BY '';
+drop user u1, u2, u3;
+drop table t1;
+drop database server_audit;
+show variables like 'server_audit%';
+Variable_name	Value
+server_audit_events	
+server_audit_excl_users	
+server_audit_file_path	server_audit.log
+server_audit_file_rotate_now	OFF
+server_audit_file_rotate_size	10485760
+server_audit_file_rotations	999
+server_audit_incl_users	
+server_audit_loc_info	
+server_audit_logging	ON
+server_audit_mode	1
+server_audit_output_type	file
+server_audit_query_log_limit	102400
+server_audit_syslog_facility	LOG_USER
+server_audit_syslog_ident	mysql-server_auditing
+server_audit_syslog_info	
+server_audit_syslog_priority	LOG_INFO
+uninstall plugin server_audit;
+Warnings:
+Warning	1620	Reinstalling the plugin before instance shutdown may result in unpredictable result
+TIME,HOSTNAME,root,localhost,ID,ID,QUERY,server_audit,'set global server_audit_logging=on',0
+TIME,HOSTNAME,root,localhost,ID,ID,QUERY,server_audit,'create table t1(id int,name varchar(20))',0
+TIME,HOSTNAME,root,localhost,ID,ID,QUERY,server_audit,'show tables',0
+TIME,HOSTNAME,root,localhost,ID,ID,QUERY,server_audit,'insert into t1 values (1,"John")',0
+TIME,HOSTNAME,root,localhost,ID,ID,QUERY,server_audit,'select * from t1',0
+TIME,HOSTNAME,root,localhost,ID,ID,QUERY,server_audit,'update t1 set name="Mike" where id=1',0
+TIME,HOSTNAME,root,localhost,ID,ID,QUERY,server_audit,'select * from t1',0
+TIME,HOSTNAME,root,localhost,ID,ID,QUERY,server_audit,'delete from t1 where id=1',0
+TIME,HOSTNAME,root,localhost,ID,ID,QUERY,server_audit,'select * from t1',0
+TIME,HOSTNAME,root,localhost,ID,ID,QUERY,server_audit,'CREATE USER \'u1\'@\'%\' IDENTIFIED WITH \'mysql_native_password\' AS \'*106E5114207FD5B9D3FE67BF45BCEEB56EB55D6B\'',0
+TIME,HOSTNAME,root,localhost,ID,ID,QUERY,server_audit,'ALTER USER \'u1\'@\'%\' IDENTIFIED WITH \'mysql_native_password\' AS \'*215F403F993AEF05BCF73D3B7E7D175859C90F60\'',0
+TIME,HOSTNAME,root,localhost,ID,ID,QUERY,server_audit,'SHOW WARNINGS',0
+TIME,HOSTNAME,root,localhost,ID,ID,QUERY,server_audit,'GRANT ALL PRIVILEGES ON `server_audit`.`t1` TO \'u2\'@\'%\' IDENTIFIED WITH \'mysql_native_password\' AS \'*E92C6EAB2CCEEA98BE5CD32D124A8CAD22E17E0D\'',0
+TIME,HOSTNAME,root,localhost,ID,ID,QUERY,server_audit,'SHOW WARNINGS',0
+TIME,HOSTNAME,root,localhost,ID,ID,QUERY,server_audit,'SHOW GRANTS FOR u2',0
+TIME,HOSTNAME,root,localhost,ID,ID,QUERY,server_audit,'REVOKE UPDATE ON server_audit.`t1` from u2',0
+TIME,HOSTNAME,root,localhost,ID,ID,QUERY,server_audit,'SHOW GRANTS FOR u2',0
+TIME,HOSTNAME,root,localhost,ID,ID,QUERY,server_audit,'CREATE USER \'u3\'@\'%\' IDENTIFIED WITH \'mysql_native_password\'',0
+TIME,HOSTNAME,root,localhost,ID,ID,QUERY,server_audit,'drop user u1, u2, u3',0
+TIME,HOSTNAME,root,localhost,ID,ID,QUERY,server_audit,'drop table t1',0
+TIME,HOSTNAME,root,localhost,ID,ID,QUERY,server_audit,'drop database server_audit',0
+TIME,HOSTNAME,root,localhost,ID,ID,QUERY,server_audit,'show variables like \'server_audit%\'',0
+TIME,HOSTNAME,root,localhost,ID,ID,QUERY,server_audit,'uninstall plugin server_audit',0
+TIME,HOSTNAME,root,localhost,ID,ID,QUERY,server_audit,'SHOW WARNINGS',0
+TIME,HOSTNAME,root,localhost,ID,ID,QUERY,server_audit,'SELECT @@datadir',0

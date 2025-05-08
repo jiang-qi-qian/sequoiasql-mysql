@@ -1,0 +1,349 @@
+#Test for System Versioning Table
+#Case 23346#Case 23349#Case 23350#Case 23351
+#Case 23352#Case 23353#Case 23354#Case 23355
+
+#seqDB-23351, seqDB-23346
+#
+# Test create/alter/drop System-Versioning table
+#
+--error ER_VERS_FIELD_WRONG_TYPE
+CREATE TABLE t1 (   # trx_id, should return fail
+  id int primary key,
+  name varchar(16),
+  start_timestamp bigint GENERATED ALWAYS as ROW START INVISIBLE,
+  end_timestamp bigint GENERATED ALWAYS as ROW END INVISIBLE,
+  PERIOD FOR SYSTEM_TIME (start_timestamp, end_timestamp)
+) WITH SYSTEM VERSIONING;
+CREATE TABLE t1 (   # default system table
+  x int primary key,
+  y int
+) WITH SYSTEM VERSIONING;
+CREATE TABLE t2 ( x int primary key, y int );  # non-system table
+SHOW CREATE TABLE t1;
+SHOW CREATE TABLE t2;
+INSERT INTO t1(x,y) VALUES (1,1),(2,2),(3,3);
+INSERT INTO t2(x,y) VALUES (1,1),(2,2),(3,3);
+SELECT * FROM t1 FOR SYSTEM_TIME ALL ORDER BY x; 
+# alter table
+#BUG #SEQUOIASQLMAINSTREAM-913
+ALTER TABLE t1 DROP SYSTEM VERSIONING; 
+SHOW CREATE TABLE t1;
+INSERT INTO t1(x,y) VALUES (4,4);
+SELECT * FROM t1 ORDER BY x;
+--error ER_VERS_NOT_VERSIONED
+SELECT * FROM t1 FOR SYSTEM_TIME ALL;
+SET system_versioning_alter_history = KEEP;
+ALTER TABLE t1 ADD COLUMN ts TIMESTAMP (6) GENERATED ALWAYS as ROW START,
+               ADD COLUMN te TIMESTAMP (6) GENERATED ALWAYS as ROW END,
+               ADD PERIOD FOR SYSTEM_TIME (ts, te),
+               ADD SYSTEM VERSIONING;
+ALTER TABLE t1 ADD name VARCHAR(16), MODIFY x int auto_increment, DROP y;
+ALTER TABLE t2 ADD SYSTEM VERSIONING;
+SET system_versioning_alter_history = DEFAULT; 
+SHOW CREATE TABLE t1;
+SHOW CREATE TABLE t2;
+INSERT INTO t1(name) VALUES ('Joe'),('Bob'),('Mary');
+INSERT INTO t2(x,y) VALUES (4,4);
+UPDATE t1 SET name = 'update_name' WHERE x < 3;
+UPDATE t2 SET y = y - 1 WHERE x >= 3;
+DELETE FROM t1 WHERE x > 4;
+DELETE FROM t2 WHERE x >= 3 OR y = 2;
+SELECT x,name FROM t1 ORDER BY x;
+SELECT * FROM t2 ORDER BY x;
+#BUG #SEQUOIASQLMAINSTREAM-912
+SELECT x,name FROM t1 FOR SYSTEM_TIME ALL ORDER BY x,ts;
+SELECT * FROM t2 FOR SYSTEM_TIME ALL ORDER BY x,y;
+DROP TABLE t1,t2;
+
+#seqDB-23349
+#
+# Test insert/update/delete/select of System-Versioning table
+#
+CREATE TABLE t1 (   # specify timestamp rows, without primary key
+  x int,
+  y int,
+  start_timestamp TIMESTAMP (6) GENERATED ALWAYS as ROW START,
+  end_timestamp TIMESTAMP (6) GENERATED ALWAYS as ROW END, 
+  PERIOD FOR SYSTEM_TIME (start_timestamp, end_timestamp)
+) WITH SYSTEM VERSIONING;
+CREATE TABLE t2 (   # specify timestamp rows, with primary key
+  x int primary key,
+  y int,
+  start_timestamp TIMESTAMP (6) GENERATED ALWAYS as ROW START INVISIBLE,
+  end_timestamp TIMESTAMP (6) GENERATED ALWAYS as ROW END INVISIBLE,
+  PERIOD FOR SYSTEM_TIME (start_timestamp, end_timestamp)
+) WITH SYSTEM VERSIONING;
+SHOW CREATE TABLE t1;
+SHOW CREATE TABLE t2;
+# insert records
+INSERT INTO t1(x,y) VALUES (1,1),(2,2),(3,3);
+INSERT IGNORE INTO t1(x,y) VALUES (1,-1),(4,4);
+REPLACE INTO t1(x,y) VALUES (4,-2),(5,5);
+INSERT INTO t2(x,y) VALUES (1,1),(2,2),(3,3);
+INSERT IGNORE INTO t2(x,y) VALUES (1,-1),(4,4);
+#BUG #SEQUOIASQLMAINSTREAM-904
+REPLACE INTO t2(x,y) VALUES (4,-2),(5,5);
+SELECT x,y FROM t1 ORDER BY x,y;
+SELECT * FROM t2 ORDER BY x;
+SELECT x,y FROM t1 FOR SYSTEM_TIME ALL ORDER BY x,y;
+SELECT * FROM t2 FOR SYSTEM_TIME ALL ORDER BY x,y;
+# update records
+UPDATE t1 SET y = y - 10 WHERE x > 3;
+UPDATE t2 SET y = y - 10 WHERE x > 3;
+UPDATE IGNORE t1 SET x = -3 WHERE y < -10;
+--error 40178
+UPDATE IGNORE t2 SET x = -3 WHERE y < -10;
+REPLACE INTO t1(x,y) VALUES (-3,10),(5,11);
+REPLACE INTO t2(x,y) VALUES (-3,10),(5,11);
+INSERT INTO t1(x,y) VALUES (1,100) ON DUPLICATE KEY UPDATE y = 100;
+INSERT INTO t2(x,y) VALUES (1,100) ON DUPLICATE KEY UPDATE y = 100;
+SELECT x,y FROM t1 ORDER BY x,y;
+SELECT * FROM t2 ORDER BY x;
+SELECT x,y FROM t1 FOR SYSTEM_TIME ALL ORDER BY x,y;
+SELECT * FROM t2 FOR SYSTEM_TIME ALL ORDER BY x,y;
+# delete records
+DELETE FROM t1 WHERE x > 3 OR y = 3;
+DELETE FROM t2 WHERE x > 3 OR y = 3;
+SELECT x,y FROM t1 ORDER BY x,y;
+SELECT * FROM t2 ORDER BY x;
+SELECT x,y FROM t1 FOR SYSTEM_TIME ALL ORDER BY x,y;
+SELECT * FROM t2 FOR SYSTEM_TIME ALL ORDER BY x,y;
+DELETE FROM t1;
+DELETE FROM t2;
+SELECT x,y FROM t1 ORDER BY x;
+SELECT * FROM t2 ORDER BY x;
+SELECT x,y FROM t1 FOR SYSTEM_TIME ALL ORDER BY x,y;
+SELECT * FROM t2 FOR SYSTEM_TIME ALL ORDER BY x,y;
+DROP TABLE t1,t2;
+
+#seqDB-23350
+#
+# Test with/without system versioning
+#
+CREATE TABLE t1 (
+  x int auto_increment primary key WITHOUT SYSTEM VERSIONING,
+  y int,
+  z int WITHOUT SYSTEM VERSIONING
+) WITH SYSTEM VERSIONING;
+CREATE OR REPLACE TABLE t2 (
+  x int,
+  y int,
+  z int primary key WITH SYSTEM VERSIONING
+);
+SHOW CREATE TABLE t1;
+SHOW CREATE TABLE t2;
+INSERT INTO t1(y,z) VALUES (1,1),(2,2),(3,3);
+INSERT INTO t2 VALUES (1,1,1),(2,2,2),(3,3,3);
+UPDATE t1 SET z = -1 WHERE x = 1;
+#BUG #SEQUOIASQLMAINSTREAM-912
+UPDATE t1 SET y = -1 WHERE x = 1;
+UPDATE t2 SET x = -1 WHERE z = 1;
+UPDATE t2 SET y = -1 WHERE z = 1;
+SELECT * FROM t1 FOR SYSTEM_TIME ALL ORDER BY x,y;
+SELECT * FROM t2 FOR SYSTEM_TIME ALL ORDER BY x,y;
+SET system_versioning_alter_history = KEEP;
+ALTER TABLE t1 MODIFY z int WITH SYSTEM VERSIONING, algorithm=copy;
+ALTER TABLE t1 MODIFY x int WITH SYSTEM VERSIONING, MODIFY z int WITHOUT SYSTEM VERSIONING, algorithm=copy;
+SET system_versioning_alter_history = DEFAULT;
+SHOW CREATE TABLE t1;
+SHOW CREATE TABLE t2;
+UPDATE t1 SET z = -2 WHERE x = 2;
+UPDATE t2 SET x = -2 WHERE x = 2;
+SELECT * FROM t1 ORDER BY x;
+SELECT * FROM t2 ORDER BY x;
+SELECT * FROM t1 FOR SYSTEM_TIME ALL ORDER BY x,y;
+SELECT * FROM t2 FOR SYSTEM_TIME ALL ORDER BY x,y;
+DROP TABLE t1,t2;
+
+#seqDB-23352
+#
+# Test create/alter/drop Application-time Periods table 
+#
+CREATE TABLE t1(
+  id int auto_increment primary key, 
+  start_time datetime,
+  end_time datetime,
+  PERIOD FOR dt_period(start_time, end_time));
+CREATE TABLE t2 (   # non-periods table
+  id int,
+  te timestamp,
+  ts timestamp
+ );
+SHOW CREATE TABLE t1;
+SHOW CREATE TABLE t2;
+INSERT INTO t1(start_time,end_time) VALUES ('1997-01-01 00:00:00', '2001-01-01 10:10:10');
+INSERT INTO t1(start_time,end_time) VALUES ('2005-05-05 10:10:10', '2010-10-10 10:10:10');
+INSERT INTO t1(start_time,end_time) VALUES ('2008-08-08 08:08:08', '2018-10-10 10:10:10');
+INSERT INTO t2 VALUES (1, '2001-01-01 10:10:10', '1997-01-01 00:00:00');
+INSERT INTO t2 VALUES (2, '2010-10-10 10:10:10', '2005-05-05 10:10:10');
+INSERT INTO t2 VALUES (3, '2018-10-10 10:10:10', '2008-08-08 08:08:08');
+SELECT * FROM t1 ORDER BY id;
+SELECT * FROM t2 ORDER BY id;
+# alter table
+ALTER TABLE t1 DROP PERIOD FOR dt_period;
+ALTER TABLE t2 ADD PERIOD FOR timestamp_period(ts,te);
+SHOW CREATE TABLE t1;
+SHOW CREATE TABLE t2;
+INSERT INTO t1(start_time,end_time) VALUES ('2020-12-12 00:00:00', '2021-01-01 00:00:00');
+INSERT INTO t2 VALUES (4, '2020-12-12 00:00:00', '1998-09-09 09:09:09');
+--error ER_PERIOD_NOT_FOUND
+UPDATE t1
+FOR PORTION OF timestamp_period
+    FROM '1999-01-01 10:10:10' TO '2007-07-07 07:07:07' SET id = id * 2;
+UPDATE t2 
+FOR PORTION OF timestamp_period
+    FROM '1999-01-01 10:10:10' TO '2007-07-07 07:07:07' SET id = id * 2;
+SELECT id FROM t2 ORDER BY id;
+DELETE FROM t2 
+FOR PORTION OF timestamp_period FROM '2010-01-01 00:00:00' TO '2020-11-30 00:00:00';
+SELECT id FROM t2 ORDER BY id;
+DROP TABLE t1,t2;
+
+#seqDB-23353
+#
+# Test insert/update/delete/select of Application-time Periods table
+#
+CREATE TABLE t1(
+  id int auto_increment primary key,
+  name varchar(32),
+  date_1 date,
+  date_2 date,
+  PERIOD FOR date_period(date_1, date_2));
+CREATE TABLE t2(
+  name varchar(32),
+  ts timestamp(6) primary key,
+  te timestamp(6),
+  PERIOD FOR timestamp_period(ts, te));
+SHOW CREATE TABLE t1;
+SHOW CREATE TABLE t2;
+# insert records
+INSERT INTO t1(name,date_1,date_2) VALUES ('Joe', '1997-01-01', '2001-01-01');
+INSERT INTO t1(name,date_1,date_2) VALUES ('Mary', '2005-05-05', '2010-10-10');
+INSERT INTO t1(name,date_1,date_2) VALUES ('Bob', '2008-08-08', '2018-10-10');
+INSERT INTO t2 VALUES ('Joe', '1997-01-01 00:00:00', '2001-01-01 10:10:10');
+INSERT INTO t2 VALUES ('Mary', '2005-05-05 10:10:10', '2010-10-10 10:10:10');
+INSERT INTO t2 VALUES ('Bob', '2008-08-08 08:08:08', '2018-10-10 10:10:10');
+INSERT IGNORE INTO t1 VALUES (1, 'Tom', '1990-01-01', '1995-01-01');
+REPLACE INTO t1 VALUES (1, 'Jack', '1991-01-01', '1997-01-01');
+INSERT IGNORE INTO t2 VALUES ('Tom', '2008-08-08 08:08:08', '2009-09-09 09:09:09');
+REPLACE INTO t2 VALUES ('Jack', '2008-08-08 08:08:08', '2021-01-01 00:00:00');
+SELECT * FROM t1 ORDER BY id;
+SELECT * FROM t2 ORDER BY name;
+# update periods
+UPDATE t1   # update 0 row
+FOR PORTION OF date_period
+    FROM '1997-01-01' TO '2001-01-01' SET name = CONCAT('first update: ', name);
+UPDATE t1   # update 1 row
+FOR PORTION OF date_period
+    FROM '1991-01-01' TO '2001-01-01' SET name = CONCAT('first update: ', name);
+#BUG #SEQUOIASQLMAINSTREAM-911
+UPDATE t1   # update 1 row insert 2 rows 
+FOR PORTION OF date_period
+    FROM '2006-01-01' TO '2007-01-01' SET name = CONCAT('second update: ', name);
+UPDATE t1   # update 2 rows insert 1 row 
+FOR PORTION OF date_period
+    FROM '2007-12-12' TO '2021-01-01' SET name = CONCAT('third update: ', name);
+UPDATE t1 SET date_2 = '2038-01-01 03:03:03' WHERE id > 5;
+--error 40178
+UPDATE t2   
+FOR PORTION OF timestamp_period
+    FROM '1999-01-01 10:10:10' TO '2007-07-07 07:07:07' SET name = CONCAT('first update: ', name);
+--error 40178
+UPDATE t2
+FOR PORTION OF timestamp_period
+    FROM '1998-08-08 08:08:08' TO '2009-09-09 09:09:09' SET name = CONCAT('first update: ', name);
+SELECT * FROM t1 ORDER BY id;
+SELECT * FROM t2 ORDER BY name;
+DELETE FROM t1    # delete 1 row
+FOR PORTION OF date_period FROM '1991-01-01' TO '1997-01-01';
+#BUG #SEQUOIASQLMAINSTREAM-911
+DELETE FROM t1    # delete many rows
+FOR PORTION OF date_period FROM '2005-12-12' TO '2015-01-01';
+--error 40178
+DELETE FROM t2
+FOR PORTION OF timestamp_period FROM '2005-05-05 00:00:00' TO '2020-11-30 00:00:00';
+SELECT * FROM t1 ORDER BY id;
+SELECT * FROM t2 ORDER BY name;
+DROP TABLE t1,t2;
+
+# seqDB-23354, seqDB-23355
+#
+# Test create/alter/drop Bitemporal Tables,
+#    and insert/update/delete/select
+#
+CREATE TABLE t1 (
+   id int auto_increment primary key,
+   name varchar(32),
+   date_1 date,
+   date_2 date,
+   row_start timestamp(6) AS ROW START INVISIBLE,
+   row_end timestamp(6) AS ROW END INVISIBLE,
+   PERIOD FOR application_time(date_1, date_2),
+   PERIOD FOR system_time(row_start, row_end))
+WITH SYSTEM VERSIONING;
+CREATE TABLE t2 (   # non-versioning table
+   id int primary key, 
+   name varchar(32),
+   date_1 date,
+   date_2 date
+);
+SHOW CREATE TABLE t1;
+SHOW CREATE TABLE t2;
+INSERT INTO t1(name,date_1,date_2) VALUES ('Joe', '1997-01-01', '2001-01-01');
+INSERT INTO t1(name,date_1,date_2) VALUES ('Mary', '2005-05-05', '2010-10-10');
+INSERT INTO t1(name,date_1,date_2) VALUES ('Bob', '2008-08-08', '2018-10-10');
+INSERT IGNORE INTO t1(name,date_1,date_2) VALUES ('Tom', '2008-08-08', '2009-09-09');
+REPLACE INTO t1(name,date_1,date_2) VALUES ('Jack', '2008-08-08', '2021-01-01');
+INSERT INTO t2 VALUES (1, 'Joe', '1997-01-01', '2001-01-01');
+INSERT INTO t2 VALUES (2, 'Mary', '2005-05-05', '2010-10-10');
+INSERT INTO t2 VALUES (3, 'Mary', '2008-08-08', '2018-10-10');
+SELECT * FROM t1 ORDER BY id;
+SELECT * FROM t1 FOR SYSTEM_TIME ALL ORDER BY id;
+# update records
+#BUG #SEQUOIASQLMAINSTREAM-912
+UPDATE t1 SET name = 'first update: Joe' WHERE id < 2;
+#BUG #SEQUOIASQLMAINSTREAM-911
+# update periods
+UPDATE t1   # update 3 rows insert 6 rows
+FOR PORTION OF application_time
+    FROM '1999-09-09' TO '2009-09-09' SET name = CONCAT('second update: ', name) ORDER BY name;
+SELECT * FROM t1 ORDER BY id;
+SELECT * FROM t1 FOR SYSTEM_TIME ALL ORDER BY id,name;
+# delte records
+DELETE FROM t1 WHERE id > 4 AND id < 7;
+#BUG #SEQUOIASQLMAINSTREAM-911
+# delete periods
+DELETE FROM t1    # delete many rows
+FOR PORTION OF application_time FROM '2000-01-01' TO '2010-01-01';
+SELECT * FROM t1 ORDER BY id;
+SELECT * FROM t1 FOR SYSTEM_TIME ALL ORDER BY id,name;
+# alter table
+ALTER TABLE t1 DROP PERIOD FOR application_time;
+ALTER TABLE t2 ADD SYSTEM VERSIONING;
+ALTER TABLE t2 ADD PERIOD FOR date_period(date_1,date_2);
+SHOW CREATE TABLE t1;
+SHOW CREATE TABLE t2;
+INSERT INTO t1(name,date_1,date_2) VALUES ('David', '1998-01-01', '2008-01-01');
+# update records
+#BUG #SEQUOIASQLMAINSTREAM-912
+UPDATE t1 SET name = 'third update: David' WHERE id > 5;
+UPDATE t2 SET name = 'first update: Joe' WHERE id < 2;
+UPDATE t2   # update 1 row
+FOR PORTION OF date_period
+    FROM '1997-01-01' TO '2001-01-01' SET name = CONCAT('second update: ', name);
+# select
+SELECT * FROM t1 ORDER BY id;
+SELECT * FROM t2 ORDER BY id;
+SELECT * FROM t2 FOR SYSTEM_TIME ALL ORDER BY id,name;
+# delete records
+DELETE FROM t1 WHERE date_1 BETWEEN '2000-12-12' AND '2010-01-01';
+DELETE FROM t2 WHERE id > 2;
+DELETE FROM t2    # delete many rows
+FOR PORTION OF date_period FROM '2000-01-01' TO '2010-01-01';
+# select
+SELECT * FROM t1 ORDER BY id;
+SELECT * FROM t1 FOR SYSTEM_TIME ALL ORDER BY id,name;
+SELECT * FROM t2 ORDER BY id;
+#BUG #SEQUOIASQLMAINSTREAM-914
+SELECT * FROM t2 FOR SYSTEM_TIME ALL ORDER BY id,name,date_1,date_2;
+DROP TABLE t1,t2;

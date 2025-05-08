@@ -1,0 +1,33 @@
+connection conn1;
+set server_ha_wait_sync_timeout = 10;
+DROP SERVER IF EXISTS metasync_s1;
+DROP SERVER IF EXISTS metasync_s2;
+connection conn2;
+SELECT * FROM mysql.servers;
+Server_name	Host	Db	Username	Password	Port	Socket	Wrapper	Owner
+connection conn1;
+CREATE SERVER metasync_s1 
+FOREIGN DATA WRAPPER mysql 
+OPTIONS ( USER 'Remote', HOST '127.0.0.1', DATABASE 'test', SOCKET '/tmp/mysqld.sock', OWNER 'root', PORT 3308 );
+CREATE SERVER IF NOT EXISTS metasync_s2
+FOREIGN DATA WRAPPER ssql
+OPTIONS ( USER 'Official', HOST '127.0.0.2' );
+CREATE OR REPLACE SERVER metasync_s2
+FOREIGN DATA WRAPPER ssql
+OPTIONS ( USER 'Official', HOST '127.0.0.3', PORT 3309 );
+connection conn2;
+SELECT * FROM mysql.servers;
+Server_name	Host	Db	Username	Password	Port	Socket	Wrapper	Owner
+metasync_s1	127.0.0.1	test	Remote		3308	/tmp/mysqld.sock	mysql	root
+metasync_s2	127.0.0.3		Official		3309		ssql	
+ALTER SERVER metasync_s1 OPTIONS (USER 'Origin', SOCKET '/root/mysqld.sock');
+connection conn1;
+SELECT * FROM mysql.servers;
+Server_name	Host	Db	Username	Password	Port	Socket	Wrapper	Owner
+metasync_s1	127.0.0.1	test	Origin		3308	/root/mysqld.sock	mysql	root
+metasync_s2	127.0.0.3		Official		3309		ssql	
+DROP SERVER metasync_s1;
+DROP SERVER IF EXISTS metasync_s2;
+connection conn2;
+SELECT * FROM mysql.servers;
+Server_name	Host	Db	Username	Password	Port	Socket	Wrapper	Owner

@@ -1,0 +1,1052 @@
+#Case 13134#Case 13168#Case 18621#Case 18635#Case 13132#Case 22401#Case 13167#Case 22432#Case 22433#Case 22434
+#Case 22435#Case 22436#Case 22449#Case 22450#Case 23038#Case 23039
+
+--source include/have_sequoiadb.inc
+
+let $tx_iso = SELECT TRANS_ISOLATION FROM information_schema.SDB_SESSION_ATTR_CURRENT;
+if( $tx_iso == 3 ){
+    echo $tx_iso;
+    skip the testcase, the TRANS_ISOLATION is 3;
+}
+
+--disable_query_log
+CALL mtr.add_suppression(".*failed to query with condition.*rc: 40013");
+CALL mtr.add_suppression(".*not support transaction serializable isolation*");
+CALL mtr.add_suppression(".*Cannot change sequoiadb_use_rollback_segments*");
+--enable_query_log
+
+#seqDB-18621
+#create sessions
+connect (con1, localhost, root);
+connect (con2, localhost, root);
+
+connection default;
+create table t1(a int primary key)engine=sequoiadb; 
+connection con1;
+select @@autocommit;
+connection con2;
+select @@autocommit;
+#session1 insert
+connection con1;
+begin;
+insert into t1 values(1);
+
+#sesson2 insert error,then select and insert
+connection con2;
+begin;
+--error 1062
+insert into t1 values(1); 
+select * from t1; 
+insert into t1 values(2);
+select * from t1;
+
+#session1 commit,then select
+connection con1;
+commit; 
+select * from t1; 
+
+#session2 commit,then select
+connection con2;
+commit; 
+select * from t1;
+
+connection default;
+drop table t1;
+
+connection con1;
+set session autocommit = 0;
+select @@autocommit;
+connection con2;
+set session autocommit = 0;
+select @@autocommit;
+connection default;
+create table t1(a int primary key)engine=sequoiadb; 
+#session1 insert
+connection con1;
+begin;
+insert into t1 values(1);
+
+#sesson2 insert error,then select and insert
+connection con2;
+begin;
+--error 1062
+insert into t1 values(1); 
+select * from t1; 
+insert into t1 values(2);
+select * from t1;
+
+#session1 commit,then select
+connection con1;
+commit; 
+select * from t1; 
+commit;
+
+#session2 commit,then select
+connection con2;
+commit; 
+select * from t1;
+commit;
+
+connection default;
+drop table t1;
+
+#seqDB-18635
+# MULTI-TABLE
+connection default;
+create table t1 (id int); 
+create table t2 (id int,  s1 text); 
+insert into t1 values (1),(2),(3); 
+insert into t2 values (1,'test'), (2,'test'), (3,'test'); 
+update t1 left join t2 using(id) set s1 = 'changed';  
+--sorted_result
+select * from t1 left join t2 using(id);
+
+#SEQUOIASQLMAINSTREAM-316
+#
+# MULTI-UPDATE
+#
+connection con1;
+begin;
+update t1 left join t2 using(id) set s1 = 'changed1'; 
+
+connection con2;
+--error 1205 
+update t1 left join t2 using(ID) set s1 = 'changed2'; 
+commit;
+
+connection con1;
+commit;
+
+connection default;
+--sorted_result
+select * from t1 left join t2 using(id);
+
+connection con2;
+begin;
+update t1 left join t2 using(ID) set s1 = 'test'; 
+commit;
+
+connection default;
+--sorted_result
+select * from t1 left join t2 using(id);
+
+#SEQUOIASQLMAINSTREAM-316
+#
+# MULTI-DELETE
+#
+connection con1;
+begin;
+delete t1, t2 from t1 left join t2 on t1.id=t2.id where t1.id > 1;
+
+connection con2;
+--error 1205 
+delete t1, t2 from t1 left join t2 on t1.id=t2.id;
+commit;
+
+connection con1;
+commit;
+
+connection default;
+--sorted_result
+select * from t1 left join t2 using(id);
+
+connection con2;
+begin;
+delete t1, t2 from t1 left join t2 on t1.id=t2.id;
+commit;
+  
+connection default;
+--sorted_result
+select * from t1 left join t2 using(id);
+
+drop table t1,t2;
+
+#seqDB-20547
+#default sequoiadb_rollback_on_timeout=OFF
+create table t1 ( id int, id1 int, c char(16), index (id) );
+insert into t1 values (1,1,'a'), (2,2,'b'), (3,3,'c');
+#session1 update
+connection con1;
+begin;
+update t1 set c = 'updateC' where id = 3;
+#session2 select timeout
+connection con2;
+begin;
+insert into t1 values (4,4,'d');
+--error 1205
+select * from t1 where id = 3 for update;
+select * from t1;
+#session2 commit
+insert into t1 values (5,5,'e'),(6,6,'f');
+delete from t1 where id = 1;
+update t1 set c = 'updateE' where id = 5;
+commit;
+connection default;
+select * from t1;
+#session2 select timeout
+connection con2;
+begin;
+--error 1205
+select * from t1 where id = 3 for update;
+#session2 rollback
+insert into t1 values (7,7,'h');
+delete from t1 where id = 4;
+update t1 set c = 'updateF' where id = 6;
+rollback;
+#session1 commit
+connection con1;
+commit;
+connection default;
+select * from t1;
+delete from t1;
+
+#seqDB-20548
+insert into t1 values (1,2,'a'),(2,3,'b'), (3,3,'c');
+#session1 update
+connection con1;
+begin;
+update t1 set c = 'updateC' where id = 3;
+#session2 update timeout, condition not pushdown
+connection con2;
+begin;
+delete from t1 where id = 2;
+--error 1205
+update t1 set c = 'otherC' where not id = id1 - 1;
+select * from t1;
+#session2 commit
+insert into t1 values (4,4,'d'),(5,5,'e');
+delete from t1 where id = 1;
+update t1 set c = 'updateD' where id = 4;
+commit;
+connection default;
+select * from t1;
+#session2 update timeout, condition pushdown
+connection con2;
+begin;
+--error 1205
+update t1 set c = 'updateAll' where id > 0;
+select * from t1;
+#session2 rollback
+insert into t1 values (6,6,'f');
+delete from t1 where id = 4;
+update t1 set c = 'updateE' where id = 5;
+rollback;
+#session1
+connection con1;
+commit;
+connection default;
+select * from t1;
+delete from t1;
+
+#seqDB-20549
+insert into t1 values (1,2,'a'),(2,3,'b'), (3,3,'c');
+#session1 delete
+connection con1;
+begin;
+delete from t1 where id = 3;
+#session2 delete timeout, condition not pushdown
+connection con2;
+begin;
+update t1 set c = 'updateB' where id = 2;
+--error 1205
+delete from t1 where not id = id1 - 1;
+select * from t1;
+#session2 commit
+insert into t1 values (4,4,'d'),(5,5,'e');
+delete from t1 where id = 1;
+update t1 set c = 'updateD' where id = 4;
+commit;
+connection default;
+select * from t1;
+#session2 delete timeout, condition pushdown
+connection con2;
+begin;
+--error 1205
+delete from t1 where id > 0;
+select * from t1;
+#session2 rollback
+insert into t1 values (6,6,'f'),(7,7,'g');
+rollback;
+#session1
+connection con1;
+commit;
+connection default;
+select * from t1;
+delete from t1;
+disconnect con1;
+disconnect con2;
+
+connect (con1, localhost, root);
+connect (con2, localhost, root);
+
+#SeqDB-20550
+insert into t1 values (1,1,'a'), (2,2,'b'), (3,3,'c');
+#session1 update
+connection con1;
+set sequoiadb_rollback_on_timeout = on;
+begin;
+update t1 set c = 'updateC' where id = 3;
+#session2 select timeout
+connection con2;
+set sequoiadb_rollback_on_timeout = on;
+begin;
+insert into t1 values (4,4,'d');
+--error 1205
+select * from t1 where id = 3 for update;
+select * from t1;
+#session2 commit
+insert into t1 values (5,5,'e'),(6,6,'f');
+delete from t1 where id = 1;
+update t1 set c = 'updateE' where id = 5;
+commit;
+connection default;
+set sequoiadb_rollback_on_timeout = on;
+select * from t1;
+#session2 select timeout
+connection con2;
+set sequoiadb_rollback_on_timeout = on;
+begin;
+--error 1205
+select * from t1 where id = 3 for update;
+#session2 rollback
+insert into t1 values (7,7,'h');
+delete from t1 where id = 4;
+update t1 set c = 'updateF' where id = 6;
+rollback;
+#session1 commit
+connection con1;
+set sequoiadb_rollback_on_timeout = on;
+commit;
+connection default;
+set sequoiadb_rollback_on_timeout = on;
+select * from t1;
+delete from t1;
+disconnect con1;
+disconnect con2;
+
+set global sequoiadb_rollback_on_timeout = on;
+connect (con1, localhost, root);
+connect (con2, localhost, root);
+
+#SeqDB-20551
+insert into t1 values (1,2,'a'),(2,3,'b'), (3,3,'c');
+#session1 update
+connection con1;
+begin;
+update t1 set c = 'updateC' where id = 3;
+#session2 update timeout, condition not pushdown
+connection con2;
+begin;
+delete from t1 where id = 2;
+--error 1205
+update t1 set c = 'otherC' where not id = id1 - 1;
+select * from t1;
+#session2 commit
+insert into t1 values (4,4,'d'),(5,5,'e');
+delete from t1 where id = 1;
+update t1 set c = 'updateD' where id = 4;
+commit;
+connection default;
+select * from t1;
+#session2 update timeout, condition pushdown
+connection con2;
+begin;
+--error 1205
+update t1 set c = 'updateAll' where id > 0;
+select * from t1;
+#session2 rollback
+insert into t1 values (6,6,'f');
+delete from t1 where id = 4;
+update t1 set c = 'updateE' where id = 5;
+rollback;
+#session1
+connection con1;
+commit;
+connection default;
+select * from t1;
+delete from t1;
+
+#seqDB-20552
+insert into t1 values (1,2,'a'),(2,3,'b'), (3,3,'c');
+#session1 delete
+connection con1;
+begin;
+delete from t1 where id = 3;
+#session2 delete timeout, condition not pushdown
+connection con2;
+begin;
+update t1 set c = 'updateB' where id = 2;
+--error 1205
+delete from t1 where not id = id1 - 1;
+select * from t1;
+#session2 commit
+insert into t1 values (4,4,'d'),(5,5,'e');
+delete from t1 where id = 1;
+update t1 set c = 'updateD' where id = 4;
+commit;
+connection default;
+select * from t1;
+#session2 delete timeout, condition pushdown
+connection con2;
+begin;
+--error 1205
+delete from t1 where id > 0;
+select * from t1;
+#session2 rollback
+insert into t1 values (6,6,'f'),(7,7,'g');
+rollback;
+#session1
+connection con1;
+commit;
+connection default;
+select * from t1;
+set global sequoiadb_rollback_on_timeout = off;
+drop table t1;
+
+#seqDB-13167
+connection con1;
+create table t1( id int );
+insert into t1 values (1),(0),(2);
+begin;
+insert into t1 values (10),(11);
+delete from t1 where id = 0;
+alter table t1 add index id(id);
+rollback;
+select * from t1 order by id;
+drop table t1;
+
+#seqDB-22401
+connection default;
+create table t1(id int);
+connection con1;
+SET GLOBAL TRANSACTION ISOLATION LEVEL READ UNCOMMITTED;
+BEGIN;
+SELECT * FROM t1;
+
+connection con2;
+BEGIN;
+INSERT INTO t1 VALUES(1);
+
+connection con1;
+SELECT * FROM t1;
+
+connection con2;
+COMMIT;
+
+connection con1;
+SELECT * FROM t1;
+disconnect con1;
+
+connect (con1, localhost, root);
+connection con1;
+BEGIN;
+SELECT * FROM t1;
+
+connection con2;
+BEGIN;
+INSERT INTO t1 VALUES(2);
+
+connection con1;
+SELECT * FROM t1;
+SET SESSION TRANSACTION ISOLATION LEVEL READ COMMITTED;
+SELECT * FROM t1;
+COMMIT;
+BEGIN;
+SELECT * FROM t1;
+--error 1568
+SET TRANSACTION ISOLATION LEVEL REPEATABLE READ;
+SELECT * FROM t1;
+ROLLBACK;
+
+connection con2;
+ROLLBACK;
+
+connection con1;
+SET TRANSACTION ISOLATION LEVEL REPEATABLE READ;
+BEGIN;
+SELECT * FROM t1;
+
+connection con2;
+BEGIN;
+INSERT INTO t1 VALUES(2);
+COMMIT;
+
+connection con1;
+SELECT * FROM t1;
+COMMIT;
+
+BEGIN;
+SELECT * FROM t1;
+COMMIT;
+SET GLOBAL TRANSACTION ISOLATION LEVEL REPEATABLE READ;
+
+#SET GLOBAL TRANSACTION ISOLATION LEVEL SERIALIZABLE;
+#disconnect con1;
+
+#Bug #SEQUOIASQLMAINSTREAM-721
+#connect (con1, localhost, root);
+#connection con1;
+#BEGIN;
+#--error 131
+#SELECT * FROM t1;
+#ROLLBACK;
+
+#SET SESSION TRANSACTION ISOLATION LEVEL SERIALIZABLE;
+#BEGIN;
+#--error 131
+#SELECT * FROM t1;
+#ROLLBACK;
+
+#SET TRANSACTION ISOLATION LEVEL SERIALIZABLE;
+#BEGIN;
+#--error 131
+#SELECT * FROM t1;
+#ROLLBACK;
+
+connection default;
+DROP TABLE t1;
+SET GLOBAL TRANSACTION ISOLATION LEVEL REPEATABLE READ;
+
+disconnect con1;
+disconnect con2;
+
+connect (con1, localhost, root);
+connect (con2, localhost, root);
+
+#seqDB-22432
+connection default;
+create table t1(a int, b int, c int);
+create index a on t1(a);
+insert into t1 values(1,1,1),(2,2,2),(3,3,3),(4,4,4),(5,5,5),(6,6,6),(7,7,7),(8,8,8),(9,9,9),(10,10,10);
+
+create table t2(a int, b int, c int);
+create index a on t2(a);
+insert into t2 values(1,1,1),(2,2,2),(3,3,3),(4,4,4),(5,5,5),(6,6,6),(7,7,7),(8,8,8),(9,9,9),(10,10,10);
+
+connection con1;
+SET SESSION TRANSACTION ISOLATION LEVEL READ COMMITTED;
+begin;
+select * from t2 where a = 5;
+
+connection con2;
+SET SESSION TRANSACTION ISOLATION LEVEL READ COMMITTED;
+begin;
+select * from t2 where a = 5;
+insert into t1 values(5,5,5);
+update t1 set a=5 where a>5;
+delete from t1 where a = 2;
+
+connection con1;
+select * from t1 order by c; 
+
+connection con2;
+commit;
+
+connection con1;
+select * from t1 order by c;
+
+connection con2;
+begin;
+insert into t1 values(5,5,5);
+
+connection con1;
+select * from t2 where a =5; #count = 1
+
+connection con2;
+commit;
+
+connection con1;
+select * from t2 where a =5; #count = 2
+
+connection con2;
+begin;
+update t2 set a=5 where a>5;
+
+connection con1;
+select * from t2 where a =5; #count = 2
+
+connection con2;
+commit;
+
+connection con1;
+select * from t2 where a =5; #count = 7;
+
+connection con2;
+begin;
+delete from t2 where a = 5;
+
+connection con1;
+select * from t2 where a =5; #count = 7
+
+connection con2;
+commit;
+
+connection con1;
+select * from t2 where a =5; #count = 0;
+commit;
+
+connection default;
+drop table t1,t2;
+
+#seqDB-13132
+create table t1(a int, b int, c int);
+create index a on t1(a);
+insert into t1 values(1,1,1),(2,2,2),(3,3,3),(4,4,4),(5,5,5),(6,6,6),(7,7,7),(8,8,8),(9,9,9),(10,10,10);
+
+begin;
+insert into t1 values(1,1,1),(2,2,2),(3,3,3),(4,4,4),(5,5,5),(6,6,6),(7,7,7),(8,8,8),(9,9,9),(10,10,10);
+update t1 set a = 100 where a >5; #update push down sequoiadb
+update t1 set a = b + 1 where c <5; #update can not push down
+delete from t1 where c between 4 and 9; 
+rollback;
+select * from t1 order by c;
+
+begin;
+insert into t1 values(1,1,1),(2,2,2),(3,3,3),(4,4,4),(5,5,5),(6,6,6),(7,7,7),(8,8,8),(9,9,9),(10,10,10);
+update t1 set a = 100 where a >5; #update push down sequoiadb
+update t1 set a = b + 1 where c <5; #update can not push down
+delete from t1 where c between 4 and 9; 
+commit;
+select * from t1 order by c;
+drop table t1;
+
+#seqDB-13168
+create table t1(a int, b int, c int);
+create index a on t1(a);
+insert into t1 values(1,1,1),(2,2,2),(3,3,3),(4,4,4),(5,5,5),(6,6,6),(7,7,7),(8,8,8),(9,9,9),(10,10,10);
+
+begin;
+delete from t1;
+rollback;
+select * from t1 order by c;
+
+begin;
+truncate t1;
+rollback;
+select * from t1 order by c;
+drop table t1;
+
+#seqDB-13134
+create database transaction_sequoiadb1;
+create table transaction_sequoiadb1.t1(a int, b int, c int);
+insert into transaction_sequoiadb1.t1 values(1,1,1),(2,2,2),(3,3,3),(4,4,4),(5,5,5),(6,6,6),(7,7,7),(8,8,8),(9,9,9),(10,10,10);
+create index a on transaction_sequoiadb1.t1(a);
+
+create database transaction_sequoiadb2;
+create table transaction_sequoiadb2.t1(a int, b int, c int);
+insert into transaction_sequoiadb2.t1 values(1,1,1),(2,2,2),(3,3,3),(4,4,4),(5,5,5),(6,6,6),(7,7,7),(8,8,8),(9,9,9),(10,10,10);
+create index a on transaction_sequoiadb2.t1(a);
+
+connection con1;
+SET SESSION TRANSACTION ISOLATION LEVEL READ COMMITTED;
+begin;
+select * from transaction_sequoiadb1.t1 order by c;
+select * from transaction_sequoiadb2.t1 order by c;
+
+connection con2;
+begin;
+insert into transaction_sequoiadb1.t1 values(1,1,1),(2,2,2),(3,3,3),(4,4,4),(5,5,5),(6,6,6),(7,7,7),(8,8,8),(9,9,9),(10,10,10);
+insert into transaction_sequoiadb2.t1 values(1,1,1),(2,2,2),(3,3,3),(4,4,4),(5,5,5),(6,6,6),(7,7,7),(8,8,8),(9,9,9),(10,10,10);
+
+connection con1;
+select * from transaction_sequoiadb1.t1 order by c;
+select * from transaction_sequoiadb2.t1 order by c;
+
+connection con2;
+commit;
+
+connection con1;
+select * from transaction_sequoiadb1.t1 order by c;
+select * from transaction_sequoiadb2.t1 order by c;
+
+connection con2;
+begin;
+update transaction_sequoiadb1.t1 set a = a + 1 where a >5;
+update transaction_sequoiadb2.t1 set a = a + 1 where a >5;
+
+connection con1;
+select * from transaction_sequoiadb1.t1 order by c;
+select * from transaction_sequoiadb2.t1 order by c;
+
+connection con2;
+rollback;
+
+connection con1;
+select * from transaction_sequoiadb1.t1 order by c;
+select * from transaction_sequoiadb2.t1 order by c;
+
+connection con2;
+begin;
+delete from transaction_sequoiadb1.t1;
+delete from transaction_sequoiadb2.t1;
+
+connection con1;
+select * from transaction_sequoiadb1.t1 order by c;
+select * from transaction_sequoiadb2.t1 order by c;
+
+connection con2;
+commit;
+
+connection con1;
+select * from transaction_sequoiadb1.t1 order by c;
+select * from transaction_sequoiadb2.t1 order by c;
+commit;
+
+connection default;
+truncate transaction_sequoiadb1.t1;
+truncate transaction_sequoiadb2.t1;
+insert into transaction_sequoiadb1.t1 values(1,1,1),(2,2,2),(3,3,3),(4,4,4),(5,5,5),(6,6,6),(7,7,7),(8,8,8),(9,9,9),(10,10,10);
+insert into transaction_sequoiadb2.t1 values(1,1,1),(2,2,2),(3,3,3),(4,4,4),(5,5,5),(6,6,6),(7,7,7),(8,8,8),(9,9,9),(10,10,10);
+
+connection con1;
+SET SESSION AUTOCOMMIT=OFF;
+select * from transaction_sequoiadb1.t1 order by c;
+select * from transaction_sequoiadb2.t1 order by c;
+
+connection con2;
+SET SESSION AUTOCOMMIT=OFF;
+insert into transaction_sequoiadb1.t1 values(1,1,1),(2,2,2),(3,3,3),(4,4,4),(5,5,5),(6,6,6),(7,7,7),(8,8,8),(9,9,9),(10,10,10);
+insert into transaction_sequoiadb2.t1 values(1,1,1),(2,2,2),(3,3,3),(4,4,4),(5,5,5),(6,6,6),(7,7,7),(8,8,8),(9,9,9),(10,10,10);
+
+connection con1;
+select * from transaction_sequoiadb1.t1 order by c;
+select * from transaction_sequoiadb2.t1 order by c;
+
+connection con2;
+commit;
+
+connection con1;
+select * from transaction_sequoiadb1.t1 order by c;
+select * from transaction_sequoiadb2.t1 order by c;
+
+connection con2;
+update transaction_sequoiadb1.t1 set a = a + 1 where a >5;
+update transaction_sequoiadb2.t1 set a = a + 1 where a >5;
+
+connection con1;
+select * from transaction_sequoiadb1.t1 order by c;
+select * from transaction_sequoiadb2.t1 order by c;
+
+connection con2;
+rollback;
+
+connection con1;
+select * from transaction_sequoiadb1.t1 order by c;
+select * from transaction_sequoiadb2.t1 order by c;
+
+connection con2;
+delete from transaction_sequoiadb1.t1;
+delete from transaction_sequoiadb2.t1;
+
+connection con1;
+select * from transaction_sequoiadb1.t1 order by c;
+select * from transaction_sequoiadb2.t1 order by c;
+
+connection con2;
+commit;
+SET SESSION AUTOCOMMIT=ON;
+
+connection con1;
+select * from transaction_sequoiadb1.t1 order by c;
+select * from transaction_sequoiadb2.t1 order by c;
+commit;
+SET SESSION AUTOCOMMIT=ON;
+
+connection default;
+drop database transaction_sequoiadb1;
+drop database transaction_sequoiadb2;
+
+create table t1(a int, b int, c int);
+insert into t1 values(1,1,1),(2,2,2),(3,3,3),(4,4,4),(5,5,5),(6,6,6),(7,7,7),(8,8,8),(9,9,9),(10,10,10);
+create index a on t1(a);
+
+#seqDB-22434
+connection con1;
+begin;
+insert into t1 values(1,1,1),(2,2,2),(3,3,3),(4,4,4),(5,5,5),(6,6,6),(7,7,7),(8,8,8),(9,9,9),(10,10,10);
+
+connection con2;
+select * from t1 order by c;
+
+connection con1;
+commit;
+
+connection con2;
+select * from t1 order by c;
+
+connection con1;
+begin;
+update t1 set a=a+1;
+
+connection con2;
+select * from t1 order by c;
+
+connection con1;
+commit;
+
+connection con2;
+select * from t1 order by c;
+
+connection con1;
+begin;
+delete from t1;
+
+connection con2;
+select * from t1 order by c;
+
+connection con1;
+commit;
+
+connection con2;
+select * from t1 order by c;
+
+connection default;
+drop table t1;
+
+#seqDB-22433
+create table t1(a int, b int, c int);
+insert into t1 values(1,1,1),(2,2,2),(3,3,3),(4,4,4),(5,5,5),(6,6,6),(7,7,7),(8,8,8),(9,9,9),(10,10,10);
+create index a on t1(a);
+
+connection con1;
+begin;
+select * from t1 order by c;
+
+connection con2;
+begin;
+select * from t1 for update;
+insert into t1 values(1,1,1),(2,2,2),(3,3,3),(4,4,4),(5,5,5),(6,6,6),(7,7,7),(8,8,8),(9,9,9),(10,10,10);
+update t1 set a = a + 1 where a >5;
+delete from t1 where a <5;
+
+connection con2;
+rollback;
+
+connection con1;
+select * from t1 order by c;
+
+connection con2;
+select * from t1 for update;
+insert into t1 values(1,1,1),(2,2,2),(3,3,3),(4,4,4),(5,5,5),(6,6,6),(7,7,7),(8,8,8),(9,9,9),(10,10,10);
+update t1 set a = a + 1 where a >5;
+delete from t1 where a <5;
+
+connection con1;
+select * from t1 order by c;
+commit;
+
+connection default;
+drop table t1;
+
+#seqDB-22435
+create table t1(a int, b int, c int);
+insert into t1 values(1,1,1),(2,2,2),(3,3,3),(4,4,4),(5,5,5),(6,6,6),(7,7,7),(8,8,8),(9,9,9),(10,10,10);
+create index a on t1(a);
+
+connection con1;
+begin;
+select * from t1 for update;
+
+connection con2;
+begin;
+select * from t1 order by c;
+--error 1205
+select * from t1 for update;
+insert into t1 values(1,1,1),(2,2,2),(3,3,3),(4,4,4),(5,5,5),(6,6,6),(7,7,7),(8,8,8),(9,9,9),(10,10,10);
+--error 1205
+update t1 set a = a + 1 where a >5;
+--error 1205
+delete from t1 where a <5;
+
+connection con2;
+rollback;
+
+connection con1;
+select * from t1 order by c;
+
+connection con2;
+select * from t1 order by c;
+--error 1205
+select * from t1 for update;
+insert into t1 values(1,1,1),(2,2,2),(3,3,3),(4,4,4),(5,5,5),(6,6,6),(7,7,7),(8,8,8),(9,9,9),(10,10,10);
+--error 1205
+update t1 set a = a + 1 where a >5;
+--error 1205
+delete from t1 where a <5;
+
+connection con1;
+select * from t1 order by c;
+commit;
+
+connection default;
+drop table t1;
+
+#seqDB-22436
+create table t1(a int, b int, c int);
+insert into t1 values(1,1,1),(2,2,2),(3,3,3),(4,4,4),(5,5,5),(6,6,6),(7,7,7),(8,8,8),(9,9,9),(10,10,10);
+create index a on t1(a);
+
+connection con1;
+begin;
+update t1 set a = a + 1;
+
+connection con2;
+begin;
+select * from t1 order by c;
+--error 1205
+select * from t1 for update;
+insert into t1 values(1,1,1),(2,2,2),(3,3,3),(4,4,4),(5,5,5),(6,6,6),(7,7,7),(8,8,8),(9,9,9),(10,10,10);
+--error 1205
+update t1 set a = a + 1 where a >5;
+--error 1205
+delete from t1 where a <5;
+
+connection con2;
+rollback;
+
+connection con1;
+select * from t1 order by c;
+
+connection con2;
+select * from t1 order by c;
+--error 1205
+select * from t1 for update;
+insert into t1 values(1,1,1),(2,2,2),(3,3,3),(4,4,4),(5,5,5),(6,6,6),(7,7,7),(8,8,8),(9,9,9),(10,10,10);
+--error 1205
+update t1 set a = a + 1 where a >5;
+--error 1205
+delete from t1 where a <5;
+
+connection con1;
+select * from t1 order by a,b,c;
+commit;
+
+connection default;
+drop table t1;
+create table t1(a int, b int, c int);
+insert into t1 values(1,1,1),(2,2,2),(3,3,3),(4,4,4),(5,5,5),(6,6,6),(7,7,7),(8,8,8),(9,9,9),(10,10,10);
+create index a on t1(a);
+
+#seqDB-22450
+connection con1;
+set session autocommit=off;
+insert into t1 values(1,1,1),(2,2,2),(3,3,3),(4,4,4),(5,5,5),(6,6,6),(7,7,7),(8,8,8),(9,9,9),(10,10,10);
+update t1 set a=5 where a>5;
+delete from t1 where a = 2;
+
+connection con2;
+set session autocommit=off;
+select * from t1 order by c;
+
+connection con1;
+rollback;
+
+connection con2;
+select * from t1 order by c;
+
+#seqDB-22449
+connection con1;
+insert into t1 values(1,1,1),(2,2,2),(3,3,3),(4,4,4),(5,5,5),(6,6,6),(7,7,7),(8,8,8),(9,9,9),(10,10,10);
+update t1 set a=5 where a>5;
+delete from t1 where a = 2;
+
+connection con2;
+select * from t1 order by c;
+
+connection con1;
+commit;
+set session autocommit=on;
+
+connection con2;
+select * from t1 order by c;
+commit;
+set session autocommit=on;
+
+connection default;
+drop table t1;
+
+#seqDB-23014
+create table t1(a int, b int, c int);
+insert into t1 values(1,1,1);
+connection con1;
+set session transaction_isolation='read-committed';
+set session sequoiadb_use_rollback_segments=off;
+begin;
+update t1 set a=2 where a=1;
+
+connection con2;
+begin;
+--error 1205
+select * from t1;
+
+connection con1;
+rollback;
+begin;
+set session sequoiadb_use_rollback_segments=on;
+update t1 set a=2 where a=1;
+
+connection con2;
+select * from t1;
+
+connection con1;
+--error 1231
+set session sequoiadb_use_rollback_segments=off;
+rollback;
+
+connection con2;
+rollback;
+
+connection default;
+drop table t1;
+
+disconnect con1;
+disconnect con2;
+
+#seqDB-23038
+connect (con1, localhost, root);
+connect (con2, localhost, root);
+
+connection con1;
+set session sequoiadb_use_transaction=off;
+
+connection con2;
+create table t1(a int);
+begin;
+insert into t1 values(1);
+
+connection con1;
+begin;
+select * from t1;
+rollback;
+set session sequoiadb_use_transaction=on;
+
+connection con2;
+rollback;
+
+connection default;
+drop table t1;
+
+#seqDB-23039
+connection con1;
+set session transaction_isolation='read-uncommitted';
+
+connection con2;
+create table t1(a int);
+begin;
+insert into t1 values(1);
+
+connection con1;
+begin;
+select * from t1;
+rollback;
+set session transaction_isolation='REPEATABLE-READ';
+
+connection con2;
+rollback;
+
+connection default;
+drop table t1;
+
+disconnect con1;
+disconnect con2;
+

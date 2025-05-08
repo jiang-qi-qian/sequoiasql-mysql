@@ -1,0 +1,27 @@
+#seqDB-28684
+--source suite/metadata_sync_sequoiadb/inc/insts_connect_sequoiadb.inc
+--source include/have_sequoiadb.inc
+
+connection conn1;
+--disable_warnings
+drop database if exists db_28684;
+--enable_warnings
+
+create database db_28684;
+use db_28684;
+# 设置 dml 操作失败重试次数隐藏参数 server_ha_dml_max_retry_count
+set @@server_ha_dml_max_retry_count = 10;
+
+# 设置sql语句最长执行时间为2秒
+set session max_statement_time = 2;
+
+# 查询一个不存在的表
+--error 1146
+select * from db_28684;
+
+set @@server_ha_dml_max_retry_count = default;
+set session max_statement_time = default;
+drop database db_28684;
+
+--source include/uninstall_sequoiadb.inc
+--source suite/metadata_sync_sequoiadb/inc/insts_disconnect_sequoiadb.inc

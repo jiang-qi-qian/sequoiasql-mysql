@@ -1,0 +1,2184 @@
+CREATE DATABASE  IF NOT EXISTS index_statistics_mcv_sequoiadb_26693_26694;
+DROP DATABASE IF EXISTS index_statistics_mcv_sequoiadb_26693_26694;
+CREATE DATABASE  IF NOT EXISTS index_statistics_mcv_sequoiadb_26693_26694;
+USE index_statistics_mcv_sequoiadb_26693_26694;
+CREATE TABLE t1(
+a INT NOT NULL,
+b INT NOT NULL,
+c INT NOT NULL,
+INDEX idx_a(a),
+INDEX idx_b(b)
+)
+PARTITION BY RANGE COLUMNS (a)
+SUBPARTITION BY KEY (b)
+SUBPARTITIONS 2 (
+PARTITION p0 VALUES LESS THAN (4),
+PARTITION p1 VALUES LESS THAN (7),
+PARTITION p2 VALUES LESS THAN (11)
+);
+CREATE TABLE t2(
+a INT NOT NULL,
+b INT NOT NULL,
+c INT NOT NULL,
+INDEX idx_a(a),
+INDEX idx_b(b)
+)
+PARTITION BY RANGE COLUMNS (a)
+SUBPARTITION BY KEY (b)
+SUBPARTITIONS 2 (
+PARTITION p0 VALUES LESS THAN (4),
+PARTITION p1 VALUES LESS THAN (7),
+PARTITION p2 VALUES LESS THAN (11)
+);
+CREATE TABLE t3(
+a INT NOT NULL,
+b INT NOT NULL,
+c INT NOT NULL,
+INDEX idx_a(a),
+INDEX idx_b(b)
+)
+PARTITION BY RANGE COLUMNS (a)
+SUBPARTITION BY KEY (b)
+SUBPARTITIONS 2 (
+PARTITION p0 VALUES LESS THAN (4),
+PARTITION p1 VALUES LESS THAN (7),
+PARTITION p2 VALUES LESS THAN (11)
+);
+CREATE PROCEDURE p1()
+BEGIN
+DECLARE i INT;
+DECLARE a_value INT;
+DECLARE b_value INT;
+DECLARE c_value INT;
+SET i=1;
+WHILE i<=200 DO
+IF (i<101) THEN
+SET a_value=8;
+SET b_value=5;
+SET c_value=5;
+ELSEIF (i>100 and i<141) THEN
+SET a_value=6;
+SET b_value=1;
+SET c_value=1;
+ELSEIF (i>140 and i<161) THEN
+SET a_value=3;
+SET b_value=8;
+SET c_value=7;
+ELSEIF (i>140 and i<161) THEN
+SET a_value=6;
+SET b_value=6;
+SET c_value=9;
+ELSEIF (i>160 and i<165) THEN
+SET a_value=1;
+SET b_value=7;
+SET c_value=6;
+ELSE
+SET a_value=2;
+SET b_value=10;
+SET c_value=2;
+END IF;
+INSERT INTO t1(a,b,c) values (a_value, b_value, c_value);
+SET i=i+1;
+END WHILE;
+END $
+CREATE PROCEDURE p2()
+BEGIN
+DECLARE i INT;
+DECLARE a_value INT;
+DECLARE b_value INT;
+DECLARE c_value INT;
+SET i=1;
+WHILE i<=200 DO
+IF (i<21) THEN
+SET a_value=6;
+SET b_value=1;
+SET c_value=1;
+ELSEIF (i>20 and i<37) THEN
+SET a_value=8;
+SET b_value=5;
+SET c_value=5;
+ELSEIF (i>36 and i<50) THEN
+SET a_value=7;
+SET b_value=9;
+SET c_value=3;
+ELSEIF (i>49 and i<62) THEN
+SET a_value=4;
+SET b_value=4;
+SET c_value=9;
+ELSEIF (i>61 and i<72) THEN
+SET a_value=3;
+SET b_value=8;
+SET c_value=7;
+ELSEIF (i>71 and i<76) THEN
+SET a_value=6;
+SET b_value=6;
+SET c_value=9;
+ELSEIF (i>75 and i<78) THEN
+SET a_value=1;
+SET b_value=7;
+SET c_value=6;
+ELSE
+SET a_value=2;
+SET b_value=10;
+SET c_value=2;
+END IF;
+INSERT INTO t2(a,b,c) values (a_value, b_value, c_value);
+SET i=i+1;
+END WHILE;
+END $
+CREATE PROCEDURE p3()
+BEGIN
+DECLARE i INT;
+DECLARE a_value INT;
+DECLARE b_value INT;
+DECLARE c_value INT;
+SET i=1;
+WHILE i<=200 DO
+IF (i<26) THEN
+SET a_value=7;
+SET b_value=6;
+SET c_value=3;
+ELSEIF (i>25 and i<48) THEN
+SET a_value=2;
+SET b_value=10;
+SET c_value=2;
+ELSEIF (i>47 and i<68) THEN
+SET a_value=6;
+SET b_value=1;
+SET c_value=1;
+ELSEIF (i>67 and i<84) THEN
+SET a_value=8;
+SET b_value=5;
+SET c_value=5;
+ELSEIF (i>83 and i<97) THEN
+SET a_value=7;
+SET b_value=9;
+SET c_value=3;
+ELSEIF (i>96 and i<109) THEN
+SET a_value=4;
+SET b_value=4;
+SET c_value=9;
+ELSEIF (i>108 and i<119) THEN
+SET a_value=3;
+SET b_value=8;
+SET c_value=7;
+ELSEIF (i>118 and i<123) THEN
+SET a_value=6;
+SET b_value=6;
+SET c_value=9;
+ELSEIF (i>122 and i<125) THEN
+SET a_value=1;
+SET b_value=7;
+SET c_value=6;
+ELSE
+SET a_value=2;
+SET b_value=3;
+SET c_value=2;
+END IF;
+INSERT INTO t3(a,b,c) values (a_value, b_value, c_value);
+SET i=i+1;
+END WHILE;
+END $
+CALL p1();
+CALL p2();
+CALL p3();
+SELECT * FROM t1 WHERE b<=5;
+a	b	c
+6	1	1
+6	1	1
+6	1	1
+6	1	1
+6	1	1
+6	1	1
+6	1	1
+6	1	1
+6	1	1
+6	1	1
+6	1	1
+6	1	1
+6	1	1
+6	1	1
+6	1	1
+6	1	1
+6	1	1
+6	1	1
+6	1	1
+6	1	1
+6	1	1
+6	1	1
+6	1	1
+6	1	1
+6	1	1
+6	1	1
+6	1	1
+6	1	1
+6	1	1
+6	1	1
+6	1	1
+6	1	1
+6	1	1
+6	1	1
+6	1	1
+6	1	1
+6	1	1
+6	1	1
+6	1	1
+6	1	1
+8	5	5
+8	5	5
+8	5	5
+8	5	5
+8	5	5
+8	5	5
+8	5	5
+8	5	5
+8	5	5
+8	5	5
+8	5	5
+8	5	5
+8	5	5
+8	5	5
+8	5	5
+8	5	5
+8	5	5
+8	5	5
+8	5	5
+8	5	5
+8	5	5
+8	5	5
+8	5	5
+8	5	5
+8	5	5
+8	5	5
+8	5	5
+8	5	5
+8	5	5
+8	5	5
+8	5	5
+8	5	5
+8	5	5
+8	5	5
+8	5	5
+8	5	5
+8	5	5
+8	5	5
+8	5	5
+8	5	5
+8	5	5
+8	5	5
+8	5	5
+8	5	5
+8	5	5
+8	5	5
+8	5	5
+8	5	5
+8	5	5
+8	5	5
+8	5	5
+8	5	5
+8	5	5
+8	5	5
+8	5	5
+8	5	5
+8	5	5
+8	5	5
+8	5	5
+8	5	5
+8	5	5
+8	5	5
+8	5	5
+8	5	5
+8	5	5
+8	5	5
+8	5	5
+8	5	5
+8	5	5
+8	5	5
+8	5	5
+8	5	5
+8	5	5
+8	5	5
+8	5	5
+8	5	5
+8	5	5
+8	5	5
+8	5	5
+8	5	5
+8	5	5
+8	5	5
+8	5	5
+8	5	5
+8	5	5
+8	5	5
+8	5	5
+8	5	5
+8	5	5
+8	5	5
+8	5	5
+8	5	5
+8	5	5
+8	5	5
+8	5	5
+8	5	5
+8	5	5
+8	5	5
+8	5	5
+8	5	5
+SELECT * FROM t1 WHERE b>=8;
+a	b	c
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+3	8	7
+3	8	7
+3	8	7
+3	8	7
+3	8	7
+3	8	7
+3	8	7
+3	8	7
+3	8	7
+3	8	7
+3	8	7
+3	8	7
+3	8	7
+3	8	7
+3	8	7
+3	8	7
+3	8	7
+3	8	7
+3	8	7
+3	8	7
+SELECT * FROM t1 WHERE b>=5 AND b <=8;
+a	b	c
+1	7	6
+1	7	6
+1	7	6
+1	7	6
+3	8	7
+3	8	7
+3	8	7
+3	8	7
+3	8	7
+3	8	7
+3	8	7
+3	8	7
+3	8	7
+3	8	7
+3	8	7
+3	8	7
+3	8	7
+3	8	7
+3	8	7
+3	8	7
+3	8	7
+3	8	7
+3	8	7
+3	8	7
+8	5	5
+8	5	5
+8	5	5
+8	5	5
+8	5	5
+8	5	5
+8	5	5
+8	5	5
+8	5	5
+8	5	5
+8	5	5
+8	5	5
+8	5	5
+8	5	5
+8	5	5
+8	5	5
+8	5	5
+8	5	5
+8	5	5
+8	5	5
+8	5	5
+8	5	5
+8	5	5
+8	5	5
+8	5	5
+8	5	5
+8	5	5
+8	5	5
+8	5	5
+8	5	5
+8	5	5
+8	5	5
+8	5	5
+8	5	5
+8	5	5
+8	5	5
+8	5	5
+8	5	5
+8	5	5
+8	5	5
+8	5	5
+8	5	5
+8	5	5
+8	5	5
+8	5	5
+8	5	5
+8	5	5
+8	5	5
+8	5	5
+8	5	5
+8	5	5
+8	5	5
+8	5	5
+8	5	5
+8	5	5
+8	5	5
+8	5	5
+8	5	5
+8	5	5
+8	5	5
+8	5	5
+8	5	5
+8	5	5
+8	5	5
+8	5	5
+8	5	5
+8	5	5
+8	5	5
+8	5	5
+8	5	5
+8	5	5
+8	5	5
+8	5	5
+8	5	5
+8	5	5
+8	5	5
+8	5	5
+8	5	5
+8	5	5
+8	5	5
+8	5	5
+8	5	5
+8	5	5
+8	5	5
+8	5	5
+8	5	5
+8	5	5
+8	5	5
+8	5	5
+8	5	5
+8	5	5
+8	5	5
+8	5	5
+8	5	5
+8	5	5
+8	5	5
+8	5	5
+8	5	5
+8	5	5
+8	5	5
+SELECT * FROM t1 WHERE b>=5 AND b <=11;
+a	b	c
+1	7	6
+1	7	6
+1	7	6
+1	7	6
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+3	8	7
+3	8	7
+3	8	7
+3	8	7
+3	8	7
+3	8	7
+3	8	7
+3	8	7
+3	8	7
+3	8	7
+3	8	7
+3	8	7
+3	8	7
+3	8	7
+3	8	7
+3	8	7
+3	8	7
+3	8	7
+3	8	7
+3	8	7
+8	5	5
+8	5	5
+8	5	5
+8	5	5
+8	5	5
+8	5	5
+8	5	5
+8	5	5
+8	5	5
+8	5	5
+8	5	5
+8	5	5
+8	5	5
+8	5	5
+8	5	5
+8	5	5
+8	5	5
+8	5	5
+8	5	5
+8	5	5
+8	5	5
+8	5	5
+8	5	5
+8	5	5
+8	5	5
+8	5	5
+8	5	5
+8	5	5
+8	5	5
+8	5	5
+8	5	5
+8	5	5
+8	5	5
+8	5	5
+8	5	5
+8	5	5
+8	5	5
+8	5	5
+8	5	5
+8	5	5
+8	5	5
+8	5	5
+8	5	5
+8	5	5
+8	5	5
+8	5	5
+8	5	5
+8	5	5
+8	5	5
+8	5	5
+8	5	5
+8	5	5
+8	5	5
+8	5	5
+8	5	5
+8	5	5
+8	5	5
+8	5	5
+8	5	5
+8	5	5
+8	5	5
+8	5	5
+8	5	5
+8	5	5
+8	5	5
+8	5	5
+8	5	5
+8	5	5
+8	5	5
+8	5	5
+8	5	5
+8	5	5
+8	5	5
+8	5	5
+8	5	5
+8	5	5
+8	5	5
+8	5	5
+8	5	5
+8	5	5
+8	5	5
+8	5	5
+8	5	5
+8	5	5
+8	5	5
+8	5	5
+8	5	5
+8	5	5
+8	5	5
+8	5	5
+8	5	5
+8	5	5
+8	5	5
+8	5	5
+8	5	5
+8	5	5
+8	5	5
+8	5	5
+8	5	5
+8	5	5
+SELECT * FROM t2 WHERE b<=5;
+a	b	c
+4	4	9
+4	4	9
+4	4	9
+4	4	9
+4	4	9
+4	4	9
+4	4	9
+4	4	9
+4	4	9
+4	4	9
+4	4	9
+4	4	9
+6	1	1
+6	1	1
+6	1	1
+6	1	1
+6	1	1
+6	1	1
+6	1	1
+6	1	1
+6	1	1
+6	1	1
+6	1	1
+6	1	1
+6	1	1
+6	1	1
+6	1	1
+6	1	1
+6	1	1
+6	1	1
+6	1	1
+6	1	1
+8	5	5
+8	5	5
+8	5	5
+8	5	5
+8	5	5
+8	5	5
+8	5	5
+8	5	5
+8	5	5
+8	5	5
+8	5	5
+8	5	5
+8	5	5
+8	5	5
+8	5	5
+8	5	5
+SELECT * FROM t2 WHERE b>=7;
+a	b	c
+1	7	6
+1	7	6
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+3	8	7
+3	8	7
+3	8	7
+3	8	7
+3	8	7
+3	8	7
+3	8	7
+3	8	7
+3	8	7
+3	8	7
+7	9	3
+7	9	3
+7	9	3
+7	9	3
+7	9	3
+7	9	3
+7	9	3
+7	9	3
+7	9	3
+7	9	3
+7	9	3
+7	9	3
+7	9	3
+SELECT * FROM t2 WHERE b>=8;
+a	b	c
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+3	8	7
+3	8	7
+3	8	7
+3	8	7
+3	8	7
+3	8	7
+3	8	7
+3	8	7
+3	8	7
+3	8	7
+7	9	3
+7	9	3
+7	9	3
+7	9	3
+7	9	3
+7	9	3
+7	9	3
+7	9	3
+7	9	3
+7	9	3
+7	9	3
+7	9	3
+7	9	3
+SELECT * FROM t2 WHERE b>=5 AND b <=8;
+a	b	c
+1	7	6
+1	7	6
+3	8	7
+3	8	7
+3	8	7
+3	8	7
+3	8	7
+3	8	7
+3	8	7
+3	8	7
+3	8	7
+3	8	7
+6	6	9
+6	6	9
+6	6	9
+6	6	9
+8	5	5
+8	5	5
+8	5	5
+8	5	5
+8	5	5
+8	5	5
+8	5	5
+8	5	5
+8	5	5
+8	5	5
+8	5	5
+8	5	5
+8	5	5
+8	5	5
+8	5	5
+8	5	5
+SELECT * FROM t2 WHERE b>=5 AND b <=7;
+a	b	c
+1	7	6
+1	7	6
+6	6	9
+6	6	9
+6	6	9
+6	6	9
+8	5	5
+8	5	5
+8	5	5
+8	5	5
+8	5	5
+8	5	5
+8	5	5
+8	5	5
+8	5	5
+8	5	5
+8	5	5
+8	5	5
+8	5	5
+8	5	5
+8	5	5
+8	5	5
+SELECT * FROM t2 WHERE b>=5 AND b <=11;
+a	b	c
+1	7	6
+1	7	6
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+3	8	7
+3	8	7
+3	8	7
+3	8	7
+3	8	7
+3	8	7
+3	8	7
+3	8	7
+3	8	7
+3	8	7
+6	6	9
+6	6	9
+6	6	9
+6	6	9
+7	9	3
+7	9	3
+7	9	3
+7	9	3
+7	9	3
+7	9	3
+7	9	3
+7	9	3
+7	9	3
+7	9	3
+7	9	3
+7	9	3
+7	9	3
+8	5	5
+8	5	5
+8	5	5
+8	5	5
+8	5	5
+8	5	5
+8	5	5
+8	5	5
+8	5	5
+8	5	5
+8	5	5
+8	5	5
+8	5	5
+8	5	5
+8	5	5
+8	5	5
+SELECT * FROM t2 WHERE b>=9 AND b <=11;
+a	b	c
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+7	9	3
+7	9	3
+7	9	3
+7	9	3
+7	9	3
+7	9	3
+7	9	3
+7	9	3
+7	9	3
+7	9	3
+7	9	3
+7	9	3
+7	9	3
+SELECT * FROM t3 WHERE b<=5;
+a	b	c
+2	3	2
+2	3	2
+2	3	2
+2	3	2
+2	3	2
+2	3	2
+2	3	2
+2	3	2
+2	3	2
+2	3	2
+2	3	2
+2	3	2
+2	3	2
+2	3	2
+2	3	2
+2	3	2
+2	3	2
+2	3	2
+2	3	2
+2	3	2
+2	3	2
+2	3	2
+2	3	2
+2	3	2
+2	3	2
+2	3	2
+2	3	2
+2	3	2
+2	3	2
+2	3	2
+2	3	2
+2	3	2
+2	3	2
+2	3	2
+2	3	2
+2	3	2
+2	3	2
+2	3	2
+2	3	2
+2	3	2
+2	3	2
+2	3	2
+2	3	2
+2	3	2
+2	3	2
+2	3	2
+2	3	2
+2	3	2
+2	3	2
+2	3	2
+2	3	2
+2	3	2
+2	3	2
+2	3	2
+2	3	2
+2	3	2
+2	3	2
+2	3	2
+2	3	2
+2	3	2
+2	3	2
+2	3	2
+2	3	2
+2	3	2
+2	3	2
+2	3	2
+2	3	2
+2	3	2
+2	3	2
+2	3	2
+2	3	2
+2	3	2
+2	3	2
+2	3	2
+2	3	2
+2	3	2
+4	4	9
+4	4	9
+4	4	9
+4	4	9
+4	4	9
+4	4	9
+4	4	9
+4	4	9
+4	4	9
+4	4	9
+4	4	9
+4	4	9
+6	1	1
+6	1	1
+6	1	1
+6	1	1
+6	1	1
+6	1	1
+6	1	1
+6	1	1
+6	1	1
+6	1	1
+6	1	1
+6	1	1
+6	1	1
+6	1	1
+6	1	1
+6	1	1
+6	1	1
+6	1	1
+6	1	1
+6	1	1
+8	5	5
+8	5	5
+8	5	5
+8	5	5
+8	5	5
+8	5	5
+8	5	5
+8	5	5
+8	5	5
+8	5	5
+8	5	5
+8	5	5
+8	5	5
+8	5	5
+8	5	5
+8	5	5
+SELECT * FROM t3 WHERE b>=7;
+a	b	c
+1	7	6
+1	7	6
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+3	8	7
+3	8	7
+3	8	7
+3	8	7
+3	8	7
+3	8	7
+3	8	7
+3	8	7
+3	8	7
+3	8	7
+7	9	3
+7	9	3
+7	9	3
+7	9	3
+7	9	3
+7	9	3
+7	9	3
+7	9	3
+7	9	3
+7	9	3
+7	9	3
+7	9	3
+7	9	3
+SELECT * FROM t3 WHERE b>=8;
+a	b	c
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+3	8	7
+3	8	7
+3	8	7
+3	8	7
+3	8	7
+3	8	7
+3	8	7
+3	8	7
+3	8	7
+3	8	7
+7	9	3
+7	9	3
+7	9	3
+7	9	3
+7	9	3
+7	9	3
+7	9	3
+7	9	3
+7	9	3
+7	9	3
+7	9	3
+7	9	3
+7	9	3
+SELECT * FROM t3 WHERE b>=5 AND b <=8;
+a	b	c
+1	7	6
+1	7	6
+3	8	7
+3	8	7
+3	8	7
+3	8	7
+3	8	7
+3	8	7
+3	8	7
+3	8	7
+3	8	7
+3	8	7
+6	6	9
+6	6	9
+6	6	9
+6	6	9
+7	6	3
+7	6	3
+7	6	3
+7	6	3
+7	6	3
+7	6	3
+7	6	3
+7	6	3
+7	6	3
+7	6	3
+7	6	3
+7	6	3
+7	6	3
+7	6	3
+7	6	3
+7	6	3
+7	6	3
+7	6	3
+7	6	3
+7	6	3
+7	6	3
+7	6	3
+7	6	3
+7	6	3
+7	6	3
+8	5	5
+8	5	5
+8	5	5
+8	5	5
+8	5	5
+8	5	5
+8	5	5
+8	5	5
+8	5	5
+8	5	5
+8	5	5
+8	5	5
+8	5	5
+8	5	5
+8	5	5
+8	5	5
+SELECT * FROM t3 WHERE b>=5 AND b <=7;
+a	b	c
+1	7	6
+1	7	6
+6	6	9
+6	6	9
+6	6	9
+6	6	9
+7	6	3
+7	6	3
+7	6	3
+7	6	3
+7	6	3
+7	6	3
+7	6	3
+7	6	3
+7	6	3
+7	6	3
+7	6	3
+7	6	3
+7	6	3
+7	6	3
+7	6	3
+7	6	3
+7	6	3
+7	6	3
+7	6	3
+7	6	3
+7	6	3
+7	6	3
+7	6	3
+7	6	3
+7	6	3
+8	5	5
+8	5	5
+8	5	5
+8	5	5
+8	5	5
+8	5	5
+8	5	5
+8	5	5
+8	5	5
+8	5	5
+8	5	5
+8	5	5
+8	5	5
+8	5	5
+8	5	5
+8	5	5
+SELECT * FROM t3 WHERE b>=5 AND b <=11;
+a	b	c
+1	7	6
+1	7	6
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+3	8	7
+3	8	7
+3	8	7
+3	8	7
+3	8	7
+3	8	7
+3	8	7
+3	8	7
+3	8	7
+3	8	7
+6	6	9
+6	6	9
+6	6	9
+6	6	9
+7	6	3
+7	6	3
+7	6	3
+7	6	3
+7	6	3
+7	6	3
+7	6	3
+7	6	3
+7	6	3
+7	6	3
+7	6	3
+7	6	3
+7	6	3
+7	6	3
+7	6	3
+7	6	3
+7	6	3
+7	6	3
+7	6	3
+7	6	3
+7	6	3
+7	6	3
+7	6	3
+7	6	3
+7	6	3
+7	9	3
+7	9	3
+7	9	3
+7	9	3
+7	9	3
+7	9	3
+7	9	3
+7	9	3
+7	9	3
+7	9	3
+7	9	3
+7	9	3
+7	9	3
+8	5	5
+8	5	5
+8	5	5
+8	5	5
+8	5	5
+8	5	5
+8	5	5
+8	5	5
+8	5	5
+8	5	5
+8	5	5
+8	5	5
+8	5	5
+8	5	5
+8	5	5
+8	5	5
+SELECT * FROM t3 WHERE b>=9 AND b <=11;
+a	b	c
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+7	9	3
+7	9	3
+7	9	3
+7	9	3
+7	9	3
+7	9	3
+7	9	3
+7	9	3
+7	9	3
+7	9	3
+7	9	3
+7	9	3
+7	9	3
+SELECT COUNT(*) FROM t1 WHERE b<=5;
+COUNT(*)
+140
+SELECT COUNT(*) FROM t1 WHERE b>=8;
+COUNT(*)
+56
+SELECT COUNT(*) FROM t1 WHERE b>=5 AND b <=8;
+COUNT(*)
+124
+SELECT COUNT(*) FROM t1 WHERE b>=5 AND b <=11;
+COUNT(*)
+160
+SELECT COUNT(*) FROM t1 WHERE b=5;
+COUNT(*)
+100
+SELECT COUNT(*) FROM t1 WHERE b=8;
+COUNT(*)
+20
+SELECT COUNT(*) FROM t1 WHERE b=5 OR b=8;
+COUNT(*)
+120
+SELECT COUNT(*) FROM t1 WHERE b=5 OR b=11;
+COUNT(*)
+100
+SELECT COUNT(*) FROM t2 WHERE b<=5;
+COUNT(*)
+48
+SELECT COUNT(*) FROM t2 WHERE b>=7;
+COUNT(*)
+148
+SELECT COUNT(*) FROM t2 WHERE b>=8;
+COUNT(*)
+146
+SELECT COUNT(*) FROM t2 WHERE b>=10;
+COUNT(*)
+123
+SELECT COUNT(*) FROM t2 WHERE b>=5 AND b <=8;
+COUNT(*)
+32
+SELECT COUNT(*) FROM t2 WHERE b>=5 AND b <=7;
+COUNT(*)
+22
+SELECT COUNT(*) FROM t2 WHERE b>=5 AND b <=11;
+COUNT(*)
+168
+SELECT COUNT(*) FROM t2 WHERE b>=9 AND b <=11;
+COUNT(*)
+136
+SELECT COUNT(*) FROM t2 WHERE b>=10 AND b <=11;
+COUNT(*)
+123
+SELECT COUNT(*) FROM t3 WHERE b<=5;
+COUNT(*)
+124
+SELECT COUNT(*) FROM t3 WHERE b>=7;
+COUNT(*)
+47
+SELECT COUNT(*) FROM t3 WHERE b>=8;
+COUNT(*)
+45
+SELECT COUNT(*) FROM t3 WHERE b>=10;
+COUNT(*)
+22
+SELECT COUNT(*) FROM t3 WHERE b>=5 AND b <=8;
+COUNT(*)
+57
+SELECT COUNT(*) FROM t3 WHERE b>=5 AND b <=7;
+COUNT(*)
+47
+SELECT COUNT(*) FROM t3 WHERE b>=5 AND b <=11;
+COUNT(*)
+92
+SELECT COUNT(*) FROM t3 WHERE b>=9 AND b <=11;
+COUNT(*)
+35
+SELECT COUNT(*) FROM t3 WHERE b>=10 AND b <=11;
+COUNT(*)
+22
+ANALYZE TABLE t1;
+Table	Op	Msg_type	Msg_text
+index_statistics_mcv_sequoiadb_26693_26694.t1	analyze	status	Engine-independent statistics collected
+index_statistics_mcv_sequoiadb_26693_26694.t1	analyze	status	OK
+ANALYZE TABLE t2;
+Table	Op	Msg_type	Msg_text
+index_statistics_mcv_sequoiadb_26693_26694.t2	analyze	status	Engine-independent statistics collected
+index_statistics_mcv_sequoiadb_26693_26694.t2	analyze	status	OK
+ANALYZE TABLE t3;
+Table	Op	Msg_type	Msg_text
+index_statistics_mcv_sequoiadb_26693_26694.t3	analyze	status	Engine-independent statistics collected
+index_statistics_mcv_sequoiadb_26693_26694.t3	analyze	status	OK
+EXPLAIN SELECT * FROM t1 WHERE b<=5;
+id	select_type	table	type	possible_keys	key	key_len	ref	rows	Extra
+1	SIMPLE	t1	ALL	idx_b	NULL	NULL	NULL	200	Using where with pushed condition
+EXPLAIN SELECT * FROM t1 WHERE b>=8;
+id	select_type	table	type	possible_keys	key	key_len	ref	rows	Extra
+1	SIMPLE	t1	range	idx_b	idx_b	4	NULL	56	Using where with pushed condition
+EXPLAIN SELECT * FROM t1 WHERE b>=5 AND b <=8;
+id	select_type	table	type	possible_keys	key	key_len	ref	rows	Extra
+1	SIMPLE	t1	ALL	idx_b	NULL	NULL	NULL	200	Using where with pushed condition
+EXPLAIN SELECT * FROM t1 WHERE b>=5 AND b <=11;
+id	select_type	table	type	possible_keys	key	key_len	ref	rows	Extra
+1	SIMPLE	t1	ALL	idx_b	NULL	NULL	NULL	200	Using where with pushed condition
+EXPLAIN SELECT * FROM t2 WHERE b<=5;
+id	select_type	table	type	possible_keys	key	key_len	ref	rows	Extra
+1	SIMPLE	t2	range	idx_b	idx_b	4	NULL	48	Using where with pushed condition
+EXPLAIN SELECT * FROM t2 WHERE b>=7;
+id	select_type	table	type	possible_keys	key	key_len	ref	rows	Extra
+1	SIMPLE	t2	ALL	idx_b	NULL	NULL	NULL	200	Using where with pushed condition
+EXPLAIN SELECT * FROM t2 WHERE b>=8;
+id	select_type	table	type	possible_keys	key	key_len	ref	rows	Extra
+1	SIMPLE	t2	ALL	idx_b	NULL	NULL	NULL	200	Using where with pushed condition
+EXPLAIN SELECT * FROM t2 WHERE b>=10;
+id	select_type	table	type	possible_keys	key	key_len	ref	rows	Extra
+1	SIMPLE	t2	ALL	idx_b	NULL	NULL	NULL	200	Using where with pushed condition
+EXPLAIN SELECT * FROM t2 WHERE b>=5 AND b <=8;
+id	select_type	table	type	possible_keys	key	key_len	ref	rows	Extra
+1	SIMPLE	t2	range	idx_b	idx_b	4	NULL	32	Using where with pushed condition
+EXPLAIN SELECT * FROM t2 WHERE b>=5 AND b <=7;
+id	select_type	table	type	possible_keys	key	key_len	ref	rows	Extra
+1	SIMPLE	t2	range	idx_b	idx_b	4	NULL	22	Using where with pushed condition
+EXPLAIN SELECT * FROM t2 WHERE b>=5 AND b <=11;
+id	select_type	table	type	possible_keys	key	key_len	ref	rows	Extra
+1	SIMPLE	t2	ALL	idx_b	NULL	NULL	NULL	200	Using where with pushed condition
+EXPLAIN SELECT * FROM t2 WHERE b>=9 AND b <=11;
+id	select_type	table	type	possible_keys	key	key_len	ref	rows	Extra
+1	SIMPLE	t2	ALL	idx_b	NULL	NULL	NULL	200	Using where with pushed condition
+EXPLAIN SELECT * FROM t2 WHERE b>=10 AND b <=11;
+id	select_type	table	type	possible_keys	key	key_len	ref	rows	Extra
+1	SIMPLE	t2	ALL	idx_b	NULL	NULL	NULL	200	Using where with pushed condition
+EXPLAIN SELECT * FROM t3 WHERE b<=5;
+id	select_type	table	type	possible_keys	key	key_len	ref	rows	Extra
+1	SIMPLE	t3	ALL	idx_b	NULL	NULL	NULL	200	Using where with pushed condition
+EXPLAIN SELECT * FROM t3 WHERE b>=7;
+id	select_type	table	type	possible_keys	key	key_len	ref	rows	Extra
+1	SIMPLE	t3	range	idx_b	idx_b	4	NULL	47	Using where with pushed condition
+EXPLAIN SELECT * FROM t3 WHERE b>=8;
+id	select_type	table	type	possible_keys	key	key_len	ref	rows	Extra
+1	SIMPLE	t3	range	idx_b	idx_b	4	NULL	45	Using where with pushed condition
+EXPLAIN SELECT * FROM t3 WHERE b>=10;
+id	select_type	table	type	possible_keys	key	key_len	ref	rows	Extra
+1	SIMPLE	t3	range	idx_b	idx_b	4	NULL	22	Using where with pushed condition
+EXPLAIN SELECT * FROM t3 WHERE b>=5 AND b <=8;
+id	select_type	table	type	possible_keys	key	key_len	ref	rows	Extra
+1	SIMPLE	t3	range	idx_b	idx_b	4	NULL	57	Using where with pushed condition
+EXPLAIN SELECT * FROM t3 WHERE b>=5 AND b <=7;
+id	select_type	table	type	possible_keys	key	key_len	ref	rows	Extra
+1	SIMPLE	t3	range	idx_b	idx_b	4	NULL	47	Using where with pushed condition
+EXPLAIN SELECT * FROM t3 WHERE b>=5 AND b <=11;
+id	select_type	table	type	possible_keys	key	key_len	ref	rows	Extra
+1	SIMPLE	t3	ALL	idx_b	NULL	NULL	NULL	200	Using where with pushed condition
+EXPLAIN SELECT * FROM t3 WHERE b>=9 AND b <=11;
+id	select_type	table	type	possible_keys	key	key_len	ref	rows	Extra
+1	SIMPLE	t3	range	idx_b	idx_b	4	NULL	35	Using where with pushed condition
+EXPLAIN SELECT * FROM t3 WHERE b>=10 AND b <=11;
+id	select_type	table	type	possible_keys	key	key_len	ref	rows	Extra
+1	SIMPLE	t3	range	idx_b	idx_b	4	NULL	22	Using where with pushed condition
+SELECT * FROM t1 WHERE b<5;
+a	b	c
+6	1	1
+6	1	1
+6	1	1
+6	1	1
+6	1	1
+6	1	1
+6	1	1
+6	1	1
+6	1	1
+6	1	1
+6	1	1
+6	1	1
+6	1	1
+6	1	1
+6	1	1
+6	1	1
+6	1	1
+6	1	1
+6	1	1
+6	1	1
+6	1	1
+6	1	1
+6	1	1
+6	1	1
+6	1	1
+6	1	1
+6	1	1
+6	1	1
+6	1	1
+6	1	1
+6	1	1
+6	1	1
+6	1	1
+6	1	1
+6	1	1
+6	1	1
+6	1	1
+6	1	1
+6	1	1
+6	1	1
+SELECT * FROM t1 WHERE b>8;
+a	b	c
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+SELECT * FROM t1 WHERE b>5 AND b <8;
+a	b	c
+1	7	6
+1	7	6
+1	7	6
+1	7	6
+SELECT * FROM t1 WHERE b>5 AND b <11;
+a	b	c
+1	7	6
+1	7	6
+1	7	6
+1	7	6
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+2	10	2
+3	8	7
+3	8	7
+3	8	7
+3	8	7
+3	8	7
+3	8	7
+3	8	7
+3	8	7
+3	8	7
+3	8	7
+3	8	7
+3	8	7
+3	8	7
+3	8	7
+3	8	7
+3	8	7
+3	8	7
+3	8	7
+3	8	7
+3	8	7
+ANALYZE TABLE t1;
+Table	Op	Msg_type	Msg_text
+index_statistics_mcv_sequoiadb_26693_26694.t1	analyze	status	Engine-independent statistics collected
+index_statistics_mcv_sequoiadb_26693_26694.t1	analyze	status	OK
+SELECT COUNT(*) FROM t1 WHERE b<5;
+COUNT(*)
+40
+SELECT COUNT(*) FROM t1 WHERE b>8;
+COUNT(*)
+36
+SELECT COUNT(*) FROM t1 WHERE b>5 AND b <8;
+COUNT(*)
+4
+SELECT COUNT(*) FROM t1 WHERE b>5 AND b <11;
+COUNT(*)
+60
+EXPLAIN SELECT * FROM t1 WHERE b<5;
+id	select_type	table	type	possible_keys	key	key_len	ref	rows	Extra
+1	SIMPLE	t1	range	idx_b	idx_b	4	NULL	40	Using where with pushed condition
+EXPLAIN SELECT * FROM t1 WHERE b>8;
+id	select_type	table	type	possible_keys	key	key_len	ref	rows	Extra
+1	SIMPLE	t1	range	idx_b	idx_b	4	NULL	36	Using where with pushed condition
+EXPLAIN SELECT * FROM t1 WHERE b>5 AND b <8;
+id	select_type	table	type	possible_keys	key	key_len	ref	rows	Extra
+1	SIMPLE	t1	range	idx_b	idx_b	4	NULL	4	Using where with pushed condition
+EXPLAIN SELECT * FROM t1 WHERE b>5 AND b <11;
+id	select_type	table	type	possible_keys	key	key_len	ref	rows	Extra
+1	SIMPLE	t1	range	idx_b	idx_b	4	NULL	60	Using where with pushed condition
+DROP PROCEDURE p1;
+DROP PROCEDURE p2;
+DROP PROCEDURE p3;
+DROP TABLE t1,t2,t3;
+DROP DATABASE index_statistics_mcv_sequoiadb_26693_26694;

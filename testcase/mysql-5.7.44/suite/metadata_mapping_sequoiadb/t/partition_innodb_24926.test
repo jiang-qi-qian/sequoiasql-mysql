@@ -1,0 +1,28 @@
+# seqDB-24926：创建 INNODB 引擎普通表，修改为分区表
+--source suite/metadata_mapping_sequoiadb/inc/insts_connect_sequoiadb.inc
+
+# 连接到 group1_conn1，删除数据库准备测试环境
+connection group1_conn1;
+--disable_warnings
+drop database if exists partition_innodb_24926;
+--enable_warnings
+
+#再次清理表，避免受其他用例影响，清理后重建
+CREATE DATABASE partition_innodb_24926;
+DROP DATABASE partition_innodb_24926;
+CREATE DATABASE partition_innodb_24926;
+use partition_innodb_24926;
+
+CREATE TABLE t1 ( id INT NOT NULL, a INT, PRIMARY KEY( id ) ) ENGINE INNODB; 
+ 
+ALTER TABLE t1 PARTITION BY RANGE ( id ) 
+SUBPARTITION BY HASH ( id ) 
+(PARTITION p0 VALUES LESS THAN (0) ( SUBPARTITION sp0 ), 
+ PARTITION p1 VALUES LESS THAN (1) ( SUBPARTITION sp1 ), 
+ PARTITION p2 VALUES LESS THAN (2) ( SUBPARTITION sp2 ) ); 
+
+SHOW CREATE TABLE t1;
+INSERT INTO t1 (id, a) VALUES (-1, 54465), (0, 89754), (1, 24926);
+SELECT * FROM t1;
+
+DROP DATABASE partition_innodb_24926;

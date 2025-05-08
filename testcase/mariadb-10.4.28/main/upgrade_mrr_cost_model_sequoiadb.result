@@ -1,0 +1,47 @@
+select @@upgrade_mrr_cost_model;
+@@upgrade_mrr_cost_model
+1
+set upgrade_mrr_cost_model=default;
+select @@upgrade_mrr_cost_model;
+@@upgrade_mrr_cost_model
+1
+set upgrade_mrr_cost_model=true;
+select @@upgrade_mrr_cost_model;
+@@upgrade_mrr_cost_model
+1
+set upgrade_mrr_cost_model=false;
+select @@upgrade_mrr_cost_model;
+@@upgrade_mrr_cost_model
+0
+set upgrade_mrr_cost_model=1;
+select @@upgrade_mrr_cost_model;
+@@upgrade_mrr_cost_model
+1
+set upgrade_mrr_cost_model=0;
+select @@upgrade_mrr_cost_model;
+@@upgrade_mrr_cost_model
+0
+set upgrade_mrr_cost_model=2;
+ERROR 42000: Variable 'upgrade_mrr_cost_model' can't be set to the value of '2'
+select @@upgrade_mrr_cost_model;
+@@upgrade_mrr_cost_model
+0
+set upgrade_mrr_cost_model="true";
+ERROR 42000: Variable 'upgrade_mrr_cost_model' can't be set to the value of 'true'
+select @@upgrade_mrr_cost_model;
+@@upgrade_mrr_cost_model
+0
+set session upgrade_mrr_cost_model=0;
+select @@upgrade_mrr_cost_model;
+@@upgrade_mrr_cost_model
+0
+set global upgrade_mrr_cost_model=default;
+connect  con1,localhost,root,,;
+connection con1;
+select @@upgrade_mrr_cost_model;
+@@upgrade_mrr_cost_model
+1
+disconnect con1;
+connection default;
+show variables like "upgrade_mrr_cost_model";
+Variable_name	Value

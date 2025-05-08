@@ -1,0 +1,886 @@
+set session sequoiadb_support_mode="";
+set sql_mode=TRADITIONAL;
+select @@SESSION.sql_mode;
+@@SESSION.sql_mode
+STRICT_TRANS_TABLES,STRICT_ALL_TABLES,NO_ZERO_IN_DATE,NO_ZERO_DATE,ERROR_FOR_DIVISION_BY_ZERO,TRADITIONAL,NO_AUTO_CREATE_USER,NO_ENGINE_SUBSTITUTION
+set session sequoiadb_support_mode="";
+set sql_mode=NO_ENGINE_SUBSTITUTION;
+select @@SESSION.sql_mode;
+@@SESSION.sql_mode
+NO_ENGINE_SUBSTITUTION
+drop database if exists metasync_19228;
+create database metasync_19228;
+use metasync_19228;
+CREATE TABLE t1 (
+eintrag date NOT NULL default '0000-00-00'
+);
+set sql_mode=default;
+show create table t1;
+Table	Create Table
+t1	CREATE TABLE `t1` (
+  `eintrag` date NOT NULL DEFAULT '0000-00-00'
+) ENGINE=SequoiaDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin
+show create table metasync_19228.t1;
+Table	Create Table
+t1	CREATE TABLE `t1` (
+  `eintrag` date NOT NULL DEFAULT '0000-00-00'
+) ENGINE=SequoiaDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin
+select @@SESSION.sql_mode;
+@@SESSION.sql_mode
+STRICT_TRANS_TABLES,STRICT_ALL_TABLES,NO_ZERO_IN_DATE,NO_ZERO_DATE,ERROR_FOR_DIVISION_BY_ZERO,TRADITIONAL,NO_AUTO_CREATE_USER,NO_ENGINE_SUBSTITUTION
+set sql_mode=default;
+drop database metasync_19228;
+show create database metasync_19228;
+ERROR 42000: Unknown database 'metasync_19228'
+drop database if exists metasync_22556;
+create database if not exists metasync_22556 character set = 'latin1';
+create table metasync_22556.t1 (a int key auto_increment);
+alter database metasync_22556 character set = 'utf8';
+alter table metasync_22556.t1 add column b int not null;
+show create database metasync_22556;
+Database	Create Database
+metasync_22556	CREATE DATABASE `metasync_22556` /*!40100 DEFAULT CHARACTER SET utf8 */
+show create table metasync_22556.t1;
+Table	Create Table
+t1	CREATE TABLE `t1` (
+  `a` int(11) NOT NULL AUTO_INCREMENT,
+  `b` int(11) NOT NULL,
+  PRIMARY KEY (`a`)
+) ENGINE=SequoiaDB DEFAULT CHARSET=latin1
+show create database metasync_22556;
+Database	Create Database
+metasync_22556	CREATE DATABASE `metasync_22556` /*!40100 DEFAULT CHARACTER SET utf8 */
+show create table metasync_22556.t1;
+Table	Create Table
+t1	CREATE TABLE `t1` (
+  `a` int(11) NOT NULL AUTO_INCREMENT,
+  `b` int(11) NOT NULL,
+  PRIMARY KEY (`a`)
+) ENGINE=SequoiaDB DEFAULT CHARSET=latin1
+alter database metasync_22556 character set = 'latin2';
+drop table metasync_22556.t1;
+show create database metasync_22556;
+Database	Create Database
+metasync_22556	CREATE DATABASE `metasync_22556` /*!40100 DEFAULT CHARACTER SET latin2 */
+show create table metasync_22556.t1;
+ERROR 42S02: Table 'metasync_22556.t1' doesn't exist
+show create database metasync_22556;
+Database	Create Database
+metasync_22556	CREATE DATABASE `metasync_22556` /*!40100 DEFAULT CHARACTER SET latin2 */
+show create table metasync_22556.t1;
+ERROR 42S02: Table 'metasync_22556.t1' doesn't exist
+drop database metasync_22556;
+drop database if exists metasync_22557;
+create database if not exists metasync_22557 character set = 'latin1';
+create table metasync_22557.t1 (a int key auto_increment);
+CREATE FUNCTION metasync_22557.f1() RETURNS INTEGER
+BEGIN
+DECLARE retn INTEGER;
+SELECT a FROM metasync_22557.t1 INTO retn;
+RETURN retn;
+END//
+alter database metasync_22557 character set = 'utf8';
+alter function metasync_22557.f1 comment 'modify function';
+show create database metasync_22557;
+Database	Create Database
+metasync_22557	CREATE DATABASE `metasync_22557` /*!40100 DEFAULT CHARACTER SET utf8 */
+show create function metasync_22557.f1;
+Function	sql_mode	Create Function	character_set_client	collation_connection	Database Collation
+f1	STRICT_TRANS_TABLES,ERROR_FOR_DIVISION_BY_ZERO,NO_AUTO_CREATE_USER,NO_ENGINE_SUBSTITUTION	CREATE DEFINER=`x`@`%` FUNCTION `f1`() RETURNS int(11)
+    COMMENT 'modify function'
+BEGIN
+DECLARE retn INTEGER;
+SELECT a FROM metasync_22557.t1 INTO retn;
+RETURN retn;
+END	latin1	latin1_swedish_ci	latin1_swedish_ci
+show create database metasync_22557;
+Database	Create Database
+metasync_22557	CREATE DATABASE `metasync_22557` /*!40100 DEFAULT CHARACTER SET utf8 */
+show create function metasync_22557.f1;
+Function	sql_mode	Create Function	character_set_client	collation_connection	Database Collation
+f1	STRICT_TRANS_TABLES,ERROR_FOR_DIVISION_BY_ZERO,NO_AUTO_CREATE_USER,NO_ENGINE_SUBSTITUTION	CREATE DEFINER=`x`@`%` FUNCTION `f1`() RETURNS int(11)
+    COMMENT 'modify function'
+BEGIN
+DECLARE retn INTEGER;
+SELECT a FROM metasync_22557.t1 INTO retn;
+RETURN retn;
+END	latin1	latin1_swedish_ci	latin1_swedish_ci
+alter database metasync_22557 character set = 'latin2';
+drop function metasync_22557.f1;
+show create database metasync_22557;
+Database	Create Database
+metasync_22557	CREATE DATABASE `metasync_22557` /*!40100 DEFAULT CHARACTER SET latin2 */
+show create function metasync_22557.f1;
+ERROR 42000: FUNCTION f1 does not exist
+show create database metasync_22557;
+Database	Create Database
+metasync_22557	CREATE DATABASE `metasync_22557` /*!40100 DEFAULT CHARACTER SET latin2 */
+show create function metasync_22557.f1;
+ERROR 42000: FUNCTION f1 does not exist
+drop database metasync_22557;
+drop database if exists metasync_22558;
+create database if not exists metasync_22558 character set = 'latin1';
+create table metasync_22558.account (acct_num int, amount decimal(10,2));
+create trigger metasync_22558.ins_num1 before insert on account for each row set @sum = @sum + NEW.amount;
+show create trigger metasync_22558.ins_num1;
+Trigger	sql_mode	SQL Original Statement	character_set_client	collation_connection	Database Collation	Created
+ins_num1	STRICT_TRANS_TABLES,ERROR_FOR_DIVISION_BY_ZERO,NO_AUTO_CREATE_USER,NO_ENGINE_SUBSTITUTION	CREATE DEFINER=`x`@`%` trigger metasync_22558.ins_num1 before insert on account for each row set @sum = @sum + NEW.amount	latin1	latin1_swedish_ci	latin1_swedish_ci	x
+show create trigger metasync_22558.ins_num1;
+Trigger	sql_mode	SQL Original Statement	character_set_client	collation_connection	Database Collation	Created
+ins_num1	STRICT_TRANS_TABLES,ERROR_FOR_DIVISION_BY_ZERO,NO_AUTO_CREATE_USER,NO_ENGINE_SUBSTITUTION	CREATE DEFINER=`x`@`%` trigger metasync_22558.ins_num1 before insert on account for each row set @sum = @sum + NEW.amount	latin1	latin1_swedish_ci	latin1_swedish_ci	x
+alter database metasync_22558 character set = 'utf8';
+drop trigger metasync_22558.ins_num1;
+show create database metasync_22558;
+Database	Create Database
+metasync_22558	CREATE DATABASE `metasync_22558` /*!40100 DEFAULT CHARACTER SET utf8 */
+show create trigger metasync_22558.ins_num1;
+ERROR HY000: Trigger does not exist
+show create database metasync_22558;
+Database	Create Database
+metasync_22558	CREATE DATABASE `metasync_22558` /*!40100 DEFAULT CHARACTER SET utf8 */
+show create trigger metasync_22558.ins_num1;
+ERROR HY000: Trigger does not exist
+drop database metasync_22558;
+drop database if exists metasync_22560;
+create database if not exists metasync_22560 character set = 'latin1';
+create table metasync_22560.t1(a int);
+create index a on metasync_22560.t1(a);
+show create database metasync_22560;
+Database	Create Database
+metasync_22560	CREATE DATABASE `metasync_22560` /*!40100 DEFAULT CHARACTER SET latin1 */
+show create table metasync_22560.t1;
+Table	Create Table
+t1	CREATE TABLE `t1` (
+  `a` int(11) DEFAULT NULL,
+  KEY `a` (`a`)
+) ENGINE=SequoiaDB DEFAULT CHARSET=latin1
+show create database metasync_22560;
+Database	Create Database
+metasync_22560	CREATE DATABASE `metasync_22560` /*!40100 DEFAULT CHARACTER SET latin1 */
+show create table metasync_22560.t1;
+Table	Create Table
+t1	CREATE TABLE `t1` (
+  `a` int(11) DEFAULT NULL,
+  KEY `a` (`a`)
+) ENGINE=SequoiaDB DEFAULT CHARSET=latin1
+alter database metasync_22560 character set = 'utf8';
+drop index a on metasync_22560.t1;
+show create database metasync_22560;
+Database	Create Database
+metasync_22560	CREATE DATABASE `metasync_22560` /*!40100 DEFAULT CHARACTER SET utf8 */
+show create table metasync_22560.t1;
+Table	Create Table
+t1	CREATE TABLE `t1` (
+  `a` int(11) DEFAULT NULL
+) ENGINE=SequoiaDB DEFAULT CHARSET=latin1
+show create database metasync_22560;
+Database	Create Database
+metasync_22560	CREATE DATABASE `metasync_22560` /*!40100 DEFAULT CHARACTER SET utf8 */
+show create table metasync_22560.t1;
+Table	Create Table
+t1	CREATE TABLE `t1` (
+  `a` int(11) DEFAULT NULL
+) ENGINE=SequoiaDB DEFAULT CHARSET=latin1
+drop database metasync_22560;
+drop database if exists meta_sync_test;
+create database if not exists meta_sync_test character set = 'latin1';
+create table meta_sync_test.t1 (a int key auto_increment,b char(255));
+CREATE FUNCTION meta_sync_test.f1() RETURNS INTEGER
+BEGIN
+DECLARE retn INTEGER;
+SELECT a FROM meta_sync_test.t1 INTO retn;
+RETURN retn;
+END//
+alter table meta_sync_test.t1 add c int not null default 10;
+alter function meta_sync_test.f1 comment 'modify function';
+show create table meta_sync_test.t1;
+Table	Create Table
+t1	CREATE TABLE `t1` (
+  `a` int(11) NOT NULL AUTO_INCREMENT,
+  `b` char(255) DEFAULT NULL,
+  `c` int(11) NOT NULL DEFAULT '10',
+  PRIMARY KEY (`a`)
+) ENGINE=SequoiaDB DEFAULT CHARSET=latin1
+show create function meta_sync_test.f1;
+Function	sql_mode	Create Function	character_set_client	collation_connection	Database Collation
+f1	STRICT_TRANS_TABLES,ERROR_FOR_DIVISION_BY_ZERO,NO_AUTO_CREATE_USER,NO_ENGINE_SUBSTITUTION	CREATE DEFINER=`x`@`%` FUNCTION `f1`() RETURNS int(11)
+    COMMENT 'modify function'
+BEGIN
+DECLARE retn INTEGER;
+SELECT a FROM meta_sync_test.t1 INTO retn;
+RETURN retn;
+END	latin1	latin1_swedish_ci	latin1_swedish_ci
+show create table meta_sync_test.t1;
+Table	Create Table
+t1	CREATE TABLE `t1` (
+  `a` int(11) NOT NULL AUTO_INCREMENT,
+  `b` char(255) DEFAULT NULL,
+  `c` int(11) NOT NULL DEFAULT '10',
+  PRIMARY KEY (`a`)
+) ENGINE=SequoiaDB DEFAULT CHARSET=latin1
+show create function meta_sync_test.f1;
+Function	sql_mode	Create Function	character_set_client	collation_connection	Database Collation
+f1	STRICT_TRANS_TABLES,ERROR_FOR_DIVISION_BY_ZERO,NO_AUTO_CREATE_USER,NO_ENGINE_SUBSTITUTION	CREATE DEFINER=`x`@`%` FUNCTION `f1`() RETURNS int(11)
+    COMMENT 'modify function'
+BEGIN
+DECLARE retn INTEGER;
+SELECT a FROM meta_sync_test.t1 INTO retn;
+RETURN retn;
+END	latin1	latin1_swedish_ci	latin1_swedish_ci
+alter table meta_sync_test.t1 change column c d bigint not null;
+drop function meta_sync_test.f1;
+show create table meta_sync_test.t1;
+Table	Create Table
+t1	CREATE TABLE `t1` (
+  `a` int(11) NOT NULL AUTO_INCREMENT,
+  `b` char(255) DEFAULT NULL,
+  `d` bigint(20) NOT NULL,
+  PRIMARY KEY (`a`)
+) ENGINE=SequoiaDB DEFAULT CHARSET=latin1
+show create function meta_sync_test.f1;
+ERROR 42000: FUNCTION f1 does not exist
+show create table meta_sync_test.t1;
+Table	Create Table
+t1	CREATE TABLE `t1` (
+  `a` int(11) NOT NULL AUTO_INCREMENT,
+  `b` char(255) DEFAULT NULL,
+  `d` bigint(20) NOT NULL,
+  PRIMARY KEY (`a`)
+) ENGINE=SequoiaDB DEFAULT CHARSET=latin1
+show create function meta_sync_test.f1;
+ERROR 42000: FUNCTION f1 does not exist
+drop table meta_sync_test.t1;
+drop table if exists meta_sync_test.account;
+Warnings:
+Note	1051	Unknown table 'meta_sync_test.account'
+create table meta_sync_test.account (acct_num int, amount decimal(10,2));
+create trigger meta_sync_test.ins_num1 before insert on account for each row set @sum = @sum + NEW.amount;
+show create table meta_sync_test.account;
+Table	Create Table
+account	CREATE TABLE `account` (
+  `acct_num` int(11) DEFAULT NULL,
+  `amount` decimal(10,2) DEFAULT NULL
+) ENGINE=SequoiaDB DEFAULT CHARSET=latin1
+show create trigger meta_sync_test.ins_num1;
+Trigger	sql_mode	SQL Original Statement	character_set_client	collation_connection	Database Collation	Created
+ins_num1	STRICT_TRANS_TABLES,ERROR_FOR_DIVISION_BY_ZERO,NO_AUTO_CREATE_USER,NO_ENGINE_SUBSTITUTION	CREATE DEFINER=`x`@`%` trigger meta_sync_test.ins_num1 before insert on account for each row set @sum = @sum + NEW.amount	latin1	latin1_swedish_ci	latin1_swedish_ci	x
+show create table meta_sync_test.account;
+Table	Create Table
+account	CREATE TABLE `account` (
+  `acct_num` int(11) DEFAULT NULL,
+  `amount` decimal(10,2) DEFAULT NULL
+) ENGINE=SequoiaDB DEFAULT CHARSET=latin1
+show create trigger meta_sync_test.ins_num1;
+Trigger	sql_mode	SQL Original Statement	character_set_client	collation_connection	Database Collation	Created
+ins_num1	STRICT_TRANS_TABLES,ERROR_FOR_DIVISION_BY_ZERO,NO_AUTO_CREATE_USER,NO_ENGINE_SUBSTITUTION	CREATE DEFINER=`x`@`%` trigger meta_sync_test.ins_num1 before insert on account for each row set @sum = @sum + NEW.amount	latin1	latin1_swedish_ci	latin1_swedish_ci	x
+alter table meta_sync_test.account add c int not null default 10;
+drop trigger meta_sync_test.ins_num1;
+show create table meta_sync_test.account;
+Table	Create Table
+account	CREATE TABLE `account` (
+  `acct_num` int(11) DEFAULT NULL,
+  `amount` decimal(10,2) DEFAULT NULL,
+  `c` int(11) NOT NULL DEFAULT '10'
+) ENGINE=SequoiaDB DEFAULT CHARSET=latin1
+show create trigger meta_sync_test.ins_num1;
+ERROR HY000: Trigger does not exist
+show create table meta_sync_test.account;
+Table	Create Table
+account	CREATE TABLE `account` (
+  `acct_num` int(11) DEFAULT NULL,
+  `amount` decimal(10,2) DEFAULT NULL,
+  `c` int(11) NOT NULL DEFAULT '10'
+) ENGINE=SequoiaDB DEFAULT CHARSET=latin1
+show create trigger meta_sync_test.ins_num1;
+ERROR HY000: Trigger does not exist
+drop table meta_sync_test.account;
+drop table if exists meta_sync_test.t1;
+Warnings:
+Note	1051	Unknown table 'meta_sync_test.t1'
+drop table if exists meta_sync_test.t2;
+Warnings:
+Note	1051	Unknown table 'meta_sync_test.t2'
+create table meta_sync_test.t1(a int)engine=innodb;
+create index a on meta_sync_test.t1(a);
+show create table meta_sync_test.t1;
+Table	Create Table
+t1	CREATE TABLE `t1` (
+  `a` int(11) DEFAULT NULL,
+  KEY `a` (`a`)
+) ENGINE=InnoDB DEFAULT CHARSET=latin1
+show create table meta_sync_test.t1;
+Table	Create Table
+t1	CREATE TABLE `t1` (
+  `a` int(11) DEFAULT NULL,
+  KEY `a` (`a`)
+) ENGINE=InnoDB DEFAULT CHARSET=latin1
+alter table meta_sync_test.t1 rename as meta_sync_test.t2;
+alter table meta_sync_test.t2 rename index a to b;
+show create table meta_sync_test.t1;
+ERROR 42S02: Table 'meta_sync_test.t1' doesn't exist
+show create table meta_sync_test.t2;
+Table	Create Table
+t2	CREATE TABLE `t2` (
+  `a` int(11) DEFAULT NULL,
+  KEY `b` (`a`)
+) ENGINE=InnoDB DEFAULT CHARSET=latin1
+show create table meta_sync_test.t1;
+ERROR 42S02: Table 'meta_sync_test.t1' doesn't exist
+show create table meta_sync_test.t2;
+Table	Create Table
+t2	CREATE TABLE `t2` (
+  `a` int(11) DEFAULT NULL,
+  KEY `b` (`a`)
+) ENGINE=InnoDB DEFAULT CHARSET=latin1
+drop table meta_sync_test.t2;
+create table meta_sync_test.t1(a int,b int);
+create table meta_sync_test.t2 like meta_sync_test.t1;
+create or replace view meta_sync_test.v1 as select * from meta_sync_test.t1 where a >0;
+alter table meta_sync_test.t1 add column c int;
+create or replace view meta_sync_test.v1 as select * from meta_sync_test.t2 where exists(select 1 from meta_sync_test.t1 where meta_sync_test.t1.a=meta_sync_test.t2.a);
+show create table meta_sync_test.t1;
+Table	Create Table
+t1	CREATE TABLE `t1` (
+  `a` int(11) DEFAULT NULL,
+  `b` int(11) DEFAULT NULL,
+  `c` int(11) DEFAULT NULL
+) ENGINE=SequoiaDB DEFAULT CHARSET=latin1
+show create view meta_sync_test.v1;
+View	Create View	character_set_client	collation_connection
+v1	CREATE ALGORITHM=UNDEFINED DEFINER=`x`@`%` SQL SECURITY DEFINER VIEW `meta_sync_test`.`v1` AS select `meta_sync_test`.`t2`.`a` AS `a`,`meta_sync_test`.`t2`.`b` AS `b` from `meta_sync_test`.`t2` where exists(select 1 from `meta_sync_test`.`t1` where (`meta_sync_test`.`t1`.`a` = `meta_sync_test`.`t2`.`a`))	latin1	latin1_swedish_ci
+show create table meta_sync_test.t1;
+Table	Create Table
+t1	CREATE TABLE `t1` (
+  `a` int(11) DEFAULT NULL,
+  `b` int(11) DEFAULT NULL,
+  `c` int(11) DEFAULT NULL
+) ENGINE=SequoiaDB DEFAULT CHARSET=latin1
+show create view meta_sync_test.v1;
+View	Create View	character_set_client	collation_connection
+v1	CREATE ALGORITHM=UNDEFINED DEFINER=`x`@`%` SQL SECURITY DEFINER VIEW `meta_sync_test`.`v1` AS select `meta_sync_test`.`t2`.`a` AS `a`,`meta_sync_test`.`t2`.`b` AS `b` from `meta_sync_test`.`t2` where exists(select 1 from `meta_sync_test`.`t1` where (`meta_sync_test`.`t1`.`a` = `meta_sync_test`.`t2`.`a`))	latin1	latin1_swedish_ci
+drop table meta_sync_test.t1;
+drop view meta_sync_test.v1;
+drop table meta_sync_test.t2;
+show create table meta_sync_test.t1;
+ERROR 42S02: Table 'meta_sync_test.t1' doesn't exist
+show create table meta_sync_test.v1;
+ERROR 42S02: Table 'meta_sync_test.v1' doesn't exist
+show create table meta_sync_test.t1;
+ERROR 42S02: Table 'meta_sync_test.t1' doesn't exist
+show create table meta_sync_test.v1;
+ERROR 42S02: Table 'meta_sync_test.v1' doesn't exist
+create table meta_sync_test.t1 (a int key auto_increment,b int);
+create table meta_sync_test.t2 like meta_sync_test.t1;
+create or replace view meta_sync_test.v1 as select * from meta_sync_test.t1 where a >0;
+CREATE FUNCTION meta_sync_test.f1() RETURNS INTEGER
+BEGIN
+DECLARE retn INTEGER;
+SELECT a FROM meta_sync_test.v1 INTO retn;
+RETURN retn;
+END//
+show create table meta_sync_test.v1;
+View	Create View	character_set_client	collation_connection
+v1	CREATE ALGORITHM=UNDEFINED DEFINER=`x`@`%` SQL SECURITY DEFINER VIEW `meta_sync_test`.`v1` AS select `meta_sync_test`.`t1`.`a` AS `a`,`meta_sync_test`.`t1`.`b` AS `b` from `meta_sync_test`.`t1` where (`meta_sync_test`.`t1`.`a` > 0)	latin1	latin1_swedish_ci
+show create function meta_sync_test.f1;
+Function	sql_mode	Create Function	character_set_client	collation_connection	Database Collation
+f1	STRICT_TRANS_TABLES,ERROR_FOR_DIVISION_BY_ZERO,NO_AUTO_CREATE_USER,NO_ENGINE_SUBSTITUTION	CREATE DEFINER=`x`@`%` FUNCTION `f1`() RETURNS int(11)
+BEGIN
+DECLARE retn INTEGER;
+SELECT a FROM meta_sync_test.v1 INTO retn;
+RETURN retn;
+END	latin1	latin1_swedish_ci	latin1_swedish_ci
+show create table meta_sync_test.t1;
+Table	Create Table
+t1	CREATE TABLE `t1` (
+  `a` int(11) NOT NULL AUTO_INCREMENT,
+  `b` int(11) DEFAULT NULL,
+  PRIMARY KEY (`a`)
+) ENGINE=SequoiaDB DEFAULT CHARSET=latin1
+show create function meta_sync_test.f1;
+Function	sql_mode	Create Function	character_set_client	collation_connection	Database Collation
+f1	STRICT_TRANS_TABLES,ERROR_FOR_DIVISION_BY_ZERO,NO_AUTO_CREATE_USER,NO_ENGINE_SUBSTITUTION	CREATE DEFINER=`x`@`%` FUNCTION `f1`() RETURNS int(11)
+BEGIN
+DECLARE retn INTEGER;
+SELECT a FROM meta_sync_test.v1 INTO retn;
+RETURN retn;
+END	latin1	latin1_swedish_ci	latin1_swedish_ci
+drop view meta_sync_test.v1;
+alter function meta_sync_test.f1 comment 'modify function';
+show create table meta_sync_test.v1;
+ERROR 42S02: Table 'meta_sync_test.v1' doesn't exist
+show create function meta_sync_test.f1;
+Function	sql_mode	Create Function	character_set_client	collation_connection	Database Collation
+f1	STRICT_TRANS_TABLES,ERROR_FOR_DIVISION_BY_ZERO,NO_AUTO_CREATE_USER,NO_ENGINE_SUBSTITUTION	CREATE DEFINER=`x`@`%` FUNCTION `f1`() RETURNS int(11)
+    COMMENT 'modify function'
+BEGIN
+DECLARE retn INTEGER;
+SELECT a FROM meta_sync_test.v1 INTO retn;
+RETURN retn;
+END	latin1	latin1_swedish_ci	latin1_swedish_ci
+show create table meta_sync_test.v1;
+ERROR 42S02: Table 'meta_sync_test.v1' doesn't exist
+show create function meta_sync_test.f1;
+Function	sql_mode	Create Function	character_set_client	collation_connection	Database Collation
+f1	STRICT_TRANS_TABLES,ERROR_FOR_DIVISION_BY_ZERO,NO_AUTO_CREATE_USER,NO_ENGINE_SUBSTITUTION	CREATE DEFINER=`x`@`%` FUNCTION `f1`() RETURNS int(11)
+    COMMENT 'modify function'
+BEGIN
+DECLARE retn INTEGER;
+SELECT a FROM meta_sync_test.v1 INTO retn;
+RETURN retn;
+END	latin1	latin1_swedish_ci	latin1_swedish_ci
+create or replace view meta_sync_test.v1 as select * from meta_sync_test.t2 where exists(select 1 from meta_sync_test.t1 where meta_sync_test.t1.a=meta_sync_test.t2.a);
+drop function meta_sync_test.f1;
+drop view meta_sync_test.v1;
+show create table meta_sync_test.v1;
+ERROR 42S02: Table 'meta_sync_test.v1' doesn't exist
+show create function meta_sync_test.f1;
+ERROR 42000: FUNCTION f1 does not exist
+show create table meta_sync_test.v1;
+ERROR 42S02: Table 'meta_sync_test.v1' doesn't exist
+show create function meta_sync_test.f1;
+ERROR 42000: FUNCTION f1 does not exist
+drop table meta_sync_test.t1;
+drop table meta_sync_test.t2;
+create table meta_sync_test.t1 (id int, name char(255));
+create procedure meta_sync_test.p1()
+begin
+insert into meta_sync_test.t1(name) values('name is null');
+end //
+create procedure meta_sync_test.p2()
+begin
+insert into meta_sync_test.t1(name) values('name is not null');
+end //
+create function meta_sync_test.f(num int) returns int
+begin
+declare a int;
+if num <0 then
+call meta_sync_test.p1();
+set a= 1;
+else
+call meta_sync_test.p2();
+set a=2;
+end if;
+return a;
+end //
+create view meta_sync_test.v1 as select * from meta_sync_test.t1 where id = meta_sync_test.f(-1);
+show create table meta_sync_test.v1;
+View	Create View	character_set_client	collation_connection
+v1	CREATE ALGORITHM=UNDEFINED DEFINER=`x`@`%` SQL SECURITY DEFINER VIEW `meta_sync_test`.`v1` AS select `meta_sync_test`.`t1`.`id` AS `id`,`meta_sync_test`.`t1`.`name` AS `name` from `meta_sync_test`.`t1` where (`meta_sync_test`.`t1`.`id` = `meta_sync_test`.`f`(-(1)))	latin1	latin1_swedish_ci
+show create function meta_sync_test.f;
+Function	sql_mode	Create Function	character_set_client	collation_connection	Database Collation
+f	STRICT_TRANS_TABLES,ERROR_FOR_DIVISION_BY_ZERO,NO_AUTO_CREATE_USER,NO_ENGINE_SUBSTITUTION	CREATE DEFINER=`x`@`%` FUNCTION `f`(num int) RETURNS int(11)
+begin
+declare a int;
+if num <0 then
+call meta_sync_test.p1();
+set a= 1;
+else
+call meta_sync_test.p2();
+set a=2;
+end if;
+return a;
+end	latin1	latin1_swedish_ci	latin1_swedish_ci
+show create procedure meta_sync_test.p1;
+Procedure	sql_mode	Create Procedure	character_set_client	collation_connection	Database Collation
+p1	STRICT_TRANS_TABLES,ERROR_FOR_DIVISION_BY_ZERO,NO_AUTO_CREATE_USER,NO_ENGINE_SUBSTITUTION	CREATE DEFINER=`x`@`%` PROCEDURE `p1`()
+begin
+insert into meta_sync_test.t1(name) values('name is null');
+end	latin1	latin1_swedish_ci	latin1_swedish_ci
+show create procedure meta_sync_test.p2;
+Procedure	sql_mode	Create Procedure	character_set_client	collation_connection	Database Collation
+p2	STRICT_TRANS_TABLES,ERROR_FOR_DIVISION_BY_ZERO,NO_AUTO_CREATE_USER,NO_ENGINE_SUBSTITUTION	CREATE DEFINER=`x`@`%` PROCEDURE `p2`()
+begin
+insert into meta_sync_test.t1(name) values('name is not null');
+end	latin1	latin1_swedish_ci	latin1_swedish_ci
+show create table meta_sync_test.t1;
+Table	Create Table
+t1	CREATE TABLE `t1` (
+  `id` int(11) DEFAULT NULL,
+  `name` char(255) DEFAULT NULL
+) ENGINE=SequoiaDB DEFAULT CHARSET=latin1
+show create table meta_sync_test.v1;
+View	Create View	character_set_client	collation_connection
+v1	CREATE ALGORITHM=UNDEFINED DEFINER=`x`@`%` SQL SECURITY DEFINER VIEW `meta_sync_test`.`v1` AS select `meta_sync_test`.`t1`.`id` AS `id`,`meta_sync_test`.`t1`.`name` AS `name` from `meta_sync_test`.`t1` where (`meta_sync_test`.`t1`.`id` = `meta_sync_test`.`f`(-(1)))	latin1	latin1_swedish_ci
+show create function meta_sync_test.f;
+Function	sql_mode	Create Function	character_set_client	collation_connection	Database Collation
+f	STRICT_TRANS_TABLES,ERROR_FOR_DIVISION_BY_ZERO,NO_AUTO_CREATE_USER,NO_ENGINE_SUBSTITUTION	CREATE DEFINER=`x`@`%` FUNCTION `f`(num int) RETURNS int(11)
+begin
+declare a int;
+if num <0 then
+call meta_sync_test.p1();
+set a= 1;
+else
+call meta_sync_test.p2();
+set a=2;
+end if;
+return a;
+end	latin1	latin1_swedish_ci	latin1_swedish_ci
+show create procedure meta_sync_test.p1;
+Procedure	sql_mode	Create Procedure	character_set_client	collation_connection	Database Collation
+p1	STRICT_TRANS_TABLES,ERROR_FOR_DIVISION_BY_ZERO,NO_AUTO_CREATE_USER,NO_ENGINE_SUBSTITUTION	CREATE DEFINER=`x`@`%` PROCEDURE `p1`()
+begin
+insert into meta_sync_test.t1(name) values('name is null');
+end	latin1	latin1_swedish_ci	latin1_swedish_ci
+show create procedure meta_sync_test.p2;
+Procedure	sql_mode	Create Procedure	character_set_client	collation_connection	Database Collation
+p2	STRICT_TRANS_TABLES,ERROR_FOR_DIVISION_BY_ZERO,NO_AUTO_CREATE_USER,NO_ENGINE_SUBSTITUTION	CREATE DEFINER=`x`@`%` PROCEDURE `p2`()
+begin
+insert into meta_sync_test.t1(name) values('name is not null');
+end	latin1	latin1_swedish_ci	latin1_swedish_ci
+show create table meta_sync_test.t1;
+Table	Create Table
+t1	CREATE TABLE `t1` (
+  `id` int(11) DEFAULT NULL,
+  `name` char(255) DEFAULT NULL
+) ENGINE=SequoiaDB DEFAULT CHARSET=latin1
+drop table meta_sync_test.t1;
+drop procedure meta_sync_test.p1;
+drop procedure meta_sync_test.p2;
+drop function meta_sync_test.f;
+drop view meta_sync_test.v1;
+show create table meta_sync_test.v1;
+ERROR 42S02: Table 'meta_sync_test.v1' doesn't exist
+show create function meta_sync_test.f;
+ERROR 42000: FUNCTION f does not exist
+show create procedure meta_sync_test.p1;
+ERROR 42000: PROCEDURE p1 does not exist
+show create procedure meta_sync_test.p2;
+ERROR 42000: PROCEDURE p2 does not exist
+show create table meta_sync_test.t1;
+ERROR 42S02: Table 'meta_sync_test.t1' doesn't exist
+show create table meta_sync_test.v1;
+ERROR 42S02: Table 'meta_sync_test.v1' doesn't exist
+show create function meta_sync_test.f;
+ERROR 42000: FUNCTION f does not exist
+show create procedure meta_sync_test.p1;
+ERROR 42000: PROCEDURE p1 does not exist
+show create procedure meta_sync_test.p2;
+ERROR 42000: PROCEDURE p2 does not exist
+show create table meta_sync_test.t1;
+ERROR 42S02: Table 'meta_sync_test.t1' doesn't exist
+drop database meta_sync_test;
+show create database meta_sync_test;
+ERROR 42000: Unknown database 'meta_sync_test'
+drop database if exists meta_sync_22567;
+drop user if exists user_22567;
+create database meta_sync_22567;
+create table meta_sync_22567.t1(a int);
+create view meta_sync_22567.v1 as select * from meta_sync_22567.t1;
+create procedure meta_sync_22567.p1()
+begin
+insert into meta_sync_22567.t1(name) values('name is null');
+end //
+CREATE FUNCTION meta_sync_22567.f1() RETURNS INTEGER 
+BEGIN
+DECLARE retn INTEGER;
+insert into meta_sync_22567.t1(a) values(1) ;
+SELECT a FROM meta_sync_22567.t1 INTO retn;
+RETURN retn;
+END//
+create user user_22567 identified by 'meta_sync_22567';
+flush privileges;
+grant insert on table meta_sync_22567.t1 to 'user_22567';
+grant select on table meta_sync_22567.v1 to 'user_22567';
+grant execute on function meta_sync_22567.f1 to 'user_22567';
+grant execute on procedure meta_sync_22567.p1 to 'user_22567';
+flush privileges;
+show grants for user_22567;
+Grants for user_22567@%
+GRANT EXECUTE ON FUNCTION `meta_sync_22567`.`f1` TO 'user_22567'@'%'
+GRANT EXECUTE ON PROCEDURE `meta_sync_22567`.`p1` TO 'user_22567'@'%'
+GRANT INSERT ON `meta_sync_22567`.`t1` TO 'user_22567'@'%'
+GRANT SELECT ON `meta_sync_22567`.`v1` TO 'user_22567'@'%'
+GRANT USAGE ON *.* TO 'user_22567'@'%'
+show grants for user_22567;
+Grants for user_22567@%
+GRANT EXECUTE ON FUNCTION `meta_sync_22567`.`f1` TO 'user_22567'@'%'
+GRANT EXECUTE ON PROCEDURE `meta_sync_22567`.`p1` TO 'user_22567'@'%'
+GRANT INSERT ON `meta_sync_22567`.`t1` TO 'user_22567'@'%'
+GRANT SELECT ON `meta_sync_22567`.`v1` TO 'user_22567'@'%'
+GRANT USAGE ON *.* TO 'user_22567'@'%'
+revoke insert on table meta_sync_22567.t1 from user_22567;
+revoke select on table meta_sync_22567.v1 from user_22567;
+revoke execute on function meta_sync_22567.f1 from user_22567;
+revoke execute on procedure meta_sync_22567.p1 from user_22567;
+flush privileges;
+show grants for user_22567;
+Grants for user_22567@%
+GRANT USAGE ON *.* TO 'user_22567'@'%'
+show grants for user_22567;
+Grants for user_22567@%
+GRANT USAGE ON *.* TO 'user_22567'@'%'
+grant all on meta_sync_22567.* to 'user_22567';
+flush privileges;
+show grants for user_22567;
+Grants for user_22567@%
+GRANT USAGE ON *.* TO 'user_22567'@'%'
+GRANT ALL PRIVILEGES ON `meta_sync_22567`.* TO 'user_22567'@'%'
+show grants for user_22567;
+Grants for user_22567@%
+GRANT USAGE ON *.* TO 'user_22567'@'%'
+GRANT ALL PRIVILEGES ON `meta_sync_22567`.* TO 'user_22567'@'%'
+alter database meta_sync_22567 character set = 'latin2';
+revoke all on meta_sync_22567.* from user_22567;
+flush privileges;
+show grants for user_22567;
+Grants for user_22567@%
+GRANT USAGE ON *.* TO 'user_22567'@'%'
+show grants for user_22567;
+Grants for user_22567@%
+GRANT USAGE ON *.* TO 'user_22567'@'%'
+drop table meta_sync_22567.t1;
+drop view meta_sync_22567.v1;
+drop function meta_sync_22567.f1;
+drop procedure meta_sync_22567.p1;
+show grants for user_22567;
+Grants for user_22567@%
+GRANT USAGE ON *.* TO 'user_22567'@'%'
+show grants for user_22567;
+Grants for user_22567@%
+GRANT USAGE ON *.* TO 'user_22567'@'%'
+drop database meta_sync_22567;
+drop user user_22567;
+DROP DATABASE IF EXISTS metasync_22559_22564;
+SHOW CREATE DATABASE metasync_22559_22564;
+ERROR 42000: Unknown database 'metasync_22559_22564'
+CREATE DATABASE metasync_22559_22564;
+USE metasync_22559_22564;
+CREATE TABLE t1 ( a INT, b CHAR(8), c BLOB );
+CREATE PROCEDURE metasync_22559_22564.p1 ( x1 char(16), x2 char(16), y int )
+BEGIN
+CREATE TABLE metasync_22559_22564.t2 ( a INT DEFAULT 1, b CHAR(8) DEFAULT '' );
+INSERT INTO metasync_22559_22564.t1 VALUES ( y, x1, x1 );
+INSERT INTO metasync_22559_22564.t2 VALUES ( y, x2 );
+END|
+USE metasync_22559_22564;
+SET @x1 = "test1";
+SET @x2 = "test2";
+SET @y = 1;
+CALL p1( @x1, @x2, @y );
+SHOW CREATE PROCEDURE p1;
+Procedure	sql_mode	Create Procedure	character_set_client	collation_connection	Database Collation
+p1	STRICT_TRANS_TABLES,ERROR_FOR_DIVISION_BY_ZERO,NO_AUTO_CREATE_USER,NO_ENGINE_SUBSTITUTION	CREATE DEFINER=`x`@`%` PROCEDURE `p1`( x1 char(16), x2 char(16), y int )
+BEGIN
+CREATE TABLE metasync_22559_22564.t2 ( a INT DEFAULT 1, b CHAR(8) DEFAULT '' );
+INSERT INTO metasync_22559_22564.t1 VALUES ( y, x1, x1 );
+INSERT INTO metasync_22559_22564.t2 VALUES ( y, x2 );
+END	latin1	latin1_swedish_ci	utf8mb4_bin
+ALTER DATABASE metasync_22559_22564 DEFAULT CHARACTER SET = ucs2 DEFAULT COLLATE = ucs2_general_ci;
+ALTER TABLE t1 ADD COLUMN d DATE, MODIFY c LONGBLOB, ADD PRIMARY KEY(a);
+ALTER TABLE t2 PARTITION BY KEY (a) PARTITIONS 10;
+ALTER PROCEDURE p1
+language sql
+sql security definer
+comment 'alter procedure comment';
+SHOW CREATE DATABASE metasync_22559_22564;
+Database	Create Database
+metasync_22559_22564	CREATE DATABASE `metasync_22559_22564` /*!40100 DEFAULT CHARACTER SET ucs2 */
+SHOW CREATE PROCEDURE p1;
+Procedure	sql_mode	Create Procedure	character_set_client	collation_connection	Database Collation
+p1	STRICT_TRANS_TABLES,ERROR_FOR_DIVISION_BY_ZERO,NO_AUTO_CREATE_USER,NO_ENGINE_SUBSTITUTION	CREATE DEFINER=`x`@`%` PROCEDURE `p1`( x1 char(16), x2 char(16), y int )
+    COMMENT 'alter procedure comment'
+BEGIN
+CREATE TABLE metasync_22559_22564.t2 ( a INT DEFAULT 1, b CHAR(8) DEFAULT '' );
+INSERT INTO metasync_22559_22564.t1 VALUES ( y, x1, x1 );
+INSERT INTO metasync_22559_22564.t2 VALUES ( y, x2 );
+END	latin1	latin1_swedish_ci	utf8mb4_bin
+SHOW CREATE TABLE t1;
+Table	Create Table
+t1	CREATE TABLE `t1` (
+  `a` int(11) NOT NULL,
+  `b` char(8) COLLATE utf8mb4_bin DEFAULT NULL,
+  `c` longblob,
+  `d` date DEFAULT NULL,
+  PRIMARY KEY (`a`)
+) ENGINE=SequoiaDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin
+SHOW CREATE TABLE t2;
+Table	Create Table
+t2	CREATE TABLE `t2` (
+  `a` int(11) DEFAULT '1',
+  `b` char(8) COLLATE utf8mb4_bin DEFAULT ''
+) ENGINE=SequoiaDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin
+/*!50100 PARTITION BY KEY (a)
+PARTITIONS 10 */
+ALTER DATABASE metasync_22559_22564 CHARACTER SET cp1251;
+DROP TABLE t1,t2;
+DROP PROCEDURE p1;
+SHOW CREATE TABLE t1;
+ERROR 42S02: Table 'metasync_22559_22564.t1' doesn't exist
+SHOW CREATE TABLE t2;
+ERROR 42S02: Table 'metasync_22559_22564.t2' doesn't exist
+SHOW CREATE DATABASE metasync_22559_22564;
+Database	Create Database
+metasync_22559_22564	CREATE DATABASE `metasync_22559_22564` /*!40100 DEFAULT CHARACTER SET cp1251 */
+SHOW CREATE PROCEDURE p1;
+ERROR 42000: PROCEDURE p1 does not exist
+DROP DATABASE metasync_22559_22564;
+SHOW CREATE DATABASE metasync_22559_22564;
+ERROR 42000: Unknown database 'metasync_22559_22564'
+DROP DATABASE IF EXISTS metasync_22561_22566;
+SHOW CREATE DATABASE metasync_22561_22566;
+ERROR 42000: Unknown database 'metasync_22561_22566'
+CREATE DATABASE metasync_22561_22566;
+USE metasync_22561_22566;
+CREATE TABLE t1 ( a TINYINT PRIMARY KEY, e ENUM('y','n','giveup') );
+ALTER TABLE metasync_22561_22566.t1 MODIFY a TINYINT AUTO_INCREMENT;
+INSERT INTO metasync_22561_22566.t1(e) VALUES ('y'),('n');
+SHOW CREATE TABLE t1;
+Table	Create Table
+t1	CREATE TABLE `t1` (
+  `a` tinyint(4) NOT NULL AUTO_INCREMENT,
+  `e` enum('y','n','giveup') COLLATE utf8mb4_bin DEFAULT NULL,
+  PRIMARY KEY (`a`)
+) ENGINE=SequoiaDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin
+USE metasync_22561_22566;
+SHOW CREATE DATABASE metasync_22561_22566;
+Database	Create Database
+metasync_22561_22566	CREATE DATABASE `metasync_22561_22566` /*!40100 DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_bin */
+SHOW CREATE TABLE t1;
+Table	Create Table
+t1	CREATE TABLE `t1` (
+  `a` tinyint(4) NOT NULL AUTO_INCREMENT,
+  `e` enum('y','n','giveup') COLLATE utf8mb4_bin DEFAULT NULL,
+  PRIMARY KEY (`a`)
+) ENGINE=SequoiaDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin
+ALTER DATABASE metasync_22561_22566 DEFAULT CHARACTER SET = ucs2 DEFAULT COLLATE = ucs2_general_ci;
+ALTER TABLE t1 ADD COLUMN c CHAR(8) DEFAULT 'char';
+ALTER TABLE t1 PARTITION BY HASH (a) PARTITIONS 4;
+ALTER TABLE t1 AUTO_INCREMENT 120;
+INSERT INTO t1(e,c) VALUES ('giveup','charnew1'),('giveup','charnew2');
+SELECT * FROM t1 ORDER BY a;
+a	e	c
+1	y	char
+2	n	char
+120	giveup	charnew1
+121	giveup	charnew2
+SHOW CREATE TABLE t1;
+Table	Create Table
+t1	CREATE TABLE `t1` (
+  `a` tinyint(4) NOT NULL AUTO_INCREMENT,
+  `e` enum('y','n','giveup') COLLATE utf8mb4_bin DEFAULT NULL,
+  `c` char(8) COLLATE utf8mb4_bin DEFAULT 'char',
+  PRIMARY KEY (`a`)
+) ENGINE=SequoiaDB AUTO_INCREMENT=122 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin
+/*!50100 PARTITION BY HASH (a)
+PARTITIONS 4 */
+SHOW CREATE DATABASE metasync_22561_22566;
+Database	Create Database
+metasync_22561_22566	CREATE DATABASE `metasync_22561_22566` /*!40100 DEFAULT CHARACTER SET ucs2 */
+SELECT * FROM t1 ORDER BY a;
+a	e	c
+1	y	char
+2	n	char
+120	giveup	charnew1
+121	giveup	charnew2
+SHOW CREATE TABLE t1;
+Table	Create Table
+t1	CREATE TABLE `t1` (
+  `a` tinyint(4) NOT NULL AUTO_INCREMENT,
+  `e` enum('y','n','giveup') COLLATE utf8mb4_bin DEFAULT NULL,
+  `c` char(8) COLLATE utf8mb4_bin DEFAULT 'char',
+  PRIMARY KEY (`a`)
+) ENGINE=SequoiaDB AUTO_INCREMENT=122 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin
+/*!50100 PARTITION BY HASH (a)
+PARTITIONS 4 */
+ALTER DATABASE metasync_22561_22566 CHARACTER SET cp1251;
+ALTER TABLE t1 MODIFY a TINYINT;
+INSERT INTO t1(a,e) VALUES (-1, 'giveup');
+SELECT * FROM t1 ORDER BY a;
+a	e	c
+-1	giveup	char
+1	y	char
+2	n	char
+120	giveup	charnew1
+121	giveup	charnew2
+SHOW CREATE TABLE t1;
+Table	Create Table
+t1	CREATE TABLE `t1` (
+  `a` tinyint(4) NOT NULL,
+  `e` enum('y','n','giveup') COLLATE utf8mb4_bin DEFAULT NULL,
+  `c` char(8) COLLATE utf8mb4_bin DEFAULT 'char',
+  PRIMARY KEY (`a`)
+) ENGINE=SequoiaDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin
+/*!50100 PARTITION BY HASH (a)
+PARTITIONS 4 */
+SHOW CREATE DATABASE metasync_22561_22566;
+Database	Create Database
+metasync_22561_22566	CREATE DATABASE `metasync_22561_22566` /*!40100 DEFAULT CHARACTER SET cp1251 */
+DROP TABLE t1;
+SHOW CREATE TABLE t1;
+ERROR 42S02: Table 'metasync_22561_22566.t1' doesn't exist
+DROP DATABASE metasync_22561_22566;
+SHOW CREATE DATABASE metasync_22561_22566;
+ERROR 42000: Unknown database 'metasync_22561_22566'
+DROP DATABASE IF EXISTS metasync_22697;
+SHOW CREATE DATABASE metasync_22697;
+ERROR 42000: Unknown database 'metasync_22697'
+CREATE DATABASE metasync_22697;
+USE metasync_22697;
+CREATE TABLE t1 ( id INT AUTO_INCREMENT PRIMARY KEY, name CHAR(8) );
+CREATE VIEW v1 AS SELECT id FROM t1 WHERE id > 1;
+CREATE PROCEDURE metasync_22697.p1 ( x CHAR(8) )
+BEGIN
+ALTER TABLE metasync_22697.t1 MODIFY name CHAR(16) DEFAULT 'zhangsan';
+INSERT INTO metasync_22697.t1 VALUES ();
+INSERT INTO metasync_22697.t1(name) VALUES (x);
+SELECT * FROM metasync_22697.v1;
+END|
+USE metasync_22697;
+SET @x = "Jack";
+CALL p1( @x );
+id
+2
+SHOW CREATE VIEW v1;
+View	Create View	character_set_client	collation_connection
+v1	CREATE ALGORITHM=UNDEFINED DEFINER=`x`@`%` SQL SECURITY DEFINER VIEW `v1` AS select `t1`.`id` AS `id` from `t1` where (`t1`.`id` > 1)	latin1	latin1_swedish_ci
+SHOW CREATE TABLE t1;
+Table	Create Table
+t1	CREATE TABLE `t1` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `name` char(16) COLLATE utf8mb4_bin DEFAULT 'zhangsan',
+  PRIMARY KEY (`id`)
+) ENGINE=SequoiaDB AUTO_INCREMENT=1001 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin
+SELECT * FROM t1 ORDER BY id;
+id	name
+1	zhangsan
+2	Jack
+SHOW CREATE PROCEDURE p1;
+Procedure	sql_mode	Create Procedure	character_set_client	collation_connection	Database Collation
+p1	STRICT_TRANS_TABLES,ERROR_FOR_DIVISION_BY_ZERO,NO_AUTO_CREATE_USER,NO_ENGINE_SUBSTITUTION	CREATE DEFINER=`x`@`%` PROCEDURE `p1`( x CHAR(8) )
+BEGIN
+ALTER TABLE metasync_22697.t1 MODIFY name CHAR(16) DEFAULT 'zhangsan';
+INSERT INTO metasync_22697.t1 VALUES ();
+INSERT INTO metasync_22697.t1(name) VALUES (x);
+SELECT * FROM metasync_22697.v1;
+END	latin1	latin1_swedish_ci	utf8mb4_bin
+ALTER ALGORITHM = MERGE DEFINER = "root"@"localhost" SQL SECURITY INVOKER VIEW v1 AS SELECT id, name FROM t1 WHERE name IS NOT NULL;
+ALTER PROCEDURE p1
+language sql
+sql security definer
+comment 'alter procedure comment';
+SHOW CREATE VIEW v1;
+View	Create View	character_set_client	collation_connection
+v1	CREATE ALGORITHM=MERGE DEFINER=`root`@`localhost` SQL SECURITY INVOKER VIEW `v1` AS select `t1`.`id` AS `id`,`t1`.`name` AS `name` from `t1` where (`t1`.`name` is not null)	latin1	latin1_swedish_ci
+SELECT * FROM v1 order by id;
+id	name
+1	zhangsan
+2	Jack
+SHOW CREATE PROCEDURE p1;
+Procedure	sql_mode	Create Procedure	character_set_client	collation_connection	Database Collation
+p1	STRICT_TRANS_TABLES,ERROR_FOR_DIVISION_BY_ZERO,NO_AUTO_CREATE_USER,NO_ENGINE_SUBSTITUTION	CREATE DEFINER=`x`@`%` PROCEDURE `p1`( x CHAR(8) )
+    COMMENT 'alter procedure comment'
+BEGIN
+ALTER TABLE metasync_22697.t1 MODIFY name CHAR(16) DEFAULT 'zhangsan';
+INSERT INTO metasync_22697.t1 VALUES ();
+INSERT INTO metasync_22697.t1(name) VALUES (x);
+SELECT * FROM metasync_22697.v1;
+END	latin1	latin1_swedish_ci	utf8mb4_bin
+DROP VIEW v1;
+DROP PROCEDURE p1;
+SHOW CREATE PROCEDURE p1;
+ERROR 42000: PROCEDURE p1 does not exist
+SHOW CREATE TABLE v1;
+ERROR 42S02: Table 'metasync_22697.v1' doesn't exist
+DROP DATABASE metasync_22697;
+SHOW CREATE DATABASE metasync_22697;
+ERROR 42000: Unknown database 'metasync_22697'

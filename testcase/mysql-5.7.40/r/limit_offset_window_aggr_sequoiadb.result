@@ -1,0 +1,85 @@
+DROP DATABASE IF EXISTS limit_offset_window_aggr_sequoiadb;
+CREATE DATABASE limit_offset_window_aggr_sequoiadb;
+DROP DATABASE limit_offset_window_aggr_sequoiadb;
+CREATE DATABASE limit_offset_window_aggr_sequoiadb;
+USE limit_offset_window_aggr_sequoiadb;
+SET SESSION sequoiadb_debug_log = ON;
+CREATE TABLE `t1` (
+`pk` int(11) NOT NULL AUTO_INCREMENT,
+`col_varchar_16` varchar(16) COLLATE utf8mb4_bin DEFAULT NULL,
+`col_int` int(11) DEFAULT NULL,
+`col_varchar_16_key` varchar(16) COLLATE utf8mb4_bin DEFAULT NULL,
+`col_int_key` int(11) DEFAULT NULL,
+PRIMARY KEY (`pk`),
+KEY `col_varchar_16_key` (`col_varchar_16_key`),
+KEY `col_int_key` (`col_int_key`)
+) ENGINE=InnoDB AUTO_INCREMENT=201 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin;
+INSERT INTO `t1` VALUES (1,'you\'re',6,'e',9),(2,'q',1524957184,'d',7),(3,'there',NULL,'u',NULL),(4,NULL,5,'w',6),(5,'x',6,'you',NULL),(6,'this',7,'w',6),(7,'we',3,NULL,1),(8,'u',NULL,'h',-1615790080),(9,'look',2,'i',3),(10,'had',1,'we',1),(11,NULL,2,'g',NULL),(12,NULL,5,'got',NULL),(13,'p',-1334640640,'w',1),(14,'l',1,'o',0),(15,'o',4,'g',-1429405696),(16,'q',6,'h',7),(17,NULL,9,'d',0),(18,NULL,NULL,'z',-1512570880),(19,'l',0,'say',647561216),(20,NULL,NULL,'s',-334036992),(21,NULL,1286275072,NULL,0),(22,'get',1,'f',0),(23,'j',0,'y',3),(24,'x',3,'m',6),(25,'that\'s',NULL,'there',3),(26,NULL,1,'don\'t',9),(27,'okay',NULL,'p',-1982070784),(28,'b',3,'x',3),(29,'j',1,'y',4),(30,'w',-45023232,'q',1),(31,'o',9,'r',NULL),(32,NULL,9,'s',NULL),(33,'x',7,'j',0),(34,'s',-1730805760,'p',3),(35,NULL,NULL,'y',7),(36,'z',6,'get',6),(37,'s',6,'q',9),(38,'t',2,'z',-2101346304),(39,'p',4,NULL,NULL),(40,'b',47382528,'s',7),(41,'n',0,'c',980615168),(42,'w',9,'they',7),(43,'and',NULL,'g',6),(44,'e',5,NULL,1288699904),(45,NULL,7,NULL,7),(46,NULL,9,'r',5),(47,'b',8,'think',NULL),(48,'oh',9,'x',1975386112),(49,'c',NULL,'about',6),(50,NULL,3,'y',7),(51,'s',4,'c',-1303117824),(52,NULL,1725497344,'w',1),(53,'when',1631387648,'o',6),(54,NULL,NULL,'I',NULL),(55,'z',8,'i',2),(56,'q',9,'m',64946176),(57,'k',3,'at',-511967232),(58,'p',1,'s',NULL),(59,NULL,0,NULL,8),(60,'x',5,'w',7),(61,'c',-1259667456,'c',NULL),(62,'b',5,'x',6),(63,NULL,-696582144,NULL,7),(64,'r',0,'s',NULL),(65,'a',422182912,'v',3),(66,NULL,1357905920,'e',0),(67,'d',5,'x',5),(68,'m',NULL,'i',4),(69,'v',1939472384,'e',-537853952),(70,'k',-1322385408,'i',9),(71,'f',NULL,'q',8),(72,NULL,NULL,NULL,6),(73,'t',1,'q',NULL),(74,'z',0,'y',7),(75,NULL,6,'see',NULL),(76,'d',3,'m',NULL),(77,'r',54329344,'v',2113339392),(78,'c',7,'f',8),(79,'tell',2,'n',1),(80,'r',8,'a',7),(81,NULL,7,'here',NULL),(82,'r',0,'of',1),(83,NULL,7,'at',5),(84,NULL,776011776,'v',-1437073408),(85,NULL,NULL,'q',NULL),(86,'t',8,'l',4),(87,'p',5,'i',NULL),(88,'l',3,'c',1),(89,'y',8,NULL,694943744),(90,'l',9,'e',6),(91,'x',759300096,'been',5),(92,'really',-759431168,'can',NULL),(93,NULL,-1658322944,'a',NULL),(94,NULL,-1476853760,'h',9),(95,'about',1,'g',0),(96,NULL,-1980366848,'can\'t',8),(97,'s',0,'who',NULL),(98,'p',4,'n',1218772992),(99,'q',1,'had',7),(100,'l',NULL,'r',6),(101,'b',-1043660800,NULL,NULL),(102,'s',8,'d',9),(103,'y',-2106523648,'l',1),(104,'is',3,'but',0),(105,'n',1,'i',NULL),(106,NULL,NULL,'e',9),(107,'s',8,'z',2),(108,'q',5,NULL,3),(109,'if',NULL,'back',3),(110,'j',-1504837632,'f',-1305739264),(111,NULL,2,'see',2),(112,'b',7,'e',0),(113,'u',-1450573824,NULL,NULL),(114,'s',8,'no',5),(115,'c',0,'f',5),(116,'u',9,'how',3),(117,'x',8,'r',NULL),(118,'who',4,'a',2),(119,NULL,180682752,'y',-492109824),(120,'know',0,NULL,0),(121,'one',0,'see',1),(122,NULL,2,'yes',8),(123,'really',1450835968,'n',6),(124,'okay',-1325400064,NULL,8),(125,'t',6,NULL,4),(126,'d',0,'n',8),(127,NULL,1,'e',4),(128,NULL,6,'s',6),(129,'f',4,NULL,1),(130,'time',4,'been',8),(131,'q',-1996357632,'t',3),(132,'for',NULL,'y',6),(133,'n',NULL,'q',2),(134,'were',7,NULL,1087242240),(135,'l',0,'i',NULL),(136,'c',5,'o',5),(137,'want',8,'n',5),(138,'j',0,'some',6),(139,'e',6,'q',NULL),(140,'q',8,'they',4),(141,'w',NULL,NULL,NULL),(142,'a',0,'a',NULL),(143,'r',9,'n',7),(144,NULL,9,'we',NULL),(145,'v',1924726784,'h',NULL),(146,'z',1,'not',9),(147,'y',2,'u',-688455680),(148,'know',3,'on',NULL),(149,'j',NULL,NULL,590086144),(150,'c',4,'e',0),(151,'p',7,'time',5),(152,'y',-824377344,NULL,8),(153,'get',-1168900096,NULL,NULL),(154,'not',NULL,'because',7),(155,'n',177602560,NULL,9),(156,'going',8,NULL,-1693122560),(157,'b',NULL,NULL,NULL),(158,'b',8,NULL,NULL),(159,'yes',1064239104,NULL,-734199808),(160,NULL,1,NULL,-348979200),(161,'u',7,'m',NULL),(162,'n',NULL,'s',5),(163,NULL,NULL,'f',-1953366016),(164,'you',NULL,'got',7),(165,'h',7,'y',7),(166,'s',NULL,'j',NULL),(167,'r',5,'f',0),(168,NULL,8,'n',9),(169,'g',NULL,'d',NULL),(170,'s',0,NULL,0),(171,'v',-270598144,NULL,NULL),(172,'h',-556662784,'the',NULL),(173,'can',2,'b',NULL),(174,NULL,6,'c',3),(175,'m',1975123968,'why',1448542208),(176,'i',4,NULL,-492896256),(177,'g',8,'e',8),(178,'b',7,'d',6),(179,'d',5,'m',NULL),(180,NULL,-1970667520,NULL,8),(181,'z',NULL,'g',9),(182,'l',-1458569216,NULL,7),(183,'see',NULL,'I\'ll',NULL),(184,NULL,3,'i',9),(185,NULL,-1840316416,'d',5),(186,'going',2,'u',6),(187,'your',8,'you',1),(188,'her',8,NULL,9),(189,'j',2061303808,NULL,-2038628352),(190,'r',2,'something',7),(191,'v',0,NULL,-56557568),(192,'was',5,'z',-1460666368),(193,'y',-16580608,'o',2),(194,NULL,NULL,'been',7),(195,'b',-1623326720,'h',2),(196,NULL,1,NULL,2),(197,'t',8,'i',NULL),(198,'s',2,'with',2),(199,'r',7,'the',NULL),(200,'a',NULL,'there',4);
+EXPLAIN SELECT count(col_varchar_16_key) AS field1 FROM `t1` WHERE pk = 7 LIMIT 8 OFFSET 9;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	const	PRIMARY	PRIMARY	4	const	1	100.00	NULL
+SELECT count(col_varchar_16_key) AS field1 FROM `t1` WHERE pk = 7 LIMIT 8 OFFSET 9;
+field1
+EXPLAIN SELECT ALL SQL_BUFFER_RESULT MIN( pk ) AS field1 FROM `t1` WHERE pk = 8 LIMIT 1 OFFSET 3;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	NULL	NULL	NULL	NULL	NULL	NULL	NULL	NULL	NULL	Select tables optimized away
+SELECT ALL SQL_BUFFER_RESULT MIN( pk ) AS field1 FROM `t1` WHERE pk = 8 LIMIT 1 OFFSET 3;
+field1
+EXPLAIN SELECT ALL SQL_SMALL_RESULT SUM( col_int ) AS field1 FROM `t1` WHERE pk = 3 LIMIT 8 OFFSET 3;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	const	PRIMARY	PRIMARY	4	const	1	100.00	NULL
+SELECT ALL SQL_SMALL_RESULT SUM( col_int ) AS field1 FROM `t1` WHERE pk = 3 LIMIT 8 OFFSET 3;
+field1
+EXPLAIN SELECT ALL MAX( col_int ) AS field1 FROM `t1` WHERE pk = 7 LIMIT 3 OFFSET 6;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	const	PRIMARY	PRIMARY	4	const	1	100.00	NULL
+SELECT ALL MAX( col_int ) AS field1 FROM `t1` WHERE pk = 7 LIMIT 3 OFFSET 6;
+field1
+EXPLAIN SELECT ALL COUNT( distinct col_varchar_16 ) AS field1 FROM `t1` WHERE pk = 5 LIMIT 2 OFFSET 5;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	const	PRIMARY	PRIMARY	4	const	1	100.00	NULL
+SELECT ALL COUNT( distinct col_varchar_16 ) AS field1 FROM `t1` WHERE pk = 5 LIMIT 2 OFFSET 5;
+field1
+EXPLAIN SELECT * FROM t1 WHERE pk = 1 LIMIT 1 OFFSET 1;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	const	PRIMARY	PRIMARY	4	const	1	100.00	NULL
+SELECT * FROM t1 WHERE pk = 1 LIMIT 1 OFFSET 1;
+pk	col_varchar_16	col_int	col_varchar_16_key	col_int_key
+ALTER TABLE t1 engine = SequoiaDB;
+EXPLAIN SELECT count(col_varchar_16_key) AS field1 FROM `t1` WHERE pk = 7 LIMIT 8 OFFSET 9;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	const	PRIMARY	PRIMARY	4	const	1	100.00	NULL
+SELECT count(col_varchar_16_key) AS field1 FROM `t1` WHERE pk = 7 LIMIT 8 OFFSET 9;
+field1
+[Note] SequoiaDB: Query message: condition[{ "pk": { "$et": 7 } }], selector[{}], order_by[{ "pk": 1 }], hint[{ "": "PRIMARY" }], limit[-1], offset[0], table[limit_offset_window_aggr_sequoiadb.t1]
+EXPLAIN SELECT ALL SQL_BUFFER_RESULT MIN( pk ) AS field1 FROM `t1` WHERE pk = 8 LIMIT 1 OFFSET 3;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	NULL	NULL	NULL	NULL	NULL	NULL	NULL	NULL	NULL	Select tables optimized away
+SELECT ALL SQL_BUFFER_RESULT MIN( pk ) AS field1 FROM `t1` WHERE pk = 8 LIMIT 1 OFFSET 3;
+field1
+[Note] SequoiaDB: Query message: condition[{ "pk": { "$gte": 8 } }], selector[{ "_id": null, "pk": null }], order_by[{ "pk": 1 }], hint[{ "": "PRIMARY" }], limit[-1], offset[0], table[limit_offset_window_aggr_sequoiadb.t1]
+EXPLAIN SELECT ALL SQL_SMALL_RESULT SUM( col_int ) AS field1 FROM `t1` WHERE pk = 3 LIMIT 8 OFFSET 3;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	const	PRIMARY	PRIMARY	4	const	1	100.00	NULL
+SELECT ALL SQL_SMALL_RESULT SUM( col_int ) AS field1 FROM `t1` WHERE pk = 3 LIMIT 8 OFFSET 3;
+field1
+[Note] SequoiaDB: Query message: condition[{ "pk": { "$et": 3 } }], selector[{}], order_by[{ "pk": 1 }], hint[{ "": "PRIMARY" }], limit[-1], offset[0], table[limit_offset_window_aggr_sequoiadb.t1]
+EXPLAIN SELECT ALL MAX( col_int ) AS field1 FROM `t1` WHERE pk = 7 LIMIT 3 OFFSET 6;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	const	PRIMARY	PRIMARY	4	const	1	100.00	NULL
+SELECT ALL MAX( col_int ) AS field1 FROM `t1` WHERE pk = 7 LIMIT 3 OFFSET 6;
+field1
+[Note] SequoiaDB: Query message: condition[{ "pk": { "$et": 7 } }], selector[{}], order_by[{ "pk": 1 }], hint[{ "": "PRIMARY" }], limit[-1], offset[0], table[limit_offset_window_aggr_sequoiadb.t1]
+EXPLAIN SELECT ALL COUNT( distinct col_varchar_16 ) AS field1 FROM `t1` WHERE pk = 5 LIMIT 2 OFFSET 5;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	const	PRIMARY	PRIMARY	4	const	1	100.00	NULL
+SELECT ALL COUNT( distinct col_varchar_16 ) AS field1 FROM `t1` WHERE pk = 5 LIMIT 2 OFFSET 5;
+field1
+[Note] SequoiaDB: Query message: condition[{ "pk": { "$et": 5 } }], selector[{}], order_by[{ "pk": 1 }], hint[{ "": "PRIMARY" }], limit[-1], offset[0], table[limit_offset_window_aggr_sequoiadb.t1]
+EXPLAIN SELECT * FROM t1 WHERE pk = 1 LIMIT 1 OFFSET 1;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	const	PRIMARY	PRIMARY	4	const	1	100.00	NULL
+SELECT * FROM t1 WHERE pk = 1 LIMIT 1 OFFSET 1;
+pk	col_varchar_16	col_int	col_varchar_16_key	col_int_key
+[Note] SequoiaDB: Query message: condition[{ "pk": { "$et": 1 } }], selector[{}], order_by[{ "pk": 1 }], hint[{ "": "PRIMARY" }], limit[-1], offset[0], table[limit_offset_window_aggr_sequoiadb.t1]
+DROP DATABASE limit_offset_window_aggr_sequoiadb;

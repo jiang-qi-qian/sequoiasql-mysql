@@ -1,0 +1,33 @@
+#case 29774 #case 29775
+
+--source include/have_sequoiadb.inc
+
+#case 29775 在sql端动态安装审计插件，再动态卸载审计插件，然后重新连入实例，再次动态安装插件
+connect (conn1,localhost,root,,,$MASTER_MYPORT,$MASTER_MYSOCK);
+connection conn1;
+
+install plugin server_audit soname 'server_audit.so';
+
+--disable_warnings
+uninstall plugin server_audit;
+--enable_warnings
+
+disconnect conn1;
+
+connect (conn2,localhost,root,,,$MASTER_MYPORT,$MASTER_MYSOCK);
+connection conn2;
+
+--disable_info
+install plugin server_audit soname 'server_audit.so';
+
+#case 29774 重复 installMysql 审计插件,报错1968
+--error 1968
+install plugin server_audit soname 'server_audit.so';
+
+--disable_warnings
+uninstall plugin server_audit;
+--enable_warnings
+--enable_info
+
+--source include/uninstall_sequoiadb.inc
+

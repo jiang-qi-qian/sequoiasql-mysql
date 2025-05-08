@@ -1,0 +1,22 @@
+set names utf8;
+drop database if exists longname;
+Warnings:
+Note	1008	Can't drop database 'longname'; database doesn't exist
+create database longname;
+use longname;
+CREATE table 魑魅魍魉魑魅魍魉魑魅魍魉魑魅魍魉魑魅魍魉魑魅魍魉魑魅魍魉魑魅魍魉魑魅魍魉魑魅魍魉魑魅(a int);
+insert into 魑魅魍魉魑魅魍魉魑魅魍魉魑魅魍魉魑魅魍魉魑魅魍魉魑魅魍魉魑魅魍魉魑魅魍魉魑魅魍魉魑魅 values(4);
+select * from 魑魅魍魉魑魅魍魉魑魅魍魉魑魅魍魉魑魅魍魉魑魅魍魉魑魅魍魉魑魅魍魉魑魅魍魉魑魅魍魉魑魅;
+a
+4
+drop table 魑魅魍魉魑魅魍魉魑魅魍魉魑魅魍魉魑魅魍魉魑魅魍魉魑魅魍魉魑魅魍魉魑魅魍魉魑魅魍魉魑魅;
+CREATE table 魑魅魍魉魑魅魍魉魑魅魍魉魑魅魍魉魑魅魍魉魑魅魍魉魑魅魍魉魑魅魍魉魑魅魍魉魑魅魍魉魑魅a(a int);
+ERROR HY000: Can't create table `longname`.`魑魅魍魉魑魅魍魉魑魅魍魉魑魅魍魉魑魅魍魉魑魅魍魉魑魅魍魉魑魅魍魉魑魅魍魉魑魅魍魉魑魅a` (errno: 1059 "Unknown error 1059")
+CREATE table abcdefghabcdefghabcdefghabcdefgh魑魅魍魉魑魅魍魉魑魅魍魉魑魅魍魉魑魅魍魉魑魅魍魉魑魅魍魉魑魅魍(a int);
+insert into abcdefghabcdefghabcdefghabcdefgh魑魅魍魉魑魅魍魉魑魅魍魉魑魅魍魉魑魅魍魉魑魅魍魉魑魅魍魉魑魅魍 values(3);
+select * from abcdefghabcdefghabcdefghabcdefgh魑魅魍魉魑魅魍魉魑魅魍魉魑魅魍魉魑魅魍魉魑魅魍魉魑魅魍魉魑魅魍;
+a
+3
+drop table abcdefghabcdefghabcdefghabcdefgh魑魅魍魉魑魅魍魉魑魅魍魉魑魅魍魉魑魅魍魉魑魅魍魉魑魅魍魉魑魅魍;
+drop database longname;
+set names default;

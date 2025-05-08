@@ -1,0 +1,27 @@
+# Testcase: seqDB-22799:字段值存在null的等值查询索引选择(sequoiadb_stats_cache=OFF)
+
+--source include/big_test.inc
+--source include/have_sequoiadb.inc
+
+CREATE DATABASE index_select_sequoiadb_22799;
+use index_select_sequoiadb_22799;
+
+CREATE TABLE t1 (
+  a INT,
+  b CHAR(64)
+);
+LOAD DATA INFILE '../../std_data/index_select_sequoiadb_1.dat' INTO TABLE t1 (a,b);
+alter table t1 add PRIMARY KEY(a);
+alter table t1 add index b(b);
+alter table t1 add index ab(a,b);
+alter table t1 add index ba(b,a);
+SHOW CREATE TABLE t1;
+--replace_column 9 #
+EXPLAIN SELECT * FROM t1 WHERE b IS NULL;
+--sorted_result
+SELECT * FROM t1 WHERE b IS NULL;
+--source include/query_pushdown_condition_sequoiadb.inc
+DROP TABLE t1;
+
+DROP DATABASE index_select_sequoiadb_22799;
+--source include/uninstall_sequoiadb.inc

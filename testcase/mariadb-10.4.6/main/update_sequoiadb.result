@@ -1,0 +1,928 @@
+create database update_test_sequoiadb;
+use update_test_sequoiadb;
+create table t1(id int auto_increment key, a int, b varchar(255), c varbinary(255));
+insert into t1(a,b,c) values(1000, 'sa', 'sa'), (1, 'ss', 'ss'),(100, 'sq', 'q'),(10, 'sz', 'sz');
+update t1 set c='update' where a=10;
+affected rows: 1
+info: Rows matched: 1  Changed: 1  Warnings: 0
+[Note] SequoiaDB: optimizer update: 1, rule: { "$set": { "c": { "$binary": "" } } }, condition: { "a": { "$et": 10 } }, table: update_test_sequoiadb.t1
+select * from t1 order by id;
+id	a	b	c
+1	1000	sa	sa
+2	1	ss	ss
+3	100	sq	q
+4	10	sz	update
+update t1 set a=10001 where c='ss';
+affected rows: 1
+info: Rows matched: 1  Changed: 1  Warnings: 0
+[Note] SequoiaDB: Query message: condition[{}], selector[{}], order_by[{}], hint[{}], limit[-1], offset[0], table[update_test_sequoiadb.t1]
+select * from t1 order by id;
+id	a	b	c
+1	1000	sa	sa
+2	10001	ss	ss
+3	100	sq	q
+4	10	sz	update
+update t1 set c='update' where c='sa';
+affected rows: 1
+info: Rows matched: 1  Changed: 1  Warnings: 0
+[Note] SequoiaDB: Query message: condition[{}], selector[{}], order_by[{}], hint[{}], limit[-1], offset[0], table[update_test_sequoiadb.t1]
+select * from t1 order by id;
+id	a	b	c
+1	1000	sa	update
+2	10001	ss	ss
+3	100	sq	q
+4	10	sz	update
+update t1 set a=10000 where a=10001 and c='ss';
+affected rows: 1
+info: Rows matched: 1  Changed: 1  Warnings: 0
+[Note] SequoiaDB: Query message: condition[{ "a": { "$et": 10001 } }], selector[{}], order_by[{}], hint[{}], limit[-1], offset[0], table[update_test_sequoiadb.t1]
+select * from t1 order by id;
+id	a	b	c
+1	1000	sa	update
+2	10000	ss	ss
+3	100	sq	q
+4	10	sz	update
+update t1 set c='zhang' where a=10000 or c='ss';
+affected rows: 1
+info: Rows matched: 1  Changed: 1  Warnings: 0
+[Note] SequoiaDB: Query message: condition[{}], selector[{}], order_by[{}], hint[{}], limit[-1], offset[0], table[update_test_sequoiadb.t1]
+select * from t1 order by id;
+id	a	b	c
+1	1000	sa	update
+2	10000	ss	zhang
+3	100	sq	q
+4	10	sz	update
+update t1 set c='zhang' where not c='q';
+affected rows: 2
+info: Rows matched: 3  Changed: 2  Warnings: 0
+[Note] SequoiaDB: Query message: condition[{}], selector[{}], order_by[{}], hint[{}], limit[-1], offset[0], table[update_test_sequoiadb.t1]
+select * from t1 order by id;
+id	a	b	c
+1	1000	sa	zhang
+2	10000	ss	zhang
+3	100	sq	q
+4	10	sz	zhang
+drop table t1;
+create table t1(a int auto_increment key, b varchar(255), c varbinary(255))comment="sequoiadb:{ auto_partition: false }";
+insert into t1(b,c) values('sa', 'sa'), ('ss', 'ss'),('sq', 'q'),('sz', 'sz');
+update t1 set a =100 where a =2;
+affected rows: 1
+info: Rows matched: 1  Changed: 1  Warnings: 0
+[Note] SequoiaDB: optimizer update: 1, rule: { "$set": { "a": 100 } }, condition: { "a": { "$et": 2 } }, table: update_test_sequoiadb.t1
+update t1 set a =1000 where b='sa';
+affected rows: 1
+info: Rows matched: 1  Changed: 1  Warnings: 0
+[Note] SequoiaDB: optimizer update: 1, rule: { "$set": { "a": 1000 } }, condition: { "b": { "$et": "sa" } }, table: update_test_sequoiadb.t1
+update t1 set a =1 where c='sz';
+affected rows: 1
+info: Rows matched: 1  Changed: 1  Warnings: 0
+[Note] SequoiaDB: Query message: condition[{}], selector[{}], order_by[{}], hint[{}], limit[-1], offset[0], table[update_test_sequoiadb.t1]
+select * from t1 order by a;
+a	b	c
+1	sz	sz
+3	sq	q
+100	ss	ss
+1000	sa	sa
+drop table t1;
+create table t1(a int auto_increment unique key, b varchar(255), c varbinary(255))comment="sequoiadb:{ auto_partition: false }";
+insert into t1(b,c) values('sa', 'sa'), ('ss', 'ss'),('sq', 'q'),('sz', 'sz');
+update t1 set a =100 where a =2;
+affected rows: 1
+info: Rows matched: 1  Changed: 1  Warnings: 0
+[Note] SequoiaDB: optimizer update: 1, rule: { "$set": { "a": 100 } }, condition: { "a": { "$et": 2 } }, table: update_test_sequoiadb.t1
+update t1 set a =1000 where b='sa';
+affected rows: 1
+info: Rows matched: 1  Changed: 1  Warnings: 0
+[Note] SequoiaDB: optimizer update: 1, rule: { "$set": { "a": 1000 } }, condition: { "b": { "$et": "sa" } }, table: update_test_sequoiadb.t1
+update t1 set a =1 where c='sz';
+affected rows: 1
+info: Rows matched: 1  Changed: 1  Warnings: 0
+[Note] SequoiaDB: Query message: condition[{}], selector[{}], order_by[{}], hint[{}], limit[-1], offset[0], table[update_test_sequoiadb.t1]
+select * from t1 order by a;
+a	b	c
+1	sz	sz
+3	sq	q
+100	ss	ss
+1000	sa	sa
+drop table t1;
+create table t1(a int auto_increment, b varchar(255), c varbinary(255), index(a))comment="sequoiadb:{ auto_partition: false }";
+insert into t1(b,c) values('sa', 'sa'), ('ss', 'ss'),('sq', 'q'),('sz', 'sz');
+update t1 set a =100 where a =2;
+affected rows: 1
+info: Rows matched: 1  Changed: 1  Warnings: 0
+[Note] SequoiaDB: optimizer update: 1, rule: { "$set": { "a": 100 } }, condition: { "a": { "$et": 2 } }, table: update_test_sequoiadb.t1
+update t1 set a =1000 where b='sa';
+affected rows: 1
+info: Rows matched: 1  Changed: 1  Warnings: 0
+[Note] SequoiaDB: optimizer update: 1, rule: { "$set": { "a": 1000 } }, condition: { "b": { "$et": "sa" } }, table: update_test_sequoiadb.t1
+update t1 set a =1 where c='sz';
+affected rows: 1
+info: Rows matched: 1  Changed: 1  Warnings: 0
+[Note] SequoiaDB: Query message: condition[{}], selector[{}], order_by[{}], hint[{}], limit[-1], offset[0], table[update_test_sequoiadb.t1]
+select * from t1 order by a;
+a	b	c
+1	sz	sz
+3	sq	q
+100	ss	ss
+1000	sa	sa
+drop table t1;
+create table t1(id int auto_increment key, b varchar(255) not null default 'test', c varbinary(255));
+insert into t1(b,c) values('sa', 'sa'), ('ss', 'ss'),('sq', 'q'),('sz', 'sz');
+update t1 set b='ss' where b='sq';
+affected rows: 1
+info: Rows matched: 1  Changed: 1  Warnings: 0
+[Note] SequoiaDB: optimizer update: 1, rule: { "$set": { "b": "ss" } }, condition: { "b": { "$et": "sq" } }, table: update_test_sequoiadb.t1
+update t1 set b='update' where c='ss';
+affected rows: 1
+info: Rows matched: 1  Changed: 1  Warnings: 0
+[Note] SequoiaDB: Query message: condition[{}], selector[{}], order_by[{}], hint[{}], limit[-1], offset[0], table[update_test_sequoiadb.t1]
+select * from t1 order by id;
+id	b	c
+1	sa	sa
+2	update	ss
+3	ss	q
+4	sz	sz
+drop table t1;
+create table t1(id int auto_increment key, a int, b varchar(255) not null default 'test', c varbinary(255))comment="sequoiadb:{ auto_partition: false }";
+insert into t1(a,b,c) values(10, 'sa', 'sa'), (1000, 'ss', 'ss'),(100, 'sq', 'q'),(1, 'sz', 'sz');
+update t1 set b='update' where id=1 order by id;
+affected rows: 1
+info: Rows matched: 1  Changed: 1  Warnings: 0
+[Note] SequoiaDB: Query message: condition[{ "id": { "$et": 1 } }], selector[{}], order_by[{ "id": 1 }], hint[{ "": "PRIMARY" }], limit[-1], offset[0], table[update_test_sequoiadb.t1]
+update t1 set b='update123' where id=2 order by a;
+affected rows: 1
+info: Rows matched: 1  Changed: 1  Warnings: 0
+[Note] SequoiaDB: Query message: condition[{ "id": { "$et": 2 } }], selector[{}], order_by[{ "id": 1 }], hint[{ "": "PRIMARY" }], limit[-1], offset[0], table[update_test_sequoiadb.t1]
+update t1 set id=101 where a=100 order by id;
+affected rows: 1
+info: Rows matched: 1  Changed: 1  Warnings: 0
+[Note] SequoiaDB: Query message: condition[{}], selector[{}], order_by[{}], hint[{}], limit[-1], offset[0], table[update_test_sequoiadb.t1]
+update t1 set id=102 where a=1000 order by a;
+affected rows: 1
+info: Rows matched: 1  Changed: 1  Warnings: 0
+[Note] SequoiaDB: Query message: condition[{ "a": { "$et": 1000 } }], selector[{}], order_by[{}], hint[{}], limit[-1], offset[0], table[update_test_sequoiadb.t1]
+select * from t1 order by id;
+id	a	b	c
+1	10	update	sa
+4	1	sz	sz
+101	100	sq	q
+102	1000	update123	ss
+update t1 set a=10000 order by id;
+affected rows: 4
+info: Rows matched: 4  Changed: 4  Warnings: 0
+[Note] SequoiaDB: Query message: condition[{}], selector[{}], order_by[{}], hint[{}], limit[-1], offset[0], table[update_test_sequoiadb.t1]
+update t1 set a=1000 where c='sa' order by id;
+affected rows: 1
+info: Rows matched: 1  Changed: 1  Warnings: 0
+[Note] SequoiaDB: Query message: condition[{}], selector[{}], order_by[{}], hint[{}], limit[-1], offset[0], table[update_test_sequoiadb.t1]
+update t1 set a=10001 order by id limit 2;
+affected rows: 2
+info: Rows matched: 2  Changed: 2  Warnings: 0
+[Note] SequoiaDB: Query message: condition[{}], selector[{}], order_by[{ "id": 1 }], hint[{ "": "PRIMARY" }], limit[-1], offset[0], table[update_test_sequoiadb.t1]
+update t1 set a=10002 where a=10000 order by id limit 1;
+affected rows: 1
+info: Rows matched: 1  Changed: 1  Warnings: 0
+[Note] SequoiaDB: Query message: condition[{}], selector[{}], order_by[{ "id": 1 }], hint[{ "": "PRIMARY" }], limit[-1], offset[0], table[update_test_sequoiadb.t1]
+select * from t1 order by id;
+id	a	b	c
+1	10001	update	sa
+4	10001	sz	sz
+101	10002	sq	q
+102	10000	update123	ss
+update t1 set a=10003 where a >10001 limit 1;
+affected rows: 1
+info: Rows matched: 1  Changed: 1  Warnings: 0
+[Note] SequoiaDB: Query message: condition[{ "a": { "$gt": 10001 } }], selector[{}], order_by[{}], hint[{}], limit[-1], offset[0], table[update_test_sequoiadb.t1]
+update t1 set a=10004 where c>'s' limit 1;
+affected rows: 1
+info: Rows matched: 1  Changed: 1  Warnings: 0
+[Note] SequoiaDB: Query message: condition[{}], selector[{}], order_by[{}], hint[{}], limit[-1], offset[0], table[update_test_sequoiadb.t1]
+select * from t1 order by id;
+id	a	b	c
+1	10004	update	sa
+4	10001	sz	sz
+101	10003	sq	q
+102	10000	update123	ss
+update t1 set a=10005,b='zhang',c='zhang';
+affected rows: 4
+info: Rows matched: 4  Changed: 4  Warnings: 0
+[Note] SequoiaDB: optimizer update: 1, rule: { "$set": { "a": 10005, "b": "zhang", "c": { "$binary": "" } } }, condition: {}, table: update_test_sequoiadb.t1
+select * from t1 order by id;
+id	a	b	c
+1	10005	zhang	zhang
+4	10005	zhang	zhang
+101	10005	zhang	zhang
+102	10005	zhang	zhang
+update t1 set b=default where id=1;
+affected rows: 1
+info: Rows matched: 1  Changed: 1  Warnings: 0
+[Note] SequoiaDB: optimizer update: 1, rule: { "$set": { "b": "test" } }, condition: { "id": { "$et": 1 } }, table: update_test_sequoiadb.t1
+select * from t1 order by id;
+id	a	b	c
+1	10005	test	zhang
+4	10005	zhang	zhang
+101	10005	zhang	zhang
+102	10005	zhang	zhang
+drop table t1;
+create table t1(id int auto_increment key)comment="sequoiadb:{ auto_partition: false }";
+insert into t1 values(),(),(),();
+update ignore t1 set id=100 where id>2;
+affected rows: 1
+info: Rows matched: 2  Changed: 1  Warnings: 0
+[Note] SequoiaDB: Query message: condition[{ "id": { "$gt": 2 } }], selector[{}], order_by[{ "id": 1 }], hint[{ "": "PRIMARY" }], limit[-1], offset[0], table[update_test_sequoiadb.t1]
+update ignore t1 set id=1000 where id=2;
+affected rows: 1
+info: Rows matched: 1  Changed: 1  Warnings: 0
+[Note] SequoiaDB: Query message: condition[{ "id": { "$et": 2 } }], selector[{}], order_by[{ "id": 1 }], hint[{ "": "PRIMARY" }], limit[-1], offset[0], table[update_test_sequoiadb.t1]
+update low_priority t1 set id=10000 where id=4;
+affected rows: 1
+info: Rows matched: 1  Changed: 1  Warnings: 0
+[Note] SequoiaDB: optimizer update: 1, rule: { "$set": { "id": 10000 } }, condition: { "id": { "$et": 4 } }, table: update_test_sequoiadb.t1
+select * from t1 order by id;
+id
+1
+100
+1000
+10000
+drop table t1;
+create table t1(id int auto_increment key, a int, b int, c int);
+insert into t1 values(1,1,1,1),(2,2,2,2),(3,3,3,3),(4,4,4,4);
+update t1 set a=a-1 where b=1;
+affected rows: 1
+info: Rows matched: 1  Changed: 1  Warnings: 0
+[Note] SequoiaDB: optimizer update: 1, rule: { "$inc": { "a": { "Value": -1, "Min": -2147483648, "Max": 2147483647, "Default": null } } }, condition: { "b": { "$et": 1 } }, table: update_test_sequoiadb.t1
+update t1 set a=a+1 where b=2;
+affected rows: 1
+info: Rows matched: 1  Changed: 1  Warnings: 0
+[Note] SequoiaDB: optimizer update: 1, rule: { "$inc": { "a": { "Value": 1, "Min": -2147483648, "Max": 2147483647, "Default": null } } }, condition: { "b": { "$et": 2 } }, table: update_test_sequoiadb.t1
+update t1 set a=1+a where b=3;
+affected rows: 1
+info: Rows matched: 1  Changed: 1  Warnings: 0
+[Note] SequoiaDB: optimizer update: 1, rule: { "$inc": { "a": { "Value": 1, "Min": -2147483648, "Max": 2147483647, "Default": null } } }, condition: { "b": { "$et": 3 } }, table: update_test_sequoiadb.t1
+update t1 set a=1-a where b=4;
+affected rows: 1
+info: Rows matched: 1  Changed: 1  Warnings: 0
+[Note] SequoiaDB: Query message: condition[{ "b": { "$et": 4 } }], selector[{}], order_by[{}], hint[{}], limit[-1], offset[0], table[update_test_sequoiadb.t1]
+update t1 set c=10-c where b=1;
+affected rows: 1
+info: Rows matched: 1  Changed: 1  Warnings: 0
+[Note] SequoiaDB: Query message: condition[{ "b": { "$et": 1 } }], selector[{}], order_by[{}], hint[{}], limit[-1], offset[0], table[update_test_sequoiadb.t1]
+update t1 set c=c-c+10 where b=2;
+affected rows: 1
+info: Rows matched: 1  Changed: 1  Warnings: 0
+[Note] SequoiaDB: Query message: condition[{ "b": { "$et": 2 } }], selector[{}], order_by[{}], hint[{}], limit[-1], offset[0], table[update_test_sequoiadb.t1]
+update t1 set c=c+c+1 where b=3;
+affected rows: 1
+info: Rows matched: 1  Changed: 1  Warnings: 0
+[Note] SequoiaDB: Query message: condition[{ "b": { "$et": 3 } }], selector[{}], order_by[{}], hint[{}], limit[-1], offset[0], table[update_test_sequoiadb.t1]
+update t1 set c=c-c+1 where b=4;
+affected rows: 1
+info: Rows matched: 1  Changed: 1  Warnings: 0
+[Note] SequoiaDB: Query message: condition[{ "b": { "$et": 4 } }], selector[{}], order_by[{}], hint[{}], limit[-1], offset[0], table[update_test_sequoiadb.t1]
+select * from t1 order by id;
+id	a	b	c
+1	0	1	9
+2	3	2	10
+3	4	3	7
+4	-3	4	1
+update t1 set a=b where c=9;
+affected rows: 1
+info: Rows matched: 1  Changed: 1  Warnings: 0
+[Note] SequoiaDB: optimizer update: 1, rule: { "$set": { "a": { "$field": "b" } } }, condition: { "c": { "$et": 9 } }, table: update_test_sequoiadb.t1
+select * from t1 order by id;
+id	a	b	c
+1	1	1	9
+2	3	2	10
+3	4	3	7
+4	-3	4	1
+update t1 set a=a*2 where b=1;
+affected rows: 1
+info: Rows matched: 1  Changed: 1  Warnings: 0
+[Note] SequoiaDB: Query message: condition[{ "b": { "$et": 1 } }], selector[{}], order_by[{}], hint[{}], limit[-1], offset[0], table[update_test_sequoiadb.t1]
+update t1 set a=a/2 where b=2;
+affected rows: 1
+info: Rows matched: 1  Changed: 1  Warnings: 0
+[Note] SequoiaDB: Query message: condition[{ "b": { "$et": 2 } }], selector[{}], order_by[{}], hint[{}], limit[-1], offset[0], table[update_test_sequoiadb.t1]
+select * from t1 order by id;
+id	a	b	c
+1	2	1	9
+2	2	2	10
+3	4	3	7
+4	-3	4	1
+drop table t1;
+create temporary table t1(id int auto_increment key, a int, b varchar(255), c varbinary(255))engine=sequoiadb;
+insert into t1(a,b,c) values(1000, 'sa', 'sa'), (1, 'ss', 'ss'),(100, 'sq', 'q'),(10, 'sz', 'sz');
+update t1 set c='update' where a=10;
+affected rows: 1
+info: Rows matched: 1  Changed: 1  Warnings: 0
+select * from t1 order by id;
+id	a	b	c
+1	1000	sa	sa
+2	1	ss	ss
+3	100	sq	q
+4	10	sz	update
+update t1 set a=10001 where c='ss';
+affected rows: 1
+info: Rows matched: 1  Changed: 1  Warnings: 0
+select * from t1 order by id;
+id	a	b	c
+1	1000	sa	sa
+2	10001	ss	ss
+3	100	sq	q
+4	10	sz	update
+update t1 set c='update' where c='sa';
+affected rows: 1
+info: Rows matched: 1  Changed: 1  Warnings: 0
+select * from t1 order by id;
+id	a	b	c
+1	1000	sa	update
+2	10001	ss	ss
+3	100	sq	q
+4	10	sz	update
+update t1 set a=10000 where a=10001 and c='ss';
+affected rows: 1
+info: Rows matched: 1  Changed: 1  Warnings: 0
+select * from t1 order by id;
+id	a	b	c
+1	1000	sa	update
+2	10000	ss	ss
+3	100	sq	q
+4	10	sz	update
+update t1 set c='zhang' where a=10000 or c='ss';
+affected rows: 1
+info: Rows matched: 1  Changed: 1  Warnings: 0
+select * from t1 order by id;
+id	a	b	c
+1	1000	sa	update
+2	10000	ss	zhang
+3	100	sq	q
+4	10	sz	update
+update t1 set c='zhang' where not c='q';
+affected rows: 2
+info: Rows matched: 3  Changed: 2  Warnings: 0
+select * from t1 order by id;
+id	a	b	c
+1	1000	sa	zhang
+2	10000	ss	zhang
+3	100	sq	q
+4	10	sz	zhang
+drop table t1;
+CREATE TABLE t1(a1 INT NOT NULL, a2 INT);
+INSERT INTO t1 VALUES (1, NULL);
+CREATE TRIGGER t1_bu BEFORE UPDATE ON t1
+FOR EACH ROW
+SET NEW.a1 = 2;
+update t1 set a2=1 where a2 is null;
+affected rows: 1
+info: Rows matched: 1  Changed: 1  Warnings: 0
+[Note] SequoiaDB: Query message: condition[{ "a2": { "$isnull": 1 } }], selector[{}], order_by[{}], hint[{}], limit[-1], offset[0], table[update_test_sequoiadb.t1]
+select * from t1;
+a1	a2
+2	1
+DROP TRIGGER t1_bu;
+drop table t1;
+CREATE TABLE t1(a1 INT NOT NULL, a2 INT);
+CREATE TABLE t2(a1 INT NOT NULL, a2 INT);
+INSERT INTO t1 VALUES (1, 1);
+INSERT INTO t2 VALUES (1, 1);
+UPDATE t1,t2 set t1.a1=10 where t1.a2=1;
+affected rows: 1
+info: Rows matched: 1  Changed: 1  Warnings: 0
+[Note] SequoiaDB: Query message: condition[{}], selector[{}], order_by[{}], hint[{}], limit[-1], offset[0], table[update_test_sequoiadb.t2]
+UPDATE t1,t2 set t2.a1=10 where t1.a2=1;
+affected rows: 1
+info: Rows matched: 1  Changed: 1  Warnings: 0
+[Note] SequoiaDB: Query message: condition[{}], selector[{}], order_by[{}], hint[{}], limit[-1], offset[0], table[update_test_sequoiadb.t2]
+select * from t1;
+a1	a2
+10	1
+select * from t2;
+a1	a2
+10	1
+drop table t1,t2;
+CREATE TABLE t1 (a1 INT, c INT DEFAULT 0);
+CREATE TABLE t2 (a2 INT);
+CREATE TABLE t3 (a3 INT);
+CREATE TABLE t4 (a4 INT);
+INSERT INTO t1 (a1) VALUES (1),(2);
+INSERT INTO t2 (a2) VALUES (1),(2);
+INSERT INTO t3 (a3) VALUES (1),(2);
+INSERT INTO t4 (a4) VALUES (1),(2);
+CREATE VIEW v1 AS
+SELECT t1.a1, t1.c FROM t1 JOIN t2 ON t1.a1=t2.a2 AND t1.c < 3
+WITH CHECK OPTION;
+SELECT * FROM v1;
+a1	c
+1	0
+2	0
+UPDATE v1 SET c=1 WHERE a1=1;
+affected rows: 1
+info: Rows matched: 1  Changed: 1  Warnings: 0
+[Note] SequoiaDB: Query message: condition[{ "a2": { "$et": 1 } }], selector[{}], order_by[{}], hint[{}], limit[-1], offset[0], table[update_test_sequoiadb.t2]
+select * from t1 order by a1;
+a1	c
+1	1
+2	0
+drop table t1,t2,t3,t4;
+drop view v1;
+create table t1(c1 int);
+create table t2(c2 int);
+insert into t1 values (1),(2),(3);
+insert into t2 values (1);
+update t1 set c1=2 WHERE c1 IN (SELECT c2 FROM t2);
+affected rows: 1
+info: Rows matched: 1  Changed: 1  Warnings: 0
+[Note] SequoiaDB: Query message: condition[{}], selector[{}], order_by[{}], hint[{}], limit[-1], offset[0], table[update_test_sequoiadb.t2]
+select *from t1;
+c1
+2
+2
+3
+select *from t2;
+c2
+1
+drop table t1,t2;
+CREATE TABLE t1 (a int, t timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP);
+insert into t1 (a) values(4);
+update t1 set a=2 where t is not null;
+affected rows: 1
+info: Rows matched: 1  Changed: 1  Warnings: 0
+[Note] SequoiaDB: Query message: condition[{ "t": { "$isnull": 0 } }], selector[{}], order_by[{}], hint[{}], limit[-1], offset[0], table[update_test_sequoiadb.t1]
+select * from t1;
+a	t
+2	x
+drop table t1;
+create table t1(id int auto_increment key, a int)comment="sequoiadb:{ auto_partition: false }";
+insert into t1(a) values (1),(2),(3);
+update t1 set a=a+1;
+affected rows: 3
+info: Rows matched: 3  Changed: 3  Warnings: 0
+[Note] SequoiaDB: optimizer update: 1, rule: { "$inc": { "a": { "Value": 1, "Min": -2147483648, "Max": 2147483647, "Default": null } } }, condition: {}, table: update_test_sequoiadb.t1
+select * from t1 order by id;
+id	a
+1	2
+2	3
+3	4
+update t1 set id=10;
+ERROR 23000: Duplicate entry '{ "id": 10 }' for key 'PRIMARY'
+select * from t1 order by id;
+id	a
+1	2
+2	3
+3	4
+begin;
+update t1 set a=a+1;
+affected rows: 3
+info: Rows matched: 3  Changed: 3  Warnings: 0
+[Note] SequoiaDB: optimizer update: 1, rule: { "$inc": { "a": { "Value": 1, "Min": -2147483648, "Max": 2147483647, "Default": null } } }, condition: {}, table: update_test_sequoiadb.t1
+commit;
+select * from t1 order by id;
+id	a
+1	3
+2	4
+3	5
+begin;
+update t1 set a=a+1;
+affected rows: 3
+info: Rows matched: 3  Changed: 3  Warnings: 0
+[Note] SequoiaDB: optimizer update: 1, rule: { "$inc": { "a": { "Value": 1, "Min": -2147483648, "Max": 2147483647, "Default": null } } }, condition: {}, table: update_test_sequoiadb.t1
+rollback;
+select * from t1 order by id;
+id	a
+1	3
+2	4
+3	5
+begin;
+update t1 set id=10;
+ERROR 23000: Duplicate entry '{ "id": 10 }' for key 'PRIMARY'
+rollback;
+select * from t1 order by id;
+id	a
+1	3
+2	4
+3	5
+drop table t1;
+create table t1 ( a float(10,2), b float(10,2) unsigned );
+insert into t1 values (-17977.99,  17977.99);
+insert into t1 values (-0.11, 0.11);
+insert into t1 values (1234.56, 1234.56);
+insert into t1 values (-22014.11, 22072014.11);
+insert into t1 values (2.22, 2.22);
+insert into t1 values (1.79, 1.79);
+insert into t1 values (23348320.2, 23348320.2);
+update t1 set a = -11111111.22 ;
+[Note] SequoiaDB: optimizer update: 1, rule: { "$set": { "a": -11111111.0 } }, condition: {}, table: update_test_sequoiadb.t1
+select * from t1 order by a;
+a	b
+-11111111.00	17977.99
+-11111111.00	0.11
+-11111111.00	1234.56
+-11111111.00	22072014.00
+-11111111.00	2.22
+-11111111.00	1.79
+-11111111.00	23348320.00
+update t1 set b = 11111111.22 ;
+[Note] SequoiaDB: optimizer update: 1, rule: { "$set": { "b": 11111111.0 } }, condition: {}, table: update_test_sequoiadb.t1
+select * from t1 order by b;
+a	b
+-11111111.00	11111111.00
+-11111111.00	11111111.00
+-11111111.00	11111111.00
+-11111111.00	11111111.00
+-11111111.00	11111111.00
+-11111111.00	11111111.00
+-11111111.00	11111111.00
+set sql_mode = "STRICT_TRANS_TABLES";
+update t1 set a = 811111111.22 ;
+ERROR 22003: Out of range value for column 'a' at row 1
+update t1 set a = 8111111111;
+ERROR 22003: Out of range value for column 'a' at row 1
+update t1 set b = 811111111.22 ;
+ERROR 22003: Out of range value for column 'b' at row 1
+update t1 set b = 8111111111;
+ERROR 22003: Out of range value for column 'b' at row 1
+select * from t1 order by a;
+a	b
+-11111111.00	11111111.00
+-11111111.00	11111111.00
+-11111111.00	11111111.00
+-11111111.00	11111111.00
+-11111111.00	11111111.00
+-11111111.00	11111111.00
+-11111111.00	11111111.00
+set sql_mode = "";
+update t1 set a = 811111111.22 ;
+Warnings:
+Warning	1264	Out of range value for column 'a' at row 1
+Warning	1264	Out of range value for column 'a' at row 2
+Warning	1264	Out of range value for column 'a' at row 3
+Warning	1264	Out of range value for column 'a' at row 4
+Warning	1264	Out of range value for column 'a' at row 5
+Warning	1264	Out of range value for column 'a' at row 6
+Warning	1264	Out of range value for column 'a' at row 7
+select * from t1 order by a;
+a	b
+100000000.00	11111111.00
+100000000.00	11111111.00
+100000000.00	11111111.00
+100000000.00	11111111.00
+100000000.00	11111111.00
+100000000.00	11111111.00
+100000000.00	11111111.00
+update t1 set b = 8111111111;
+Warnings:
+Warning	1264	Out of range value for column 'b' at row 1
+Warning	1264	Out of range value for column 'b' at row 2
+Warning	1264	Out of range value for column 'b' at row 3
+Warning	1264	Out of range value for column 'b' at row 4
+Warning	1264	Out of range value for column 'b' at row 5
+Warning	1264	Out of range value for column 'b' at row 6
+Warning	1264	Out of range value for column 'b' at row 7
+select * from t1 order by b;
+a	b
+100000000.00	100000000.00
+100000000.00	100000000.00
+100000000.00	100000000.00
+100000000.00	100000000.00
+100000000.00	100000000.00
+100000000.00	100000000.00
+100000000.00	100000000.00
+set sql_mode = "STRICT_TRANS_TABLES";
+update t1 set a = -1.111111111111111111111 ;
+select * from t1 order by a;
+a	b
+-1.11	100000000.00
+-1.11	100000000.00
+-1.11	100000000.00
+-1.11	100000000.00
+-1.11	100000000.00
+-1.11	100000000.00
+-1.11	100000000.00
+update t1 set b = 1.111111111111111111111 ;
+select * from t1 order by b;
+a	b
+-1.11	1.11
+-1.11	1.11
+-1.11	1.11
+-1.11	1.11
+-1.11	1.11
+-1.11	1.11
+-1.11	1.11
+set sql_mode = "";
+update t1 set a = -9.99999 ;
+select * from t1 order by a;
+a	b
+-10.00	1.11
+-10.00	1.11
+-10.00	1.11
+-10.00	1.11
+-10.00	1.11
+-10.00	1.11
+-10.00	1.11
+update t1 set b = 9.99999 ;
+select * from t1 order by b;
+a	b
+-10.00	10.00
+-10.00	10.00
+-10.00	10.00
+-10.00	10.00
+-10.00	10.00
+-10.00	10.00
+-10.00	10.00
+set sql_mode = default;
+drop table t1;
+create table t1 ( a double(10,2), b double(10,2) unsigned );
+insert into t1 values (-17977.99,  17977.99);
+insert into t1 values (-0.11, 0.11);
+insert into t1 values (1234.56, 1234.56);
+insert into t1 values (-22014.11, 22072014.11);
+insert into t1 values (2.22, 2.22);
+insert into t1 values (1.79, 1.79);
+insert into t1 values (23348320.2, 23348320.2);
+update t1 set a = -11111111.22 ;
+[Note] SequoiaDB: optimizer update: 1, rule: { "$set": { "a": -11111111.22 } }, condition: {}, table: update_test_sequoiadb.t1
+select * from t1 order by a;
+a	b
+-11111111.22	17977.99
+-11111111.22	0.11
+-11111111.22	1234.56
+-11111111.22	22072014.11
+-11111111.22	2.22
+-11111111.22	1.79
+-11111111.22	23348320.20
+update t1 set b = 11111111.22 ;
+[Note] SequoiaDB: optimizer update: 1, rule: { "$set": { "b": 11111111.22 } }, condition: {}, table: update_test_sequoiadb.t1
+select * from t1 order by b;
+a	b
+-11111111.22	11111111.22
+-11111111.22	11111111.22
+-11111111.22	11111111.22
+-11111111.22	11111111.22
+-11111111.22	11111111.22
+-11111111.22	11111111.22
+-11111111.22	11111111.22
+set sql_mode = "STRICT_ALL_TABLES";
+update t1 set a = 811111111.22 ;
+ERROR 22003: Out of range value for column 'a' at row 1
+update t1 set a = 8111111111;
+ERROR 22003: Out of range value for column 'a' at row 1
+update t1 set b = 811111111.22 ;
+ERROR 22003: Out of range value for column 'b' at row 1
+update t1 set b = 8111111111;
+ERROR 22003: Out of range value for column 'b' at row 1
+select * from t1 order by a;
+a	b
+-11111111.22	11111111.22
+-11111111.22	11111111.22
+-11111111.22	11111111.22
+-11111111.22	11111111.22
+-11111111.22	11111111.22
+-11111111.22	11111111.22
+-11111111.22	11111111.22
+set sql_mode = "";
+update t1 set a = 811111111.22 ;
+Warnings:
+Warning	1264	Out of range value for column 'a' at row 1
+Warning	1264	Out of range value for column 'a' at row 2
+Warning	1264	Out of range value for column 'a' at row 3
+Warning	1264	Out of range value for column 'a' at row 4
+Warning	1264	Out of range value for column 'a' at row 5
+Warning	1264	Out of range value for column 'a' at row 6
+Warning	1264	Out of range value for column 'a' at row 7
+select * from t1 order by a;
+a	b
+99999999.99	11111111.22
+99999999.99	11111111.22
+99999999.99	11111111.22
+99999999.99	11111111.22
+99999999.99	11111111.22
+99999999.99	11111111.22
+99999999.99	11111111.22
+update t1 set b = 8111111111;
+Warnings:
+Warning	1264	Out of range value for column 'b' at row 1
+Warning	1264	Out of range value for column 'b' at row 2
+Warning	1264	Out of range value for column 'b' at row 3
+Warning	1264	Out of range value for column 'b' at row 4
+Warning	1264	Out of range value for column 'b' at row 5
+Warning	1264	Out of range value for column 'b' at row 6
+Warning	1264	Out of range value for column 'b' at row 7
+select * from t1 order by b;
+a	b
+99999999.99	99999999.99
+99999999.99	99999999.99
+99999999.99	99999999.99
+99999999.99	99999999.99
+99999999.99	99999999.99
+99999999.99	99999999.99
+99999999.99	99999999.99
+set sql_mode = "STRICT_ALL_TABLES";
+update t1 set a = -10.111111111111111111111 ;
+select * from t1 order by a;
+a	b
+-10.11	99999999.99
+-10.11	99999999.99
+-10.11	99999999.99
+-10.11	99999999.99
+-10.11	99999999.99
+-10.11	99999999.99
+-10.11	99999999.99
+update t1 set b = 10.111111111111111111111 ;
+select * from t1 order by b;
+a	b
+-10.11	10.11
+-10.11	10.11
+-10.11	10.11
+-10.11	10.11
+-10.11	10.11
+-10.11	10.11
+-10.11	10.11
+set sql_mode = "";
+update t1 set a = -9.99999 ;
+select * from t1 order by a;
+a	b
+-10.00	10.11
+-10.00	10.11
+-10.00	10.11
+-10.00	10.11
+-10.00	10.11
+-10.00	10.11
+-10.00	10.11
+update t1 set b = 9.99999 ;
+select * from t1 order by b;
+a	b
+-10.00	10.00
+-10.00	10.00
+-10.00	10.00
+-10.00	10.00
+-10.00	10.00
+-10.00	10.00
+-10.00	10.00
+set sql_mode = default;
+drop table t1;
+create table t1 ( a decimal(10,2), b decimal(10,2) unsigned );
+insert into t1 values (-17977.99,  17977.99);
+insert into t1 values (-0.11, 0.11);
+insert into t1 values (1234.56, 1234.56);
+insert into t1 values (-22014.11, 22072014.11);
+insert into t1 values (2.22, 2.22);
+insert into t1 values (1.79, 1.79);
+insert into t1 values (23348320.2, 23348320.2);
+update t1 set a = -11111111.22 ;
+[Note] SequoiaDB: optimizer update: 1, rule: { "$set": { "a": { "$decimal": "-11111111.22" } } }, condition: {}, table: update_test_sequoiadb.t1
+select * from t1 order by a;
+a	b
+-11111111.22	17977.99
+-11111111.22	0.11
+-11111111.22	1234.56
+-11111111.22	22072014.11
+-11111111.22	2.22
+-11111111.22	1.79
+-11111111.22	23348320.20
+update t1 set b = 11111111.22 ;
+[Note] SequoiaDB: optimizer update: 1, rule: { "$set": { "b": { "$decimal": "11111111.22" } } }, condition: {}, table: update_test_sequoiadb.t1
+select * from t1 order by b;
+a	b
+-11111111.22	11111111.22
+-11111111.22	11111111.22
+-11111111.22	11111111.22
+-11111111.22	11111111.22
+-11111111.22	11111111.22
+-11111111.22	11111111.22
+-11111111.22	11111111.22
+set sql_mode = "STRICT_TRANS_TABLES";
+update t1 set a = 811111111.22 ;
+ERROR 22003: Out of range value for column 'a' at row 1
+update t1 set a = 8111111111;
+ERROR 22003: Out of range value for column 'a' at row 1
+update t1 set b = 811111111.22 ;
+ERROR 22003: Out of range value for column 'b' at row 1
+update t1 set b = 8111111111;
+ERROR 22003: Out of range value for column 'b' at row 1
+select * from t1 order by a;
+a	b
+-11111111.22	11111111.22
+-11111111.22	11111111.22
+-11111111.22	11111111.22
+-11111111.22	11111111.22
+-11111111.22	11111111.22
+-11111111.22	11111111.22
+-11111111.22	11111111.22
+set sql_mode = "";
+update t1 set a = 811111111.22 ;
+Warnings:
+Warning	1264	Out of range value for column 'a' at row 1
+Warning	1264	Out of range value for column 'a' at row 2
+Warning	1264	Out of range value for column 'a' at row 3
+Warning	1264	Out of range value for column 'a' at row 4
+Warning	1264	Out of range value for column 'a' at row 5
+Warning	1264	Out of range value for column 'a' at row 6
+Warning	1264	Out of range value for column 'a' at row 7
+select * from t1 order by a;
+a	b
+99999999.99	11111111.22
+99999999.99	11111111.22
+99999999.99	11111111.22
+99999999.99	11111111.22
+99999999.99	11111111.22
+99999999.99	11111111.22
+99999999.99	11111111.22
+update t1 set b = 8111111111;
+Warnings:
+Warning	1264	Out of range value for column 'b' at row 1
+Warning	1264	Out of range value for column 'b' at row 2
+Warning	1264	Out of range value for column 'b' at row 3
+Warning	1264	Out of range value for column 'b' at row 4
+Warning	1264	Out of range value for column 'b' at row 5
+Warning	1264	Out of range value for column 'b' at row 6
+Warning	1264	Out of range value for column 'b' at row 7
+select * from t1 order by b;
+a	b
+99999999.99	99999999.99
+99999999.99	99999999.99
+99999999.99	99999999.99
+99999999.99	99999999.99
+99999999.99	99999999.99
+99999999.99	99999999.99
+99999999.99	99999999.99
+set sql_mode = "STRICT_ALL_TABLES";
+update t1 set a = -111.111111111111111111111 ;
+Warnings:
+Note	1265	Data truncated for column 'a' at row 1
+select * from t1 order by a;
+a	b
+-111.11	99999999.99
+-111.11	99999999.99
+-111.11	99999999.99
+-111.11	99999999.99
+-111.11	99999999.99
+-111.11	99999999.99
+-111.11	99999999.99
+update t1 set b = 111.111111111111111111111 ;
+Warnings:
+Note	1265	Data truncated for column 'b' at row 1
+select * from t1 order by b;
+a	b
+-111.11	111.11
+-111.11	111.11
+-111.11	111.11
+-111.11	111.11
+-111.11	111.11
+-111.11	111.11
+-111.11	111.11
+set sql_mode = "";
+update t1 set a = -9.99999 ;
+Warnings:
+Note	1265	Data truncated for column 'a' at row 1
+select * from t1 order by a;
+a	b
+-10.00	111.11
+-10.00	111.11
+-10.00	111.11
+-10.00	111.11
+-10.00	111.11
+-10.00	111.11
+-10.00	111.11
+update t1 set b = 9.99999 ;
+Warnings:
+Note	1265	Data truncated for column 'b' at row 1
+select * from t1 order by b;
+a	b
+-10.00	10.00
+-10.00	10.00
+-10.00	10.00
+-10.00	10.00
+-10.00	10.00
+-10.00	10.00
+-10.00	10.00
+set sql_mode = default;
+drop table t1;
+CREATE TABLE t1 ( a CHAR(10), KEY(a) );
+INSERT INTO t1 VALUES ('1'),('2'),('3'),('4');
+UPDATE t1 SET a = '0' WHERE a <> '5';
+affected rows: 4
+info: Rows matched: 4  Changed: 4  Warnings: 0
+[Note] SequoiaDB: Query message: condition[{}], selector[{}], order_by[{ "b": 1 }], hint[{}], limit[-1], offset[0], table[update_test_sequoiadb.t1]
+[Note] SequoiaDB: optimizer update: 1, rule: { "$set": { "a": "0" } }, condition: { "a": { "$ne": "5" } }, table: update_test_sequoiadb.t1
+SELECT * FROM t1;
+a
+0
+0
+0
+0
+DROP TABLE t1;
+CREATE TABLE t1 ( a CHAR(10), b CHAR(10), KEY(a), KEY(b) );
+INSERT INTO t1 VALUES ('1','1'),('2','2'),('3','3'),('4','4');
+UPDATE t1 SET a = '0', b = '0' WHERE a <> '5' AND b <> '5';
+affected rows: 4
+info: Rows matched: 4  Changed: 4  Warnings: 0
+[Note] SequoiaDB: optimizer update: 1, rule: { "$set": { "a": "0", "b": "0" } }, condition: { "$and": [ { "$and": [ { "a": { "$ne": "5" } }, { "b": { "$ne": "5" } } ] }, { "a": { "$lt": "5" } } ] }, table: update_test_sequoiadb.t1
+[Note] SequoiaDB: optimizer update: 1, rule: { "$set": { "a": "0", "b": "0" } }, condition: { "$and": [ { "$and": [ { "a": { "$ne": "5" } }, { "b": { "$ne": "5" } } ] }, { "a": { "$gt": "5" } } ] }, table: update_test_sequoiadb.t1
+SELECT * FROM t1;
+a	b
+0	0
+0	0
+0	0
+0	0
+DROP TABLE t1;
+drop database update_test_sequoiadb;

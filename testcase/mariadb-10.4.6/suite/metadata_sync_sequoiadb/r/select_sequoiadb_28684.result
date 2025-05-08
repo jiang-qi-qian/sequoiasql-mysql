@@ -1,0 +1,11 @@
+connection conn1;
+drop database if exists db_28684;
+create database db_28684;
+use db_28684;
+set @@server_ha_dml_max_retry_count = 10;
+set session max_statement_time = 2;
+select * from db_28684;
+ERROR 42S02: Table 'db_28684.db_28684' doesn't exist
+set @@server_ha_dml_max_retry_count = default;
+set session max_statement_time = default;
+drop database db_28684;

@@ -1,0 +1,422 @@
+# Testcase: seqDB-26690:单个复合分区表ref_or_null方式查询，表数据不均匀，未命中MCV
+
+#
+# clear residual data
+#
+CREATE DATABASE  IF NOT EXISTS index_statistics_mcv_sequoiadb_26690;
+DROP DATABASE IF EXISTS index_statistics_mcv_sequoiadb_26690;
+
+#
+# set env
+#
+--source include/have_sequoiadb.inc
+
+CREATE DATABASE  IF NOT EXISTS index_statistics_mcv_sequoiadb_26690;
+use index_statistics_mcv_sequoiadb_26690;
+
+#
+# testcase process
+#
+CREATE TABLE t1_1(
+    a INT NOT NULL,
+    b INT,
+    c INT NOT NULL,
+    INDEX idx_a(a),
+    INDEX idx_b(b)
+)
+PARTITION BY RANGE COLUMNS (a)
+SUBPARTITION BY KEY (b)
+SUBPARTITIONS 2 (
+    PARTITION p0 VALUES LESS THAN (4),
+    PARTITION p1 VALUES LESS THAN (7),
+    PARTITION p2 VALUES LESS THAN (10)
+);
+
+CREATE TABLE t1(
+    a INT NOT NULL,
+    b INT,
+    c INT NOT NULL,
+    INDEX idx_a(a),
+    INDEX idx_b(b)
+)
+PARTITION BY RANGE COLUMNS (a)
+SUBPARTITION BY KEY (b)
+SUBPARTITIONS 2 (
+    PARTITION p0 VALUES LESS THAN (4),
+    PARTITION p1 VALUES LESS THAN (7),
+    PARTITION p2 VALUES LESS THAN (10)
+);
+
+CREATE TABLE t1_2(
+    a INT NOT NULL,
+    b INT,
+    c INT NOT NULL,
+    INDEX idx_a(a),
+    INDEX idx_b(b)
+)
+PARTITION BY RANGE COLUMNS (a)
+SUBPARTITION BY KEY (b)
+SUBPARTITIONS 2 (
+    PARTITION p0 VALUES LESS THAN (4),
+    PARTITION p1 VALUES LESS THAN (7),
+    PARTITION p2 VALUES LESS THAN (10)
+);
+
+CREATE TABLE t2(
+    a INT NOT NULL,
+    b INT,
+    c INT NOT NULL,
+    INDEX idx_a(a),
+    INDEX idx_b(b)
+)
+PARTITION BY RANGE COLUMNS (a)
+SUBPARTITION BY KEY (b)
+SUBPARTITIONS 2 (
+    PARTITION p0 VALUES LESS THAN (4),
+    PARTITION p1 VALUES LESS THAN (7),
+    PARTITION p2 VALUES LESS THAN (10)
+);
+
+CREATE TABLE t3(
+    a INT NOT NULL,
+    b INT,
+    c INT NOT NULL,
+    INDEX idx_a(a),
+    INDEX idx_b(b)
+)
+PARTITION BY RANGE COLUMNS (a)
+SUBPARTITION BY KEY (b)
+SUBPARTITIONS 2 (
+    PARTITION p0 VALUES LESS THAN (4),
+    PARTITION p1 VALUES LESS THAN (7),
+    PARTITION p2 VALUES LESS THAN (10)
+);
+
+CREATE TABLE t3_1(
+    a INT NOT NULL,
+    b INT,
+    c INT NOT NULL,
+    INDEX idx_a(a),
+    INDEX idx_b(b)
+)
+PARTITION BY RANGE COLUMNS (a)
+SUBPARTITION BY KEY (b)
+SUBPARTITIONS 2 (
+    PARTITION p0 VALUES LESS THAN (4),
+    PARTITION p1 VALUES LESS THAN (7),
+    PARTITION p2 VALUES LESS THAN (10)
+);
+
+INSERT INTO t1 VALUES
+(5,NULL,3),(1,NULL,8),(8,NULL,6),(4,NULL,7),(9,NULL,2);
+INSERT INTO t1_1 VALUES
+(5,NULL,3),(1,NULL,8),(8,NULL,6),(4,NULL,7),(9,NULL,2);
+INSERT INTO t1_2 VALUES
+(5,NULL,3),(1,NULL,8),(8,NULL,6),(4,NULL,7),(9,NULL,2);
+INSERT INTO t2 VALUES
+(5,NULL,3),(1,NULL,8),(8,NULL,6),(4,NULL,7),(9,NULL,2);
+INSERT INTO t3 VALUES
+(5,NULL,3),(1,NULL,8),(8,NULL,6),(4,NULL,7),(9,NULL,2);
+INSERT INTO t3_1 VALUES
+(5,NULL,3),(1,NULL,8),(8,NULL,6),(4,NULL,7),(9,NULL,2);
+
+# insert 2000 rows in t1 数据包含b=5,且占比0.5%
+DELIMITER $;
+CREATE PROCEDURE p1()
+BEGIN
+    DECLARE i INT;
+    DECLARE a_value INT;
+    DECLARE b_value INT;
+    DECLARE c_value INT;
+    SET i=1;
+    WHILE i<=2000 DO
+        IF (i<6) THEN
+            SET a_value=9;
+            SET b_value=5;
+            SET c_value=3;
+        ELSEIF (i>5 and i<406) THEN
+            SET a_value=7;
+            SET b_value=1;
+            SET c_value=6;
+        ELSEIF (i>405 and i<606) THEN
+            SET a_value=3;
+            SET b_value=2;
+            SET c_value=7;
+        ELSEIF (i>605 and i<706) THEN
+            SET a_value=7;
+            SET b_value=8;
+            SET c_value=9;
+        ELSEIF (i>705 and i<746) THEN
+            SET a_value=1;
+            SET b_value=3;
+            SET c_value=6;
+        ELSE
+            SET a_value=2;
+            SET b_value=2;
+            SET c_value=2;
+        END IF;
+        INSERT INTO t1(a,b,c) values (a_value, b_value, c_value);
+        SET i=i+1;
+    END WHILE;
+END $
+DELIMITER ;$
+
+
+# insert 2000 rows in t1_1 数据包含b=5,且占比1/100
+DELIMITER $;
+CREATE PROCEDURE p1_1()
+BEGIN
+    DECLARE i INT;
+    DECLARE a_value INT;
+    DECLARE b_value INT;
+    DECLARE c_value INT;
+    SET i=1;
+    WHILE i<=2000 DO
+        IF (i<21) THEN
+            SET a_value=9;
+            SET b_value=5;
+            SET c_value=3;
+        ELSEIF (i>20 and i<421) THEN
+            SET a_value=7;
+            SET b_value=1;
+            SET c_value=6;
+        ELSEIF (i>420 and i<621) THEN
+            SET a_value=3;
+            SET b_value=2;
+            SET c_value=7;
+        ELSEIF (i>620 and i<721) THEN
+            SET a_value=7;
+            SET b_value=8;
+            SET c_value=9;
+        ELSEIF (i>720 and i<761) THEN
+            SET a_value=1;
+            SET b_value=3;
+            SET c_value=6;
+        ELSE
+            SET a_value=2;
+            SET b_value=2;
+            SET c_value=2;
+        END IF;
+        INSERT INTO t1_1(a,b,c) values (a_value, b_value, c_value);
+        SET i=i+1;
+    END WHILE;
+END $
+DELIMITER ;$
+
+
+# insert 2000 rows in t1_2 数据包含b=5,且占比1/200
+DELIMITER $;
+CREATE PROCEDURE p1_2()
+BEGIN
+    DECLARE i INT;
+    DECLARE a_value INT;
+    DECLARE b_value INT;
+    DECLARE c_value INT;
+    SET i=1;
+    WHILE i<=2000 DO
+        IF (i<11) THEN
+            SET a_value=9;
+            SET b_value=5;
+            SET c_value=3;
+        ELSEIF (i>10 and i<411) THEN
+            SET a_value=7;
+            SET b_value=1;
+            SET c_value=6;
+        ELSEIF (i>410 and i<611) THEN
+            SET a_value=3;
+            SET b_value=2;
+            SET c_value=7;
+        ELSEIF (i>610 and i<711) THEN
+            SET a_value=7;
+            SET b_value=8;
+            SET c_value=9;
+        ELSEIF (i>710 and i<751) THEN
+            SET a_value=1;
+            SET b_value=3;
+            SET c_value=6;
+        ELSE
+            SET a_value=2;
+            SET b_value=2;
+            SET c_value=2;
+        END IF;
+        INSERT INTO t1_2(a,b,c) values (a_value, b_value, c_value);
+        SET i=i+1;
+    END WHILE;
+END $
+DELIMITER ;$
+
+
+# insert 2000 rows in t2 数据不包含b=5
+DELIMITER $;
+CREATE PROCEDURE p2()
+BEGIN
+    DECLARE i INT;
+    DECLARE a_value INT;
+    DECLARE b_value INT;
+    DECLARE c_value INT;
+    SET i=1;
+    WHILE i<=2000 DO
+        IF (i<6) THEN
+            SET a_value=9;
+            SET b_value=4;
+            SET c_value=3;
+        ELSEIF (i>5 and i<406) THEN
+            SET a_value=7;
+            SET b_value=1;
+            SET c_value=6;
+        ELSEIF (i>405 and i<606) THEN
+            SET a_value=3;
+            SET b_value=2;
+            SET c_value=7;
+        ELSEIF (i>605 and i<706) THEN
+            SET a_value=7;
+            SET b_value=8;
+            SET c_value=9;
+        ELSEIF (i>705 and i<746) THEN
+            SET a_value=1;
+            SET b_value=3;
+            SET c_value=6;
+        ELSE
+            SET a_value=2;
+            SET b_value=2;
+            SET c_value=2;
+        END IF;
+        INSERT INTO t2(a,b,c) values (a_value, b_value, c_value);
+        SET i=i+1;
+    END WHILE;
+END $
+DELIMITER ;$
+
+# insert 8000 rows in t3 数据不包含b=5
+DELIMITER $;
+CREATE PROCEDURE p3()
+BEGIN
+    DECLARE i INT;
+    DECLARE a_value INT;
+    DECLARE b_value INT;
+    DECLARE c_value INT;
+    SET i=1;
+    WHILE i<=8000 DO
+        IF (i<21) THEN
+            SET a_value=9;
+            SET b_value=4;
+            SET c_value=3;
+        ELSEIF (i>20 and i<1621) THEN
+            SET a_value=7;
+            SET b_value=1;
+            SET c_value=6;
+        ELSEIF (i>1620 and i<2421) THEN
+            SET a_value=3;
+            SET b_value=2;
+            SET c_value=7;
+        ELSEIF (i>2420 and i<2821) THEN
+            SET a_value=7;
+            SET b_value=8;
+            SET c_value=9;
+        ELSEIF (i>2820 and i<2981) THEN
+            SET a_value=1;
+            SET b_value=3;
+            SET c_value=6;
+        ELSE
+            SET a_value=2;
+            SET b_value=2;
+            SET c_value=2;
+        END IF;
+        INSERT INTO t3(a,b,c) values (a_value, b_value, c_value);
+        SET i=i+1;
+    END WHILE;
+END $
+DELIMITER ;$
+
+# insert 8000 rows in t3_1 数据包含b=5,且占比1/400
+DELIMITER $;
+CREATE PROCEDURE p3_1()
+BEGIN
+    DECLARE i INT;
+    DECLARE a_value INT;
+    DECLARE b_value INT;
+    DECLARE c_value INT;
+    SET i=1;
+    WHILE i<=8000 DO
+        IF (i<21) THEN
+            SET a_value=9;
+            SET b_value=5;
+            SET c_value=3;
+        ELSEIF (i>20 and i<1621) THEN
+            SET a_value=7;
+            SET b_value=1;
+            SET c_value=6;
+        ELSEIF (i>1620 and i<2421) THEN
+            SET a_value=3;
+            SET b_value=2;
+            SET c_value=7;
+        ELSEIF (i>2420 and i<2821) THEN
+            SET a_value=7;
+            SET b_value=8;
+            SET c_value=9;
+        ELSEIF (i>2820 and i<2981) THEN
+            SET a_value=1;
+            SET b_value=3;
+            SET c_value=6;
+        ELSE
+            SET a_value=2;
+            SET b_value=2;
+            SET c_value=2;
+        END IF;
+        INSERT INTO t3_1(a,b,c) values (a_value, b_value, c_value);
+        SET i=i+1;
+    END WHILE;
+END $
+DELIMITER ;$
+
+CALL p1();
+CALL p1_1();
+CALL p1_2();
+CALL p2();
+CALL p3();
+CALL p3_1();
+
+--sorted_result
+SELECT * FROM t1 WHERE b=5 or b IS NULL;
+--sorted_result
+SELECT * FROM t1_1 WHERE b=5 or b IS NULL;
+--sorted_result
+SELECT * FROM t1_2 WHERE b=5 or b IS NULL;
+--sorted_result
+SELECT * FROM t2 WHERE b=5 or b IS NULL;
+--sorted_result
+SELECT * FROM t3 WHERE b=5 or b IS NULL;
+--sorted_result
+SELECT * FROM t3_1 WHERE b=5 or b IS NULL;
+
+# COUNT t1
+SELECT COUNT(*) FROM t1 WHERE b=5 or b IS NULL;
+# COUNT t1_1
+SELECT COUNT(*) FROM t1_1 WHERE b=5 or b IS NULL;
+# COUNT t1_2
+SELECT COUNT(*) FROM t1_2 WHERE b=5 or b IS NULL;
+# COUNT t2
+SELECT COUNT(*) FROM t2 WHERE b=5 or b IS NULL;
+# COUNT t3
+SELECT COUNT(*) FROM t3 WHERE b=5 or b IS NULL;
+# COUNT t3_1
+SELECT COUNT(*) FROM t3_1 WHERE b=5 or b IS NULL;
+
+ANALYZE TABLE t1,t1_1,t1_2,t2,t3,t3_1;
+
+# set debug='d:i:t:o,/tmp/mysqld26690.trace:f,Sdb_match_cnt_estimator::eval_mcv';
+
+EXPLAIN SELECT * FROM t1 WHERE b=5 or b IS NULL;
+EXPLAIN SELECT * FROM t1_1 WHERE b=5 or b IS NULL;
+EXPLAIN SELECT * FROM t1_2 WHERE b=5 or b IS NULL;
+EXPLAIN SELECT * FROM t2 WHERE b=5 or b IS NULL;
+EXPLAIN SELECT * FROM t3 WHERE b=5 or b IS NULL;
+EXPLAIN SELECT * FROM t3_1 WHERE b=5 or b IS NULL;
+DROP TABLE t1,t1_1,t1_2,t2,t3,t3_1;
+
+#
+# clear env
+#
+DROP DATABASE index_statistics_mcv_sequoiadb_26690;
+--source include/uninstall_sequoiadb.inc
+# set debug='';

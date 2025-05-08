@@ -1,0 +1,88 @@
+#Check replace into
+#Case 18066#Case 18067#Case 18068#Case 18069#Case 18070#Case 18071
+
+-- source include/have_sequoiadb.inc
+
+--disable_warnings
+DROP TABLE IF EXISTS t1; 
+DROP TABLE IF EXISTS t2; 
+--enable_warnings
+
+# insert ignore duplicate key
+CREATE TABLE t1 (a INT, b CHAR(16), PRIMARY KEY(a));
+CREATE TABLE t2 (a INT, b CHAR(16), UNIQUE KEY(b));
+INSERT INTO t1 VALUES (1, 'a'),(2, 'b'),(3,'c');
+INSERT INTO t2 SELECT * FROM t1;
+--sorted_result
+SELECT * FROM t1;
+--sorted_result
+SELECT * FROM t2;
+#BUG #SEQUOIASQLMAINSTREAM-183
+INSERT IGNORE INTO t1 VALUES (1, 'aa'),(2, 'bb');
+INSERT IGNORE INTO t2 VALUES (10, 'a'),(11, 'b');
+--sorted_result
+SELECT * FROM t1;
+--sorted_result
+SELECT * FROM t2;
+DROP TABLE t1, t2;
+
+# insert ignore duplicate records
+CREATE TABLE t1 (a INT, b CHAR(16));
+INSERT INTO t1 VALUES (1, 'a'),(2, 'b'),(3,'c');
+--sorted_result
+SELECT * FROM t1;
+INSERT IGNORE INTO t1 VALUES (1, 'a'),(2, 'b'),(10, 'aa'),(11, 'bb');
+--sorted_result
+SELECT * FROM t1;
+DROP TABLE t1;
+
+# replace into duplicate key
+CREATE TABLE t1 (a INT, b CHAR(16), PRIMARY KEY(a));
+CREATE TABLE t2 (a INT, b CHAR(16), UNIQUE KEY(b));
+INSERT INTO t1 VALUES (1, 'a'),(2, 'b'),(3,'c');
+INSERT INTO t2 SELECT * FROM t1;
+--sorted_result
+SELECT * FROM t1;
+--sorted_result
+SELECT * FROM t2;
+REPLACE INTO t1 VALUES (1, 'aa'),(2, 'bb');
+--sorted_result
+SELECT * FROM t1;
+REPLACE INTO t1 SELECT * FROM t2;
+--sorted_result
+SELECT * FROM t1;
+REPLACE INTO t1 SET a = a + 1, b = 'update';
+--sorted_result
+SELECT * FROM t1;
+REPLACE INTO t2 VALUES (11, 'b'),(12, 'c');
+--sorted_result
+SELECT * FROM t2;
+REPLACE INTO t2 SELECT * FROM t1;
+--sorted_result
+SELECT * FROM t2;
+REPLACE INTO t2 SET b = 'b', a = -1;
+--sorted_result
+SELECT * FROM t2;
+DROP TABLE t1,t2;
+
+# replace into duplicate records
+CREATE TABLE t1 (a INT, b CHAR(16));
+CREATE TABLE t2 (a INT, b CHAR(16));
+INSERT INTO t1 VALUES (1, 'a'),(2, 'b'),(3,'c');
+INSERT INTO t2 SELECT * FROM t1;
+--sorted_result
+SELECT * FROM t1;
+REPLACE INTO t1 VALUES (1, 'a'),(2, 'b'),(4, 'd'),(5, 'e');
+--sorted_result
+SELECT * FROM t1;
+REPLACE INTO t1 SELECT * FROM t2;
+--sorted_result
+SELECT * FROM t1;
+REPLACE INTO t1 SET b = 'b', a = -1;
+--sorted_result
+SELECT * FROM t1;
+--sorted_result
+SELECT * FROM t2;
+DROP TABLE t1,t2;
+
+--source include/uninstall_sequoiadb.inc

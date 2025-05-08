@@ -1,0 +1,166 @@
+#seqDB-30420
+--source include/have_sequoiadb.inc
+
+--disable_warnings
+drop database if exists multi_key_bka_sequoiadb_30420;
+create database multi_key_bka_sequoiadb_30420;
+drop database multi_key_bka_sequoiadb_30420;
+create database multi_key_bka_sequoiadb_30420;
+use multi_key_bka_sequoiadb_30420;
+--enable_warnings
+
+set session join_cache_level=8;
+
+#SEQUOIASQLMAINSTREAM-1699,SEQUOIASQLMAINSTREAM-1718
+CREATE TABLE `t1` (
+  `a` int(11) NOT NULL,
+  `b` int(11) NOT NULL,
+  `c` int(11) NOT NULL,
+  `d` int(11) NOT NULL,
+  `e` int(11) DEFAULT NULL,
+  KEY (`b`,`c`,`a`,`d`),
+  KEY (`a`,`c`,`d`),
+  KEY (`b`,`d`,`c`)
+) ENGINE=SequoiaDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin;
+
+
+CREATE TABLE `t2` (
+  `a` int(11) NOT NULL,
+  `b` int(11) NOT NULL,
+  `c` int(11) NOT NULL,
+  `d` int(11) NOT NULL,
+  `e` int(11) DEFAULT NULL,
+  KEY (`a`,`b`,`c`,`d`),
+  KEY (`d`,`b`,`c`)
+) ENGINE=SequoiaDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin;
+
+insert into t1 values (1,2,3,4,5),(2,3,4,5,6),(3,4,5,6,7),(4,5,6,7,8),(5,6,7,8,9),(1,1,1,1,1),(2,2,2,2,2),(3,3,3,3,3),(4,4,4,4,4),(5,5,5,5,5),(5,4,3,2,1),(9,8,7,6,5),(8,7,6,5,4),(7,6,5,4,3),(6,5,4,3,2);
+
+insert into t1 select * from t1;
+insert into t2 select * from t1;
+
+let $i=2;
+while($i>0){
+if($i==2){set session optimizer_switch = "mrr=off";}
+if($i==1){set session optimizer_switch = "mrr=on,mrr_cost_based=off";}
+
+--sorted_result
+select  * from t2 straight_join t1 where t1.a=t2.a and t1.b=t2.b and t1.c=t2.c and t1.d=t2.d;
+explain select  * from t2 straight_join t1 where t1.a=t2.a and t1.b=t2.b and t1.c=t2.c and t1.d=t2.d;
+--sorted_result
+select * from t1 straight_join t2 where t1.a=t2.a and t1.b=t2.b and t1.c=t2.c and t1.d=t2.d;
+explain select  * from t2 straight_join t1 where t1.a=t2.a and t1.b=t2.b and t1.c=t2.c and t1.d=t2.d;
+
+--sorted_result
+select * from t2 straight_join t1 where t1.a=t2.a and t1.b=t2.b and t1.c=t2.c;
+explain select * from t2 straight_join t1 where t1.a=t2.a and t1.b=t2.b and t1.c=t2.c;
+--sorted_result
+select * from t1 straight_join t2 where t1.a=t2.a and t1.b=t2.b and t1.c=t2.c;
+explain select * from t1 straight_join t2 where t1.a=t2.a and t1.b=t2.b and t1.c=t2.c;
+
+--sorted_result
+select * from t2 straight_join t1 where t1.a=t2.a and t1.d=t2.d and t1.c=t2.c;
+explain select * from t2 straight_join t1 where t1.a=t2.a and t1.d=t2.d and t1.c=t2.c;
+--sorted_result
+select * from t1 straight_join t2 where t1.a=t2.a and t1.d=t2.d and t1.c=t2.c;
+explain select * from t1 straight_join t2 where t1.a=t2.a and t1.d=t2.d and t1.c=t2.c;
+
+--sorted_result
+select * from t2 straight_join t1 where t1.d=t2.d and t1.b=t2.b and t1.c=t2.c;
+explain select * from t2 straight_join t1 where t1.d=t2.d and t1.b=t2.b and t1.c=t2.c;
+--sorted_result
+select * from t1 straight_join t2 where t1.d=t2.d and t1.b=t2.b and t1.c=t2.c;
+explain select * from t1 straight_join t2 where t1.d=t2.d and t1.b=t2.b and t1.c=t2.c;
+
+--sorted_result
+select * from t2 straight_join t1 where t1.a=t2.b and t1.c=t2.c;
+explain select * from t2 straight_join t1 where t1.a=t2.b and t1.c=t2.c;
+--sorted_result
+select * from t1 straight_join t2 where t1.a=t2.b and t1.c=t2.c;
+explain select * from t1 straight_join t2 where t1.a=t2.b and t1.c=t2.c;
+
+dec $i;
+}
+drop table t1;
+drop table t2;
+
+#SEQUOIASQLMAINSTREAM-1729
+CREATE TABLE `t1` (
+  `col_int_18` int(18) DEFAULT NULL,
+  `col_varchar_16` varchar(16) COLLATE utf8mb4_bin DEFAULT NULL,
+  `col_varchar_28` varchar(28) COLLATE utf8mb4_bin DEFAULT NULL,
+  `pk` int(11) NOT NULL AUTO_INCREMENT,
+  `col_int_11` int(11) DEFAULT NULL,
+  PRIMARY KEY (`pk`),
+  KEY `index_01` (`col_int_11`,`col_int_18`,`col_varchar_16`,`col_varchar_28`),
+  KEY `index_02` (`col_int_11`,`col_int_18`,`col_varchar_16`),
+  KEY `index_03` (`col_int_11`,`col_int_18`,`col_varchar_28`),
+  KEY `index_04` (`col_int_11`,`col_int_18`),
+  KEY `index_05` (`col_int_11`,`col_varchar_16`),
+  KEY `index_06` (`col_int_18`,`col_varchar_28`),
+  KEY `index_07` (`col_varchar_16`,`col_varchar_28`)
+) ENGINE=SequoiaDB AUTO_INCREMENT=1001 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin;
+CREATE TABLE `t2` LIKE `t1`;
+
+INSERT INTO `t1` VALUES (2,NULL,NULL,5,2),(-361234432,'c','z',6,1019871232),(NULL,'l',NULL,8,NULL),(8,'k','in',9,-17825792),(4,'s','q',12,-1990000640),(-1566310400,'y','u',15,2),(270925824,'y',NULL,16,0),(2,'a','okay',25,7),(NULL,'now','j',26,1),(406978560,'z','now',27,2),(1,NULL,NULL,29,NULL),(109838336,'p','her',30,3),(1,'i','out',35,0),(417792000,'o','p',36,3),(4,'will','a',48,7),(1,'they','u',50,2),(NULL,'x',NULL,52,7);
+INSERT INTO `t2` SELECT * FROM `t1`;
+
+let $i=2;
+while($i>0){
+if($i==2){set session optimizer_switch= "mrr=off";}
+if($i==1){set session optimizer_switch= "mrr=on,mrr_cost_based=off";}
+
+--sorted_result
+select * from `t2` as table1 JOIN `t1` as table2 on table1.`col_varchar_28`=table2.`col_varchar_28` where table1.`col_int_11` BETWEEN 2 AND ( 2 + 7 ) and table2.`col_int_11` IS NULL;
+explain select * from `t2` as table1 JOIN `t1` as table2 on table1.`col_varchar_28`=table2.`col_varchar_28` where table1.`col_int_11` BETWEEN 2 AND ( 2 + 7 ) and table2.`col_int_11` IS NULL;
+
+--sorted_result
+select STRAIGHT_JOIN * from `t1` as table1 JOIN `t2` as table2 on table1.`col_int_11`=table2.`col_int_11` where table1.`col_int_11` IS NULL;
+explain select STRAIGHT_JOIN * from `t1` as table1 JOIN `t2` as table2 on table1.`col_int_11`=table2.`col_int_11` where table1.`col_int_11` IS NULL;
+
+--sorted_result
+select STRAIGHT_JOIN * from `t1` as table1 JOIN `t2` as table2 on table1.`col_int_11`=table2.`col_int_18` where table1.`col_int_11` IS NULL;
+explain select STRAIGHT_JOIN * from `t1` as table1 JOIN `t2` as table2 on table1.`col_int_11`=table2.`col_int_18` where table1.`col_int_11` IS NULL;
+dec $i;
+}
+drop table t1;
+drop table t2;
+
+#SEQUOIASQLMAINSTREAM-1734
+CREATE TABLE `t1` (
+  `col_int_18_not_null` int(18) NOT NULL,
+  `col_int_16_not_null` int(16) NOT NULL,
+  `col_varchar_28_not_null` varchar(28) COLLATE utf8mb4_bin NOT NULL,
+  `pk` int(11) NOT NULL AUTO_INCREMENT,
+  `col_int_11_not_null` int(11) NOT NULL,
+  PRIMARY KEY (`pk`),
+  KEY `index_01` (`col_int_11_not_null`,`col_int_18_not_null`,`col_int_16_not_null`,`col_varchar_28_not_null`),
+  KEY `index_02` (`col_int_11_not_null`,`col_int_18_not_null`,`col_int_16_not_null`),
+  KEY `index_03` (`col_int_11_not_null`,`col_int_18_not_null`,`col_varchar_28_not_null`),
+  KEY `index_04` (`col_int_11_not_null`,`col_int_18_not_null`),
+  KEY `index_05` (`col_int_11_not_null`,`col_int_16_not_null`)
+) ENGINE=SequoiaDB AUTO_INCREMENT=1001 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin;
+CREATE TABLE `t2` LIKE `t1`;
+
+INSERT INTO `t1` VALUES (6,3,'j',5,6),(1969029120,7,'j',6,-2026831872),(6,8,'i',8,4),(3,1,'v',9,4),(-1145569280,7,'r',12,2),(1,9,'k',15,4),(0,447676416,'o',16,5),(818216960,-1689255936,'j',25,9),(0,6,'come',26,9),(109838336,9,'j',27,-669450240),(1290993664,3,'mean',29,8),(155975680,9,'so',30,0),(4,-1362362368,'my',35,1993277440),(5,1,'i',36,4),(1,-64421888,'s',48,4),(5,-383516672,'e',50,5),(5,1,'p',52,0),(1734213632,6,'q',56,0),(4,4,'l',60,8),(4,1468071936,'z',67,15007744);
+INSERT INTO `t2` SELECT * FROM `t1`;
+
+let $i=2;
+while($i>0){
+if($i==2){set session optimizer_switch= "mrr=off";}
+if($i==1){set session optimizer_switch= "mrr=on,mrr_cost_based=off";}
+--sorted_result
+SELECT   * FROM `t2` as table1 RIGHT JOIN `t2` as table2 ON table1.`col_varchar_28_not_null`=table2.`col_varchar_28_not_null` and table1.`pk`=table2.`col_int_11_not_null` and table1.`col_int_16_not_null`=table2.`col_int_11_not_null` WHERE table1.`pk` IN (0,1,5,8,4,2,7,6);
+explain SELECT   * FROM `t2` as table1 RIGHT JOIN `t2` as table2 ON table1.`col_varchar_28_not_null`=table2.`col_varchar_28_not_null` and table1.`pk`=table2.`col_int_11_not_null` and table1.`col_int_16_not_null`=table2.`col_int_11_not_null` WHERE table1.`pk`  IN (0,1,5,8,4,2,7,6);
+--sorted_result
+SELECT  STRAIGHT_JOIN * FROM `t2` as table1 JOIN `t2` as table2 ON table1.`col_int_16_not_null`=table2.`col_int_11_not_null` and table1.`col_varchar_28_not_null`=table2.`col_varchar_28_not_null` and table1.`pk`=table2.`col_int_11_not_null` and table1.`col_int_16_not_null`=table2.`col_int_11_not_null` and table1.`col_int_18_not_null`=table2.`col_int_16_not_null`;
+explain SELECT  STRAIGHT_JOIN * FROM `t2` as table1 JOIN `t2` as table2 ON table1.`col_int_16_not_null`=table2.`col_int_11_not_null` and table1.`col_varchar_28_not_null`=table2.`col_varchar_28_not_null` and table1.`pk`=table2.`col_int_11_not_null` and table1.`col_int_16_not_null`=table2.`col_int_11_not_null` and table1.`col_int_18_not_null`=table2.`col_int_16_not_null`;
+--sorted_result
+SELECT DISTINCT STRAIGHT_JOIN table2.`pk` as field1 FROM `t1` as table1 JOIN `t2` as table2 ON table1.`col_int_16_not_null`=table2.`col_int_11_not_null` and table1.`pk`=table2.`col_int_11_not_null` and table1.`col_int_18_not_null`=table2.`col_int_16_not_null`;
+explain SELECT DISTINCT STRAIGHT_JOIN table2.`pk` as field1 FROM `t1` as table1 JOIN `t2` as table2 ON table1.`col_int_16_not_null`=table2.`col_int_11_not_null` and table1.`pk`=table2.`col_int_11_not_null` and table1.`col_int_18_not_null`=table2.`col_int_16_not_null`;
+dec $i;
+}
+
+drop database multi_key_bka_sequoiadb_30420;
+--source include/uninstall_sequoiadb.inc
+

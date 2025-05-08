@@ -1,0 +1,390 @@
+CREATE DATABASE test_auto_increment_partition;
+use test_auto_increment_partition;
+DROP TABLE IF EXISTS t1,t2;
+CREATE TABLE t1(a TINYINT NOT NULL AUTO_INCREMENT, b char(8), UNIQUE KEY(a,b));
+INSERT INTO t1(b) VALUES ('aaa');
+SELECT AUTO_INCREMENT FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = 'test_auto_increment_partition' AND TABLE_NAME = 't1';
+AUTO_INCREMENT
+2
+INSERT INTO t1 VALUES (1,'bbb'),(10,'ccc'),(-1,'ddd');
+SELECT AUTO_INCREMENT FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = 'test_auto_increment_partition' AND TABLE_NAME = 't1';
+AUTO_INCREMENT
+12
+SELECT * FROM t1;
+a	b
+-1	ddd
+1	aaa
+1	bbb
+10	ccc
+INSERT INTO t1 VALUES (NULL,'aaa');
+SELECT AUTO_INCREMENT FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = 'test_auto_increment_partition' AND TABLE_NAME = 't1';
+AUTO_INCREMENT
+12
+SELECT * FROM t1;
+a	b
+-1	ddd
+1	aaa
+1	bbb
+10	ccc
+11	aaa
+SET sql_mode = 'NO_AUTO_VALUE_ON_ZERO';
+Warnings:
+Warning	3090	Changing sql mode 'NO_AUTO_CREATE_USER' is deprecated. It will be removed in a future release.
+INSERT INTO t1 VALUES (0,'bbb');
+SELECT AUTO_INCREMENT FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = 'test_auto_increment_partition' AND TABLE_NAME = 't1';
+AUTO_INCREMENT
+13
+SELECT * FROM t1;
+a	b
+-1	ddd
+0	bbb
+1	aaa
+1	bbb
+10	ccc
+11	aaa
+INSERT INTO t1 VALUES (100,'ddd'),(101,'eee'),(102,'fff');
+SHOW CREATE TABLE t1;
+Table	Create Table
+t1	CREATE TABLE `t1` (
+  `a` tinyint(4) NOT NULL AUTO_INCREMENT,
+  `b` char(8) DEFAULT NULL,
+  UNIQUE KEY `a` (`a`,`b`)
+) ENGINE=SequoiaDB AUTO_INCREMENT=104 DEFAULT CHARSET=latin1
+INSERT INTO t1 VALUES (NULL,'hhh');
+SHOW CREATE TABLE t1;
+Table	Create Table
+t1	CREATE TABLE `t1` (
+  `a` tinyint(4) NOT NULL AUTO_INCREMENT,
+  `b` char(8) DEFAULT NULL,
+  UNIQUE KEY `a` (`a`,`b`)
+) ENGINE=SequoiaDB AUTO_INCREMENT=104 DEFAULT CHARSET=latin1
+SELECT * FROM t1;
+a	b
+-1	ddd
+0	bbb
+1	aaa
+1	bbb
+10	ccc
+100	ddd
+101	eee
+102	fff
+103	hhh
+11	aaa
+DROP TABLE t1;
+SET sql_mode = default;
+CREATE TABLE t1(a SMALLINT NOT NULL AUTO_INCREMENT, b varchar(16), PRIMARY KEY(a,b));
+INSERT INTO t1(b) VALUES ('test1'),('test2'),('test3'),('test10'),('test15');
+SELECT AUTO_INCREMENT FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = 'test_auto_increment_partition' AND TABLE_NAME = 't1';
+AUTO_INCREMENT
+11
+SELECT * FROM t1;
+a	b
+1	test1
+2	test2
+3	test3
+4	test10
+5	test15
+INSERT INTO t1 values (3,'test3');
+ERROR 23000: Duplicate entry '{ "a": 3, "b": "test3" }' for key 'PRIMARY'
+INSERT INTO t1(b) values ('abc');
+SELECT AUTO_INCREMENT FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = 'test_auto_increment_partition' AND TABLE_NAME = 't1';
+AUTO_INCREMENT
+11
+SELECT * FROM t1;
+a	b
+1	test1
+2	test2
+3	test3
+4	test10
+5	test15
+6	abc
+INSERT INTO t1 values (10,'abc'),(13,'abc'),(3,'test3'),(12,'abc');
+ERROR 23000: Duplicate entry '{ "a": 3, "b": "test3" }' for key 'PRIMARY'
+SELECT AUTO_INCREMENT FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = 'test_auto_increment_partition' AND TABLE_NAME = 't1';
+AUTO_INCREMENT
+21
+SELECT * FROM t1;
+a	b
+1	test1
+2	test2
+3	test3
+4	test10
+5	test15
+6	abc
+INSERT INTO t1(b) values ('abc');
+SELECT AUTO_INCREMENT FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = 'test_auto_increment_partition' AND TABLE_NAME = 't1';
+AUTO_INCREMENT
+21
+SELECT * FROM t1;
+a	b
+1	test1
+14	abc
+2	test2
+3	test3
+4	test10
+5	test15
+6	abc
+DROP TABLE t1;
+CREATE TABLE t1(a MEDIUMINT NOT NULL AUTO_INCREMENT, b text, UNIQUE KEY(a));
+INSERT INTO t1(b) VALUES ('a'),('b'),('c');
+UPDATE t1 SET a = 4 WHERE a = 3;
+ERROR HY000: Sharding key cannot be updated
+INSERT INTO t1 VALUES (20, '20');
+INSERT INTO t1(b) VALUES ('a');
+SELECT AUTO_INCREMENT FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = 'test_auto_increment_partition' AND TABLE_NAME = 't1';
+AUTO_INCREMENT
+101
+SELECT * FROM t1;
+a	b
+1	a
+2	b
+20	20
+21	a
+3	c
+DROP TABLE t1;
+CREATE TABLE t1(a INT NOT NULL AUTO_INCREMENT, b char(8), PRIMARY KEY(a,b));
+INSERT INTO t1(b) VALUES ('a'),('b'),('c');
+REPLACE INTO t1 VALUES (6, 'x'),(8, 'y');
+SELECT AUTO_INCREMENT FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = 'test_auto_increment_partition' AND TABLE_NAME = 't1';
+AUTO_INCREMENT
+1001
+SELECT * FROM t1;
+a	b
+1	a
+2	b
+3	c
+6	x
+8	y
+REPLACE INTO t1 VALUES (1, 'a111'),(3, 'c333');
+INSERT INTO t1(b) VALUES ('abc');
+SELECT AUTO_INCREMENT FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = 'test_auto_increment_partition' AND TABLE_NAME = 't1';
+AUTO_INCREMENT
+1001
+SELECT * FROM t1;
+a	b
+1	a
+1	a111
+2	b
+3	c
+3	c333
+6	x
+8	y
+9	abc
+DROP TABLE t1;
+CREATE TABLE t1(a INT NOT NULL AUTO_INCREMENT, b varchar(8), UNIQUE KEY(a,b));
+INSERT INTO t1(b) VALUES ('aaa'),('bbb'),('ccc');
+INSERT INTO t1(b) VALUES ('aaa');
+SELECT AUTO_INCREMENT FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = 'test_auto_increment_partition' AND TABLE_NAME = 't1';
+AUTO_INCREMENT
+1001
+SELECT * FROM t1;
+a	b
+1	aaa
+2	bbb
+3	ccc
+4	aaa
+DROP TABLE t1;
+CREATE TABLE t1(a BIGINT NOT NULL AUTO_INCREMENT, b char(8), UNIQUE KEY(a,b));
+INSERT INTO t1(b) VALUES ('aaa'),('bbb'),('ccc');
+INSERT INTO t1 VALUES (6,'xxx'), (7,'yyy') ON DUPLICATE KEY UPDATE a = 3;
+SELECT AUTO_INCREMENT FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = 'test_auto_increment_partition' AND TABLE_NAME = 't1';
+AUTO_INCREMENT
+1001
+SELECT * FROM t1;
+a	b
+1	aaa
+2	bbb
+3	ccc
+6	xxx
+7	yyy
+INSERT INTO t1 VALUES (2,'bbb') ON DUPLICATE KEY UPDATE a = 3;
+ERROR HY000: Sharding key cannot be updated
+INSERT INTO t1(b) VALUES ('bbb');
+SELECT AUTO_INCREMENT FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = 'test_auto_increment_partition' AND TABLE_NAME = 't1';
+AUTO_INCREMENT
+1001
+SELECT * FROM t1;
+a	b
+1	aaa
+2	bbb
+3	ccc
+6	xxx
+7	yyy
+8	bbb
+DROP TABLE t1;
+CREATE TABLE t1(a BIGINT NOT NULL AUTO_INCREMENT, b char(16), PRIMARY KEY(a,b));
+INSERT INTO t1(b) VALUES ('aaa'),('bbb');
+INSERT INTO t1 VALUES (11,'aaa');
+SELECT AUTO_INCREMENT FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = 'test_auto_increment_partition' AND TABLE_NAME = 't1';
+AUTO_INCREMENT
+1001
+SELECT * FROM t1;
+a	b
+1	aaa
+11	aaa
+2	bbb
+INSERT INTO t1 VALUES (101,'test1'),(90,'test1'),(121,'test1'),(99,'test1'),(100,'test1');
+SELECT AUTO_INCREMENT FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = 'test_auto_increment_partition' AND TABLE_NAME = 't1';
+AUTO_INCREMENT
+1001
+SELECT * FROM t1;
+a	b
+1	aaa
+100	test1
+101	test1
+11	aaa
+121	test1
+2	bbb
+90	test1
+99	test1
+INSERT INTO t1 VALUES (101,'aaa');
+SELECT AUTO_INCREMENT FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = 'test_auto_increment_partition' AND TABLE_NAME = 't1';
+AUTO_INCREMENT
+1001
+SELECT * FROM t1;
+a	b
+1	aaa
+100	test1
+101	aaa
+101	test1
+11	aaa
+121	test1
+2	bbb
+90	test1
+99	test1
+INSERT INTO t1 VALUES (99,'abc'),(100,'abc');
+SELECT AUTO_INCREMENT FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = 'test_auto_increment_partition' AND TABLE_NAME = 't1';
+AUTO_INCREMENT
+1001
+SELECT * FROM t1;
+a	b
+1	aaa
+100	abc
+100	test1
+101	aaa
+101	test1
+11	aaa
+121	test1
+2	bbb
+90	test1
+99	abc
+99	test1
+DROP TABLE t1;
+CREATE TABLE t1(a TINYINT NOT NULL AUTO_INCREMENT, b varchar(8), PRIMARY KEY(a,b));
+CREATE TABLE t2(a TINYINT NOT NULL AUTO_INCREMENT, b varchar(8),  KEY(a,b));
+INSERT INTO t1(b) VALUES ('aaa'),('aaa');
+INSERT INTO t2(b) VALUES ('aaa'),('aaa');
+INSERT INTO t1 VALUES (127, 'aaa');
+INSERT INTO t2 VALUES (127, 'aaa');
+INSERT INTO t1(b) VALUES ('bbb');
+ERROR HY000: Failed to read auto-increment value from storage engine
+INSERT INTO t2(b) VALUES ('bbb');
+ERROR HY000: Failed to read auto-increment value from storage engine
+DROP TABLE t1,t2;
+CREATE TABLE t1(a FLOAT NOT NULL AUTO_INCREMENT, b char(8), PRIMARY KEY(a,b));
+INSERT INTO t1(b) VALUES ('aaa');
+SELECT AUTO_INCREMENT FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = 'test_auto_increment_partition' AND TABLE_NAME = 't1';
+AUTO_INCREMENT
+1001
+SELECT * FROM t1;
+a	b
+1	aaa
+INSERT INTO t1 VALUES (1.1, 'aaa');
+SELECT AUTO_INCREMENT FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = 'test_auto_increment_partition' AND TABLE_NAME = 't1';
+AUTO_INCREMENT
+1001
+SELECT * FROM t1;
+a	b
+1	aaa
+1.1	aaa
+INSERT INTO t1 VALUES (3, 'aaa'),(5, 'bbb'),(7, 'ccc');
+SELECT AUTO_INCREMENT FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = 'test_auto_increment_partition' AND TABLE_NAME = 't1';
+AUTO_INCREMENT
+1001
+SELECT * FROM t1;
+a	b
+1	aaa
+1.1	aaa
+3	aaa
+5	bbb
+7	ccc
+INSERT INTO t1 VALUES (10, 'aaa'),(2.2, 'bbb');
+SELECT AUTO_INCREMENT FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = 'test_auto_increment_partition' AND TABLE_NAME = 't1';
+AUTO_INCREMENT
+1001
+SELECT * FROM t1;
+a	b
+1	aaa
+1.1	aaa
+10	aaa
+2.2	bbb
+3	aaa
+5	bbb
+7	ccc
+DROP TABLE t1;
+CREATE TABLE t1(a INT NOT NULL AUTO_INCREMENT, b CHAR(16), PRIMARY KEY(a));
+CREATE TABLE t2(a INT NOT NULL AUTO_INCREMENT, PRIMARY KEY(a));
+SELECT LAST_INSERT_ID();
+LAST_INSERT_ID()
+1
+INSERT INTO t1 VALUES ();
+SELECT LAST_INSERT_ID();
+LAST_INSERT_ID()
+1
+INSERT INTO t1 VALUES (),(),();
+SELECT LAST_INSERT_ID();
+LAST_INSERT_ID()
+2
+INSERT INTO t2 VALUES ();
+SELECT LAST_INSERT_ID();
+LAST_INSERT_ID()
+1
+INSERT INTO t1 VALUES ();
+SELECT LAST_INSERT_ID();
+LAST_INSERT_ID()
+5
+INSERT INTO t1 VALUES (10, 'a'), (1, 'b'), (11, 'c');
+ERROR 23000: Duplicate entry '{ "a": 1 }' for key 'PRIMARY'
+SELECT LAST_INSERT_ID();
+LAST_INSERT_ID()
+5
+DROP TABLE t1;
+DROP TABLE t2;
+CREATE TABLE t1(a INT NOT NULL);
+INSERT INTO t1 VALUES (0),(1),(2),(4),(6),(8),(12);
+SELECT * FROM t1;
+a
+0
+1
+12
+2
+4
+6
+8
+UPDATE t1 SET a = LAST_INSERT_ID(a + 1);
+SELECT LAST_INSERT_ID();
+LAST_INSERT_ID()
+13
+SELECT * FROM t1;
+a
+1
+13
+2
+3
+5
+7
+9
+DELETE FROM t1 WHERE 1 = LAST_INSERT_ID(a - 6);
+select LAST_INSERT_ID();
+LAST_INSERT_ID()
+7
+SELECT * FROM t1;
+a
+1
+13
+2
+3
+5
+9
+DROP TABLE t1;
+DROP DATABASE test_auto_increment_partition;

@@ -1,0 +1,93 @@
+#Check index length 
+#Case 14871#Case 14706
+-- source include/have_sequoiadb.inc
+
+--disable_warnings
+DROP TABLE IF EXISTS t1;
+--enable_warnings
+
+#CHAR
+create table t1(a char(255), primary key(a))default charset =utf8;
+insert into t1 values(repeat('a',255));
+insert into t1 values('a');
+insert into t1 values('aaa');
+select * from t1 where a = 'aaa';
+alter table t1 drop primary key;
+create index a on t1(a);
+select * from t1 where a = 'aaa';
+drop index a on t1;
+alter table t1 add unique (`a`);
+select * from t1 where a = 'aaa';
+drop table t1;
+
+#VARCHAR
+create table t1(a varchar(65500));
+insert into t1 values(repeat('a',4083));
+insert into t1 values('a');
+insert into t1 values('aaa');
+
+create index a on t1(a(3072));
+insert into t1 values(repeat('a',4083));
+--error 40039 
+insert into t1 values(repeat('a',4084));
+select * from t1 where a = 'aaa';
+drop index a on t1;
+insert into t1 values(repeat('a',4084));
+select * from t1 where a = 'aaa';
+
+--error 40039 
+create index a on t1(a(3073));
+drop table t1;
+
+#TEXT
+create table t1(a text);
+insert into t1 values(repeat('a',4083));
+insert into t1 values('a');
+insert into t1 values('aaa');
+
+create index a on t1(a(3072));
+insert into t1 values(repeat('a',4083));
+--error 40039 
+insert into t1 values(repeat('a',4084));
+select * from t1 where a = 'aaa';
+drop index a on t1;
+insert into t1 values(repeat('a',4084));
+select * from t1 where a = 'aaa';
+
+--error 40039 
+create index a on t1(a(3073));
+drop table t1;
+
+--error ER_TOO_LONG_KEY
+CREATE TABLE t1 (a char,b varchar(3072),KEY (a,b))engine=sequoiadb;
+
+#Bug #SEQUOIASQLMAINSTREAM-203
+#BLOB
+#create table t1(a blob);
+#--error 138
+#create index a on t1(a(1000));
+#drop table t1;
+
+#BINARY
+#create table t1(a binary);
+#--error 138
+#create index a on t1(a);
+#drop table t1;
+
+#VARBINARY
+#create table t1(a varbinary(1000));
+#--error 138
+#create index a on t1(a);
+#drop table t1;
+
+create table t1(a text);
+--error 1059
+create index aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa on t1(a(3072));
+create index aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa on t1(a(3072));
+insert into t1 values(repeat('a',10));
+insert into t1 values('a');
+insert into t1 values(repeat('a',3));
+select * from t1 where a = 'aaa';
+drop table t1;
+
+--source include/uninstall_sequoiadb.inc

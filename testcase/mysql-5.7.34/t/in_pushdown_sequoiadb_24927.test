@@ -1,0 +1,51 @@
+# Case 24927
+
+--source include/have_sequoiadb.inc
+
+set sequoiadb_debug_log=on;
+
+--disable_warnings
+drop DATABASE if exists in_pushdown_sequoiadb24927;
+--enable_warnings
+
+create database in_pushdown_sequoiadb24927;
+use in_pushdown_sequoiadb24927;
+
+create table t1 (a int, b int, c int, key(b))engine=sequoiadb;
+insert into t1 values(1,3,2),(2,1,1),(3,3,4),(4,2,4),(5,3,5);
+insert into t1 values(1,3,2),(2,1,1),(3,3,4),(4,2,4),(5,3,5);
+insert into t1 values(1,4,2),(2,5,1),(3,6,4),(4,5,4),(5,4,5);
+insert into t1 values(1,4,2),(2,5,1),(3,6,4),(4,5,4),(5,4,5);
+
+select * from t1 order by a,b,c;
+
+select count(1) from t1 where a in (1,2,3);
+--source include/query_pushdown_condition_sequoiadb.inc
+select count(1) from t1 where b in (1,2,3);
+--source include/query_pushdown_condition_sequoiadb.inc
+
+update t1 set a = 2 where a in (1,2,3);
+--source include/query_pushdown_condition_sequoiadb.inc
+
+select * from t1 order by a,b,c;
+
+update t1 set b = 2 where a in (1,2,3);
+--source include/query_pushdown_condition_sequoiadb.inc
+
+select * from t1 order by a,b,c;
+
+delete from t1 where a in (1,2,3);
+--source include/query_pushdown_condition_sequoiadb.inc
+
+select * from t1 order by a,b,c;
+
+delete from t1 where b in (1,2,3);
+--source include/query_pushdown_condition_sequoiadb.inc
+
+select * from t1 order by a,b,c;
+
+drop database in_pushdown_sequoiadb24927;
+
+set sequoiadb_debug_log=default;
+
+

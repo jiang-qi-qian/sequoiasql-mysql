@@ -1,0 +1,68 @@
+#case 27792
+
+--source include/have_sequoiadb.inc
+--source suite/metadata_sync_sequoiadb/inc/insts_connect_sequoiadb.inc
+
+# seqDB-27792
+# begin testing
+
+connection conn1;
+CREATE DATABASE metasync_db27792;
+USE metasync_db27792;
+CREATE TABLE `cmp_datacontent_7466meta` (
+`KEY` varchar(32) COLLATE utf8mb4_bin NOT NULL,
+`PID` varchar(32) COLLATE utf8mb4_bin NOT NULL,
+`RESOURCEGID` varchar(32) COLLATE utf8mb4_bin DEFAULT NULL,
+`VERSION` decimal(65,30) DEFAULT NULL,
+`NAME` varchar(200) COLLATE utf8mb4_bin DEFAULT NULL,
+`SUFFIX` varchar(50) COLLATE utf8mb4_bin DEFAULT NULL,
+`FORMAT` varchar(8) COLLATE utf8mb4_bin DEFAULT NULL,
+`RSTYPE` varchar(8) COLLATE utf8mb4_bin DEFAULT NULL,
+`CHILDNODE` varchar(18)COLLATE utf8mb4_bin DEFAULT NULL,
+`SEQNO` decimal(65,30) DEFAULT NULL,
+`LENGTH` decimal(65,30) DEFAULT NULL,
+`DIGEST` varchar(5) COLLATE utf8mb4_bin DEFAULT NULL,
+`CREATETIME` varchar(20) COLLATE utf8mb4_bin DEFAULT NULL,
+`CREATOR` varchar(20) COLLATE utf8mb4_bin DEFAULT NULL,
+`STATUS` varchar(2) COLLATE utf8mb4_bin DEFAULT NULL,
+`ISACTIVE` varchar(2) COLLATE utf8mb4_bin DEFAULT NULL,
+`OTHERS` text COLLATE utf8mb4_bin DEFAULT NULL,
+PRIMARY KEY(`KEY`),
+KEY `IDX_DCMETA_7466_QUERY` (`RESOURCEGID`)
+)ENGINE=SequoiaDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin;
+
+--disable_warnings
+explain select * from cmp_datacontent_7466meta where RESOURCEGID="r";
+--enable_warnings
+
+connection conn2;
+USE metasync_db27792;
+--disable_warnings
+explain select * from cmp_datacontent_7466meta where RESOURCEGID="r";
+--enable_warnings
+
+connection conn1;
+USE metasync_db27792;
+insert into cmp_datacontent_7466meta values ("k","p","r",1.1,"n","s","f","r","c",1.2,1.3,"d","c","c","s","i","o");
+--disable_warnings
+explain select * from cmp_datacontent_7466meta where RESOURCEGID="r";
+--enable_warnings
+
+connection conn2;
+USE metasync_db27792;
+--disable_warnings
+explain select * from cmp_datacontent_7466meta where RESOURCEGID="r";
+--enable_warnings
+
+select * from cmp_datacontent_7466meta where RESOURCEGID="r";
+select * from cmp_datacontent_7466meta;
+
+connection conn1;
+USE metasync_db27792;
+select * from cmp_datacontent_7466meta where RESOURCEGID="r";
+select * from cmp_datacontent_7466meta;
+
+DROP DATABASE metasync_db27792;
+--source include/uninstall_sequoiadb.inc
+--source suite/metadata_sync_sequoiadb/inc/insts_disconnect_sequoiadb.inc
+

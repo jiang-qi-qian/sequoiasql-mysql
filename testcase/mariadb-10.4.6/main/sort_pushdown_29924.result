@@ -1,0 +1,137 @@
+drop database if exists sort_pushdown_29924;
+create database sort_pushdown_29924;
+drop database  sort_pushdown_29924;
+create database sort_pushdown_29924;
+use sort_pushdown_29924;
+CREATE TABLE t1 (
+col_date date DEFAULT NULL,
+col_varchar_16 varchar(16) COLLATE utf8mb4_bin DEFAULT NULL,
+pk int(11) NOT NULL AUTO_INCREMENT,
+col_int int(11) DEFAULT NULL,
+PRIMARY KEY (pk)
+) ENGINE=SequoiaDB AUTO_INCREMENT=1001 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin;
+INSERT INTO t1 VALUES ('2003-11-18',NULL,1,3),('2005-01-14','n',2,NULL),('2005-02-05','p',3,-657588224),(NULL,'e',4,NULL),('2008-12-05','q',5,NULL),(NULL,'s',6,-361234432),('2000-07-20','here',7,5),(NULL,'v',8,1103495168),(NULL,'l',9,NULL),(NULL,'u',10,2),('2000-07-17',NULL,11,-403374080),('2001-05-02',NULL,12,NULL),('2001-04-06','c',13,2),('2008-04-24','going',14,0),(NULL,'me',15,8),(NULL,'c',16,NULL),('2008-08-25','u',17,2),('2002-02-11',NULL,18,0),('2001-09-08','good',19,4),('2000-04-08','be',20,5),('2000-02-24','v',21,1287127040),('2001-11-08',NULL,22,2),('2007-12-07',NULL,23,9),('2003-04-28','q',24,-932839424),('2006-10-12','m',25,-51904512),('2003-04-03','his',26,NULL),('2002-11-13','okay',27,7),(NULL,'now',28,7),('2001-09-03','z',29,818216960),('2002-07-26','x',30,-1557659648),(NULL,'r',31,NULL),(NULL,NULL,32,109838336),('2009-09-12','l',33,0),('2003-06-16','i',34,1290993664),('2003-12-10','u',35,NULL),('2002-08-20','m',36,5),('2009-02-22','n',37,2),('2002-10-13','it',38,2),('2009-09-26','n',39,3),('2009-02-13',NULL,40,NULL),('2006-09-04','l',41,9),('2007-02-11','a',42,NULL),(NULL,NULL,43,NULL),('2005-10-08','g',44,NULL),('2008-11-13','w',45,8),('2005-04-21','w',46,5),('2005-05-12','q',47,-2067595264),('2007-10-01','go',48,1611137024),(NULL,'up',49,6),('2008-05-16','mean',50,4),('2002-07-23','r',51,NULL),(NULL,'n',52,8),('2001-06-05','u',53,2),('2002-12-04','s',54,NULL),(NULL,'x',55,NULL),('2007-10-17','her',56,5),('2008-11-09','w',57,4),('2003-02-19','v',58,6),('2006-07-26','h',59,1),('2007-03-08','t',60,1),('2001-11-23','u',61,9),('2000-03-28','r',62,NULL),('2009-11-12','j',63,NULL),('2005-12-16',NULL,64,-2044526592),('2002-11-18','y',65,9),('2004-08-20','the',66,-511508480),('2007-04-19','p',67,980746240),('2003-01-12',NULL,68,4),('2004-09-25','l',69,8),(NULL,NULL,70,NULL),('2006-02-06',NULL,71,9),('2009-02-20',NULL,72,6),('2008-08-01','when',73,8),('2008-08-08','n',74,8),('2006-03-06','l',75,8),('2002-07-17','q',76,2),(NULL,NULL,77,NULL),('2009-08-14',NULL,78,3),(NULL,'will',79,NULL),('2006-02-02','o',80,9),('2001-12-19','q',81,0),('2008-08-15','o',82,3),('2006-04-15','w',83,2),('2003-11-06','r',84,5),('2007-04-10','yes',85,NULL),(NULL,'now',86,1),('2002-07-03','u',87,5),(NULL,'u',88,NULL),('2007-02-08','d',89,235667456),(NULL,NULL,90,NULL),('2008-06-27',NULL,91,1),('2002-12-19','g',92,5),(NULL,'there',93,5),(NULL,'m',94,8),('2002-06-05',NULL,95,1),(NULL,'don\'t',96,NULL),('2009-04-20','i',97,4),('2005-10-11','l',98,4),(NULL,'e',99,2),('2002-08-24',NULL,100,NULL),('2007-08-08',NULL,101,-1187512320),(NULL,'b',102,533135360),('2009-04-24','just',103,8),('2006-05-17','e',104,9),('2000-09-13','s',105,9),(NULL,'u',106,2),(NULL,'up',107,8),('2005-06-14','m',108,-224722944),('2000-02-25','from',109,-241106944),(NULL,'e',110,253755392),('2008-10-23','oh',111,7),('2008-11-07','f',112,NULL),('2008-07-24',NULL,113,NULL),('2006-04-01',NULL,114,NULL),('2007-04-14','been',115,1639907328),('2006-05-27','u',116,2066415616),('2008-01-13',NULL,117,3),(NULL,'y',118,NULL),('2008-10-01','see',119,NULL),(NULL,'w',120,2),('2008-10-19',NULL,121,-672268288),('2000-09-02','f',122,-1014300672),('2004-09-12','h',123,NULL),('2004-09-14','j',124,3),('2004-06-18','z',125,3),('2001-09-14','s',126,3),('2000-10-25',NULL,127,NULL),('2004-03-01','m',128,5),('2004-11-16','f',129,8),(NULL,'a',130,-1399062528),(NULL,'w',131,2),('2005-07-02','because',132,7),('2006-12-19','did',133,0),('2001-02-26','p',134,-1171193856),(NULL,NULL,135,1857486848),('2000-07-05','i',136,NULL),('2005-02-25','the',137,1),('2006-02-04','there',138,4),(NULL,'I\'ll',139,6),(NULL,'v',140,-325976064),('2001-07-20','k',141,8),('2001-07-12','l',142,8),('2001-03-04','your',143,7),('2009-11-27',NULL,144,NULL),('2001-02-26','e',145,0),('2003-07-20','who',146,4),('2004-06-25',NULL,147,3),(NULL,'her',148,-1692270592),('2006-02-12','v',149,1),('2009-03-04','you\'re',150,NULL),('2009-01-07',NULL,151,-277544960),('2007-09-19','j',152,NULL),('2000-11-03','as',153,NULL),('2003-03-03','o',154,4),(NULL,'t',155,9),('2007-06-20','r',156,2),('2009-02-02','n',157,3),('2002-04-02','i',158,NULL),('2006-04-17','x',159,2),('2001-07-09','d',160,5767168),('2003-05-14','r',161,1),('2000-10-27','i',162,7),('2001-10-15','k',163,4),('2001-12-20','d',164,4),('2004-09-25','l',165,-533528576),('2005-12-02',NULL,166,-429522944),('2004-10-05','of',167,3),('2002-08-27','j',168,1),('2000-12-06','why',169,611450880),('2002-12-03','x',170,-1583284224),('2009-11-04','o',171,NULL),('2009-11-05','z',172,2),('2002-12-15','i',173,2),('2000-03-01',NULL,174,4),(NULL,NULL,175,5),('2001-07-15','then',176,1),('2005-09-13','u',177,-1968373760),('2000-11-19','she',178,NULL),(NULL,'k',179,1044905984),('2006-03-17','l',180,3),('2002-03-20','ok',181,359530496),('2000-11-05','o',182,1526530048),('2002-08-10','p',183,NULL),('2003-05-22','u',184,7),('2000-05-22','on',185,-905707520),('2004-12-01','be',186,0),('2008-08-27','d',187,-154402816),('2000-08-26','would',188,9),(NULL,'z',189,-1744371712),(NULL,'h',190,NULL),('2000-12-21','about',191,8),('2000-04-28','h',192,2121400320),('2005-04-03','y',193,3),('2008-03-15','I\'m',194,-1553399808),('2009-04-26','c',195,3),('2003-10-18','with',196,-549126144),('2001-10-25','k',197,7),('2009-02-12','c',198,4),(NULL,'u',199,2),('2003-12-23','c',200,7);
+ALTER TABLE t1 ADD INDEX ivd(col_int, col_varchar_16, col_date);
+ALTER TABLE t1 ADD INDEX idv(col_int, col_date, col_varchar_16);
+ALTER TABLE t1 ADD INDEX vid(col_varchar_16, col_int, col_date);
+ALTER TABLE t1 ADD INDEX vdi(col_varchar_16, col_date, col_int);
+ALTER TABLE t1 ADD INDEX d_i_v(col_date, col_int, col_varchar_16);
+ALTER TABLE t1 ADD INDEX dvi(col_date, col_varchar_16, col_int);
+set session sequoiadb_debug_log=on;
+set session optimizer_switch='mrr=on';
+SELECT col_int AS field1 , col_varchar_16 AS field2 FROM t1 WHERE col_int IN (5, 3, 1) AND col_varchar_16 < 'c' ORDER BY field1 DESC, field2 DESC;
+field1	field2
+5	be
+EXPLAIN SELECT col_int AS field1 , col_varchar_16 AS field2 FROM t1 WHERE col_int IN (5, 3, 1) AND col_varchar_16 < 'c' ORDER BY field1 DESC, field2 DESC;
+id	select_type	table	type	possible_keys	key	key_len	ref	rows	Extra
+1	SIMPLE	t1	index	ivd,idv,vid,vdi	ivd	76	NULL	200	Using where with pushed condition; Using index
+[Note] SequoiaDB: Query message: condition[{ "$and": [ { "col_int": { "$in": [ 5, 3, 1 ] } }, { "col_varchar_16": { "$lt": "c" } } ] }], selector[{ "col_date": null, "col_varchar_16": null, "col_int": null }], order_by[{ "col_int": -1, "col_varchar_16": -1 }], hint[{ "": "ivd" }], limit[-1], offset[0], table[sort_pushdown_29924.t1]
+[Note] SequoiaDB: optimizer pushdown autocommit: 1
+SELECT col_int AS field1 FROM t1 WHERE col_varchar_16 < 'c' AND col_int IN (3, 1, 6) ORDER BY field1 DESC;
+field1
+6
+EXPLAIN SELECT col_int AS field1 FROM t1 WHERE col_varchar_16 < 'c' AND col_int IN (3, 1, 6) ORDER BY field1 DESC;
+id	select_type	table	type	possible_keys	key	key_len	ref	rows	Extra
+1	SIMPLE	t1	index	ivd,idv,vid,vdi	ivd	76	NULL	200	Using where with pushed condition; Using index
+[Note] SequoiaDB: Query message: condition[{ "$and": [ { "col_varchar_16": { "$lt": "c" } }, { "col_int": { "$in": [ 3, 1, 6 ] } } ] }], selector[{ "col_date": null, "col_varchar_16": null, "col_int": null }], order_by[{ "col_int": -1 }], hint[{ "": "ivd" }], limit[-1], offset[0], table[sort_pushdown_29924.t1]
+[Note] SequoiaDB: optimizer pushdown autocommit: 1
+SELECT col_int AS field1 FROM t1 WHERE col_int != 3 AND col_varchar_16 < 'c' AND col_int IN (2, 7, 1) ORDER BY field1 DESC;
+field1
+7
+EXPLAIN SELECT col_int AS field1 FROM t1 WHERE col_int != 3 AND col_varchar_16 < 'c' AND col_int IN (2, 7, 1) ORDER BY field1 DESC;
+id	select_type	table	type	possible_keys	key	key_len	ref	rows	Extra
+1	SIMPLE	t1	index	ivd,idv,vid,vdi	ivd	76	NULL	200	Using where with pushed condition; Using index
+[Note] SequoiaDB: Query message: condition[{ "$and": [ { "col_int": { "$ne": 3 } }, { "col_varchar_16": { "$lt": "c" } }, { "col_int": { "$in": [ 2, 7, 1 ] } } ] }], selector[{ "col_date": null, "col_varchar_16": null, "col_int": null }], order_by[{ "col_int": -1 }], hint[{ "": "ivd" }], limit[-1], offset[0], table[sort_pushdown_29924.t1]
+[Note] SequoiaDB: optimizer pushdown autocommit: 1
+SELECT col_int AS field1 FROM t1 WHERE col_date <= '2001-01-22' AND col_int IN (0, 1, 8) AND col_date <= '2008-06-07' ORDER BY field1 DESC;
+field1
+8
+EXPLAIN SELECT col_int AS field1 FROM t1 WHERE col_date <= '2001-01-22' AND col_int IN (0, 1, 8) AND col_date <= '2008-06-07' ORDER BY field1 DESC;
+id	select_type	table	type	possible_keys	key	key_len	ref	rows	Extra
+1	SIMPLE	t1	index	ivd,idv,d_i_v,dvi	ivd	76	NULL	200	Using where with pushed condition; Using index
+[Note] SequoiaDB: Query message: condition[{ "$and": [ { "col_date": { "$lte": {"$date": "2001-01-22"} } }, { "col_int": { "$in": [ 0, 1, 8 ] } }, { "col_date": { "$lte": {"$date": "2008-06-07"} } } ] }], selector[{ "col_date": null, "col_varchar_16": null, "col_int": null }], order_by[{ "col_int": -1 }], hint[{ "": "ivd" }], limit[-1], offset[0], table[sort_pushdown_29924.t1]
+[Note] SequoiaDB: optimizer pushdown autocommit: 1
+SELECT col_int AS field1 FROM t1 WHERE col_varchar_16 <= 'b' AND col_int IN (2, 6, 5) ORDER BY field1 DESC;
+field1
+6
+EXPLAIN SELECT col_int AS field1 FROM t1 WHERE col_varchar_16 <= 'b' AND col_int IN (2, 6, 5) ORDER BY field1 DESC;
+id	select_type	table	type	possible_keys	key	key_len	ref	rows	Extra
+1	SIMPLE	t1	index	ivd,idv,vid,vdi	ivd	76	NULL	200	Using where with pushed condition; Using index
+[Note] SequoiaDB: Query message: condition[{ "$and": [ { "col_varchar_16": { "$lte": "b" } }, { "col_int": { "$in": [ 2, 6, 5 ] } } ] }], selector[{ "col_date": null, "col_varchar_16": null, "col_int": null }], order_by[{ "col_int": -1 }], hint[{ "": "ivd" }], limit[-1], offset[0], table[sort_pushdown_29924.t1]
+[Note] SequoiaDB: optimizer pushdown autocommit: 1
+SELECT col_int AS field1 FROM t1 WHERE col_varchar_16 > 'w' AND col_int IN (1, 8, 7) AND col_date > '2001-11-20' ORDER BY field1 DESC;
+field1
+8
+EXPLAIN SELECT col_int AS field1 FROM t1 WHERE col_varchar_16 > 'w' AND col_int IN (1, 8, 7) AND col_date > '2001-11-20' ORDER BY field1 DESC;
+id	select_type	table	type	possible_keys	key	key_len	ref	rows	Extra
+1	SIMPLE	t1	index	ivd,idv,vid,vdi,d_i_v,dvi	ivd	76	NULL	200	Using where with pushed condition; Using index
+[Note] SequoiaDB: Query message: condition[{ "$and": [ { "col_varchar_16": { "$gt": "w" } }, { "col_int": { "$in": [ 1, 8, 7 ] } }, { "col_date": { "$gt": {"$date": "2001-11-20"} } } ] }], selector[{ "col_date": null, "col_varchar_16": null, "col_int": null }], order_by[{ "col_int": -1 }], hint[{ "": "ivd" }], limit[-1], offset[0], table[sort_pushdown_29924.t1]
+[Note] SequoiaDB: optimizer pushdown autocommit: 1
+SELECT col_int AS field1 FROM t1 WHERE col_varchar_16 > 'x' AND col_int IN (4, 9, 1) ORDER BY field1 DESC;
+field1
+9
+EXPLAIN SELECT col_int AS field1 FROM t1 WHERE col_varchar_16 > 'x' AND col_int IN (4, 9, 1) ORDER BY field1 DESC;
+id	select_type	table	type	possible_keys	key	key_len	ref	rows	Extra
+1	SIMPLE	t1	index	ivd,idv,vid,vdi	ivd	76	NULL	200	Using where with pushed condition; Using index
+[Note] SequoiaDB: Query message: condition[{ "$and": [ { "col_varchar_16": { "$gt": "x" } }, { "col_int": { "$in": [ 4, 9, 1 ] } } ] }], selector[{ "col_date": null, "col_varchar_16": null, "col_int": null }], order_by[{ "col_int": -1 }], hint[{ "": "ivd" }], limit[-1], offset[0], table[sort_pushdown_29924.t1]
+[Note] SequoiaDB: optimizer pushdown autocommit: 1
+set session optimizer_switch='mrr=off';
+SELECT col_int AS field1 , col_varchar_16 AS field2 FROM t1 WHERE col_int IN (5, 3, 1) AND col_varchar_16 < 'c' ORDER BY field1 DESC, field2 DESC;
+field1	field2
+5	be
+EXPLAIN SELECT col_int AS field1 , col_varchar_16 AS field2 FROM t1 WHERE col_int IN (5, 3, 1) AND col_varchar_16 < 'c' ORDER BY field1 DESC, field2 DESC;
+id	select_type	table	type	possible_keys	key	key_len	ref	rows	Extra
+1	SIMPLE	t1	index	ivd,idv,vid,vdi	ivd	76	NULL	200	Using where with pushed condition; Using index
+[Note] SequoiaDB: Query message: condition[{ "$and": [ { "col_int": { "$in": [ 5, 3, 1 ] } }, { "col_varchar_16": { "$lt": "c" } } ] }], selector[{ "col_date": null, "col_varchar_16": null, "col_int": null }], order_by[{ "col_int": -1, "col_varchar_16": -1 }], hint[{ "": "ivd" }], limit[-1], offset[0], table[sort_pushdown_29924.t1]
+[Note] SequoiaDB: optimizer pushdown autocommit: 1
+SELECT col_int AS field1 FROM t1 WHERE col_varchar_16 < 'c' AND col_int IN (3, 1, 6) ORDER BY field1 DESC;
+field1
+6
+EXPLAIN SELECT col_int AS field1 FROM t1 WHERE col_varchar_16 < 'c' AND col_int IN (3, 1, 6) ORDER BY field1 DESC;
+id	select_type	table	type	possible_keys	key	key_len	ref	rows	Extra
+1	SIMPLE	t1	index	ivd,idv,vid,vdi	ivd	76	NULL	200	Using where with pushed condition; Using index
+[Note] SequoiaDB: Query message: condition[{ "$and": [ { "col_varchar_16": { "$lt": "c" } }, { "col_int": { "$in": [ 3, 1, 6 ] } } ] }], selector[{ "col_date": null, "col_varchar_16": null, "col_int": null }], order_by[{ "col_int": -1 }], hint[{ "": "ivd" }], limit[-1], offset[0], table[sort_pushdown_29924.t1]
+[Note] SequoiaDB: optimizer pushdown autocommit: 1
+SELECT col_int AS field1 FROM t1 WHERE col_int != 3 AND col_varchar_16 < 'c' AND col_int IN (2, 7, 1) ORDER BY field1 DESC;
+field1
+7
+EXPLAIN SELECT col_int AS field1 FROM t1 WHERE col_int != 3 AND col_varchar_16 < 'c' AND col_int IN (2, 7, 1) ORDER BY field1 DESC;
+id	select_type	table	type	possible_keys	key	key_len	ref	rows	Extra
+1	SIMPLE	t1	index	ivd,idv,vid,vdi	ivd	76	NULL	200	Using where with pushed condition; Using index
+[Note] SequoiaDB: Query message: condition[{ "$and": [ { "col_int": { "$ne": 3 } }, { "col_varchar_16": { "$lt": "c" } }, { "col_int": { "$in": [ 2, 7, 1 ] } } ] }], selector[{ "col_date": null, "col_varchar_16": null, "col_int": null }], order_by[{ "col_int": -1 }], hint[{ "": "ivd" }], limit[-1], offset[0], table[sort_pushdown_29924.t1]
+[Note] SequoiaDB: optimizer pushdown autocommit: 1
+SELECT col_int AS field1 FROM t1 WHERE col_date <= '2001-01-22' AND col_int IN (0, 1, 8) AND col_date <= '2008-06-07' ORDER BY field1 DESC;
+field1
+8
+EXPLAIN SELECT col_int AS field1 FROM t1 WHERE col_date <= '2001-01-22' AND col_int IN (0, 1, 8) AND col_date <= '2008-06-07' ORDER BY field1 DESC;
+id	select_type	table	type	possible_keys	key	key_len	ref	rows	Extra
+1	SIMPLE	t1	index	ivd,idv,d_i_v,dvi	ivd	76	NULL	200	Using where with pushed condition; Using index
+[Note] SequoiaDB: Query message: condition[{ "$and": [ { "col_date": { "$lte": {"$date": "2001-01-22"} } }, { "col_int": { "$in": [ 0, 1, 8 ] } }, { "col_date": { "$lte": {"$date": "2008-06-07"} } } ] }], selector[{ "col_date": null, "col_varchar_16": null, "col_int": null }], order_by[{ "col_int": -1 }], hint[{ "": "ivd" }], limit[-1], offset[0], table[sort_pushdown_29924.t1]
+[Note] SequoiaDB: optimizer pushdown autocommit: 1
+SELECT col_int AS field1 FROM t1 WHERE col_varchar_16 <= 'b' AND col_int IN (2, 6, 5) ORDER BY field1 DESC;
+field1
+6
+EXPLAIN SELECT col_int AS field1 FROM t1 WHERE col_varchar_16 <= 'b' AND col_int IN (2, 6, 5) ORDER BY field1 DESC;
+id	select_type	table	type	possible_keys	key	key_len	ref	rows	Extra
+1	SIMPLE	t1	index	ivd,idv,vid,vdi	ivd	76	NULL	200	Using where with pushed condition; Using index
+[Note] SequoiaDB: Query message: condition[{ "$and": [ { "col_varchar_16": { "$lte": "b" } }, { "col_int": { "$in": [ 2, 6, 5 ] } } ] }], selector[{ "col_date": null, "col_varchar_16": null, "col_int": null }], order_by[{ "col_int": -1 }], hint[{ "": "ivd" }], limit[-1], offset[0], table[sort_pushdown_29924.t1]
+[Note] SequoiaDB: optimizer pushdown autocommit: 1
+SELECT col_int AS field1 FROM t1 WHERE col_varchar_16 > 'w' AND col_int IN (1, 8, 7) AND col_date > '2001-11-20' ORDER BY field1 DESC;
+field1
+8
+EXPLAIN SELECT col_int AS field1 FROM t1 WHERE col_varchar_16 > 'w' AND col_int IN (1, 8, 7) AND col_date > '2001-11-20' ORDER BY field1 DESC;
+id	select_type	table	type	possible_keys	key	key_len	ref	rows	Extra
+1	SIMPLE	t1	index	ivd,idv,vid,vdi,d_i_v,dvi	ivd	76	NULL	200	Using where with pushed condition; Using index
+[Note] SequoiaDB: Query message: condition[{ "$and": [ { "col_varchar_16": { "$gt": "w" } }, { "col_int": { "$in": [ 1, 8, 7 ] } }, { "col_date": { "$gt": {"$date": "2001-11-20"} } } ] }], selector[{ "col_date": null, "col_varchar_16": null, "col_int": null }], order_by[{ "col_int": -1 }], hint[{ "": "ivd" }], limit[-1], offset[0], table[sort_pushdown_29924.t1]
+[Note] SequoiaDB: optimizer pushdown autocommit: 1
+SELECT col_int AS field1 FROM t1 WHERE col_varchar_16 > 'x' AND col_int IN (4, 9, 1) ORDER BY field1 DESC;
+field1
+9
+EXPLAIN SELECT col_int AS field1 FROM t1 WHERE col_varchar_16 > 'x' AND col_int IN (4, 9, 1) ORDER BY field1 DESC;
+id	select_type	table	type	possible_keys	key	key_len	ref	rows	Extra
+1	SIMPLE	t1	index	ivd,idv,vid,vdi	ivd	76	NULL	200	Using where with pushed condition; Using index
+[Note] SequoiaDB: Query message: condition[{ "$and": [ { "col_varchar_16": { "$gt": "x" } }, { "col_int": { "$in": [ 4, 9, 1 ] } } ] }], selector[{ "col_date": null, "col_varchar_16": null, "col_int": null }], order_by[{ "col_int": -1 }], hint[{ "": "ivd" }], limit[-1], offset[0], table[sort_pushdown_29924.t1]
+[Note] SequoiaDB: optimizer pushdown autocommit: 1
+set session sequoiadb_debug_log=default;
+set session optimizer_switch=default;
+drop database sort_pushdown_29924;

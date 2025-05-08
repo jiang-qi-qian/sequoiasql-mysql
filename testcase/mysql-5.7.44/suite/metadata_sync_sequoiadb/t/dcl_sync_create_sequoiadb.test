@@ -1,0 +1,506 @@
+# Case 31121, Case 31129, Case 31130
+--source include/sequoiadb_version_release_skip.inc
+--source include/have_sequoiadb.inc
+--source suite/metadata_sync_sequoiadb/inc/insts_connect_sequoiadb.inc
+
+connection conn1;
+--disable_warnings
+DROP USER IF EXISTS dcl_sync_create_sequoiadb_u1, dcl_sync_create_sequoiadb_u2, dcl_sync_create_sequoiadb_u3, dcl_sync_create_sequoiadb_u4;
+set debug="d,test_point_ha_rewritten_query";
+
+CREATE USER dcl_sync_create_sequoiadb_u1 IDENTIFIED BY '123456';
+SELECT @HA_REWRITTEN_QUERY_BEFORE_EXECUTION;
+SELECT @HA_REWRITTEN_QUERY_AFTER_EXECUTION;
+SHOW CREATE USER dcl_sync_create_sequoiadb_u1;
+connection conn2;
+SHOW CREATE USER dcl_sync_create_sequoiadb_u1;
+
+connection conn1;
+CREATE USER dcl_sync_create_sequoiadb_u2 IDENTIFIED BY PASSWORD '*6BB4837EB74329105EE4568DDA7DC67ED2CA2AD9';
+SELECT @HA_REWRITTEN_QUERY_BEFORE_EXECUTION;
+SELECT @HA_REWRITTEN_QUERY_AFTER_EXECUTION;
+SHOW CREATE USER dcl_sync_create_sequoiadb_u2;
+connection conn2;
+SHOW CREATE USER dcl_sync_create_sequoiadb_u2;
+
+connection conn1;
+CREATE USER dcl_sync_create_sequoiadb_u3;
+SELECT @HA_REWRITTEN_QUERY_BEFORE_EXECUTION;
+SELECT @HA_REWRITTEN_QUERY_AFTER_EXECUTION;
+SHOW CREATE USER dcl_sync_create_sequoiadb_u3;
+connection conn2;
+SHOW CREATE USER dcl_sync_create_sequoiadb_u3;
+DROP USER dcl_sync_create_sequoiadb_u1, dcl_sync_create_sequoiadb_u2, dcl_sync_create_sequoiadb_u3;
+
+connection conn1;
+CREATE USER dcl_sync_create_sequoiadb_u1 IDENTIFIED BY '123456', dcl_sync_create_sequoiadb_u2 IDENTIFIED BY '123456', dcl_sync_create_sequoiadb_u3 IDENTIFIED BY '123456';
+SELECT @HA_REWRITTEN_QUERY_BEFORE_EXECUTION;
+SELECT @HA_REWRITTEN_QUERY_AFTER_EXECUTION;
+SHOW CREATE USER dcl_sync_create_sequoiadb_u1;
+SHOW CREATE USER dcl_sync_create_sequoiadb_u2;
+SHOW CREATE USER dcl_sync_create_sequoiadb_u3;
+connection conn2;
+SHOW CREATE USER dcl_sync_create_sequoiadb_u1;
+SHOW CREATE USER dcl_sync_create_sequoiadb_u2;
+SHOW CREATE USER dcl_sync_create_sequoiadb_u3;
+DROP USER dcl_sync_create_sequoiadb_u1, dcl_sync_create_sequoiadb_u2, dcl_sync_create_sequoiadb_u3;
+
+connection conn1;
+CREATE USER dcl_sync_create_sequoiadb_u1 IDENTIFIED BY PASSWORD '*6BB4837EB74329105EE4568DDA7DC67ED2CA2AD9', dcl_sync_create_sequoiadb_u2 IDENTIFIED BY PASSWORD '*6BB4837EB74329105EE4568DDA7DC67ED2CA2AD9', dcl_sync_create_sequoiadb_u3 IDENTIFIED BY PASSWORD '*6BB4837EB74329105EE4568DDA7DC67ED2CA2AD9';
+SELECT @HA_REWRITTEN_QUERY_BEFORE_EXECUTION;
+SELECT @HA_REWRITTEN_QUERY_AFTER_EXECUTION;
+SHOW CREATE USER dcl_sync_create_sequoiadb_u1;
+SHOW CREATE USER dcl_sync_create_sequoiadb_u2;
+SHOW CREATE USER dcl_sync_create_sequoiadb_u3;
+connection conn2;
+SHOW CREATE USER dcl_sync_create_sequoiadb_u1;
+SHOW CREATE USER dcl_sync_create_sequoiadb_u2;
+SHOW CREATE USER dcl_sync_create_sequoiadb_u3;
+DROP USER dcl_sync_create_sequoiadb_u1, dcl_sync_create_sequoiadb_u2, dcl_sync_create_sequoiadb_u3;
+
+connection conn1;
+CREATE USER dcl_sync_create_sequoiadb_u1, dcl_sync_create_sequoiadb_u2, dcl_sync_create_sequoiadb_u3;
+SELECT @HA_REWRITTEN_QUERY_BEFORE_EXECUTION;
+SELECT @HA_REWRITTEN_QUERY_AFTER_EXECUTION;
+SHOW CREATE USER dcl_sync_create_sequoiadb_u1;
+SHOW CREATE USER dcl_sync_create_sequoiadb_u2;
+SHOW CREATE USER dcl_sync_create_sequoiadb_u3;
+connection conn2;
+SHOW CREATE USER dcl_sync_create_sequoiadb_u1;
+SHOW CREATE USER dcl_sync_create_sequoiadb_u2;
+SHOW CREATE USER dcl_sync_create_sequoiadb_u3;
+DROP USER dcl_sync_create_sequoiadb_u1, dcl_sync_create_sequoiadb_u2, dcl_sync_create_sequoiadb_u3;
+
+connection conn1;
+CREATE USER dcl_sync_create_sequoiadb_u1 IDENTIFIED BY '123456', dcl_sync_create_sequoiadb_u2 IDENTIFIED BY PASSWORD '*6BB4837EB74329105EE4568DDA7DC67ED2CA2AD9', dcl_sync_create_sequoiadb_u3;
+SELECT @HA_REWRITTEN_QUERY_BEFORE_EXECUTION;
+SELECT @HA_REWRITTEN_QUERY_AFTER_EXECUTION;
+SHOW CREATE USER dcl_sync_create_sequoiadb_u1;
+SHOW CREATE USER dcl_sync_create_sequoiadb_u2;
+SHOW CREATE USER dcl_sync_create_sequoiadb_u3;
+connection conn2;
+SHOW CREATE USER dcl_sync_create_sequoiadb_u1;
+SHOW CREATE USER dcl_sync_create_sequoiadb_u2;
+SHOW CREATE USER dcl_sync_create_sequoiadb_u3;
+DROP USER dcl_sync_create_sequoiadb_u1, dcl_sync_create_sequoiadb_u2, dcl_sync_create_sequoiadb_u3;
+
+connection conn1;
+create user dcl_sync_create_sequoiadb_u1 IDENTIFIED WITH 'mysql_native_password' by '123456', dcl_sync_create_sequoiadb_u2 IDENTIFIED WITH 'mysql_native_password' by '123456', dcl_sync_create_sequoiadb_u3 IDENTIFIED WITH 'mysql_native_password' by '123456';
+SELECT @HA_REWRITTEN_QUERY_BEFORE_EXECUTION;
+SELECT @HA_REWRITTEN_QUERY_AFTER_EXECUTION;
+SHOW CREATE USER dcl_sync_create_sequoiadb_u1;
+SHOW CREATE USER dcl_sync_create_sequoiadb_u2;
+SHOW CREATE USER dcl_sync_create_sequoiadb_u3;
+connection conn2;
+SHOW CREATE USER dcl_sync_create_sequoiadb_u1;
+SHOW CREATE USER dcl_sync_create_sequoiadb_u2;
+SHOW CREATE USER dcl_sync_create_sequoiadb_u3;
+DROP USER dcl_sync_create_sequoiadb_u1, dcl_sync_create_sequoiadb_u2, dcl_sync_create_sequoiadb_u3;
+
+connection conn1;
+create user dcl_sync_create_sequoiadb_u1 IDENTIFIED WITH 'mysql_native_password', dcl_sync_create_sequoiadb_u2 IDENTIFIED WITH 'mysql_native_password', dcl_sync_create_sequoiadb_u3 IDENTIFIED WITH 'mysql_native_password';
+SELECT @HA_REWRITTEN_QUERY_BEFORE_EXECUTION;
+SELECT @HA_REWRITTEN_QUERY_AFTER_EXECUTION;
+SHOW CREATE USER dcl_sync_create_sequoiadb_u1;
+SHOW CREATE USER dcl_sync_create_sequoiadb_u2;
+SHOW CREATE USER dcl_sync_create_sequoiadb_u3;
+connection conn2;
+SHOW CREATE USER dcl_sync_create_sequoiadb_u1;
+SHOW CREATE USER dcl_sync_create_sequoiadb_u2;
+SHOW CREATE USER dcl_sync_create_sequoiadb_u3;
+DROP USER dcl_sync_create_sequoiadb_u1, dcl_sync_create_sequoiadb_u2, dcl_sync_create_sequoiadb_u3;
+
+connection conn1;
+create user dcl_sync_create_sequoiadb_u1 IDENTIFIED WITH 'mysql_native_password' AS '*6BB4837EB74329105EE4568DDA7DC67ED2CA2AD9', dcl_sync_create_sequoiadb_u2 IDENTIFIED WITH 'mysql_native_password' AS '*6BB4837EB74329105EE4568DDA7DC67ED2CA2AD9', dcl_sync_create_sequoiadb_u3 IDENTIFIED WITH 'mysql_native_password' AS '*6BB4837EB74329105EE4568DDA7DC67ED2CA2AD9';
+SELECT @HA_REWRITTEN_QUERY_BEFORE_EXECUTION;
+SELECT @HA_REWRITTEN_QUERY_AFTER_EXECUTION;
+SHOW CREATE USER dcl_sync_create_sequoiadb_u1;
+SHOW CREATE USER dcl_sync_create_sequoiadb_u2;
+SHOW CREATE USER dcl_sync_create_sequoiadb_u3;
+connection conn2;
+SHOW CREATE USER dcl_sync_create_sequoiadb_u1;
+SHOW CREATE USER dcl_sync_create_sequoiadb_u2;
+SHOW CREATE USER dcl_sync_create_sequoiadb_u3;
+DROP USER dcl_sync_create_sequoiadb_u1, dcl_sync_create_sequoiadb_u2, dcl_sync_create_sequoiadb_u3;
+
+connection conn1;
+create user dcl_sync_create_sequoiadb_u1 IDENTIFIED WITH 'mysql_native_password' AS '*6BB4837EB74329105EE4568DDA7DC67ED2CA2AD9', dcl_sync_create_sequoiadb_u2 IDENTIFIED WITH 'mysql_native_password', dcl_sync_create_sequoiadb_u3 IDENTIFIED WITH 'mysql_native_password' BY '123456';
+SELECT @HA_REWRITTEN_QUERY_BEFORE_EXECUTION;
+SELECT @HA_REWRITTEN_QUERY_AFTER_EXECUTION;
+SHOW CREATE USER dcl_sync_create_sequoiadb_u1;
+SHOW CREATE USER dcl_sync_create_sequoiadb_u2;
+SHOW CREATE USER dcl_sync_create_sequoiadb_u3;
+connection conn2;
+SHOW CREATE USER dcl_sync_create_sequoiadb_u1;
+SHOW CREATE USER dcl_sync_create_sequoiadb_u2;
+SHOW CREATE USER dcl_sync_create_sequoiadb_u3;
+DROP USER dcl_sync_create_sequoiadb_u1, dcl_sync_create_sequoiadb_u2, dcl_sync_create_sequoiadb_u3;
+
+connection conn1;
+CREATE USER dcl_sync_create_sequoiadb_u1 REQUIRE NONE;
+SELECT @HA_REWRITTEN_QUERY_BEFORE_EXECUTION;
+SELECT @HA_REWRITTEN_QUERY_AFTER_EXECUTION;
+SHOW CREATE USER dcl_sync_create_sequoiadb_u1;
+connection conn2;
+SHOW CREATE USER dcl_sync_create_sequoiadb_u1;
+
+connection conn1;
+CREATE USER dcl_sync_create_sequoiadb_u2 IDENTIFIED BY PASSWORD '*6BB4837EB74329105EE4568DDA7DC67ED2CA2AD9' REQUIRE X509;
+SELECT @HA_REWRITTEN_QUERY_BEFORE_EXECUTION;
+SELECT @HA_REWRITTEN_QUERY_AFTER_EXECUTION;
+SHOW CREATE USER dcl_sync_create_sequoiadb_u2;
+connection conn2;
+SHOW CREATE USER dcl_sync_create_sequoiadb_u2;
+
+connection conn1;
+CREATE USER dcl_sync_create_sequoiadb_u3 IDENTIFIED BY '123456' REQUIRE SSL;
+SELECT @HA_REWRITTEN_QUERY_BEFORE_EXECUTION;
+SELECT @HA_REWRITTEN_QUERY_AFTER_EXECUTION;
+SHOW CREATE USER dcl_sync_create_sequoiadb_u3;
+connection conn2;
+SHOW CREATE USER dcl_sync_create_sequoiadb_u3;
+
+connection conn1;
+CREATE USER dcl_sync_create_sequoiadb_u4 IDENTIFIED BY '123456' REQUIRE CIPHER 'cipher' AND ISSUER 'issuer' AND SUBJECT 'subject';
+SELECT @HA_REWRITTEN_QUERY_BEFORE_EXECUTION;
+SELECT @HA_REWRITTEN_QUERY_AFTER_EXECUTION;
+SHOW CREATE USER dcl_sync_create_sequoiadb_u4;
+connection conn2;
+SHOW CREATE USER dcl_sync_create_sequoiadb_u4;
+DROP USER dcl_sync_create_sequoiadb_u1, dcl_sync_create_sequoiadb_u2, dcl_sync_create_sequoiadb_u3, dcl_sync_create_sequoiadb_u4;
+
+CREATE USER dcl_sync_create_sequoiadb_u1, dcl_sync_create_sequoiadb_u2 IDENTIFIED BY PASSWORD '*6BB4837EB74329105EE4568DDA7DC67ED2CA2AD9', dcl_sync_create_sequoiadb_u3 IDENTIFIED BY '123456' REQUIRE X509;
+SELECT @HA_REWRITTEN_QUERY_BEFORE_EXECUTION;
+SELECT @HA_REWRITTEN_QUERY_AFTER_EXECUTION;
+SHOW CREATE USER dcl_sync_create_sequoiadb_u1;
+SHOW CREATE USER dcl_sync_create_sequoiadb_u2;
+SHOW CREATE USER dcl_sync_create_sequoiadb_u3;
+connection conn2;
+SHOW CREATE USER dcl_sync_create_sequoiadb_u1;
+SHOW CREATE USER dcl_sync_create_sequoiadb_u2;
+SHOW CREATE USER dcl_sync_create_sequoiadb_u3;
+DROP USER dcl_sync_create_sequoiadb_u1, dcl_sync_create_sequoiadb_u2, dcl_sync_create_sequoiadb_u3;
+
+CREATE USER dcl_sync_create_sequoiadb_u1, dcl_sync_create_sequoiadb_u2 IDENTIFIED BY PASSWORD '*6BB4837EB74329105EE4568DDA7DC67ED2CA2AD9', dcl_sync_create_sequoiadb_u3 IDENTIFIED BY '123456' REQUIRE SSL;
+SELECT @HA_REWRITTEN_QUERY_BEFORE_EXECUTION;
+SELECT @HA_REWRITTEN_QUERY_AFTER_EXECUTION;
+SHOW CREATE USER dcl_sync_create_sequoiadb_u1;
+SHOW CREATE USER dcl_sync_create_sequoiadb_u2;
+SHOW CREATE USER dcl_sync_create_sequoiadb_u3;
+connection conn2;
+SHOW CREATE USER dcl_sync_create_sequoiadb_u1;
+SHOW CREATE USER dcl_sync_create_sequoiadb_u2;
+SHOW CREATE USER dcl_sync_create_sequoiadb_u3;
+DROP USER dcl_sync_create_sequoiadb_u1, dcl_sync_create_sequoiadb_u2, dcl_sync_create_sequoiadb_u3;
+
+CREATE USER dcl_sync_create_sequoiadb_u1, dcl_sync_create_sequoiadb_u2 IDENTIFIED BY PASSWORD '*6BB4837EB74329105EE4568DDA7DC67ED2CA2AD9', dcl_sync_create_sequoiadb_u3 IDENTIFIED BY '123456' REQUIRE CIPHER 'cipher' AND ISSUER 'issuer' AND SUBJECT 'subject';
+SELECT @HA_REWRITTEN_QUERY_BEFORE_EXECUTION;
+SELECT @HA_REWRITTEN_QUERY_AFTER_EXECUTION;
+SHOW CREATE USER dcl_sync_create_sequoiadb_u1;
+SHOW CREATE USER dcl_sync_create_sequoiadb_u2;
+SHOW CREATE USER dcl_sync_create_sequoiadb_u3;
+connection conn2;
+SHOW CREATE USER dcl_sync_create_sequoiadb_u1;
+SHOW CREATE USER dcl_sync_create_sequoiadb_u2;
+SHOW CREATE USER dcl_sync_create_sequoiadb_u3;
+DROP USER dcl_sync_create_sequoiadb_u1, dcl_sync_create_sequoiadb_u2, dcl_sync_create_sequoiadb_u3;
+
+connection conn1;
+CREATE USER dcl_sync_create_sequoiadb_u1 WITH MAX_QUERIES_PER_HOUR 100;
+SELECT @HA_REWRITTEN_QUERY_BEFORE_EXECUTION;
+SELECT @HA_REWRITTEN_QUERY_AFTER_EXECUTION;
+SHOW CREATE USER dcl_sync_create_sequoiadb_u1;
+connection conn2;
+SHOW CREATE USER dcl_sync_create_sequoiadb_u1;
+
+connection conn1;
+CREATE USER dcl_sync_create_sequoiadb_u2 IDENTIFIED BY '123456' WITH MAX_UPDATES_PER_HOUR 100;
+SELECT @HA_REWRITTEN_QUERY_BEFORE_EXECUTION;
+SELECT @HA_REWRITTEN_QUERY_AFTER_EXECUTION;
+SHOW CREATE USER dcl_sync_create_sequoiadb_u2;
+connection conn2;
+SHOW CREATE USER dcl_sync_create_sequoiadb_u2;
+
+connection conn1;
+CREATE USER dcl_sync_create_sequoiadb_u3 IDENTIFIED BY PASSWORD '*6BB4837EB74329105EE4568DDA7DC67ED2CA2AD9' WITH MAX_CONNECTIONS_PER_HOUR 100;
+SELECT @HA_REWRITTEN_QUERY_BEFORE_EXECUTION;
+SELECT @HA_REWRITTEN_QUERY_AFTER_EXECUTION;
+SHOW CREATE USER dcl_sync_create_sequoiadb_u3;
+connection conn2;
+SHOW CREATE USER dcl_sync_create_sequoiadb_u3;
+
+connection conn1;
+CREATE USER dcl_sync_create_sequoiadb_u4 IDENTIFIED BY '123456' WITH MAX_USER_CONNECTIONS 100;
+SELECT @HA_REWRITTEN_QUERY_BEFORE_EXECUTION;
+SELECT @HA_REWRITTEN_QUERY_AFTER_EXECUTION;
+SHOW CREATE USER dcl_sync_create_sequoiadb_u4;
+connection conn2;
+SHOW CREATE USER dcl_sync_create_sequoiadb_u4;
+
+connection conn1;
+CREATE USER dcl_sync_create_sequoiadb_u5 IDENTIFIED BY '123456' WITH MAX_QUERIES_PER_HOUR 90 MAX_UPDATES_PER_HOUR 90 MAX_CONNECTIONS_PER_HOUR 90 MAX_USER_CONNECTIONS 90;
+SELECT @HA_REWRITTEN_QUERY_BEFORE_EXECUTION;
+SELECT @HA_REWRITTEN_QUERY_AFTER_EXECUTION;
+SHOW CREATE USER dcl_sync_create_sequoiadb_u5;
+connection conn2;
+SHOW CREATE USER dcl_sync_create_sequoiadb_u5;
+DROP USER dcl_sync_create_sequoiadb_u1, dcl_sync_create_sequoiadb_u2, dcl_sync_create_sequoiadb_u3, dcl_sync_create_sequoiadb_u4, dcl_sync_create_sequoiadb_u5;
+
+connection conn1;
+CREATE USER dcl_sync_create_sequoiadb_u1, dcl_sync_create_sequoiadb_u2 IDENTIFIED BY '123456', dcl_sync_create_sequoiadb_u3 IDENTIFIED BY PASSWORD '*6BB4837EB74329105EE4568DDA7DC67ED2CA2AD9' WITH MAX_QUERIES_PER_HOUR 200;
+SELECT @HA_REWRITTEN_QUERY_BEFORE_EXECUTION;
+SELECT @HA_REWRITTEN_QUERY_AFTER_EXECUTION;
+SHOW CREATE USER dcl_sync_create_sequoiadb_u1;
+SHOW CREATE USER dcl_sync_create_sequoiadb_u2;
+SHOW CREATE USER dcl_sync_create_sequoiadb_u3;
+connection conn2;
+SHOW CREATE USER dcl_sync_create_sequoiadb_u1;
+SHOW CREATE USER dcl_sync_create_sequoiadb_u2;
+SHOW CREATE USER dcl_sync_create_sequoiadb_u3;
+DROP USER dcl_sync_create_sequoiadb_u1, dcl_sync_create_sequoiadb_u2, dcl_sync_create_sequoiadb_u3;
+
+connection conn1;
+CREATE USER dcl_sync_create_sequoiadb_u1, dcl_sync_create_sequoiadb_u2 IDENTIFIED BY '123456', dcl_sync_create_sequoiadb_u3 IDENTIFIED BY PASSWORD '*6BB4837EB74329105EE4568DDA7DC67ED2CA2AD9' WITH MAX_UPDATES_PER_HOUR 200;
+SELECT @HA_REWRITTEN_QUERY_BEFORE_EXECUTION;
+SELECT @HA_REWRITTEN_QUERY_AFTER_EXECUTION;
+SHOW CREATE USER dcl_sync_create_sequoiadb_u1;
+SHOW CREATE USER dcl_sync_create_sequoiadb_u2;
+SHOW CREATE USER dcl_sync_create_sequoiadb_u3;
+connection conn2;
+SHOW CREATE USER dcl_sync_create_sequoiadb_u1;
+SHOW CREATE USER dcl_sync_create_sequoiadb_u2;
+SHOW CREATE USER dcl_sync_create_sequoiadb_u3;
+DROP USER dcl_sync_create_sequoiadb_u1, dcl_sync_create_sequoiadb_u2, dcl_sync_create_sequoiadb_u3;
+
+connection conn1;
+CREATE USER dcl_sync_create_sequoiadb_u1, dcl_sync_create_sequoiadb_u2 IDENTIFIED BY '123456', dcl_sync_create_sequoiadb_u3 IDENTIFIED BY PASSWORD '*6BB4837EB74329105EE4568DDA7DC67ED2CA2AD9' WITH MAX_CONNECTIONS_PER_HOUR 200;
+SELECT @HA_REWRITTEN_QUERY_BEFORE_EXECUTION;
+SELECT @HA_REWRITTEN_QUERY_AFTER_EXECUTION;
+SHOW CREATE USER dcl_sync_create_sequoiadb_u1;
+SHOW CREATE USER dcl_sync_create_sequoiadb_u2;
+SHOW CREATE USER dcl_sync_create_sequoiadb_u3;
+connection conn2;
+SHOW CREATE USER dcl_sync_create_sequoiadb_u1;
+SHOW CREATE USER dcl_sync_create_sequoiadb_u2;
+SHOW CREATE USER dcl_sync_create_sequoiadb_u3;
+DROP USER dcl_sync_create_sequoiadb_u1, dcl_sync_create_sequoiadb_u2, dcl_sync_create_sequoiadb_u3;
+
+connection conn1;
+CREATE USER dcl_sync_create_sequoiadb_u1, dcl_sync_create_sequoiadb_u2 IDENTIFIED BY '123456', dcl_sync_create_sequoiadb_u3 IDENTIFIED BY PASSWORD '*6BB4837EB74329105EE4568DDA7DC67ED2CA2AD9' WITH MAX_USER_CONNECTIONS 200;
+SELECT @HA_REWRITTEN_QUERY_BEFORE_EXECUTION;
+SELECT @HA_REWRITTEN_QUERY_AFTER_EXECUTION;
+SHOW CREATE USER dcl_sync_create_sequoiadb_u1;
+SHOW CREATE USER dcl_sync_create_sequoiadb_u2;
+SHOW CREATE USER dcl_sync_create_sequoiadb_u3;
+connection conn2;
+SHOW CREATE USER dcl_sync_create_sequoiadb_u1;
+SHOW CREATE USER dcl_sync_create_sequoiadb_u2;
+SHOW CREATE USER dcl_sync_create_sequoiadb_u3;
+DROP USER dcl_sync_create_sequoiadb_u1, dcl_sync_create_sequoiadb_u2, dcl_sync_create_sequoiadb_u3;
+
+connection conn1;
+CREATE USER dcl_sync_create_sequoiadb_u1, dcl_sync_create_sequoiadb_u2 IDENTIFIED BY '123456', dcl_sync_create_sequoiadb_u3 IDENTIFIED BY PASSWORD '*6BB4837EB74329105EE4568DDA7DC67ED2CA2AD9' WITH MAX_QUERIES_PER_HOUR 90 MAX_UPDATES_PER_HOUR 90 MAX_CONNECTIONS_PER_HOUR 90 MAX_USER_CONNECTIONS 90;
+SELECT @HA_REWRITTEN_QUERY_BEFORE_EXECUTION;
+SELECT @HA_REWRITTEN_QUERY_AFTER_EXECUTION;
+SHOW CREATE USER dcl_sync_create_sequoiadb_u1;
+SHOW CREATE USER dcl_sync_create_sequoiadb_u2;
+SHOW CREATE USER dcl_sync_create_sequoiadb_u3;
+connection conn2;
+SHOW CREATE USER dcl_sync_create_sequoiadb_u1;
+SHOW CREATE USER dcl_sync_create_sequoiadb_u2;
+SHOW CREATE USER dcl_sync_create_sequoiadb_u3;
+DROP USER dcl_sync_create_sequoiadb_u1, dcl_sync_create_sequoiadb_u2, dcl_sync_create_sequoiadb_u3;
+
+connection conn1;
+CREATE USER dcl_sync_create_sequoiadb_u1 IDENTIFIED BY '123456' ACCOUNT LOCK;
+SELECT @HA_REWRITTEN_QUERY_BEFORE_EXECUTION;
+SELECT @HA_REWRITTEN_QUERY_AFTER_EXECUTION;
+SHOW CREATE USER dcl_sync_create_sequoiadb_u1;
+connection conn2;
+SHOW CREATE USER dcl_sync_create_sequoiadb_u1;
+
+connection conn1;
+CREATE USER dcl_sync_create_sequoiadb_u2 IDENTIFIED BY '123456' ACCOUNT UNLOCK;
+SELECT @HA_REWRITTEN_QUERY_BEFORE_EXECUTION;
+SELECT @HA_REWRITTEN_QUERY_AFTER_EXECUTION;
+SHOW CREATE USER dcl_sync_create_sequoiadb_u2;
+connection conn2;
+SHOW CREATE USER dcl_sync_create_sequoiadb_u2;
+DROP USER dcl_sync_create_sequoiadb_u1, dcl_sync_create_sequoiadb_u2;
+
+#SEQUOIASQLMAINSTREAM-1830
+connection conn1;
+CREATE USER dcl_sync_create_sequoiadb_u1, dcl_sync_create_sequoiadb_u2 IDENTIFIED BY '123456', dcl_sync_create_sequoiadb_u3 IDENTIFIED BY PASSWORD '*6BB4837EB74329105EE4568DDA7DC67ED2CA2AD9' ACCOUNT LOCK;
+SELECT @HA_REWRITTEN_QUERY_BEFORE_EXECUTION;
+SELECT @HA_REWRITTEN_QUERY_AFTER_EXECUTION;
+SHOW CREATE USER dcl_sync_create_sequoiadb_u1;
+SHOW CREATE USER dcl_sync_create_sequoiadb_u2;
+SHOW CREATE USER dcl_sync_create_sequoiadb_u3;
+connection conn2;
+SHOW CREATE USER dcl_sync_create_sequoiadb_u1;
+SHOW CREATE USER dcl_sync_create_sequoiadb_u2;
+SHOW CREATE USER dcl_sync_create_sequoiadb_u3;
+DROP USER dcl_sync_create_sequoiadb_u1, dcl_sync_create_sequoiadb_u2, dcl_sync_create_sequoiadb_u3;
+
+connection conn1;
+CREATE USER dcl_sync_create_sequoiadb_u1, dcl_sync_create_sequoiadb_u2 IDENTIFIED BY '123456', dcl_sync_create_sequoiadb_u3 IDENTIFIED BY PASSWORD '*6BB4837EB74329105EE4568DDA7DC67ED2CA2AD9' ACCOUNT UNLOCK;
+SELECT @HA_REWRITTEN_QUERY_BEFORE_EXECUTION;
+SELECT @HA_REWRITTEN_QUERY_AFTER_EXECUTION;
+SHOW CREATE USER dcl_sync_create_sequoiadb_u1;
+SHOW CREATE USER dcl_sync_create_sequoiadb_u2;
+SHOW CREATE USER dcl_sync_create_sequoiadb_u3;
+connection conn2;
+SHOW CREATE USER dcl_sync_create_sequoiadb_u1;
+SHOW CREATE USER dcl_sync_create_sequoiadb_u2;
+SHOW CREATE USER dcl_sync_create_sequoiadb_u3;
+DROP USER dcl_sync_create_sequoiadb_u1, dcl_sync_create_sequoiadb_u2, dcl_sync_create_sequoiadb_u3;
+
+connection conn1;
+CREATE USER dcl_sync_create_sequoiadb_u1 PASSWORD EXPIRE;
+SELECT @HA_REWRITTEN_QUERY_BEFORE_EXECUTION;
+SELECT @HA_REWRITTEN_QUERY_AFTER_EXECUTION;
+SHOW CREATE USER dcl_sync_create_sequoiadb_u1;
+connection conn2;
+SHOW CREATE USER dcl_sync_create_sequoiadb_u1;
+
+connection conn1;
+CREATE USER dcl_sync_create_sequoiadb_u2 IDENTIFIED BY '123456' PASSWORD EXPIRE DEFAULT;
+SELECT @HA_REWRITTEN_QUERY_BEFORE_EXECUTION;
+SELECT @HA_REWRITTEN_QUERY_AFTER_EXECUTION;
+SHOW CREATE USER dcl_sync_create_sequoiadb_u2;
+connection conn2;
+SHOW CREATE USER dcl_sync_create_sequoiadb_u2;
+
+connection conn1;
+CREATE USER dcl_sync_create_sequoiadb_u3 IDENTIFIED BY PASSWORD '*6BB4837EB74329105EE4568DDA7DC67ED2CA2AD9' PASSWORD EXPIRE NEVER;
+SELECT @HA_REWRITTEN_QUERY_BEFORE_EXECUTION;
+SELECT @HA_REWRITTEN_QUERY_AFTER_EXECUTION;
+SHOW CREATE USER dcl_sync_create_sequoiadb_u3;
+connection conn2;
+SHOW CREATE USER dcl_sync_create_sequoiadb_u3;
+
+connection conn1;
+CREATE USER dcl_sync_create_sequoiadb_u4 IDENTIFIED BY '123456' PASSWORD EXPIRE INTERVAL 10 DAY;
+SELECT @HA_REWRITTEN_QUERY_BEFORE_EXECUTION;
+SELECT @HA_REWRITTEN_QUERY_AFTER_EXECUTION;
+SHOW CREATE USER dcl_sync_create_sequoiadb_u4;
+connection conn2;
+SHOW CREATE USER dcl_sync_create_sequoiadb_u4;
+DROP USER dcl_sync_create_sequoiadb_u1, dcl_sync_create_sequoiadb_u2, dcl_sync_create_sequoiadb_u3, dcl_sync_create_sequoiadb_u4;
+
+connection conn1;
+CREATE USER dcl_sync_create_sequoiadb_u1, dcl_sync_create_sequoiadb_u2 IDENTIFIED BY '123456', dcl_sync_create_sequoiadb_u3 IDENTIFIED BY PASSWORD '*6BB4837EB74329105EE4568DDA7DC67ED2CA2AD9' PASSWORD EXPIRE;
+SELECT @HA_REWRITTEN_QUERY_BEFORE_EXECUTION;
+SELECT @HA_REWRITTEN_QUERY_AFTER_EXECUTION;
+SHOW CREATE USER dcl_sync_create_sequoiadb_u1;
+SHOW CREATE USER dcl_sync_create_sequoiadb_u2;
+SHOW CREATE USER dcl_sync_create_sequoiadb_u3;
+connection conn2;
+SHOW CREATE USER dcl_sync_create_sequoiadb_u1;
+SHOW CREATE USER dcl_sync_create_sequoiadb_u2;
+SHOW CREATE USER dcl_sync_create_sequoiadb_u3;
+DROP USER dcl_sync_create_sequoiadb_u1, dcl_sync_create_sequoiadb_u2, dcl_sync_create_sequoiadb_u3;
+
+connection conn1;
+CREATE USER dcl_sync_create_sequoiadb_u1, dcl_sync_create_sequoiadb_u2 IDENTIFIED BY '123456', dcl_sync_create_sequoiadb_u3 IDENTIFIED BY PASSWORD '*6BB4837EB74329105EE4568DDA7DC67ED2CA2AD9' PASSWORD EXPIRE DEFAULT;
+SELECT @HA_REWRITTEN_QUERY_BEFORE_EXECUTION;
+SELECT @HA_REWRITTEN_QUERY_AFTER_EXECUTION;
+SHOW CREATE USER dcl_sync_create_sequoiadb_u1;
+SHOW CREATE USER dcl_sync_create_sequoiadb_u2;
+SHOW CREATE USER dcl_sync_create_sequoiadb_u3;
+connection conn2;
+SHOW CREATE USER dcl_sync_create_sequoiadb_u1;
+SHOW CREATE USER dcl_sync_create_sequoiadb_u2;
+SHOW CREATE USER dcl_sync_create_sequoiadb_u3;
+DROP USER dcl_sync_create_sequoiadb_u1, dcl_sync_create_sequoiadb_u2, dcl_sync_create_sequoiadb_u3;
+
+connection conn1;
+CREATE USER dcl_sync_create_sequoiadb_u1, dcl_sync_create_sequoiadb_u2 IDENTIFIED BY '123456', dcl_sync_create_sequoiadb_u3 IDENTIFIED BY PASSWORD '*6BB4837EB74329105EE4568DDA7DC67ED2CA2AD9' PASSWORD EXPIRE NEVER;
+SELECT @HA_REWRITTEN_QUERY_BEFORE_EXECUTION;
+SELECT @HA_REWRITTEN_QUERY_AFTER_EXECUTION;
+SHOW CREATE USER dcl_sync_create_sequoiadb_u1;
+SHOW CREATE USER dcl_sync_create_sequoiadb_u2;
+SHOW CREATE USER dcl_sync_create_sequoiadb_u3;
+connection conn2;
+SHOW CREATE USER dcl_sync_create_sequoiadb_u1;
+SHOW CREATE USER dcl_sync_create_sequoiadb_u2;
+SHOW CREATE USER dcl_sync_create_sequoiadb_u3;
+DROP USER dcl_sync_create_sequoiadb_u1, dcl_sync_create_sequoiadb_u2, dcl_sync_create_sequoiadb_u3;
+
+connection conn1;
+CREATE USER dcl_sync_create_sequoiadb_u1, dcl_sync_create_sequoiadb_u2 IDENTIFIED BY '123456', dcl_sync_create_sequoiadb_u3 IDENTIFIED BY PASSWORD '*6BB4837EB74329105EE4568DDA7DC67ED2CA2AD9' PASSWORD EXPIRE INTERVAL 10 DAY;
+SELECT @HA_REWRITTEN_QUERY_BEFORE_EXECUTION;
+SELECT @HA_REWRITTEN_QUERY_AFTER_EXECUTION;
+SHOW CREATE USER dcl_sync_create_sequoiadb_u1;
+SHOW CREATE USER dcl_sync_create_sequoiadb_u2;
+SHOW CREATE USER dcl_sync_create_sequoiadb_u3;
+connection conn2;
+SHOW CREATE USER dcl_sync_create_sequoiadb_u1;
+SHOW CREATE USER dcl_sync_create_sequoiadb_u2;
+SHOW CREATE USER dcl_sync_create_sequoiadb_u3;
+DROP USER dcl_sync_create_sequoiadb_u1, dcl_sync_create_sequoiadb_u2, dcl_sync_create_sequoiadb_u3;
+
+# SEQUOIASQLMAINSTREAM-1845
+connection conn1;
+DROP DATABASE IF EXISTS sdb1;
+CREATE DATABASE sdb1;
+USE sdb1;
+DELIMITER $$;
+CREATE PROCEDURE dcl_create()
+BEGIN
+DECLARE i int;
+SET i = 0;
+WHILE i < 3 do
+IF(i = 0)
+THEN
+CREATE USER dcl_sync_create_sequoiadb_u1;
+END IF;
+IF(i = 1)
+THEN
+CREATE USER dcl_sync_create_sequoiadb_u2 IDENTIFIED BY '123456';
+END IF;
+IF(i = 2)
+THEN
+CREATE USER dcl_sync_create_sequoiadb_u3 IDENTIFIED BY PASSWORD '*6BB4837EB74329105EE4568DDA7DC67ED2CA2AD9';
+END IF;
+SET i = i + 1;
+END WHILE;
+END $$
+DELIMITER ;$$
+
+CALL dcl_create();
+show create user dcl_sync_create_sequoiadb_u1;
+show create user dcl_sync_create_sequoiadb_u2;
+show create user dcl_sync_create_sequoiadb_u3;
+connection conn2;
+show create user dcl_sync_create_sequoiadb_u1;
+show create user dcl_sync_create_sequoiadb_u2;
+show create user dcl_sync_create_sequoiadb_u3;
+drop user dcl_sync_create_sequoiadb_u1,dcl_sync_create_sequoiadb_u2,dcl_sync_create_sequoiadb_u3;
+
+connection conn1;
+CALL dcl_create();
+show create user dcl_sync_create_sequoiadb_u1;
+show create user dcl_sync_create_sequoiadb_u2;
+show create user dcl_sync_create_sequoiadb_u3;
+connection conn2;
+show create user dcl_sync_create_sequoiadb_u1;
+show create user dcl_sync_create_sequoiadb_u2;
+show create user dcl_sync_create_sequoiadb_u3;
+drop user dcl_sync_create_sequoiadb_u1,dcl_sync_create_sequoiadb_u2,dcl_sync_create_sequoiadb_u3;
+
+connection conn1;
+CALL dcl_create();
+show create user dcl_sync_create_sequoiadb_u1;
+show create user dcl_sync_create_sequoiadb_u2;
+show create user dcl_sync_create_sequoiadb_u3;
+connection conn2;
+show create user dcl_sync_create_sequoiadb_u1;
+show create user dcl_sync_create_sequoiadb_u2;
+show create user dcl_sync_create_sequoiadb_u3;
+drop user dcl_sync_create_sequoiadb_u1,dcl_sync_create_sequoiadb_u2,dcl_sync_create_sequoiadb_u3;
+
+DROP DATABASE sdb1;
+
+--source include/uninstall_sequoiadb.inc
+--source suite/metadata_sync_sequoiadb/inc/insts_disconnect_sequoiadb.inc

@@ -1,0 +1,29 @@
+CREATE DATABASE index_select_sequoiadb_22799;
+use index_select_sequoiadb_22799;
+CREATE TABLE t1 (
+a INT,
+b CHAR(64)
+);
+LOAD DATA INFILE '../../std_data/index_select_sequoiadb_1.dat' INTO TABLE t1 (a,b);
+alter table t1 add PRIMARY KEY(a);
+alter table t1 add index b(b);
+alter table t1 add index ab(a,b);
+alter table t1 add index ba(b,a);
+SHOW CREATE TABLE t1;
+Table	Create Table
+t1	CREATE TABLE `t1` (
+  `a` int(11) NOT NULL,
+  `b` char(64) DEFAULT NULL,
+  PRIMARY KEY (`a`),
+  KEY `b` (`b`),
+  KEY `ab` (`a`,`b`),
+  KEY `ba` (`b`,`a`)
+) ENGINE=SequoiaDB DEFAULT CHARSET=latin1
+EXPLAIN SELECT * FROM t1 WHERE b IS NULL;
+id	select_type	table	type	possible_keys	key	key_len	ref	rows	Extra
+1	SIMPLE	t1	ref	b,ba	ba	65	const	#	Using where with pushed condition; Using index
+SELECT * FROM t1 WHERE b IS NULL;
+a	b
+[Note] SequoiaDB: Query message: condition[{ "b": { "$isnull": 1 } }], selector[{ "a": null, "b": null }], order_by[{ "b": 1, "a": 1 }], hint[{ "": "ba" }], limit[-1], offset[0], table[index_select_sequoiadb_22799.t1]
+DROP TABLE t1;
+DROP DATABASE index_select_sequoiadb_22799;

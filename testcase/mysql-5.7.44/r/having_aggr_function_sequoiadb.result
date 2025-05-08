@@ -1,0 +1,63 @@
+DROP TABLE IF EXISTS having_aggr_function_sequoiadb;
+set @@sql_mode=(select replace(@@sql_mode, 'ONLY_FULL_GROUP_BY', ''));
+CREATE TABLE `having_aggr_function_sequoiadb` (
+`col_int_key` int(11) DEFAULT NULL,
+`col_varchar_16` varchar(16) COLLATE utf8mb4_bin DEFAULT NULL,
+`pk` int(11) NOT NULL AUTO_INCREMENT,
+`col_varchar_16_key` varchar(16) COLLATE utf8mb4_bin DEFAULT NULL,
+`col_int` int(11) DEFAULT NULL,
+PRIMARY KEY (`pk`),
+KEY `col_int_key` (`col_int_key`),
+KEY `col_varchar_16_key` (`col_varchar_16_key`)
+) ENGINE=InnoDB AUTO_INCREMENT=201 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin;
+INSERT INTO `having_aggr_function_sequoiadb` VALUES (1287585792,'o',1,'f',6),(0,NULL,2,'tell',NULL),(4,NULL,3,'j',-650969088),(NULL,'w',4,'n',NULL),(910688256,'i',5,NULL,-1164967936),(NULL,'t',6,'t',NULL),(NULL,NULL,7,NULL,3),(3,NULL,8,NULL,NULL),(3,NULL,9,'q',0),(6,'x',10,NULL,4),(9,NULL,11,'w',3),(1823997952,'x',12,'s',2),(2,'x',13,'o',3),(9,'x',14,'t',4),(9,'out',15,'w',NULL),(1374355456,NULL,16,'s',5),(3,'w',17,'c',NULL),(0,'s',18,'know',NULL),(5,'g',19,'x',NULL),(NULL,NULL,20,NULL,NULL),(4,'v',21,'d',4),(NULL,'a',22,'z',NULL),(2,NULL,23,'it',-1024983040),(4,'s',24,'b',1),(7,'z',25,'think',-150470656),(2,'i',26,'g',7),(7,'p',27,NULL,7),(1218772992,'hey',28,'d',0),(5,'m',29,'v',1810825216),(3,NULL,30,'x',1),(4,NULL,31,NULL,6),(-817102848,'s',32,NULL,2),(1,NULL,33,'him',7),(4,'but',34,'d',2),(2067464192,'g',35,'j',1783562240),(0,'e',36,'i',7),(NULL,'r',37,'n',2),(7,'z',38,'l',NULL),(9,'n',39,'g',1),(NULL,'a',40,'u',NULL),(NULL,NULL,41,'p',1),(0,'I\'m',42,NULL,0),(799735808,'of',43,'o',NULL),(2,NULL,44,'g',-1921187840),(-1096482816,'w',45,NULL,8),(6,'d',46,'w',NULL),(-1633157120,'b',47,'g',1),(NULL,'g',48,'a',4),(1924923392,'v',49,'see',7),(4,'j',50,NULL,8),(NULL,'o',51,'from',7),(6,NULL,52,'j',NULL),(NULL,NULL,53,'g',NULL),(NULL,NULL,54,'x',2),(9,NULL,55,NULL,1),(2,'i',56,NULL,1349648384),(58195968,'why',57,'u',8),(5,'going',58,'o',2),(7,'who',59,'b',7),(613679104,'k',60,'n',3),(7,NULL,61,'t',2),(7,'p',62,NULL,5),(1,'t',63,'f',9),(NULL,'m',64,'i',1071579136),(1786773504,'t',65,'b',6),(0,NULL,66,'is',2058813440),(-1347354624,'e',67,'x',NULL),(1,'m',68,'w',9),(0,'y',69,'u',577699840),(NULL,'I\'m',70,'f',6),(7,'can',71,'with',6),(4,NULL,72,NULL,8),(8,'i',73,'with',3),(8,'something',74,'p',5),(3,'v',75,'yes',7),(-261357568,'g',76,'t',7),(9,NULL,77,'l',9),(9,'l',78,'or',NULL),(-950665216,'j',79,'I\'m',282722304),(6,NULL,80,'k',7),(8,'you\'re',81,'really',0),(8,'u',82,'a',NULL),(-1859846144,'your',83,NULL,6),(4,'i',84,NULL,-2101018624),(-465240064,NULL,85,NULL,8),(8,'h',86,NULL,254607360),(NULL,'c',87,'a',4),(2064711680,'v',88,'some',6),(NULL,NULL,89,'k',NULL),(9,NULL,90,'u',-1773076480),(5,NULL,91,NULL,NULL),(4,'h',92,'l',9),(NULL,'f',93,'okay',8),(7,NULL,94,'e',0),(NULL,NULL,95,'they',764805120),(NULL,'f',96,NULL,NULL),(4,'he',97,'here',467009536),(NULL,'a',98,'l',2123300864),(NULL,'z',99,'m',0),(0,'m',100,NULL,9),(0,'n',101,'e',6),(-2035941376,'be',102,'r',-1516437504),(-5898240,'it\'s',103,'e',0),(7,'n',104,'z',NULL),(-1309540352,'i',105,NULL,1),(1,'p',106,'l',4),(3,'q',107,'v',0),(4,'e',108,NULL,2),(4,'c',109,'i',0),(1,NULL,110,NULL,-394788864),(1,'is',111,'w',NULL),(3,'q',112,'p',NULL),(9,'n',113,NULL,5),(NULL,'a',114,'c',799014912),(4,NULL,115,'h',NULL),(1,'o',116,'k',NULL),(5,'q',117,NULL,1),(NULL,'s',118,'l',4),(5,'l',119,'r',3),(NULL,'g',120,NULL,9),(1605828608,'q',121,NULL,8),(9,'u',122,'z',NULL),(NULL,'o',123,'d',NULL),(5,NULL,124,'e',56492032),(8,'i',125,'r',1),(NULL,'k',126,'j',1025572864),(NULL,'u',127,'z',8),(1,'you',128,'v',NULL),(8,'really',129,'h',5),(9,NULL,130,NULL,-353894400),(7,'u',131,'yeah',4),(6,'w',132,NULL,0),(5,NULL,133,'n',1),(NULL,'s',134,'s',1),(NULL,'v',135,NULL,-287440896),(NULL,'x',136,'v',NULL),(1072693248,'it\'s',137,'j',366084096),(-1052901376,'s',138,NULL,1),(NULL,'e',139,'a',3),(7,'o',140,'she',-1287979008),(8,'o',141,'d',7),(NULL,'j',142,'if',3),(1,'t',143,'m',NULL),(2,'m',144,'n',-727318528),(NULL,'n',145,'he\'s',1879703552),(29622272,'o',146,'h',9),(4,'z',147,NULL,NULL),(4,'u',148,'u',5),(NULL,'f',149,'e',5),(8,'f',150,'q',6),(1,'k',151,'l',9),(1,NULL,152,'will',8),(2,'then',153,'how',7),(5,'n',154,'f',5),(NULL,'a',155,'h',3),(NULL,'u',156,NULL,6),(NULL,'j',157,'q',1),(9,'b',158,'d',NULL),(-758513664,'r',159,'me',1),(8,'x',160,'ok',NULL),(NULL,NULL,161,'d',9),(8,'well',162,NULL,NULL),(4,'c',163,'like',NULL),(NULL,'m',164,'l',6),(6,'p',165,'something',NULL),(1,'a',166,NULL,NULL),(-367198208,'o',167,'had',NULL),(834469888,'didn\'t',168,'a',812187648),(5,NULL,169,'x',1),(7,'p',170,'q',3),(1,'w',171,NULL,6),(-302120960,NULL,172,NULL,3),(7,'v',173,'i',-2094530560),(4,'going',174,'s',-27262976),(NULL,'i',175,'he',7),(1,'x',176,'b',2),(7,'y',177,'e',NULL),(-1020854272,'v',178,NULL,NULL),(7,'c',179,'o',NULL),(-1743912960,'one',180,'c',2),(1583087616,'a',181,'say',7),(9,'have',182,'u',2),(-1738014720,'tell',183,'k',NULL),(4,NULL,184,'l',4),(8,NULL,185,'g',NULL),(5,'j',186,'e',0),(5,NULL,187,'s',NULL),(-1579483136,'really',188,'u',NULL),(-621936640,NULL,189,'b',NULL),(9,'o',190,'r',2),(8,'tell',191,'c',9),(0,NULL,192,NULL,-446103552),(2,NULL,193,'i',6),(3,'y',194,'y',2),(NULL,'v',195,'g',0),(1579352064,'o',196,NULL,7),(0,'l',197,'have',NULL),(8,'z',198,'h',-1092485120),(8,'her',199,'all',NULL),(NULL,'o',200,'n',3);
+SELECT DISTINCT SQL_BIG_RESULT `col_varchar_16` AS field1, COUNT( distinct col_varchar_16_key ) AS field2, COUNT( distinct col_int ) AS field3 FROM `having_aggr_function_sequoiadb` WHERE pk = 0 GROUP BY field1 HAVING (field1 = 1 OR field3 IS NULL XOR field1 > 2) ORDER BY col_varchar_16_key , col_varchar_16_key;
+field1	field2	field3
+SELECT ALL `col_varchar_16` AS field1, COUNT( distinct pk ) AS field2 FROM `having_aggr_function_sequoiadb` WHERE col_int_key = 1 OR col_varchar_16_key = 'v' GROUP BY field1 HAVING (field1 = 7 OR field2 IS NULL XOR field1 = 5) ORDER BY pk , col_varchar_16_key , col_varchar_16 , col_varchar_16_key;
+field1	field2
+SELECT DISTINCT SUM( col_int ) AS field1, `col_varchar_16` AS field2, COUNT( distinct col_varchar_16_key ) AS field3 FROM `having_aggr_function_sequoiadb` WHERE col_int_key = 9 OR col_varchar_16_key = 'q' GROUP BY field2 HAVING (field2 = 1 OR field3 IS NULL XOR field2 = 4 OR field3 IS NULL) ORDER BY col_varchar_16_key , col_varchar_16 , col_varchar_16;
+field1	field2	field3
+SELECT DISTINCT COUNT( col_varchar_16 ) AS field1 , col_varchar_16 AS field2 FROM `having_aggr_function_sequoiadb` WHERE col_int_key BETWEEN 1 AND 3 GROUP BY field2 HAVING ((field2 = 2 OR field1 IS NULL XOR field2 = 0) XOR field2 = 3 OR field2 IS NULL) ORDER BY field2;
+field1	field2
+0	NULL
+1	a
+2	i
+1	is
+1	k
+2	m
+1	o
+1	p
+2	q
+2	t
+1	then
+1	v
+2	w
+2	x
+1	y
+1	you
+ALTER TABLE having_aggr_function_sequoiadb ENGINE = SequoiaDB;
+SELECT DISTINCT SQL_BIG_RESULT `col_varchar_16` AS field1, COUNT( distinct col_varchar_16_key ) AS field2, COUNT( distinct col_int ) AS field3 FROM `having_aggr_function_sequoiadb` WHERE pk = 0 GROUP BY field1 HAVING (field1 = 1 OR field3 IS NULL XOR field1 > 2) ORDER BY col_varchar_16_key , col_varchar_16_key;
+field1	field2	field3
+SELECT ALL `col_varchar_16` AS field1, COUNT( distinct pk ) AS field2 FROM `having_aggr_function_sequoiadb` WHERE col_int_key = 1 OR col_varchar_16_key = 'v' GROUP BY field1 HAVING (field1 = 7 OR field2 IS NULL XOR field1 = 5) ORDER BY pk , col_varchar_16_key , col_varchar_16 , col_varchar_16_key;
+field1	field2
+SELECT DISTINCT SUM( col_int ) AS field1, `col_varchar_16` AS field2, COUNT( distinct col_varchar_16_key ) AS field3 FROM `having_aggr_function_sequoiadb` WHERE col_int_key = 9 OR col_varchar_16_key = 'q' GROUP BY field2 HAVING (field2 = 1 OR field3 IS NULL XOR field2 = 4 OR field3 IS NULL) ORDER BY col_varchar_16_key , col_varchar_16 , col_varchar_16;
+field1	field2	field3
+SELECT DISTINCT COUNT( col_varchar_16 ) AS field1 , col_varchar_16 AS field2 FROM `having_aggr_function_sequoiadb` WHERE col_int_key BETWEEN 1 AND 3 GROUP BY field2 HAVING ((field2 = 2 OR field1 IS NULL XOR field2 = 0) XOR field2 = 3 OR field2 IS NULL) ORDER BY field2;
+field1	field2
+0	NULL
+1	a
+2	i
+1	is
+1	k
+2	m
+1	o
+1	p
+2	q
+2	t
+1	then
+1	v
+2	w
+2	x
+1	y
+1	you
+DROP TABLE having_aggr_function_sequoiadb;

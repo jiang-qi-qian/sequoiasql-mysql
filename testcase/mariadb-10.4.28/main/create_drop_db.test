@@ -1,0 +1,59 @@
+# Enable diisplaying rows affected
+--enable_info
+
+#CREATE DATABASE IF NOT EXISTS db1;
+#
+#CREATE DATABASE IF NOT EXISTS db1;
+#CREATE TABLE db1.t1 (a INT);
+#SHOW TABLES IN db1;
+#
+#CREATE OR REPLACE DATABASE db1;
+#SHOW TABLES IN db1;
+#
+#--error ER_WRONG_USAGE
+#CREATE OR REPLACE DATABASE IF NOT EXISTS db2;
+#
+#DROP DATABASE db1;
+#
+#DROP DATABASE IF EXISTS db1;
+#
+#--error ER_DB_DROP_EXISTS
+#DROP DATABASE db1;
+#
+#CREATE OR REPLACE DATABASE db1;
+#SHOW TABLES IN db1;
+#
+#--error ER_DB_CREATE_EXISTS
+#CREATE DATABASE db1;
+#
+#DROP DATABASE IF EXISTS db1;
+#DROP DATABASE IF EXISTS db1;
+CREATE DATABASE IF NOT EXISTS db1_create_drop_db;
+
+CREATE DATABASE IF NOT EXISTS db1_create_drop_db;
+CREATE TABLE db1_create_drop_db.t1 (a INT);
+SHOW TABLES IN db1_create_drop_db;
+
+CREATE OR REPLACE DATABASE db1_create_drop_db;
+SHOW TABLES IN db1_create_drop_db;
+
+--error ER_WRONG_USAGE
+CREATE OR REPLACE DATABASE IF NOT EXISTS db2_create_drop_db;
+
+DROP DATABASE db1_create_drop_db;
+
+DROP DATABASE IF EXISTS db1_create_drop_db;
+
+--error ER_DB_DROP_EXISTS
+DROP DATABASE db1_create_drop_db;
+
+CREATE OR REPLACE DATABASE db1_create_drop_db;
+SHOW TABLES IN db1_create_drop_db;
+
+--error ER_DB_CREATE_EXISTS
+CREATE DATABASE db1_create_drop_db;
+
+DROP DATABASE IF EXISTS db1_create_drop_db;
+DROP DATABASE IF EXISTS db1_create_drop_db;
+
+--disable_info

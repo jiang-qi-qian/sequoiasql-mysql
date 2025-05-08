@@ -1,0 +1,22 @@
+drop database if exists insert_duplicate_pushdown_sequoiadb_34204;
+create database insert_duplicate_pushdown_sequoiadb_34204;
+drop database insert_duplicate_pushdown_sequoiadb_34204;
+create database insert_duplicate_pushdown_sequoiadb_34204;
+use insert_duplicate_pushdown_sequoiadb_34204;
+SET session sequoiadb_debug_log = ON;
+CREATE TABLE t1 (
+`pk` int(11) NOT NULL,
+`i` int(11) DEFAULT NULL,
+PRIMARY KEY (`pk`)
+);
+INSERT INTO t1 VALUES (1, 1) ON DUPLICATE KEY UPDATE i = i + i;
+[Note] Testcase: Operation log begin
+[Note] SequoiaDB: optimizer pushdown autocommit: 1
+[Note] SequoiaDB: insert dup update pushdown: 1, modifier: [{ "$Modify": { "OP": "update", "Update": { "$inc": { "i": { "Value": { "$field": "i" }, "Min": -2147483648, "Max": 2147483647, "Default": null } } } } }], table: insert_duplicate_pushdown_sequoiadb_34204.t1
+INSERT INTO t1 VALUES (1, 1) ON DUPLICATE KEY UPDATE i = i * RAND();
+[Note] Testcase: Operation log begin
+[Note] SequoiaDB: optimizer pushdown autocommit: 1
+[Note] SequoiaDB: insert dup update pushdown: 0, modifier: [{}], table: insert_duplicate_pushdown_sequoiadb_34204.t1
+[Note] SequoiaDB: Convert autocommit to normal transaction, autocommit: 0
+set session sequoiadb_debug_log = off;
+drop database insert_duplicate_pushdown_sequoiadb_34204;

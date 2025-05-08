@@ -1,0 +1,5 @@
+drop table if exists alter_with_comment_sequoiadb_26410;
+create table alter_with_comment_sequoiadb_26410( a int );
+alter table alter_with_comment_sequoiadb_26410 COMMENT="sequoiadb:{table_options:{ShardingKey: {a: 1}, ShardingType: 'hash'}}" partition by key(a) partitions 4;
+ERROR 0A000: Cannot change table options of comment. Try drop and create again.
+drop table alter_with_comment_sequoiadb_26410;

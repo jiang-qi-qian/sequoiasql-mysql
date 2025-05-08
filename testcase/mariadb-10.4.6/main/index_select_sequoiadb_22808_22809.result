@@ -1,0 +1,73 @@
+CREATE DATABASE index_select_sequoiadb_22808_22809;
+use index_select_sequoiadb_22808_22809;
+CREATE TABLE t1 (
+a INT,
+b CHAR(64)
+);
+INSERT INTO t1 VALUES (4, 'b'),(2, 'c'),(1, 'e'),(7,'aaa'),(9,'daa'),(8,'aca'),(12,'aca'),(11,'aca'),(13,'aca'),(15,'ca');
+alter table t1 add PRIMARY KEY(a);
+alter table t1 add index b(b);
+alter table t1 add index ab(a,b);
+alter table t1 add index ba(b,a);
+SHOW CREATE TABLE t1;
+Table	Create Table
+t1	CREATE TABLE `t1` (
+  `a` int(11) NOT NULL,
+  `b` char(64) DEFAULT NULL,
+  PRIMARY KEY (`a`),
+  KEY `b` (`b`),
+  KEY `ab` (`a`,`b`),
+  KEY `ba` (`b`,`a`)
+) ENGINE=SequoiaDB DEFAULT CHARSET=latin1
+EXPLAIN SELECT * FROM t1 WHERE a=1 and b='e';
+id	select_type	table	type	possible_keys	key	key_len	ref	rows	Extra
+1	SIMPLE	t1	const	PRIMARY,b,ab,ba	PRIMARY	4	const	#	
+SELECT * FROM information_schema.statistics WHERE table_name='t1';
+TABLE_CATALOG	TABLE_SCHEMA	TABLE_NAME	NON_UNIQUE	INDEX_SCHEMA	INDEX_NAME	SEQ_IN_INDEX	COLUMN_NAME	COLLATION	CARDINALITY	SUB_PART	PACKED	NULLABLE	INDEX_TYPE	COMMENT	INDEX_COMMENT
+def	index_select_sequoiadb_22808_22809	t1	0	index_select_sequoiadb_22808_22809	PRIMARY	1	a	A	NULL	NULL	NULL		BTREE		
+def	index_select_sequoiadb_22808_22809	t1	1	index_select_sequoiadb_22808_22809	ab	1	a	A	NULL	NULL	NULL		BTREE		
+def	index_select_sequoiadb_22808_22809	t1	1	index_select_sequoiadb_22808_22809	ab	2	b	A	NULL	NULL	NULL	YES	BTREE		
+def	index_select_sequoiadb_22808_22809	t1	1	index_select_sequoiadb_22808_22809	b	1	b	A	NULL	NULL	NULL	YES	BTREE		
+def	index_select_sequoiadb_22808_22809	t1	1	index_select_sequoiadb_22808_22809	ba	1	b	A	NULL	NULL	NULL	YES	BTREE		
+def	index_select_sequoiadb_22808_22809	t1	1	index_select_sequoiadb_22808_22809	ba	2	a	A	NULL	NULL	NULL		BTREE		
+ANALYZE TABLE t1;
+Table	Op	Msg_type	Msg_text
+index_select_sequoiadb_22808_22809.t1	analyze	status	Engine-independent statistics collected
+index_select_sequoiadb_22808_22809.t1	analyze	status	OK
+EXPLAIN SELECT * FROM t1 WHERE a=1 and b='e';
+id	select_type	table	type	possible_keys	key	key_len	ref	rows	Extra
+1	SIMPLE	t1	const	PRIMARY,b,ab,ba	PRIMARY	4	const	#	
+SELECT * FROM information_schema.statistics WHERE table_name='t1';
+TABLE_CATALOG	TABLE_SCHEMA	TABLE_NAME	NON_UNIQUE	INDEX_SCHEMA	INDEX_NAME	SEQ_IN_INDEX	COLUMN_NAME	COLLATION	CARDINALITY	SUB_PART	PACKED	NULLABLE	INDEX_TYPE	COMMENT	INDEX_COMMENT
+def	index_select_sequoiadb_22808_22809	t1	0	index_select_sequoiadb_22808_22809	PRIMARY	1	a	A	10	NULL	NULL		BTREE		
+def	index_select_sequoiadb_22808_22809	t1	1	index_select_sequoiadb_22808_22809	ab	1	a	A	NULL	NULL	NULL		BTREE		
+def	index_select_sequoiadb_22808_22809	t1	1	index_select_sequoiadb_22808_22809	ab	2	b	A	NULL	NULL	NULL	YES	BTREE		
+def	index_select_sequoiadb_22808_22809	t1	1	index_select_sequoiadb_22808_22809	b	1	b	A	NULL	NULL	NULL	YES	BTREE		
+def	index_select_sequoiadb_22808_22809	t1	1	index_select_sequoiadb_22808_22809	ba	1	b	A	NULL	NULL	NULL	YES	BTREE		
+def	index_select_sequoiadb_22808_22809	t1	1	index_select_sequoiadb_22808_22809	ba	2	a	A	NULL	NULL	NULL		BTREE		
+LOAD DATA INFILE '../../std_data/loaddata_5w_sequoiadb.dat' INTO TABLE t1(a,b);
+SELECT * FROM information_schema.statistics WHERE table_name='t1';
+TABLE_CATALOG	TABLE_SCHEMA	TABLE_NAME	NON_UNIQUE	INDEX_SCHEMA	INDEX_NAME	SEQ_IN_INDEX	COLUMN_NAME	COLLATION	CARDINALITY	SUB_PART	PACKED	NULLABLE	INDEX_TYPE	COMMENT	INDEX_COMMENT
+def	index_select_sequoiadb_22808_22809	t1	0	index_select_sequoiadb_22808_22809	PRIMARY	1	a	A	10	NULL	NULL		BTREE		
+def	index_select_sequoiadb_22808_22809	t1	1	index_select_sequoiadb_22808_22809	ab	1	a	A	NULL	NULL	NULL		BTREE		
+def	index_select_sequoiadb_22808_22809	t1	1	index_select_sequoiadb_22808_22809	ab	2	b	A	NULL	NULL	NULL	YES	BTREE		
+def	index_select_sequoiadb_22808_22809	t1	1	index_select_sequoiadb_22808_22809	b	1	b	A	NULL	NULL	NULL	YES	BTREE		
+def	index_select_sequoiadb_22808_22809	t1	1	index_select_sequoiadb_22808_22809	ba	1	b	A	NULL	NULL	NULL	YES	BTREE		
+def	index_select_sequoiadb_22808_22809	t1	1	index_select_sequoiadb_22808_22809	ba	2	a	A	NULL	NULL	NULL		BTREE		
+ANALYZE TABLE t1;
+Table	Op	Msg_type	Msg_text
+index_select_sequoiadb_22808_22809.t1	analyze	status	Engine-independent statistics collected
+index_select_sequoiadb_22808_22809.t1	analyze	status	OK
+EXPLAIN SELECT * FROM t1 WHERE a=1 and b='e';
+id	select_type	table	type	possible_keys	key	key_len	ref	rows	Extra
+1	SIMPLE	t1	const	PRIMARY,b,ab,ba	PRIMARY	4	const	#	
+SELECT * FROM information_schema.statistics WHERE table_name='t1';
+TABLE_CATALOG	TABLE_SCHEMA	TABLE_NAME	NON_UNIQUE	INDEX_SCHEMA	INDEX_NAME	SEQ_IN_INDEX	COLUMN_NAME	COLLATION	CARDINALITY	SUB_PART	PACKED	NULLABLE	INDEX_TYPE	COMMENT	INDEX_COMMENT
+def	index_select_sequoiadb_22808_22809	t1	0	index_select_sequoiadb_22808_22809	PRIMARY	1	a	A	52763	NULL	NULL		BTREE		
+def	index_select_sequoiadb_22808_22809	t1	1	index_select_sequoiadb_22808_22809	ab	1	a	A	NULL	NULL	NULL		BTREE		
+def	index_select_sequoiadb_22808_22809	t1	1	index_select_sequoiadb_22808_22809	ab	2	b	A	NULL	NULL	NULL	YES	BTREE		
+def	index_select_sequoiadb_22808_22809	t1	1	index_select_sequoiadb_22808_22809	b	1	b	A	NULL	NULL	NULL	YES	BTREE		
+def	index_select_sequoiadb_22808_22809	t1	1	index_select_sequoiadb_22808_22809	ba	1	b	A	NULL	NULL	NULL	YES	BTREE		
+def	index_select_sequoiadb_22808_22809	t1	1	index_select_sequoiadb_22808_22809	ba	2	a	A	NULL	NULL	NULL		BTREE		
+DROP TABLE t1;
+DROP DATABASE index_select_sequoiadb_22808_22809;

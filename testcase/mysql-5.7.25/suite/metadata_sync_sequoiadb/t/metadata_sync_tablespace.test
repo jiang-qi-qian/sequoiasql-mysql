@@ -1,0 +1,66 @@
+#Case 22542
+
+--source include/have_sequoiadb.inc
+--source suite/metadata_sync_sequoiadb/inc/insts_connect_sequoiadb.inc
+
+# connect to conn1, clear databases in the beginning
+connection conn1;
+--disable_warnings
+DROP DATABASE IF EXISTS metasync_tablespace;
+--enable_warnings
+
+# connect to conn2, check databases are cleaned in the beginning
+connection conn2;
+--error ER_BAD_DB_ERROR
+SHOW CREATE DATABASE metasync_tablespace;
+
+# seqDB-22542
+# begin testing
+# create tablespace
+connection conn1;
+CREATE DATABASE metasync_tablespace;
+USE metasync_tablespace;
+CREATE TABLESPACE `ts1` ADD DATAFILE 'ts1.ibd' ENGINE INNODB;
+CREATE TABLE t1 (c1 INT PRIMARY KEY) ENGINE = INNODB TABLESPACE ts1 ROW_FORMAT=REDUNDANT;
+CREATE TABLE t2 (c1 INT PRIMARY KEY) ENGINE = INNODB TABLESPACE ts1 ROW_FORMAT=COMPACT;
+CREATE TABLESPACE `ts2` ADD DATAFILE 'ts2.ibd' FILE_BLOCK_SIZE = 16384 ENGINE=INNODB;
+CREATE TABLE t3 ( id INT ) ENGINE INNODB TABLESPACE ts2;
+
+# check metadatas after create
+#Bug #SEQUOIASQLMAINSTREAM-933
+connection conn2;
+--sleep 5
+USE metasync_tablespace;
+SELECT FILE_NAME, FILE_TYPE, LOGFILE_GROUP_NAME, STATUS, EXTRA FROM INFORMATION_SCHEMA.FILES WHERE TABLESPACE_NAME = 'ts1';
+SELECT FILE_NAME, FILE_TYPE, LOGFILE_GROUP_NAME, STATUS, EXTRA FROM INFORMATION_SCHEMA.FILES WHERE TABLESPACE_NAME = 'ts2';
+SHOW CREATE TABLE t1;
+SHOW CREATE TABLE t2;
+SHOW CREATE TABLE t3;
+
+# drop tablespace
+DROP TABLE t1,t2,t3;
+DROP TABLESPACE `ts1` ENGINE INNODB;
+DROP TABLESPACE `ts2` ENGINE INNODB;
+
+# check metadatas after drop
+#Bug #SEQUOIASQLMAINSTREAM-933
+connection conn1;
+--sleep 5
+SELECT FILE_NAME, FILE_TYPE, LOGFILE_GROUP_NAME, STATUS, EXTRA FROM INFORMATION_SCHEMA.FILES WHERE TABLESPACE_NAME = 'ts1';
+SELECT FILE_NAME, FILE_TYPE, LOGFILE_GROUP_NAME, STATUS, EXTRA FROM INFORMATION_SCHEMA.FILES WHERE TABLESPACE_NAME = 'ts2';
+--error ER_NO_SUCH_TABLE 
+SHOW CREATE TABLE t1;
+--error ER_NO_SUCH_TABLE
+SHOW CREATE TABLE t2;
+--error ER_NO_SUCH_TABLE
+SHOW CREATE TABLE t3;
+
+# clear databases in the ending
+DROP DATABASE metasync_tablespace;
+# check databases are cleaned in the ending
+connection conn2;
+--error ER_BAD_DB_ERROR
+SHOW CREATE DATABASE metasync_tablespace;
+
+--source include/uninstall_sequoiadb.inc
+--source suite/metadata_sync_sequoiadb/inc/insts_disconnect_sequoiadb.inc

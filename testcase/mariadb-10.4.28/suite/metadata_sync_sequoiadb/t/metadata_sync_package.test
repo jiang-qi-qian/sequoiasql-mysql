@@ -1,0 +1,138 @@
+#BUG SEQUOIASQLMAINSTREAM-825
+#case 22932
+
+--source include/have_sequoiadb.inc
+--source suite/metadata_sync_sequoiadb/inc/insts_connect_sequoiadb.inc
+
+# connect to conn1, clear databases in the beginning
+connection conn1;
+--disable_warnings
+DROP DATABASE IF EXISTS metasync_pkg;
+--enable_warnings
+
+# connect to conn2, check databases are cleaned in the beginning
+connection conn2;
+--sleep $sleep
+--error ER_BAD_DB_ERROR
+SHOW CREATE DATABASE metasync_pkg;
+
+# seqDB-22932
+# begin testing
+#
+# create/alter/drop package
+connection conn1;
+SET sql_mode=ORACLE;
+CREATE DATABASE metasync_pkg;
+USE metasync_pkg;
+DELIMITER |;
+CREATE OR REPLACE PACKAGE pkg1 AS
+  FUNCTION f1 ( id INT ) RETURN DECIMAL(10,2);
+  PROCEDURE sp1 ( id INT, amount DECIMAL(10,2) );
+  PROCEDURE sp2 ( id INT );
+  PROCEDURE sp3 ( name TEXT, salary DECIMAL(10,2) );
+END; |
+CREATE PACKAGE IF NOT EXISTS pkg2 COMMENT 'package comment' SQL SECURITY INVOKER IS
+  FUNCTION f1 RETURN INT DETERMINISTIC;
+  PROCEDURE sp1 ( x INT, y INT  );
+END |
+--disable_warnings
+CREATE DEFINER = 'sdbadmin'@'%' PACKAGE pkg_body1 IS
+  PROCEDURE sp1 ( c1 IN VARCHAR2, c2 IN VARCHAR2, c3 OUT VARCHAR2 );
+END; |
+CREATE OR REPLACE DEFINER = 'sdbadmin'@'%' PACKAGE BODY pkg_body1 COMMENT 'package body comment' SQL SECURITY INVOKER IS
+  PROCEDURE sp1 (
+    c1 IN VARCHAR2,
+    c2 IN VARCHAR2,
+    c3 OUT VARCHAR2 )
+  AS
+    lS NUMBER(10) :=0;
+    CURSOR cBPD IS
+      SELECT COR, DATE, CHAN, CNO, C1, C2, TIME, AMT
+      FROM t1 WHERE JOBN = c2;
+  BEGIN
+    FOR lbpd IN cBPD
+    LOOP
+      lS:= lS + 1;
+    END LOOP;
+  EXCEPTION
+    WHEN OTHERS THEN
+    BEGIN
+      SELECT SQLERRM;
+    END;
+  END;
+END |
+CREATE PACKAGE pkg_body2 AS
+  FUNCTION f1 RETURN INT;
+  FUNCTION f2 RETURN TEXT;
+  PROCEDURE p1;
+  PROCEDURE p2;
+END; |
+CREATE PACKAGE BODY IF NOT EXISTS metasync_pkg.pkg_body2 AS
+  -- Public routines
+  FUNCTION f1 RETURN TEXT AS
+  BEGIN
+    RETURN f2();
+  END;
+  PROCEDURE p1 AS
+  BEGIN
+    CALL p2();
+  END;
+  -- Private routines
+  FUNCTION f2 RETURN TEXT AS
+  BEGIN
+    RETURN 'This is pkg_body2.f2';
+  END;
+  PROCEDURE p2 AS
+  BEGIN
+    SELECT 'This is pkg_body2.p2';
+  END;
+END; |
+DELIMITER ;|
+--enable_warnings
+# check metadatas after create
+connection conn2;
+--sleep $sleep
+SET sql_mode=ORACLE;
+USE metasync_pkg;
+--replace_regex /DEFINER=".*"@/DEFINER="x"@/
+SHOW CREATE PACKAGE pkg1;
+--replace_regex /DEFINER=".*"@/DEFINER="x"@/
+SHOW CREATE PACKAGE pkg2;
+--replace_regex /DEFINER=".*"@/DEFINER="x"@/
+SHOW CREATE PACKAGE BODY pkg_body1;
+--replace_regex /DEFINER=".*"@/DEFINER="x"@/
+SHOW CREATE PACKAGE BODY pkg_body2;
+SELECT pkg_body2.f1();
+SELECT pkg_body2.f2();
+CALL pkg_body2.p1();
+CALL pkg_body2.p2();
+# drop package
+DROP PACKAGE IF EXISTS metasync_pkg.pkg1; 
+DROP PACKAGE pkg2; 
+DROP PACKAGE BODY IF EXISTS metasync_pkg.pkg_body1; 
+DROP PACKAGE BODY pkg_body2; 
+SET sql_mode=DEFAULT;
+# check metadatas after drop
+connection conn1;
+--sleep $sleep
+--error ER_SP_DOES_NOT_EXIST
+SHOW CREATE PACKAGE pkg1;
+--error ER_SP_DOES_NOT_EXIST
+SHOW CREATE PACKAGE pkg2;
+--error ER_SP_DOES_NOT_EXIST
+SHOW CREATE PACKAGE BODY pkg_body1;
+--error ER_SP_DOES_NOT_EXIST
+SHOW CREATE PACKAGE BODY pkg_body2;
+SET sql_mode=DEFAULT;
+
+# clear databases in the ending
+connection conn1;
+DROP DATABASE metasync_pkg;
+# check databases are cleaned in the ending
+connection conn2;
+--sleep $sleep
+--error ER_BAD_DB_ERROR
+SHOW CREATE DATABASE metasync_pkg;
+
+--source include/uninstall_sequoiadb.inc
+--source suite/metadata_sync_sequoiadb/inc/insts_disconnect_sequoiadb.inc

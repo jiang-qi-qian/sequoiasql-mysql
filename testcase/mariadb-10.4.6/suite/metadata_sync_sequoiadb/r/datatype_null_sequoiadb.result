@@ -1,0 +1,88 @@
+connection conn1;
+drop database if exists datatype_null_sequoiadb;
+create database datatype_null_sequoiadb;
+drop database datatype_null_sequoiadb;
+create database datatype_null_sequoiadb;
+use datatype_null_sequoiadb;
+create table test_type(
+id int auto_increment primary key,
+field1 bit,
+field2 bool,
+field3 tinyint,
+field4 smallint,
+field5 mediumint,
+field6 int,
+field7 bigint,
+field8 float,
+field9 double,
+field10 decimal,
+field11 year,
+field12 date,
+field13 time,
+field14 datetime,
+field15 char(10),
+field16 varchar(10),
+field17 binary(200),
+field18 varbinary(300),
+field19 tinyblob,
+field20 blob,
+field21 mediumblob,
+field22 longblob,
+field23 tinytext,
+field24 text,
+field25 mediumtext,
+field26 longtext,
+field27 json,
+field28 geometry);
+show create table test_type;
+Table	Create Table
+test_type	CREATE TABLE `test_type` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `field1` bit(1) DEFAULT NULL,
+  `field2` tinyint(1) DEFAULT NULL,
+  `field3` tinyint(4) DEFAULT NULL,
+  `field4` smallint(6) DEFAULT NULL,
+  `field5` mediumint(9) DEFAULT NULL,
+  `field6` int(11) DEFAULT NULL,
+  `field7` bigint(20) DEFAULT NULL,
+  `field8` float DEFAULT NULL,
+  `field9` double DEFAULT NULL,
+  `field10` decimal(10,0) DEFAULT NULL,
+  `field11` year(4) DEFAULT NULL,
+  `field12` date DEFAULT NULL,
+  `field13` time DEFAULT NULL,
+  `field14` datetime DEFAULT NULL,
+  `field15` char(10) COLLATE utf8mb4_bin DEFAULT NULL,
+  `field16` varchar(10) COLLATE utf8mb4_bin DEFAULT NULL,
+  `field17` binary(200) DEFAULT NULL,
+  `field18` varbinary(300) DEFAULT NULL,
+  `field19` tinyblob DEFAULT NULL,
+  `field20` blob DEFAULT NULL,
+  `field21` mediumblob DEFAULT NULL,
+  `field22` longblob DEFAULT NULL,
+  `field23` tinytext COLLATE utf8mb4_bin DEFAULT NULL,
+  `field24` text COLLATE utf8mb4_bin DEFAULT NULL,
+  `field25` mediumtext COLLATE utf8mb4_bin DEFAULT NULL,
+  `field26` longtext COLLATE utf8mb4_bin DEFAULT NULL,
+  `field27` longtext COLLATE utf8mb4_bin DEFAULT NULL CHECK (json_valid(`field27`)),
+  `field28` geometry DEFAULT NULL,
+  PRIMARY KEY (`id`)
+) ENGINE=SequoiaDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin
+insert into test_type(id) values(1);
+connection conn2;
+use datatype_null_sequoiadb;
+insert into test_type(id) values(2);
+connection conn1;
+use datatype_null_sequoiadb;
+select * from test_type order by id;
+id	field1	field2	field3	field4	field5	field6	field7	field8	field9	field10	field11	field12	field13	field14	field15	field16	field17	field18	field19	field20	field21	field22	field23	field24	field25	field26	field27	field28
+1	NULL	NULL	NULL	NULL	NULL	NULL	NULL	NULL	NULL	NULL	NULL	NULL	NULL	NULL	NULL	NULL	NULL	NULL	NULL	NULL	NULL	NULL	NULL	NULL	NULL	NULL	NULL	NULL
+2	NULL	NULL	NULL	NULL	NULL	NULL	NULL	NULL	NULL	NULL	NULL	NULL	NULL	NULL	NULL	NULL	NULL	NULL	NULL	NULL	NULL	NULL	NULL	NULL	NULL	NULL	NULL	NULL
+connection conn2;
+use datatype_null_sequoiadb;
+select * from test_type order by id;
+id	field1	field2	field3	field4	field5	field6	field7	field8	field9	field10	field11	field12	field13	field14	field15	field16	field17	field18	field19	field20	field21	field22	field23	field24	field25	field26	field27	field28
+1	NULL	NULL	NULL	NULL	NULL	NULL	NULL	NULL	NULL	NULL	NULL	NULL	NULL	NULL	NULL	NULL	NULL	NULL	NULL	NULL	NULL	NULL	NULL	NULL	NULL	NULL	NULL	NULL
+2	NULL	NULL	NULL	NULL	NULL	NULL	NULL	NULL	NULL	NULL	NULL	NULL	NULL	NULL	NULL	NULL	NULL	NULL	NULL	NULL	NULL	NULL	NULL	NULL	NULL	NULL	NULL	NULL
+connection conn1;
+drop database datatype_null_sequoiadb;

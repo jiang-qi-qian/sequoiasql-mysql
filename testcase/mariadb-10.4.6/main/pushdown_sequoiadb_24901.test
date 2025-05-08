@@ -1,0 +1,42 @@
+#CASE 24901
+--source include/have_sequoiadb.inc
+
+CREATE DATABASE pushdown_sequoiadb_24901;
+USE pushdown_sequoiadb_24901;
+
+CREATE TABLE t1 (a INT, b BIGINT, c BIT, d BINARY, e TINYBLOB, f BLOB, g FLOAT, h DOUBLE,i CHAR(10),
+                          j TEXT, k DATE, l DATETIME, m TIMESTAMP, n ENUM('1','2'), o SET('1','2'));
+INSERT INTO t1 values(1,1,1,1,1,1,1,1,'1','1','2022-01-01','2022-01-01','2021-01-01','1','1');
+
+# can push down
+SELECT * FROM t1  WHERE a = a;
+--source include/query_pushdown_condition_sequoiadb.inc
+SELECT * FROM t1  WHERE k = k;
+--source include/query_pushdown_condition_sequoiadb.inc
+SELECT * FROM t1  WHERE a = b;
+--source include/query_pushdown_condition_sequoiadb.inc
+SELECT * FROM t1  WHERE i = j;
+--source include/query_pushdown_condition_sequoiadb.inc
+SELECT * FROM t1  WHERE d = e;
+--source include/query_pushdown_condition_sequoiadb.inc
+
+# cannot push down
+SELECT * FROM t1  WHERE a = d;
+--source include/query_pushdown_condition_sequoiadb.inc
+SELECT * FROM t1  WHERE a = c;
+--source include/query_pushdown_condition_sequoiadb.inc
+SELECT * FROM t1  WHERE h = g;
+--source include/query_pushdown_condition_sequoiadb.inc
+SELECT * FROM t1  WHERE l = m;
+--source include/query_pushdown_condition_sequoiadb.inc
+SELECT * FROM t1  WHERE i = f;
+--source include/query_pushdown_condition_sequoiadb.inc
+SELECT * FROM t1  WHERE i = n;
+--source include/query_pushdown_condition_sequoiadb.inc
+SELECT * FROM t1  WHERE i = o;
+--source include/query_pushdown_condition_sequoiadb.inc
+
+DROP TABLE t1;
+DROP DATABASE pushdown_sequoiadb_24901;
+
+--source include/uninstall_sequoiadb.inc

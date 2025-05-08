@@ -1,0 +1,887 @@
+#Case 22186#Case 22187##Case 22188
+
+--source include/have_sequoiadb.inc
+create database update_pushdown_sequoiadb;
+use update_pushdown_sequoiadb;
+--disable_query_log
+create table reserved(a int primary key)ENGINE=sequoiadb COMMENT='sequoiadb:{ use_partition: true }';
+--enable_query_log
+
+#Case 22186#Case 22188 #int
+create table t1(id int auto_increment key, a int, b int, c int);
+insert into t1 values(1,1,1,1),(2,2,2,2),(3,3,3,3),(4,4,4,4);
+insert into t1 values();
+#pushdown sequoiadb
+update t1 set a = 1 + 2 + 3;
+select * from t1 order by id;
+update t1 set a = a;
+select * from t1 order by id;
+update t1 set a = a + 1 + 2;
+select * from t1 order by id;
+update t1 set a = 1 + a;
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t1 order by id;
+update t1 set a = a - 1;
+select * from t1 order by id;
+update t1 set a = -1 + a;
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t1 order by id;
+update t1 set a = a + a;
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t1 order by id;
+update t1 set a = b;
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t1 order by id;
+update t1 set a = a + b;
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t1 order by id;
+update t1 set a = b + a;
+select * from t1 order by id;
+
+#can not pushdown sequoiadb
+update t1 set a = -a;
+select * from t1 order by id;
+update t1 set a = a + a + 1;
+select * from t1 order by id;
+update t1 set a = -b;
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t1 order by id;
+update t1 set a = b + 1 + 2;
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t1 order by id;
+update t1 set a = a + a + a;
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t1 order by id;
+update t1 set a = b + c;
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t1 order by id;
+update t1 set a = a + b + 1;
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t1 order by id;
+update t1 set a = 1 + a + b;
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t1 order by id;
+update t1 set a = a + b - 1;
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t1 order by id;
+update t1 set a = -1 + a + b;
+select * from t1 order by id;
+update t1 set a = b + 1;
+select * from t1 order by id;
+update t1 set a = b - 1;
+select * from t1 order by id;
+update t1 set a = 1 + b;
+select * from t1 order by id;
+update t1 set a = a + a + 1;
+select * from t1 order by id;
+update t1 set a = a + a -1;
+select * from t1 order by id;
+update t1 set a = 1 + a + a;
+select * from t1 order by id;
+update t1 set a = 1 - a;
+select * from t1 order by id;
+update t1 set a = 1 - b;
+select * from t1 order by id;
+update t1 set a = a - b;
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t1 order by id;
+update t1 set a = b - a;
+select * from t1 order by id;
+update t1 set a = 1 - a + b;
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t1 order by id;
+update t1 set a = 1 - b + a;
+select * from t1 order by id;
+
+#out of range
+delete from t1;
+insert into t1 values(1,-2147483648,2147483647,1);
+update t1 set a = a + b;
+update t1 set a = a + b;
+--error 1264
+update t1 set a = a + b;
+select * from t1;
+drop table t1;
+
+#unsigned
+create table t1(id int auto_increment key, a int unsigned, b int unsigned, c int unsigned);
+insert into t1 values(1,1,4294967295,1);
+--error 1264
+update t1 set a = a + b;
+select * from t1;
+drop table t1;
+
+#tinyint
+create table t1(id int auto_increment key, a tinyint, b tinyint, c tinyint);
+insert into t1 values(1,1,1,1),(2,2,2,2),(3,3,3,3),(4,4,4,4);
+insert into t1 values();
+#pushdown sequoiadb
+update t1 set a = 1 + 2 + 3;
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t1 order by id;
+update t1 set a = a;
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t1 order by id;
+update t1 set a = a + 1 + 2;
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t1 order by id;
+update t1 set a = 1 + a;
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t1 order by id;
+update t1 set a = a - 1;
+select * from t1 order by id;
+update t1 set a = -1 + a;
+select * from t1 order by id;
+update t1 set a = a + a;
+select * from t1 order by id;
+update t1 set a = b;
+select * from t1 order by id;
+update t1 set a = a + b;
+select * from t1 order by id;
+update t1 set a = b + a;
+select * from t1 order by id;
+
+#can not pushdown sequoiadb
+update t1 set a = -a;
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t1 order by id;
+update t1 set a = a + a + 1;
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t1 order by id;
+update t1 set a = -b;
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t1 order by id;
+update t1 set a = b + 1 + 2;
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t1 order by id;
+update t1 set a = a + a + a;
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t1 order by id;
+update t1 set a = b + c;
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t1 order by id;
+update t1 set a = a + b + 1;
+select * from t1 order by id;
+update t1 set a = 1 + a + b;
+select * from t1 order by id;
+update t1 set a = a + b - 1;
+select * from t1 order by id;
+update t1 set a = -1 + a + b;
+select * from t1 order by id;
+update t1 set a = b + 1;
+select * from t1 order by id;
+update t1 set a = b - 1;
+select * from t1 order by id;
+update t1 set a = 1 + b;
+select * from t1 order by id;
+update t1 set a = a + a + 1;
+select * from t1 order by id;
+update t1 set a = a + a -1;
+select * from t1 order by id;
+update t1 set a = 1 + a + a;
+select * from t1 order by id;
+update t1 set a = 1 - a;
+select * from t1 order by id;
+update t1 set a = 1 - b;
+select * from t1 order by id;
+update t1 set a = a - b;
+select * from t1 order by id;
+update t1 set a = b - a;
+select * from t1 order by id;
+update t1 set a = 1 - a + b;
+select * from t1 order by id;
+update t1 set a = 1 - b + a;
+select * from t1 order by id;
+
+#out of range
+delete from t1;
+insert into t1 values(1,-128,127,1);
+update t1 set a = a + b;
+update t1 set a = a + b;
+--error 1264
+update t1 set a = a + b;
+select * from t1;
+drop table t1;
+
+#unsigned
+create table t1(id int auto_increment key, a tinyint unsigned, b tinyint unsigned, c tinyint unsigned);
+insert into t1 values(1,1,255,1);
+--error 1264
+update t1 set a = a + b;
+select * from t1;
+drop table t1;
+
+#smallint
+create table t1(id int auto_increment key, a smallint, b smallint, c smallint);
+insert into t1 values(1,1,1,1),(2,2,2,2),(3,3,3,3),(4,4,4,4);
+insert into t1 values();
+#pushdown sequoiadb
+update t1 set a = 1 + 2 + 3;
+select * from t1 order by id;
+update t1 set a = a;
+select * from t1 order by id;
+update t1 set a = a + 1 + 2;
+select * from t1 order by id;
+update t1 set a = 1 + a;
+select * from t1 order by id;
+update t1 set a = a - 1;
+select * from t1 order by id;
+update t1 set a = -1 + a;
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t1 order by id;
+update t1 set a = a + a;
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t1 order by id;
+update t1 set a = b;
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t1 order by id;
+update t1 set a = a + b;
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t1 order by id;
+update t1 set a = b + a;
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t1 order by id;
+
+#can not pushdown sequoiadb
+update t1 set a = -a;
+select * from t1 order by id;
+update t1 set a = a + a + 1;
+select * from t1 order by id;
+update t1 set a = -b;
+select * from t1 order by id;
+update t1 set a = b + 1 + 2;
+select * from t1 order by id;
+update t1 set a = a + a + a;
+select * from t1 order by id;
+update t1 set a = b + c;
+select * from t1 order by id;
+update t1 set a = a + b + 1;
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t1 order by id;
+update t1 set a = 1 + a + b;
+select * from t1 order by id;
+update t1 set a = a + b - 1;
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t1 order by id;
+update t1 set a = -1 + a + b;
+select * from t1 order by id;
+update t1 set a = b + 1;
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t1 order by id;
+update t1 set a = b - 1;
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t1 order by id;
+update t1 set a = 1 + b;
+select * from t1 order by id;
+update t1 set a = a + a + 1;
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t1 order by id;
+update t1 set a = a + a -1;
+select * from t1 order by id;
+update t1 set a = 1 + a + a;
+select * from t1 order by id;
+update t1 set a = 1 - a;
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t1 order by id;
+update t1 set a = 1 - b;
+select * from t1 order by id;
+update t1 set a = a - b;
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t1 order by id;
+update t1 set a = b - a;
+select * from t1 order by id;
+update t1 set a = 1 - a + b;
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t1 order by id;
+update t1 set a = 1 - b + a;
+select * from t1 order by id;
+
+#out of range
+delete from t1;
+insert into t1 values(1,-32768,32767,1);
+update t1 set a = a + b;
+update t1 set a = a + b;
+--error 1264
+update t1 set a = a + b;
+select * from t1;
+drop table t1;
+
+#unsigned
+create table t1(id int auto_increment key, a smallint unsigned, b smallint unsigned, c smallint unsigned);
+insert into t1 values(1,1,65535,1);
+--error 1264
+update t1 set a = a + b;
+select * from t1;
+drop table t1;
+
+#mediumint
+create table t1(id int auto_increment key, a mediumint, b mediumint, c mediumint);
+insert into t1 values(1,1,1,1),(2,2,2,2),(3,3,3,3),(4,4,4,4);
+insert into t1 values();
+#pushdown sequoiadb
+update t1 set a = 1 + 2 + 3;
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t1 order by id;
+update t1 set a = a;
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t1 order by id;
+update t1 set a = a + 1 + 2;
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t1 order by id;
+update t1 set a = 1 + a;
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t1 order by id;
+update t1 set a = a - 1;
+select * from t1 order by id;
+update t1 set a = -1 + a;
+select * from t1 order by id;
+update t1 set a = a + a;
+select * from t1 order by id;
+update t1 set a = b;
+select * from t1 order by id;
+update t1 set a = a + b;
+select * from t1 order by id;
+update t1 set a = b + a;
+select * from t1 order by id;
+
+#can not pushdown sequoiadb
+update t1 set a = -a;
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t1 order by id;
+update t1 set a = a + a + 1;
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t1 order by id;
+update t1 set a = -b;
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t1 order by id;
+update t1 set a = b + 1 + 2;
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t1 order by id;
+update t1 set a = a + a + a;
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t1 order by id;
+update t1 set a = b + c;
+select * from t1 order by id;
+update t1 set a = a + b + 1;
+select * from t1 order by id;
+update t1 set a = 1 + a + b;
+select * from t1 order by id;
+update t1 set a = a + b - 1;
+select * from t1 order by id;
+update t1 set a = -1 + a + b;
+select * from t1 order by id;
+update t1 set a = b + 1;
+select * from t1 order by id;
+update t1 set a = b - 1;
+select * from t1 order by id;
+update t1 set a = 1 + b;
+select * from t1 order by id;
+update t1 set a = a + a + 1;
+select * from t1 order by id;
+update t1 set a = a + a -1;
+select * from t1 order by id;
+update t1 set a = 1 + a + a;
+select * from t1 order by id;
+update t1 set a = 1 - a;
+select * from t1 order by id;
+update t1 set a = 1 - b;
+select * from t1 order by id;
+update t1 set a = a - b;
+select * from t1 order by id;
+update t1 set a = b - a;
+select * from t1 order by id;
+update t1 set a = 1 - a + b;
+select * from t1 order by id;
+update t1 set a = 1 - b + a;
+select * from t1 order by id;
+
+#out of range
+delete from t1;
+insert into t1 values(1,-8388608,8388607,1);
+update t1 set a = a + b;
+update t1 set a = a + b;
+--error 1264
+update t1 set a = a + b;
+select * from t1;
+drop table t1;
+
+#unsigned
+create table t1(id int auto_increment key, a mediumint unsigned, b mediumint unsigned, c mediumint unsigned);
+insert into t1 values(1,1,16777215,1);
+--error 1264
+update t1 set a = a + b;
+select * from t1;
+drop table t1;
+
+#bigint
+create table t1(id int auto_increment key, a bigint, b bigint, c bigint);
+insert into t1 values(1,1,1,1),(2,2,2,2),(3,3,3,3),(4,4,4,4);
+insert into t1 values();
+#pushdown sequoiadb
+update t1 set a = 1 + 2 + 3;
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t1 order by id;
+update t1 set a = a;
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t1 order by id;
+update t1 set a = a + 1 + 2;
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t1 order by id;
+update t1 set a = 1 + a;
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t1 order by id;
+update t1 set a = a - 1;
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t1 order by id;
+update t1 set a = -1 + a;
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t1 order by id;
+update t1 set a = a + a;
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t1 order by id;
+update t1 set a = b;
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t1 order by id;
+update t1 set a = a + b;
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t1 order by id;
+update t1 set a = b + a;
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t1 order by id;
+
+#can not pushdown sequoiadb
+update t1 set a = -a;
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t1 order by id;
+update t1 set a = a + a + 1;
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t1 order by id;
+update t1 set a = -b;
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t1 order by id;
+update t1 set a = b + 1 + 2;
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t1 order by id;
+update t1 set a = a + a + a;
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t1 order by id;
+update t1 set a = b + c;
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t1 order by id;
+update t1 set a = a + b + 1;
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t1 order by id;
+update t1 set a = 1 + a + b;
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t1 order by id;
+update t1 set a = a + b - 1;
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t1 order by id;
+update t1 set a = -1 + a + b;
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t1 order by id;
+update t1 set a = b + 1;
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t1 order by id;
+update t1 set a = b - 1;
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t1 order by id;
+update t1 set a = 1 + b;
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t1 order by id;
+update t1 set a = a + a + 1;
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t1 order by id;
+update t1 set a = a + a -1;
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t1 order by id;
+update t1 set a = 1 + a + a;
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t1 order by id;
+update t1 set a = 1 - a;
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t1 order by id;
+update t1 set a = 1 - b;
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t1 order by id;
+update t1 set a = a - b;
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t1 order by id;
+update t1 set a = b - a;
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t1 order by id;
+update t1 set a = 1 - a + b;
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t1 order by id;
+update t1 set a = 1 - b + a;
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t1 order by id;
+
+#out of range
+delete from t1;
+insert into t1 values(1,-9223372036854775808,9223372036854775807,1);
+update t1 set a = a + b;
+update t1 set a = a + b;
+--error 1264
+update t1 set a = a + b;
+select * from t1;
+drop table t1;
+
+#unsigned
+#Bug #SEQUOIASQLMAINSTREAM-672
+create table t1(id int auto_increment key, a bigint unsigned, b bigint unsigned, c bigint unsigned);
+insert into t1 values(1,1,18446744073709551615,1);
+--error 1264
+update t1 set a = a + b;
+select * from t1;
+drop table t1;
+
+#float
+create table t1(id int auto_increment key, a float, b float, c float);
+insert into t1 values(1.25,1.25,1.25,1.25),(2.33,2.333,2.3333,2.3333),(3.25,3.25,3.25,3.25),(4.3333,4.3333,4.3333,4.3333);
+insert into t1 values();
+#pushdown sequoiadb
+update t1 set a = 1 + 2 + 3;
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t1 order by id;
+update t1 set a = a;
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t1 order by id;
+update t1 set a = a + 1 + 2;
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t1 order by id;
+update t1 set a = 1 + a;
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t1 order by id;
+update t1 set a = a - 1;
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t1 order by id;
+update t1 set a = -1 + a;
+select * from t1 order by id;
+update t1 set a = a + a;
+select * from t1 order by id;
+update t1 set a = b;
+select * from t1 order by id;
+update t1 set a = a + b;
+select * from t1 order by id;
+update t1 set a = b + a;
+select * from t1 order by id;
+
+#can not pushdown sequoiadb
+update t1 set a = -a;
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t1 order by id;
+update t1 set a = a + a + 1;
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t1 order by id;
+update t1 set a = -b;
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t1 order by id;
+update t1 set a = b + 1 + 2;
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t1 order by id;
+update t1 set a = a + a + a;
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t1 order by id;
+update t1 set a = b + c;
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t1 order by id;
+update t1 set a = a + b + 1;
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t1 order by id;
+update t1 set a = 1 + a + b;
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t1 order by id;
+update t1 set a = a + b - 1;
+select * from t1 order by id;
+update t1 set a = -1 + a + b;
+select * from t1 order by id;
+update t1 set a = b + 1;
+select * from t1 order by id;
+update t1 set a = b - 1;
+select * from t1 order by id;
+update t1 set a = 1 + b;
+select * from t1 order by id;
+update t1 set a = a + a + 1;
+select * from t1 order by id;
+update t1 set a = a + a -1;
+select * from t1 order by id;
+update t1 set a = 1 + a + a;
+select * from t1 order by id;
+update t1 set a = 1 - a;
+select * from t1 order by id;
+update t1 set a = 1 - b;
+select * from t1 order by id;
+update t1 set a = a - b;
+select * from t1 order by id;
+update t1 set a = b - a;
+select * from t1 order by id;
+update t1 set a = 1 - a + b;
+select * from t1 order by id;
+update t1 set a = 1 - b + a;
+select * from t1 order by id;
+drop table t1;
+
+#out of range
+create table t1(id int auto_increment key, a float(5,2), b float(5,2), c float(5,2));
+insert into t1 values(1,-999.99,888.88,1);
+update t1 set a = a + b;
+update t1 set a = a + b;
+--error 1264
+update t1 set a = a + b;
+select * from t1;
+drop table t1;
+
+#unsigned
+create table t1(id int auto_increment key, a float(5,2) unsigned, b float(5,2) unsigned, c float(5,2) unsigned);
+insert into t1 values(1,1.25,999.99,1);
+--error 1264
+update t1 set a = a + b;
+select * from t1;
+drop table t1;
+
+#double
+create table t1(id int auto_increment key, a double, b double, c double);
+insert into t1 values(1.25,1.25,1.25,1.25),(2.33,2.333,2.3333,2.3333),(3.25,3.25,3.25,3.25),(4.3333,4.3333,4.3333,4.3333);
+insert into t1 values();
+#pushdown sequoiadb
+update t1 set a = 1 + 2 + 3;
+select * from t1 order by id;
+update t1 set a = a;
+select * from t1 order by id;
+update t1 set a = a + 1 + 2;
+select * from t1 order by id;
+update t1 set a = 1 + a;
+select * from t1 order by id;
+update t1 set a = a - 1;
+select * from t1 order by id;
+update t1 set a = -1 + a;
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t1 order by id;
+update t1 set a = a + a;
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t1 order by id;
+update t1 set a = b;
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t1 order by id;
+update t1 set a = a + b;
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t1 order by id;
+update t1 set a = b + a;
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t1 order by id;
+
+#can not pushdown sequoiadb
+update t1 set a = -a;
+select * from t1 order by id;
+update t1 set a = a + a + 1;
+select * from t1 order by id;
+update t1 set a = -b;
+select * from t1 order by id;
+update t1 set a = b + 1 + 2;
+select * from t1 order by id;
+update t1 set a = a + a + a;
+select * from t1 order by id;
+update t1 set a = b + c;
+select * from t1 order by id;
+update t1 set a = a + b + 1;
+select * from t1 order by id;
+update t1 set a = 1 + a + b;
+select * from t1 order by id;
+update t1 set a = a + b - 1;
+select * from t1 order by id;
+update t1 set a = -1 + a + b;
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t1 order by id;
+update t1 set a = b + 1;
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t1 order by id;
+update t1 set a = b - 1;
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t1 order by id;
+update t1 set a = 1 + b;
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t1 order by id;
+update t1 set a = a + a + 1;
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t1 order by id;
+update t1 set a = a + a -1;
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t1 order by id;
+update t1 set a = 1 + a + a;
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t1 order by id;
+update t1 set a = 1 - a;
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t1 order by id;
+update t1 set a = 1 - b;
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t1 order by id;
+update t1 set a = a - b;
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t1 order by id;
+update t1 set a = b - a;
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t1 order by id;
+update t1 set a = 1 - a + b;
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t1 order by id;
+update t1 set a = 1 - b + a;
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t1 order by id;
+drop table t1;
+
+#out of range
+create table t1(id int auto_increment key, a double(5,2), b double(5,2), c double(5,2));
+insert into t1 values(1,-999.99,888.88,1);
+update t1 set a = a + b;
+update t1 set a = a + b;
+--error 1264
+update t1 set a = a + b;
+select * from t1;
+drop table t1;
+
+#unsigned
+create table t1(id int auto_increment key, a double(5,2) unsigned, b double(5,2) unsigned, c double(5,2) unsigned);
+insert into t1 values(1,1.25,999.99,1);
+--error 1264
+update t1 set a = a + b;
+select * from t1;
+drop table t1;
+
+#decimal
+create table t1(id int auto_increment key, a decimal, b decimal, c decimal);
+insert into t1 values(1.25,1.25,1.25,1.25),(2.33,2.333,2.3333,2.3333),(3.25,3.25,3.25,3.25),(4.3333,4.3333,4.3333,4.3333);
+insert into t1 values();
+#pushdown sequoiadb
+update t1 set a = 1 + 2 + 3;
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t1 order by id;
+update t1 set a = a;
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t1 order by id;
+update t1 set a = a + 1 + 2;
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t1 order by id;
+update t1 set a = 1 + a;
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t1 order by id;
+update t1 set a = a - 1;
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t1 order by id;
+update t1 set a = -1 + a;
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t1 order by id;
+update t1 set a = a + a;
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t1 order by id;
+update t1 set a = b;
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t1 order by id;
+update t1 set a = a + b;
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t1 order by id;
+update t1 set a = b + a;
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t1 order by id;
+
+#can not pushdown sequoiadb
+update t1 set a = -a;
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t1 order by id;
+update t1 set a = a + a + 1;
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t1 order by id;
+update t1 set a = -b;
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t1 order by id;
+update t1 set a = b + 1 + 2;
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t1 order by id;
+update t1 set a = a + a + a;
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t1 order by id;
+update t1 set a = b + c;
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t1 order by id;
+update t1 set a = a + b + 1;
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t1 order by id;
+update t1 set a = 1 + a + b;
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t1 order by id;
+update t1 set a = a + b - 1;
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t1 order by id;
+update t1 set a = -1 + a + b;
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t1 order by id;
+update t1 set a = b + 1;
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t1 order by id;
+update t1 set a = b - 1;
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t1 order by id;
+update t1 set a = 1 + b;
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t1 order by id;
+update t1 set a = a + a + 1;
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t1 order by id;
+update t1 set a = a + a -1;
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t1 order by id;
+update t1 set a = 1 + a + a;
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t1 order by id;
+update t1 set a = 1 - a;
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t1 order by id;
+update t1 set a = 1 - b;
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t1 order by id;
+update t1 set a = a - b;
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t1 order by id;
+update t1 set a = b - a;
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t1 order by id;
+update t1 set a = 1 - a + b;
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t1 order by id;
+update t1 set a = 1 - b + a;
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t1 order by id;
+drop table t1;
+
+#out of range
+create table t1(id int auto_increment key, a decimal(5,2), b decimal(5,2), c decimal(5,2));
+insert into t1 values(1,-999.99,888.88,1);
+update t1 set a = a + b;
+update t1 set a = a + b;
+--error 1264
+update t1 set a = a + b;
+select * from t1;
+drop table t1;
+
+#unsigned
+create table t1(id int auto_increment key, a decimal(5,2) unsigned, b decimal(5,2) unsigned, c decimal(5,2) unsigned);
+insert into t1 values(1,1.25,999.99,1);
+--error 1264
+update t1 set a = a + b;
+select * from t1;
+drop table t1;
+
+#Case 22187
+create table t1(id int auto_increment key, a int, b decimal, c decimal(5,3), d decimal(4,2));
+insert into t1 values(1,1,2,12.121,12.12);
+update t1 set a = b;
+update t1 set b = a + b;
+select * from t1 order by id;
+update t1 set c = d;
+update t1 set c = c + b;
+select * from t1 order by id;
+
+drop database update_pushdown_sequoiadb;
+--source include/uninstall_sequoiadb.inc
+

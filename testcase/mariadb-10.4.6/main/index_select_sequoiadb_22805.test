@@ -1,0 +1,101 @@
+# Testcase: seqDB-22805:字段类型为字符串类型，范围查询的索引选择
+
+--source include/have_sequoiadb.inc
+
+set session sequoiadb_stats_cache_level=1;
+set optimizer_switch='mrr=on,mrr_cost_based=off';
+
+CREATE DATABASE index_select_sequoiadb_22805;
+use index_select_sequoiadb_22805;
+
+#char
+CREATE TABLE t1 (
+  a CHAR,
+  b CHAR
+);
+INSERT INTO t1 VALUES ('a', 'b'), ('b', 'c'), ('c', 'e'), ('d', 'd'),('e','a'), ('f', 'a'), ('g', 'k'),('h','a'),('j','b'),('i','c'),('r','j'),('q','c'),('x','x'),('v','v');
+alter table t1 add PRIMARY KEY(a);
+alter table t1 add index b(b);
+alter table t1 add index ab(a,b);
+alter table t1 add index ba(b,a);
+SHOW CREATE TABLE t1;
+--replace_column 9 #
+EXPLAIN SELECT * FROM t1 WHERE a<'b';
+SELECT * FROM t1 WHERE a<'b';
+--source include/query_pushdown_condition_sequoiadb.inc
+--replace_column 9 #
+EXPLAIN SELECT * FROM t1 WHERE b>'b';
+--sorted_result
+SELECT * FROM t1 WHERE b>'b';
+--source include/query_pushdown_condition_sequoiadb.inc
+--replace_column 9 #
+EXPLAIN SELECT * FROM t1 WHERE a>'h' AND b<'b';
+--sorted_result
+SELECT * FROM t1 WHERE a>'h' AND b<'b';
+--source include/query_pushdown_condition_sequoiadb.inc
+ANALYZE TABLE t1;
+--replace_column 9 #
+EXPLAIN SELECT * FROM t1 WHERE a<'b';
+--sorted_result
+SELECT * FROM t1 WHERE a<'b';
+--source include/query_pushdown_condition_sequoiadb.inc
+--replace_column 9 #
+EXPLAIN SELECT * FROM t1 WHERE b>'b';
+--sorted_result
+SELECT * FROM t1 WHERE b>'b';
+--source include/query_pushdown_condition_sequoiadb.inc
+--replace_column 9 #
+EXPLAIN SELECT * FROM t1 WHERE a>'h' AND b<'b';
+--sorted_result
+SELECT * FROM t1 WHERE a>'h' AND b<'b';
+--source include/query_pushdown_condition_sequoiadb.inc
+DROP TABLE t1;
+
+#varchar
+CREATE TABLE t1 (
+  a VARCHAR(255),
+  b VARCHAR(255)
+);
+INSERT INTO t1 VALUES ('a', 'b'), ('b', 'c'), ('c', 'c'), ('d', 'd'),('e','e'), ('f', 'a'), ('g', 'k'),('h','a'),('j','b'),('i','c'),('r','j'),('q','c'),('x','x'),('v','v');
+alter table t1 add PRIMARY KEY(a);
+alter table t1 add index b(b);
+alter table t1 add index ab(a,b);
+alter table t1 add index ba(b,a);
+SHOW CREATE TABLE t1;
+--replace_column 9 #
+EXPLAIN SELECT * FROM t1 WHERE a<>b;
+SELECT * FROM t1 WHERE a<>b;
+--source include/query_pushdown_condition_sequoiadb.inc
+--replace_column 9 #
+EXPLAIN SELECT * FROM t1 WHERE a IN ('a','b');
+--sorted_result
+SELECT * FROM t1 WHERE a IN ('a','b');
+--source include/query_pushdown_condition_sequoiadb.inc
+--replace_column 9 #
+EXPLAIN SELECT * FROM t1 WHERE b BETWEEN 'a' AND 'c';
+--sorted_result
+SELECT * FROM t1 WHERE b BETWEEN 'a' AND 'c';
+--source include/query_pushdown_condition_sequoiadb.inc
+--replace_column 9 #
+EXPLAIN SELECT * FROM t1 WHERE a<>b;
+--sorted_result
+SELECT * FROM t1 WHERE a<>b;
+--source include/query_pushdown_condition_sequoiadb.inc
+--replace_column 9 #
+EXPLAIN SELECT * FROM t1 WHERE a IN ('a','b');
+--sorted_result
+SELECT * FROM t1 WHERE a IN ('a','b');
+--source include/query_pushdown_condition_sequoiadb.inc
+--replace_column 9 #
+EXPLAIN SELECT * FROM t1 WHERE b BETWEEN 'a' AND 'c';
+--sorted_result
+SELECT * FROM t1 WHERE b BETWEEN 'a' AND 'c';
+--source include/query_pushdown_condition_sequoiadb.inc
+DROP TABLE t1;
+
+DROP DATABASE index_select_sequoiadb_22805;
+
+set session sequoiadb_stats_cache_level=default;
+set optimizer_switch=default;
+
+--source include/uninstall_sequoiadb.inc

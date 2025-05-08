@@ -1,0 +1,49 @@
+#Case 22760
+--source include/have_sequoiadb.inc
+
+set session sql_mode='STRICT_TRANS_TABLES,ERROR_FOR_DIVISION_BY_ZERO,NO_AUTO_CREATE_USER,NO_ENGINE_SUBSTITUTION';
+set session sequoiadb_debug_log=on;
+
+--disable_warnings
+drop database if exists group_by_sequoiadb;
+--enable_warnings
+
+create database group_by_sequoiadb;
+use group_by_sequoiadb;
+
+CREATE TABLE `group_by_sequoiadb` (
+  `col_int` int(11) DEFAULT NULL,
+  `col_varchar_16` varchar(16) COLLATE utf8mb4_bin DEFAULT NULL,
+  `col_varchar_16_key` varchar(16) COLLATE utf8mb4_bin DEFAULT NULL,
+  `pk` int(11) NOT NULL AUTO_INCREMENT,
+  `col_int_key` int(11) DEFAULT NULL,
+  PRIMARY KEY (`pk`),
+  KEY `col_varchar_16_key` (`col_varchar_16_key`),
+  KEY `col_int_key` (`col_int_key`)
+) ;
+
+# Execute the plan
+EXPLAIN SELECT
+    SQL_BIG_RESULT
+    pk, col_int, col_varchar_16, col_int_key, col_varchar_16_key
+FROM
+    `group_by_sequoiadb`
+WHERE
+    col_int_key = 5 OR col_int_key IS NULL
+GROUP BY col_int;
+
+# 不同查询条件与group by组合
+SELECT 
+    SQL_BIG_RESULT
+    pk, col_int, col_varchar_16, col_int_key, col_varchar_16_key
+FROM 
+    group_by_sequoiadb
+WHERE 	
+    col_int_key = 5 OR col_int_key IS NULL
+GROUP BY col_int;
+
+--source include/query_pushdown_condition_sequoiadb_3.inc
+
+drop database group_by_sequoiadb;
+
+--source include/uninstall_sequoiadb.inc

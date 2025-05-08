@@ -1,0 +1,135 @@
+# Testcase: seqDB-26736:单个分区表range方式查询，存在值占比小于万分之一，未命中MCV，sample num大于1W
+
+#
+# clear residual data
+#
+CREATE DATABASE  IF NOT EXISTS index_statistics_mcv_sequoiadb_26736;
+DROP DATABASE IF EXISTS index_statistics_mcv_sequoiadb_26736;
+
+#
+# set env
+#
+--source include/have_sequoiadb.inc
+--source include/have_partition.inc
+
+CREATE DATABASE  IF NOT EXISTS index_statistics_mcv_sequoiadb_26736;
+USE index_statistics_mcv_sequoiadb_26736;
+
+#
+# testcase process
+#
+
+#
+# insert data 2W 
+# total = 20000 = SUM(1, 10000) * 1 + SUM(10001, 11000) * 10
+#
+CREATE TABLE t1( a INT, b INT, c INT, KEY ( a ) ) PARTITION BY KEY( a );
+DELIMITER $;
+CREATE PROCEDURE p1()
+BEGIN
+    DECLARE repeat_num INT DEFAULT 0;
+    DECLARE value_num INT DEFAULT 1;
+    WHILE repeat_num < 1 DO
+        SET value_num = 1;
+        WHILE value_num <= 10000 DO
+            INSERT INTO t1 VALUES( value_num, NULL, NULL );
+            SET value_num = value_num + 1;
+        END WHILE;
+        SET repeat_num = repeat_num + 1;
+    END WHILE;
+
+    SET repeat_num = 0;
+    WHILE repeat_num < 10 DO
+        SET value_num = 10001;
+        WHILE value_num <= 11000 DO
+            INSERT INTO t1 VALUES( value_num, NULL, NULL );
+            SET value_num = value_num + 1;
+        END WHILE;
+        SET repeat_num = repeat_num + 1;
+    END WHILE;
+END $
+DELIMITER ;$
+
+CALL p1();
+
+# set sample num = 10000
+SET GLOBAL sequoiadb_stats_sample_num = 10000;
+--sorted_result
+SELECT * FROM t1 FORCE INDEX( a ) WHERE a < 0;
+ANALYZE TABLE t1;
+SET optimizer_trace = 'enabled=on';
+EXPLAIN SELECT * FROM t1 FORCE INDEX( a ) WHERE a < 0;
+SELECT * FROM information_schema.optimizer_trace;
+
+# set sample num = 20000
+SET GLOBAL sequoiadb_stats_sample_num = 20000;
+--sorted_result
+SELECT * FROM t1 FORCE INDEX( a ) WHERE a < 0;
+ANALYZE TABLE t1;
+SET optimizer_trace = 'enabled=on';
+EXPLAIN SELECT * FROM t1 FORCE INDEX( a ) WHERE a < 0;
+SELECT * FROM information_schema.optimizer_trace;
+
+#
+# insert data 3W
+# total = 20000 = SUM(1, 20000) * 1 + SUM(20001, 21000) * 10
+#
+CREATE TABLE t2( a INT, b INT, c INT, KEY ( a ) ) PARTITION BY KEY( a );
+DELIMITER $;
+CREATE PROCEDURE p2()
+BEGIN
+    DECLARE repeat_num INT DEFAULT 0;
+    DECLARE value_num INT DEFAULT 1;
+    WHILE repeat_num < 1 DO
+        SET value_num = 1;
+        WHILE value_num <= 20000 DO
+            INSERT INTO t2 VALUES( value_num, NULL, NULL );
+            SET value_num = value_num + 1;
+        END WHILE;
+        SET repeat_num = repeat_num + 1;
+    END WHILE;
+
+    SET repeat_num = 0;
+    WHILE repeat_num < 10 DO
+        SET value_num = 20001;
+        WHILE value_num <= 21000 DO
+            INSERT INTO t2 VALUES( value_num, NULL, NULL );
+            SET value_num = value_num + 1;
+        END WHILE;
+        SET repeat_num = repeat_num + 1;
+    END WHILE;
+END $
+DELIMITER ;$
+
+CALL p2();
+
+# set sample num = 10000
+SET GLOBAL sequoiadb_stats_sample_num = 10000;
+--sorted_result
+SELECT * FROM t2 FORCE INDEX( a ) WHERE a < 0;
+ANALYZE TABLE t2;
+SET optimizer_trace = 'enabled=on';
+EXPLAIN SELECT * FROM t2 FORCE INDEX( a ) WHERE a < 0;
+SELECT * FROM information_schema.optimizer_trace;
+
+# set sample num = 20000
+SET GLOBAL sequoiadb_stats_sample_num = 20000;
+ANALYZE TABLE t2;
+--sorted_result
+SELECT * FROM t2 FORCE INDEX( a ) WHERE a < 0;
+SET optimizer_trace = 'enabled=on';
+EXPLAIN SELECT * FROM t2 FORCE INDEX( a ) WHERE a < 0;
+SELECT * FROM information_schema.optimizer_trace;
+# set sample num = default
+SET GLOBAL sequoiadb_stats_sample_num = default;
+
+DROP PROCEDURE p1;
+DROP PROCEDURE p2;
+DROP TABLE t1,t2;
+
+#
+# clear env
+#
+DROP DATABASE index_statistics_mcv_sequoiadb_26736;
+--source include/uninstall_sequoiadb.inc
+

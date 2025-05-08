@@ -1,0 +1,117 @@
+# Case 31849
+--source include/have_sequoiadb.inc
+--source include/have_partition.inc
+
+--disable_warnings
+drop table if exists reorganize_partition_range, reorganize_partition_list, reorganize_partition_range_hash;
+--enable_warnings
+
+# range
+CREATE TABLE reorganize_partition_range (
+    id INT NOT NULL,
+    produced_date DATE,
+    name VARCHAR(100),
+    company VARCHAR(100)
+)
+PARTITION BY RANGE (YEAR(produced_date)) (
+    PARTITION p0 VALUES LESS THAN (1990),
+    PARTITION p1 VALUES LESS THAN (2000),
+    PARTITION p2 VALUES LESS THAN (2010),
+    PARTITION p3 VALUES LESS THAN (2020)
+);
+
+INSERT INTO reorganize_partition_range VALUES(1, "1989-11-11", "Alice", "OpenAI");
+INSERT INTO reorganize_partition_range VALUES(2, "1992-11-11", "Bob", "MicroSoft");
+INSERT INTO reorganize_partition_range VALUES(3, "2001-11-11", "Carl", "OpenAI");
+INSERT INTO reorganize_partition_range VALUES(4, "2011-11-11", "Daniel", "Google");
+
+ALTER TABLE reorganize_partition_range REORGANIZE PARTITION p2, p3 into (PARTITION p3 VALUES LESS THAN (2020));
+
+SHOW CREATE TABLE reorganize_partition_range;
+
+SELECT * FROM reorganize_partition_range ORDER BY id;
+
+SELECT * FROM reorganize_partition_range PARTITION (p3) ORDER BY id;
+
+ALTER TABLE reorganize_partition_range REORGANIZE PARTITION p3 into (PARTITION p2 VALUES LESS THAN (2010), PARTITION p3 VALUES LESS THAN (2020));
+
+SHOW CREATE TABLE reorganize_partition_range;
+
+SELECT * FROM reorganize_partition_range ORDER BY id;
+
+SELECT * FROM reorganize_partition_range PARTITION (p2, p3) ORDER BY id;
+
+# list
+CREATE TABLE reorganize_partition_list (
+    id INT NOT NULL,
+    produced_date DATE,
+    name VARCHAR(100),
+    company VARCHAR(100)
+)
+PARTITION BY LIST (YEAR(produced_date)) (
+    PARTITION p0 VALUES IN (1989),
+    PARTITION p1 VALUES IN (1992),
+    PARTITION p2 VALUES IN (2001),
+    PARTITION p3 VALUES IN (2011)
+);
+
+INSERT INTO reorganize_partition_list VALUES(1, "1989-11-11", "Alice", "OpenAI");
+INSERT INTO reorganize_partition_list VALUES(2, "1992-11-11", "Bob", "MicroSoft");
+INSERT INTO reorganize_partition_list VALUES(3, "2001-11-11", "Carl", "OpenAI");
+INSERT INTO reorganize_partition_list VALUES(4, "2011-11-11", "Daniel", "Google");
+
+ALTER TABLE reorganize_partition_list REORGANIZE PARTITION p2, p3 into (PARTITION p3 VALUES IN (2001,2011));
+
+SHOW CREATE TABLE reorganize_partition_list;
+
+SELECT * FROM reorganize_partition_list ORDER BY id;
+
+SELECT * FROM reorganize_partition_list PARTITION (p3) ORDER BY id;
+
+ALTER TABLE reorganize_partition_list REORGANIZE PARTITION p3 into (PARTITION p2 VALUES IN (2001), PARTITION p3 VALUES IN (2011));
+
+SHOW CREATE TABLE reorganize_partition_list;
+
+SELECT * FROM reorganize_partition_list ORDER BY id;
+
+SELECT * FROM reorganize_partition_list PARTITION (p2, p3) ORDER BY id;
+
+# range + hash
+CREATE TABLE reorganize_partition_range_hash (
+    id INT NOT NULL,
+    produced_date DATE,
+    name VARCHAR(100),
+    company VARCHAR(100)
+)
+PARTITION BY RANGE (YEAR(produced_date)) 
+SUBPARTITION BY HASH (id) (
+    PARTITION p0 VALUES LESS THAN (1990),
+    PARTITION p1 VALUES LESS THAN (2000),
+    PARTITION p2 VALUES LESS THAN (2010),
+    PARTITION p3 VALUES LESS THAN (2020)
+);
+
+INSERT INTO reorganize_partition_range_hash VALUES(1, "1989-11-11", "Alice", "OpenAI");
+INSERT INTO reorganize_partition_range_hash VALUES(2, "1992-11-11", "Bob", "MicroSoft");
+INSERT INTO reorganize_partition_range_hash VALUES(3, "2001-11-11", "Carl", "OpenAI");
+INSERT INTO reorganize_partition_range_hash VALUES(4, "2011-11-11", "Daniel", "Google");
+
+ALTER TABLE reorganize_partition_range_hash REORGANIZE PARTITION p2, p3 into (PARTITION p3 VALUES LESS THAN (2020));
+
+SHOW CREATE TABLE reorganize_partition_range_hash;
+
+SELECT * FROM reorganize_partition_range_hash ORDER BY id;
+
+SELECT * FROM reorganize_partition_range_hash PARTITION (p3) ORDER BY id;
+
+ALTER TABLE reorganize_partition_range_hash REORGANIZE PARTITION p3 into (PARTITION p2 VALUES LESS THAN (2010), PARTITION p3 VALUES LESS THAN (2020));
+
+SHOW CREATE TABLE reorganize_partition_range_hash;
+
+SELECT * FROM reorganize_partition_range_hash ORDER BY id;
+
+SELECT * FROM reorganize_partition_range_hash PARTITION (p2, p3) ORDER BY id;
+
+drop table reorganize_partition_range, reorganize_partition_list, reorganize_partition_range_hash;
+
+--source include/uninstall_sequoiadb.inc

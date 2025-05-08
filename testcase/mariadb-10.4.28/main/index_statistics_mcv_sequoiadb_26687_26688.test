@@ -1,0 +1,80 @@
+# Testcase: seqDB-26687:单个复合分区表ref方式查询，表数据均匀，命中MCV
+#           seqDB-26688:单个复合分区表ref方式查询，表数据均匀，未命中MCV
+
+#
+# clear residual data
+#
+CREATE DATABASE  IF NOT EXISTS index_statistics_mcv_sequoiadb_26687_26688;
+DROP DATABASE IF EXISTS index_statistics_mcv_sequoiadb_26687_26688;
+
+#
+# set env
+#
+--source include/have_sequoiadb.inc
+--source include/have_partition.inc
+
+CREATE DATABASE  IF NOT EXISTS index_statistics_mcv_sequoiadb_26687_26688;
+USE index_statistics_mcv_sequoiadb_26687_26688;
+
+#
+# testcase process
+#
+CREATE TABLE t1(
+    a INT NOT NULL,
+    b INT NOT NULL,
+    c INT NOT NULL,
+    INDEX idx_a(a),
+    INDEX idx_b(b)
+)
+PARTITION BY RANGE COLUMNS (a)
+SUBPARTITION BY KEY (b)
+SUBPARTITIONS 2 (
+    PARTITION p0 VALUES LESS THAN (4),
+    PARTITION p1 VALUES LESS THAN (7),
+    PARTITION p2 VALUES LESS THAN (10)
+);
+
+# insert 25 rows
+INSERT INTO t1 VALUES
+(1,5,9),(3,1,9),(1,5,9),(3,1,9),(1,5,9),(3,1,9),(1,5,9),(3,1,9),(1,5,9),(3,1,9),
+(2,3,9),(5,4,9),(2,3,9),(5,3,9),(2,3,9),(5,4,9),(2,3,9),(5,4,9),(2,3,9),(5,4,9),
+(4,2,9),(4,2,9),(4,2,9),(4,2,9),(4,2,9);
+
+# Testcase: seqDB-26687
+--sorted_result
+SELECT * FROM t1 WHERE a=5;
+--sorted_result
+SELECT * FROM t1 WHERE b=3;
+--sorted_result
+SELECT * FROM t1 WHERE a=5 and b=3;
+ANALYZE TABLE t1;
+
+# set debug='d:i:t:o,/tmp/mysqld26687.trace:f,Sdb_match_cnt_estimator::eval_mcv';
+
+EXPLAIN SELECT * FROM t1 WHERE a=5;
+EXPLAIN SELECT * FROM t1 WHERE b=3;
+EXPLAIN SELECT * FROM t1 WHERE a=5 and b=3;
+
+# set debug='';
+
+# Testcase: seqDB-26688
+--sorted_result
+SELECT * FROM t1 WHERE a=6;
+--sorted_result
+SELECT * FROM t1 WHERE b=6;
+ANALYZE TABLE t1;
+
+# set debug='d:i:t:o,/tmp/mysqld26688.trace:f,Sdb_match_cnt_estimator::eval_mcv';
+
+EXPLAIN SELECT * FROM t1 WHERE a=6;
+EXPLAIN SELECT * FROM t1 WHERE b=6;
+
+# set debug='';
+
+DROP TABLE t1;
+
+#
+# clear env
+#
+DROP DATABASE index_statistics_mcv_sequoiadb_26687_26688;
+--source include/uninstall_sequoiadb.inc

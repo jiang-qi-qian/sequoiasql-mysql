@@ -1,0 +1,14 @@
+########### suite/json/t/json_ddl_innodb.test                        #
+# Tests ddl with json column types using the innodb storage engine   #
+#                                                                    #
+# This test copies some tests originally in json.test                #
+######################################################################
+# Set the session storage engine
+--source include/have_sequoiadb.inc
+
+set default_storage_engine=sequoiadb;
+
+# Run the test
+--source suite/json/inc/json_ddl.inc
+
+--source include/uninstall_sequoiadb.inc

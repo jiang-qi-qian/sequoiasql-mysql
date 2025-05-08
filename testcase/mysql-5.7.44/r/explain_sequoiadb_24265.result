@@ -1,0 +1,55 @@
+drop database if exists explain_sequoiadb_24265;
+create database explain_sequoiadb_24265;
+drop database explain_sequoiadb_24265;
+create database explain_sequoiadb_24265;
+use explain_sequoiadb_24265;
+CREATE TABLE `t1` (
+`a` int(11) NOT NULL,
+`b` int(11) DEFAULT NULL,
+PRIMARY KEY (`a`),
+KEY `b` (`b`),
+KEY `ab` (`a`,`b`),
+KEY `ba` (`b`,`a`)
+) ENGINE=SequoiaDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin;
+CREATE TABLE `t2` (
+`a` int(11) NOT NULL,
+`b` int(11) DEFAULT NULL,
+PRIMARY KEY (`a`),
+KEY `b` (`b`)
+) ENGINE=SequoiaDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin;
+insert into t1 values (1,1),(2,2),(3,3),(4,4),(5,5),(6,6),(7,7),(8,8),(9,9),(10,10),(11,11),(12,12),(13,13),(14,14),(15,15),(16,16),(17,17),(18,18),(19,19),(20,20);
+insert into t2 values (1,1),(2,2),(3,3);
+explain select * from t1,t2 where t1.b=t2.b;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t2	NULL	ALL	b	NULL	NULL	NULL	3	100.00	Using where with pushed condition (`explain_sequoiadb_24265`.`t2`.`b` is not null)
+1	SIMPLE	t1	NULL	ref	b,ba	ba	5	explain_sequoiadb_24265.t2.b	3	100.00	Using index
+Warnings:
+Note	1003	/* select#1 */ select `explain_sequoiadb_24265`.`t1`.`a` AS `a`,`explain_sequoiadb_24265`.`t1`.`b` AS `b`,`explain_sequoiadb_24265`.`t2`.`a` AS `a`,`explain_sequoiadb_24265`.`t2`.`b` AS `b` from `explain_sequoiadb_24265`.`t1` join `explain_sequoiadb_24265`.`t2` where (`explain_sequoiadb_24265`.`t1`.`b` = `explain_sequoiadb_24265`.`t2`.`b`)
+select * from t2;
+a	b
+1	1
+2	2
+3	3
+show indexes from t2;
+Table	Non_unique	Key_name	Seq_in_index	Column_name	Collation	Cardinality	Sub_part	Packed	Null	Index_type	Comment	Index_comment
+t2	0	PRIMARY	1	a	A	NULL	NULL	NULL		BTREE		
+t2	1	b	1	b	A	NULL	NULL	NULL	YES	BTREE		
+analyze table t1;
+Table	Op	Msg_type	Msg_text
+explain_sequoiadb_24265.t1	analyze	status	OK
+explain select * from t1,t2 where t1.b=t2.b;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t2	NULL	ALL	b	NULL	NULL	NULL	3	100.00	Using where with pushed condition (`explain_sequoiadb_24265`.`t2`.`b` is not null)
+1	SIMPLE	t1	NULL	ref	b,ba	b	5	explain_sequoiadb_24265.t2.b	1	100.00	NULL
+Warnings:
+Note	1003	/* select#1 */ select `explain_sequoiadb_24265`.`t1`.`a` AS `a`,`explain_sequoiadb_24265`.`t1`.`b` AS `b`,`explain_sequoiadb_24265`.`t2`.`a` AS `a`,`explain_sequoiadb_24265`.`t2`.`b` AS `b` from `explain_sequoiadb_24265`.`t1` join `explain_sequoiadb_24265`.`t2` where (`explain_sequoiadb_24265`.`t1`.`b` = `explain_sequoiadb_24265`.`t2`.`b`)
+select * from t2;
+a	b
+1	1
+2	2
+3	3
+show indexes from t2;
+Table	Non_unique	Key_name	Seq_in_index	Column_name	Collation	Cardinality	Sub_part	Packed	Null	Index_type	Comment	Index_comment
+t2	0	PRIMARY	1	a	A	NULL	NULL	NULL		BTREE		
+t2	1	b	1	b	A	NULL	NULL	NULL	YES	BTREE		
+drop database explain_sequoiadb_24265;

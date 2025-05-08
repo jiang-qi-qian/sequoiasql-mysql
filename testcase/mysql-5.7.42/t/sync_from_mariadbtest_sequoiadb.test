@@ -1,0 +1,47 @@
+#Case 21989
+#BUG #SEQUOIASQLMAINSTREAM-606
+CREATE TABLE t1 (t TIMESTAMP NOT NULL);
+INSERT INTO t1 VALUES ('2001-01-01 00:00:00');
+SELECT * FROM t1 WHERE t < '2013-11-15 00:41:28' - INTERVAL 7 DAY;
+SELECT * FROM t1 WHERE t = '2001-01-08 00:00:00' - INTERVAL 7 DAY;
+SELECT * FROM t1 WHERE t < CONCAT('2013-11-15 00:41:28',LEFT(RAND(),0)) - INTERVAL 7 DAY;
+SELECT * FROM t1 WHERE t = CONCAT('2001-01-08 00:00:00',LEFT(RAND(),0)) - INTERVAL 7 DAY;
+SELECT * FROM t1 WHERE t < TIMESTAMP'2013-11-15 00:41:28' - INTERVAL 7 DAY;
+SELECT * FROM t1 WHERE t = TIMESTAMP'2001-01-08 00:00:00' - INTERVAL 7 DAY;
+DROP TABLE t1;
+
+#Case 22012 
+#BUG #SEQUOIASQLMAINSTREAM-621
+CREATE TABLE t1 (tm TIME); 
+INSERT INTO t1 VALUES ('0000-00-00 10:20:30'),('0000-00-00 10:20:31'); 
+INSERT INTO t1 VALUES ('0000-00-01 10:20:30'),('0000-00-01 10:20:31'); 
+INSERT INTO t1 VALUES ('31 10:20:30'),('32 10:20:30'),('33 10:20:30'),('34 10:20:30'); 
+SET sql_mode = ''; 
+SELECT * FROM t1 WHERE tm = TIMESTAMP'0000-00-01 10:20:30';
+DROP TABLE t1;
+SET sql_mode = default;
+
+#Case 22090
+#BUG #SEQUOIASQLMAINSTREAM-622
+create table t1 (
+  pk    integer not null auto_increment primary key,
+  key1  integer,
+  key2  integer not null,
+  filler char  (200),
+  index (key1),
+  index (key2)
+);
+show warnings;
+--disable_query_log
+let $1=30;
+begin;
+while ($1)
+{
+  eval insert into t1 (key1, key2, filler) values ($1/4, $1/8, 'filler-data');
+  dec $1;
+}
+commit;
+--enable_query_log
+select pk from t1 where key2 = 1 and key1 = 1;
+select pk from t1 ignore index(key1,key2) where key2 = 1 and key1 = 1;
+drop table t1;

@@ -1,0 +1,12 @@
+# Case 31912
+--source include/have_sequoiadb.inc
+
+--disable_result_log
+SELECT * FROM INFORMATION_SCHEMA.SYSTEM_VARIABLES limit 1;
+
+SELECT COUNT(VARIABLE_NAME),READ_ONLY FROM INFORMATION_SCHEMA.SYSTEM_VARIABLES group by READ_ONLY;
+
+SELECT * FROM INFORMATION_SCHEMA.SYSTEM_VARIABLES where VARIABLE_NAME = 'sequoiadb-cls-pushdown-expand';
+--enable_result_log
+
+--source include/uninstall_sequoiadb.inc

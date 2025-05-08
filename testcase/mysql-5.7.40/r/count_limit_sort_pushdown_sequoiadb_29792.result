@@ -1,0 +1,801 @@
+drop database if exists count_limit_sort_pushdown_sequoiadb_29792;
+create database count_limit_sort_pushdown_sequoiadb_29792;
+drop database count_limit_sort_pushdown_sequoiadb_29792;
+create database count_limit_sort_pushdown_sequoiadb_29792;
+use count_limit_sort_pushdown_sequoiadb_29792;
+drop table if exists t1,t2;
+CREATE TABLE `t1` (
+`id` int,
+`documentno` varchar(32) COLLATE utf8mb4_bin DEFAULT NULL,
+`sffid` decimal(10,0) DEFAULT NULL,
+KEY `doc` (`documentno`),
+KEY `id_doc_sff_idx`(`id`, `documentno`, `sffid`)
+) ENGINE=SequoiaDB;
+insert into t1 values(1, "abc", 1),(2, "abc", 3),(4, "bdc", 4),(4, "bdc", 4),(5,"cf ", 5),(NULL, NULL, NULL),(NULL, NULL, NULL),(NULL, "ef", 7),(8, NULL, 2);
+create table t2 like t1;
+insert into t2 select * from t1;
+set session sequoiadb_debug_log=on;
+set session sequoiadb_optimizer_options='direct_count,direct_delete,direct_update,direct_limit';
+explain select id from t1 group by id;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	index	id_doc_sff_idx	id_doc_sff_idx	142	NULL	#	#	Using index
+Warnings:
+Note	1003	/* select#1 */ select `count_limit_sort_pushdown_sequoiadb_29792`.`t1`.`id` AS `id` from `count_limit_sort_pushdown_sequoiadb_29792`.`t1` group by `count_limit_sort_pushdown_sequoiadb_29792`.`t1`.`id`
+select id from t1 group by id;
+id
+NULL
+1
+2
+4
+5
+8
+[Note] SequoiaDB: optimizer pushdown autocommit: 1
+[Note] SequoiaDB: Query message: condition[{}], selector[{}], order_by[{ "id": 1, "documentno": 1, "sffid": 1 }], hint[{ "": "id_doc_sff_idx" }], limit[-1], offset[0], table[count_limit_sort_pushdown_sequoiadb_29792.t1]
+explain select documentno from t1 group by documentno limit 2;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	index	doc,id_doc_sff_idx	doc	131	NULL	#	#	Using index
+Warnings:
+Note	1003	/* select#1 */ select `count_limit_sort_pushdown_sequoiadb_29792`.`t1`.`documentno` AS `documentno` from `count_limit_sort_pushdown_sequoiadb_29792`.`t1` group by `count_limit_sort_pushdown_sequoiadb_29792`.`t1`.`documentno` limit 2
+select documentno from t1 group by documentno limit 2;
+documentno
+NULL
+abc
+[Note] SequoiaDB: optimizer pushdown autocommit: 1
+[Note] SequoiaDB: Query message: condition[{}], selector[{}], order_by[{ "documentno": 1 }], hint[{ "": "doc" }], limit[-1], offset[0], table[count_limit_sort_pushdown_sequoiadb_29792.t1]
+explain select id from t1 order by id;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	index	NULL	id_doc_sff_idx	142	NULL	#	#	Using index
+Warnings:
+Note	1003	/* select#1 */ select `count_limit_sort_pushdown_sequoiadb_29792`.`t1`.`id` AS `id` from `count_limit_sort_pushdown_sequoiadb_29792`.`t1` order by `count_limit_sort_pushdown_sequoiadb_29792`.`t1`.`id`
+select id from t1 order by id;
+id
+NULL
+NULL
+NULL
+1
+2
+4
+4
+5
+8
+[Note] SequoiaDB: optimizer pushdown autocommit: 1
+[Note] SequoiaDB: optimizer selector object: { "id": null }, table: count_limit_sort_pushdown_sequoiadb_29792.t1
+[Note] SequoiaDB: Query message: condition[{}], selector[{ "id": null }], order_by[{ "id": 1, "documentno": 1, "sffid": 1 }], hint[{ "": "id_doc_sff_idx" }], limit[-1], offset[0], table[count_limit_sort_pushdown_sequoiadb_29792.t1]
+explain select documentno from t1 order by documentno limit 2;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	index	NULL	doc	131	NULL	#	#	Using index
+Warnings:
+Note	1003	/* select#1 */ select `count_limit_sort_pushdown_sequoiadb_29792`.`t1`.`documentno` AS `documentno` from `count_limit_sort_pushdown_sequoiadb_29792`.`t1` order by `count_limit_sort_pushdown_sequoiadb_29792`.`t1`.`documentno` limit 2
+select documentno from t1 order by documentno limit 2;
+documentno
+NULL
+NULL
+[Note] SequoiaDB: optimizer pushdown autocommit: 1
+[Note] SequoiaDB: optimizer selector object: { "documentno": null }, table: count_limit_sort_pushdown_sequoiadb_29792.t1
+[Note] SequoiaDB: Query message: condition[{}], selector[{ "documentno": null }], order_by[{ "documentno": 1 }], hint[{ "": "doc" }], limit[2], offset[0], table[count_limit_sort_pushdown_sequoiadb_29792.t1]
+explain select id from t1 group by id with rollup limit 10;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	index	id_doc_sff_idx	id_doc_sff_idx	142	NULL	#	#	Using index
+Warnings:
+Note	1003	/* select#1 */ select `count_limit_sort_pushdown_sequoiadb_29792`.`t1`.`id` AS `id` from `count_limit_sort_pushdown_sequoiadb_29792`.`t1` group by `count_limit_sort_pushdown_sequoiadb_29792`.`t1`.`id` with rollup limit 10
+select id from t1 group by id with rollup limit 10;
+id
+NULL
+1
+2
+4
+5
+8
+NULL
+[Note] SequoiaDB: optimizer pushdown autocommit: 1
+[Note] SequoiaDB: Query message: condition[{}], selector[{}], order_by[{ "id": 1, "documentno": 1, "sffid": 1 }], hint[{ "": "id_doc_sff_idx" }], limit[-1], offset[0], table[count_limit_sort_pushdown_sequoiadb_29792.t1]
+explain select distinct id from t1 group by id;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	index	id_doc_sff_idx	id_doc_sff_idx	142	NULL	#	#	Using index
+Warnings:
+Note	1003	/* select#1 */ select `count_limit_sort_pushdown_sequoiadb_29792`.`t1`.`id` AS `id` from `count_limit_sort_pushdown_sequoiadb_29792`.`t1` group by `count_limit_sort_pushdown_sequoiadb_29792`.`t1`.`id`
+select distinct id from t1 group by id;
+id
+NULL
+1
+2
+4
+5
+8
+[Note] SequoiaDB: optimizer pushdown autocommit: 1
+[Note] SequoiaDB: Query message: condition[{}], selector[{}], order_by[{ "id": 1, "documentno": 1, "sffid": 1 }], hint[{ "": "id_doc_sff_idx" }], limit[-1], offset[0], table[count_limit_sort_pushdown_sequoiadb_29792.t1]
+explain select distinct documentno from t1 group by documentno limit 2;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	index	doc,id_doc_sff_idx	doc	131	NULL	#	#	Using index
+Warnings:
+Note	1003	/* select#1 */ select `count_limit_sort_pushdown_sequoiadb_29792`.`t1`.`documentno` AS `documentno` from `count_limit_sort_pushdown_sequoiadb_29792`.`t1` group by `count_limit_sort_pushdown_sequoiadb_29792`.`t1`.`documentno` limit 2
+select distinct documentno from t1 group by documentno limit 2;
+documentno
+NULL
+abc
+[Note] SequoiaDB: optimizer pushdown autocommit: 1
+[Note] SequoiaDB: Query message: condition[{}], selector[{}], order_by[{ "documentno": 1 }], hint[{ "": "doc" }], limit[-1], offset[0], table[count_limit_sort_pushdown_sequoiadb_29792.t1]
+explain select SQL_BUFFER_RESULT documentno from t1 group by documentno;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	index	doc,id_doc_sff_idx	doc	131	NULL	#	#	Using index; Using temporary
+Warnings:
+Note	1003	/* select#1 */ select sql_buffer_result `count_limit_sort_pushdown_sequoiadb_29792`.`t1`.`documentno` AS `documentno` from `count_limit_sort_pushdown_sequoiadb_29792`.`t1` group by `count_limit_sort_pushdown_sequoiadb_29792`.`t1`.`documentno`
+select SQL_BUFFER_RESULT documentno from t1 group by documentno;
+documentno
+NULL
+abc
+bdc
+cf 
+ef
+[Note] SequoiaDB: optimizer pushdown autocommit: 1
+[Note] SequoiaDB: Query message: condition[{}], selector[{}], order_by[{ "documentno": 1 }], hint[{ "": "doc" }], limit[-1], offset[0], table[count_limit_sort_pushdown_sequoiadb_29792.t1]
+explain select SQL_BUFFER_RESULT id from t1 group by id limit 2;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	index	id_doc_sff_idx	id_doc_sff_idx	142	NULL	#	#	Using index; Using temporary
+Warnings:
+Note	1003	/* select#1 */ select sql_buffer_result `count_limit_sort_pushdown_sequoiadb_29792`.`t1`.`id` AS `id` from `count_limit_sort_pushdown_sequoiadb_29792`.`t1` group by `count_limit_sort_pushdown_sequoiadb_29792`.`t1`.`id` limit 2
+select SQL_BUFFER_RESULT id from t1 group by id limit 2;
+id
+NULL
+1
+[Note] SequoiaDB: optimizer pushdown autocommit: 1
+[Note] SequoiaDB: Query message: condition[{}], selector[{}], order_by[{ "id": 1, "documentno": 1, "sffid": 1 }], hint[{ "": "id_doc_sff_idx" }], limit[-1], offset[0], table[count_limit_sort_pushdown_sequoiadb_29792.t1]
+explain select SQL_BUFFER_RESULT documentno from t1 order by documentno;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	index	NULL	doc	131	NULL	#	#	Using index; Using temporary
+Warnings:
+Note	1003	/* select#1 */ select sql_buffer_result `count_limit_sort_pushdown_sequoiadb_29792`.`t1`.`documentno` AS `documentno` from `count_limit_sort_pushdown_sequoiadb_29792`.`t1` order by `count_limit_sort_pushdown_sequoiadb_29792`.`t1`.`documentno`
+select SQL_BUFFER_RESULT documentno from t1 order by documentno;
+documentno
+NULL
+NULL
+NULL
+abc
+abc
+bdc
+bdc
+cf 
+ef
+[Note] SequoiaDB: optimizer pushdown autocommit: 1
+[Note] SequoiaDB: optimizer selector object: { "documentno": null }, table: count_limit_sort_pushdown_sequoiadb_29792.t1
+[Note] SequoiaDB: Query message: condition[{}], selector[{ "documentno": null }], order_by[{ "documentno": 1 }], hint[{ "": "doc" }], limit[-1], offset[0], table[count_limit_sort_pushdown_sequoiadb_29792.t1]
+explain select SQL_BUFFER_RESULT id from t1 order by id limit 2;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	index	NULL	id_doc_sff_idx	142	NULL	#	#	Using index; Using temporary
+Warnings:
+Note	1003	/* select#1 */ select sql_buffer_result `count_limit_sort_pushdown_sequoiadb_29792`.`t1`.`id` AS `id` from `count_limit_sort_pushdown_sequoiadb_29792`.`t1` order by `count_limit_sort_pushdown_sequoiadb_29792`.`t1`.`id` limit 2
+select SQL_BUFFER_RESULT id from t1 order by id limit 2;
+id
+NULL
+NULL
+[Note] SequoiaDB: optimizer pushdown autocommit: 1
+[Note] SequoiaDB: optimizer selector object: { "id": null }, table: count_limit_sort_pushdown_sequoiadb_29792.t1
+[Note] SequoiaDB: Query message: condition[{}], selector[{ "id": null }], order_by[{ "id": 1, "documentno": 1, "sffid": 1 }], hint[{ "": "id_doc_sff_idx" }], limit[2], offset[0], table[count_limit_sort_pushdown_sequoiadb_29792.t1]
+explain select SQL_BUFFER_RESULT documentno from t1 group by documentno with rollup limit 10;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	index	doc,id_doc_sff_idx	doc	131	NULL	#	#	Using index; Using temporary
+Warnings:
+Note	1003	/* select#1 */ select sql_buffer_result `count_limit_sort_pushdown_sequoiadb_29792`.`t1`.`documentno` AS `documentno` from `count_limit_sort_pushdown_sequoiadb_29792`.`t1` group by `count_limit_sort_pushdown_sequoiadb_29792`.`t1`.`documentno` with rollup limit 10
+select SQL_BUFFER_RESULT documentno from t1 group by documentno with rollup limit 10;
+documentno
+NULL
+abc
+bdc
+cf 
+ef
+NULL
+[Note] SequoiaDB: optimizer pushdown autocommit: 1
+[Note] SequoiaDB: Query message: condition[{}], selector[{}], order_by[{ "documentno": 1 }], hint[{ "": "doc" }], limit[-1], offset[0], table[count_limit_sort_pushdown_sequoiadb_29792.t1]
+explain select distinct SQL_BUFFER_RESULT documentno from t1 group by documentno;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	index	doc,id_doc_sff_idx	doc	131	NULL	#	#	Using index; Using temporary
+Warnings:
+Note	1003	/* select#1 */ select sql_buffer_result `count_limit_sort_pushdown_sequoiadb_29792`.`t1`.`documentno` AS `documentno` from `count_limit_sort_pushdown_sequoiadb_29792`.`t1` group by `count_limit_sort_pushdown_sequoiadb_29792`.`t1`.`documentno`
+select distinct SQL_BUFFER_RESULT documentno from t1 group by documentno;
+documentno
+NULL
+abc
+bdc
+cf 
+ef
+[Note] SequoiaDB: optimizer pushdown autocommit: 1
+[Note] SequoiaDB: Query message: condition[{}], selector[{}], order_by[{ "documentno": 1 }], hint[{ "": "doc" }], limit[-1], offset[0], table[count_limit_sort_pushdown_sequoiadb_29792.t1]
+explain select distinct SQL_BUFFER_RESULT id from t1 group by id limit 2;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	index	id_doc_sff_idx	id_doc_sff_idx	142	NULL	#	#	Using index; Using temporary
+Warnings:
+Note	1003	/* select#1 */ select sql_buffer_result `count_limit_sort_pushdown_sequoiadb_29792`.`t1`.`id` AS `id` from `count_limit_sort_pushdown_sequoiadb_29792`.`t1` group by `count_limit_sort_pushdown_sequoiadb_29792`.`t1`.`id` limit 2
+select distinct SQL_BUFFER_RESULT id from t1 group by id limit 2;
+id
+NULL
+1
+[Note] SequoiaDB: optimizer pushdown autocommit: 1
+[Note] SequoiaDB: Query message: condition[{}], selector[{}], order_by[{ "id": 1, "documentno": 1, "sffid": 1 }], hint[{ "": "id_doc_sff_idx" }], limit[-1], offset[0], table[count_limit_sort_pushdown_sequoiadb_29792.t1]
+explain select SQL_SMALL_RESULT id from t1 group by id;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	index	id_doc_sff_idx	id_doc_sff_idx	142	NULL	#	#	Using index
+Warnings:
+Note	1003	/* select#1 */ select sql_small_result `count_limit_sort_pushdown_sequoiadb_29792`.`t1`.`id` AS `id` from `count_limit_sort_pushdown_sequoiadb_29792`.`t1` group by `count_limit_sort_pushdown_sequoiadb_29792`.`t1`.`id`
+select SQL_SMALL_RESULT id from t1 group by id;
+id
+NULL
+1
+2
+4
+5
+8
+[Note] SequoiaDB: optimizer pushdown autocommit: 1
+[Note] SequoiaDB: Query message: condition[{}], selector[{}], order_by[{ "id": 1, "documentno": 1, "sffid": 1 }], hint[{ "": "id_doc_sff_idx" }], limit[-1], offset[0], table[count_limit_sort_pushdown_sequoiadb_29792.t1]
+explain select SQL_SMALL_RESULT documentno from t1 group by documentno limit 2;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	index	doc,id_doc_sff_idx	doc	131	NULL	#	#	Using index
+Warnings:
+Note	1003	/* select#1 */ select sql_small_result `count_limit_sort_pushdown_sequoiadb_29792`.`t1`.`documentno` AS `documentno` from `count_limit_sort_pushdown_sequoiadb_29792`.`t1` group by `count_limit_sort_pushdown_sequoiadb_29792`.`t1`.`documentno` limit 2
+select SQL_SMALL_RESULT documentno from t1 group by documentno limit 2;
+documentno
+NULL
+abc
+[Note] SequoiaDB: optimizer pushdown autocommit: 1
+[Note] SequoiaDB: Query message: condition[{}], selector[{}], order_by[{ "documentno": 1 }], hint[{ "": "doc" }], limit[-1], offset[0], table[count_limit_sort_pushdown_sequoiadb_29792.t1]
+explain select SQL_SMALL_RESULT id from t1 order by id;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	index	NULL	id_doc_sff_idx	142	NULL	#	#	Using index
+Warnings:
+Note	1003	/* select#1 */ select sql_small_result `count_limit_sort_pushdown_sequoiadb_29792`.`t1`.`id` AS `id` from `count_limit_sort_pushdown_sequoiadb_29792`.`t1` order by `count_limit_sort_pushdown_sequoiadb_29792`.`t1`.`id`
+select SQL_SMALL_RESULT id from t1 order by id;
+id
+NULL
+NULL
+NULL
+1
+2
+4
+4
+5
+8
+[Note] SequoiaDB: optimizer pushdown autocommit: 1
+[Note] SequoiaDB: optimizer selector object: { "id": null }, table: count_limit_sort_pushdown_sequoiadb_29792.t1
+[Note] SequoiaDB: Query message: condition[{}], selector[{ "id": null }], order_by[{ "id": 1, "documentno": 1, "sffid": 1 }], hint[{ "": "id_doc_sff_idx" }], limit[-1], offset[0], table[count_limit_sort_pushdown_sequoiadb_29792.t1]
+explain select SQL_SMALL_RESULT documentno from t1 order by documentno limit 2;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	index	NULL	doc	131	NULL	#	#	Using index
+Warnings:
+Note	1003	/* select#1 */ select sql_small_result `count_limit_sort_pushdown_sequoiadb_29792`.`t1`.`documentno` AS `documentno` from `count_limit_sort_pushdown_sequoiadb_29792`.`t1` order by `count_limit_sort_pushdown_sequoiadb_29792`.`t1`.`documentno` limit 2
+select SQL_SMALL_RESULT documentno from t1 order by documentno limit 2;
+documentno
+NULL
+NULL
+[Note] SequoiaDB: optimizer pushdown autocommit: 1
+[Note] SequoiaDB: optimizer selector object: { "documentno": null }, table: count_limit_sort_pushdown_sequoiadb_29792.t1
+[Note] SequoiaDB: Query message: condition[{}], selector[{ "documentno": null }], order_by[{ "documentno": 1 }], hint[{ "": "doc" }], limit[2], offset[0], table[count_limit_sort_pushdown_sequoiadb_29792.t1]
+explain select SQL_SMALL_RESULT id from t1 group by id with rollup limit 10;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	index	id_doc_sff_idx	id_doc_sff_idx	142	NULL	#	#	Using index
+Warnings:
+Note	1003	/* select#1 */ select sql_small_result `count_limit_sort_pushdown_sequoiadb_29792`.`t1`.`id` AS `id` from `count_limit_sort_pushdown_sequoiadb_29792`.`t1` group by `count_limit_sort_pushdown_sequoiadb_29792`.`t1`.`id` with rollup limit 10
+select SQL_SMALL_RESULT id from t1 group by id with rollup limit 10;
+id
+NULL
+1
+2
+4
+5
+8
+NULL
+[Note] SequoiaDB: optimizer pushdown autocommit: 1
+[Note] SequoiaDB: Query message: condition[{}], selector[{}], order_by[{ "id": 1, "documentno": 1, "sffid": 1 }], hint[{ "": "id_doc_sff_idx" }], limit[-1], offset[0], table[count_limit_sort_pushdown_sequoiadb_29792.t1]
+explain select distinct SQL_SMALL_RESULT id from t1 group by id;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	index	id_doc_sff_idx	id_doc_sff_idx	142	NULL	#	#	Using index
+Warnings:
+Note	1003	/* select#1 */ select sql_small_result `count_limit_sort_pushdown_sequoiadb_29792`.`t1`.`id` AS `id` from `count_limit_sort_pushdown_sequoiadb_29792`.`t1` group by `count_limit_sort_pushdown_sequoiadb_29792`.`t1`.`id`
+select distinct SQL_SMALL_RESULT id from t1 group by id;
+id
+NULL
+1
+2
+4
+5
+8
+[Note] SequoiaDB: optimizer pushdown autocommit: 1
+[Note] SequoiaDB: Query message: condition[{}], selector[{}], order_by[{ "id": 1, "documentno": 1, "sffid": 1 }], hint[{ "": "id_doc_sff_idx" }], limit[-1], offset[0], table[count_limit_sort_pushdown_sequoiadb_29792.t1]
+explain select distinct SQL_SMALL_RESULT documentno from t1 group by documentno limit 2;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	index	doc,id_doc_sff_idx	doc	131	NULL	#	#	Using index
+Warnings:
+Note	1003	/* select#1 */ select sql_small_result `count_limit_sort_pushdown_sequoiadb_29792`.`t1`.`documentno` AS `documentno` from `count_limit_sort_pushdown_sequoiadb_29792`.`t1` group by `count_limit_sort_pushdown_sequoiadb_29792`.`t1`.`documentno` limit 2
+select distinct SQL_SMALL_RESULT documentno from t1 group by documentno limit 2;
+documentno
+NULL
+abc
+[Note] SequoiaDB: optimizer pushdown autocommit: 1
+[Note] SequoiaDB: Query message: condition[{}], selector[{}], order_by[{ "documentno": 1 }], hint[{ "": "doc" }], limit[-1], offset[0], table[count_limit_sort_pushdown_sequoiadb_29792.t1]
+explain select SQL_BIG_RESULT id from t1 group by id;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	index	id_doc_sff_idx	id_doc_sff_idx	142	NULL	#	#	Using index; Using filesort
+Warnings:
+Note	1003	/* select#1 */ select sql_big_result `count_limit_sort_pushdown_sequoiadb_29792`.`t1`.`id` AS `id` from `count_limit_sort_pushdown_sequoiadb_29792`.`t1` group by `count_limit_sort_pushdown_sequoiadb_29792`.`t1`.`id`
+select SQL_BIG_RESULT id from t1 group by id;
+id
+NULL
+1
+2
+4
+5
+8
+[Note] SequoiaDB: optimizer pushdown autocommit: 1
+[Note] SequoiaDB: Query message: condition[{}], selector[{}], order_by[{}], hint[{}], limit[-1], offset[0], table[count_limit_sort_pushdown_sequoiadb_29792.t1]
+explain select SQL_BIG_RESULT documentno from t1 group by documentno limit 2;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	index	doc,id_doc_sff_idx	doc	131	NULL	#	#	Using index; Using filesort
+Warnings:
+Note	1003	/* select#1 */ select sql_big_result `count_limit_sort_pushdown_sequoiadb_29792`.`t1`.`documentno` AS `documentno` from `count_limit_sort_pushdown_sequoiadb_29792`.`t1` group by `count_limit_sort_pushdown_sequoiadb_29792`.`t1`.`documentno` limit 2
+select SQL_BIG_RESULT documentno from t1 group by documentno limit 2;
+documentno
+NULL
+abc
+[Note] SequoiaDB: optimizer pushdown autocommit: 1
+[Note] SequoiaDB: Query message: condition[{}], selector[{}], order_by[{}], hint[{}], limit[-1], offset[0], table[count_limit_sort_pushdown_sequoiadb_29792.t1]
+explain select SQL_BIG_RESULT id from t1 order by id;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	index	NULL	id_doc_sff_idx	142	NULL	#	#	Using index
+Warnings:
+Note	1003	/* select#1 */ select sql_big_result `count_limit_sort_pushdown_sequoiadb_29792`.`t1`.`id` AS `id` from `count_limit_sort_pushdown_sequoiadb_29792`.`t1` order by `count_limit_sort_pushdown_sequoiadb_29792`.`t1`.`id`
+select SQL_BIG_RESULT id from t1 order by id;
+id
+NULL
+NULL
+NULL
+1
+2
+4
+4
+5
+8
+[Note] SequoiaDB: optimizer pushdown autocommit: 1
+[Note] SequoiaDB: optimizer selector object: { "id": null }, table: count_limit_sort_pushdown_sequoiadb_29792.t1
+[Note] SequoiaDB: Query message: condition[{}], selector[{ "id": null }], order_by[{ "id": 1, "documentno": 1, "sffid": 1 }], hint[{ "": "id_doc_sff_idx" }], limit[-1], offset[0], table[count_limit_sort_pushdown_sequoiadb_29792.t1]
+explain select SQL_BIG_RESULT documentno from t1 order by documentno limit 2;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	index	NULL	doc	131	NULL	#	#	Using index
+Warnings:
+Note	1003	/* select#1 */ select sql_big_result `count_limit_sort_pushdown_sequoiadb_29792`.`t1`.`documentno` AS `documentno` from `count_limit_sort_pushdown_sequoiadb_29792`.`t1` order by `count_limit_sort_pushdown_sequoiadb_29792`.`t1`.`documentno` limit 2
+select SQL_BIG_RESULT documentno from t1 order by documentno limit 2;
+documentno
+NULL
+NULL
+[Note] SequoiaDB: optimizer pushdown autocommit: 1
+[Note] SequoiaDB: optimizer selector object: { "documentno": null }, table: count_limit_sort_pushdown_sequoiadb_29792.t1
+[Note] SequoiaDB: Query message: condition[{}], selector[{ "documentno": null }], order_by[{ "documentno": 1 }], hint[{ "": "doc" }], limit[2], offset[0], table[count_limit_sort_pushdown_sequoiadb_29792.t1]
+explain select SQL_BIG_RESULT id from t1 group by id with rollup limit 10;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	index	id_doc_sff_idx	id_doc_sff_idx	142	NULL	#	#	Using index; Using filesort
+Warnings:
+Note	1003	/* select#1 */ select sql_big_result `count_limit_sort_pushdown_sequoiadb_29792`.`t1`.`id` AS `id` from `count_limit_sort_pushdown_sequoiadb_29792`.`t1` group by `count_limit_sort_pushdown_sequoiadb_29792`.`t1`.`id` with rollup limit 10
+select SQL_BIG_RESULT id from t1 group by id with rollup limit 10;
+id
+NULL
+1
+2
+4
+5
+8
+NULL
+[Note] SequoiaDB: optimizer pushdown autocommit: 1
+[Note] SequoiaDB: Query message: condition[{}], selector[{}], order_by[{}], hint[{}], limit[-1], offset[0], table[count_limit_sort_pushdown_sequoiadb_29792.t1]
+explain select distinct SQL_BIG_RESULT id from t1 group by id;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	index	id_doc_sff_idx	id_doc_sff_idx	142	NULL	#	#	Using index; Using filesort
+Warnings:
+Note	1003	/* select#1 */ select sql_big_result `count_limit_sort_pushdown_sequoiadb_29792`.`t1`.`id` AS `id` from `count_limit_sort_pushdown_sequoiadb_29792`.`t1` group by `count_limit_sort_pushdown_sequoiadb_29792`.`t1`.`id`
+select distinct SQL_BIG_RESULT id from t1 group by id;
+id
+NULL
+1
+2
+4
+5
+8
+[Note] SequoiaDB: optimizer pushdown autocommit: 1
+[Note] SequoiaDB: Query message: condition[{}], selector[{}], order_by[{}], hint[{}], limit[-1], offset[0], table[count_limit_sort_pushdown_sequoiadb_29792.t1]
+explain select distinct SQL_BIG_RESULT documentno from t1 group by documentno limit 2;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	index	doc,id_doc_sff_idx	doc	131	NULL	#	#	Using index; Using filesort
+Warnings:
+Note	1003	/* select#1 */ select sql_big_result `count_limit_sort_pushdown_sequoiadb_29792`.`t1`.`documentno` AS `documentno` from `count_limit_sort_pushdown_sequoiadb_29792`.`t1` group by `count_limit_sort_pushdown_sequoiadb_29792`.`t1`.`documentno` limit 2
+select distinct SQL_BIG_RESULT documentno from t1 group by documentno limit 2;
+documentno
+NULL
+abc
+[Note] SequoiaDB: optimizer pushdown autocommit: 1
+[Note] SequoiaDB: Query message: condition[{}], selector[{}], order_by[{}], hint[{}], limit[-1], offset[0], table[count_limit_sort_pushdown_sequoiadb_29792.t1]
+explain select HIGH_PRIORITY documentno from t1 group by documentno;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	index	doc,id_doc_sff_idx	doc	131	NULL	#	#	Using index
+Warnings:
+Note	1003	/* select#1 */ select high_priority `count_limit_sort_pushdown_sequoiadb_29792`.`t1`.`documentno` AS `documentno` from `count_limit_sort_pushdown_sequoiadb_29792`.`t1` group by `count_limit_sort_pushdown_sequoiadb_29792`.`t1`.`documentno`
+select HIGH_PRIORITY documentno from t1 group by documentno;
+documentno
+NULL
+abc
+bdc
+cf 
+ef
+[Note] SequoiaDB: optimizer pushdown autocommit: 1
+[Note] SequoiaDB: Query message: condition[{}], selector[{}], order_by[{ "documentno": 1 }], hint[{ "": "doc" }], limit[-1], offset[0], table[count_limit_sort_pushdown_sequoiadb_29792.t1]
+explain select HIGH_PRIORITY id from t1 group by id limit 2;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	index	id_doc_sff_idx	id_doc_sff_idx	142	NULL	#	#	Using index
+Warnings:
+Note	1003	/* select#1 */ select high_priority `count_limit_sort_pushdown_sequoiadb_29792`.`t1`.`id` AS `id` from `count_limit_sort_pushdown_sequoiadb_29792`.`t1` group by `count_limit_sort_pushdown_sequoiadb_29792`.`t1`.`id` limit 2
+select HIGH_PRIORITY id from t1 group by id limit 2;
+id
+NULL
+1
+[Note] SequoiaDB: optimizer pushdown autocommit: 1
+[Note] SequoiaDB: Query message: condition[{}], selector[{}], order_by[{ "id": 1, "documentno": 1, "sffid": 1 }], hint[{ "": "id_doc_sff_idx" }], limit[-1], offset[0], table[count_limit_sort_pushdown_sequoiadb_29792.t1]
+explain select HIGH_PRIORITY documentno from t1 order by documentno;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	index	NULL	doc	131	NULL	#	#	Using index
+Warnings:
+Note	1003	/* select#1 */ select high_priority `count_limit_sort_pushdown_sequoiadb_29792`.`t1`.`documentno` AS `documentno` from `count_limit_sort_pushdown_sequoiadb_29792`.`t1` order by `count_limit_sort_pushdown_sequoiadb_29792`.`t1`.`documentno`
+select HIGH_PRIORITY documentno from t1 order by documentno;
+documentno
+NULL
+NULL
+NULL
+abc
+abc
+bdc
+bdc
+cf 
+ef
+[Note] SequoiaDB: optimizer selector object: { "documentno": null }, table: count_limit_sort_pushdown_sequoiadb_29792.t1
+[Note] SequoiaDB: Query message: condition[{}], selector[{ "documentno": null }], order_by[{ "documentno": 1 }], hint[{ "": "doc" }], limit[-1], offset[0], table[count_limit_sort_pushdown_sequoiadb_29792.t1]
+explain select HIGH_PRIORITY id from t1 order by id limit 2;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	index	NULL	id_doc_sff_idx	142	NULL	#	#	Using index
+Warnings:
+Note	1003	/* select#1 */ select high_priority `count_limit_sort_pushdown_sequoiadb_29792`.`t1`.`id` AS `id` from `count_limit_sort_pushdown_sequoiadb_29792`.`t1` order by `count_limit_sort_pushdown_sequoiadb_29792`.`t1`.`id` limit 2
+select HIGH_PRIORITY id from t1 order by id limit 2;
+id
+NULL
+NULL
+[Note] SequoiaDB: optimizer pushdown autocommit: 1
+[Note] SequoiaDB: optimizer selector object: { "id": null }, table: count_limit_sort_pushdown_sequoiadb_29792.t1
+[Note] SequoiaDB: Query message: condition[{}], selector[{ "id": null }], order_by[{ "id": 1, "documentno": 1, "sffid": 1 }], hint[{ "": "id_doc_sff_idx" }], limit[2], offset[0], table[count_limit_sort_pushdown_sequoiadb_29792.t1]
+explain select HIGH_PRIORITY documentno from t1 group by documentno with rollup limit 10;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	index	doc,id_doc_sff_idx	doc	131	NULL	#	#	Using index
+Warnings:
+Note	1003	/* select#1 */ select high_priority `count_limit_sort_pushdown_sequoiadb_29792`.`t1`.`documentno` AS `documentno` from `count_limit_sort_pushdown_sequoiadb_29792`.`t1` group by `count_limit_sort_pushdown_sequoiadb_29792`.`t1`.`documentno` with rollup limit 10
+select HIGH_PRIORITY documentno from t1 group by documentno with rollup limit 10;
+documentno
+NULL
+abc
+bdc
+cf 
+ef
+NULL
+[Note] SequoiaDB: optimizer pushdown autocommit: 1
+[Note] SequoiaDB: optimizer pushdown autocommit: 1
+[Note] SequoiaDB: Query message: condition[{}], selector[{}], order_by[{ "documentno": 1 }], hint[{ "": "doc" }], limit[-1], offset[0], table[count_limit_sort_pushdown_sequoiadb_29792.t1]
+explain select distinct HIGH_PRIORITY documentno from t1 group by documentno;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	index	doc,id_doc_sff_idx	doc	131	NULL	#	#	Using index
+Warnings:
+Note	1003	/* select#1 */ select high_priority `count_limit_sort_pushdown_sequoiadb_29792`.`t1`.`documentno` AS `documentno` from `count_limit_sort_pushdown_sequoiadb_29792`.`t1` group by `count_limit_sort_pushdown_sequoiadb_29792`.`t1`.`documentno`
+select distinct HIGH_PRIORITY documentno from t1 group by documentno;
+documentno
+NULL
+abc
+bdc
+cf 
+ef
+[Note] SequoiaDB: optimizer pushdown autocommit: 1
+[Note] SequoiaDB: Query message: condition[{}], selector[{}], order_by[{ "documentno": 1 }], hint[{ "": "doc" }], limit[-1], offset[0], table[count_limit_sort_pushdown_sequoiadb_29792.t1]
+explain select distinct HIGH_PRIORITY id from t1 group by id limit 2;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	index	id_doc_sff_idx	id_doc_sff_idx	142	NULL	#	#	Using index
+Warnings:
+Note	1003	/* select#1 */ select high_priority `count_limit_sort_pushdown_sequoiadb_29792`.`t1`.`id` AS `id` from `count_limit_sort_pushdown_sequoiadb_29792`.`t1` group by `count_limit_sort_pushdown_sequoiadb_29792`.`t1`.`id` limit 2
+select distinct HIGH_PRIORITY id from t1 group by id limit 2;
+id
+NULL
+1
+[Note] SequoiaDB: optimizer pushdown autocommit: 1
+[Note] SequoiaDB: Query message: condition[{}], selector[{}], order_by[{ "id": 1, "documentno": 1, "sffid": 1 }], hint[{ "": "id_doc_sff_idx" }], limit[-1], offset[0], table[count_limit_sort_pushdown_sequoiadb_29792.t1]
+explain select SQL_CACHE id from t1 group by id;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	index	id_doc_sff_idx	id_doc_sff_idx	142	NULL	#	#	Using index
+Warnings:
+Warning	1681	'SQL_CACHE' is deprecated and will be removed in a future release.
+Note	1003	/* select#1 */ select sql_cache `count_limit_sort_pushdown_sequoiadb_29792`.`t1`.`id` AS `id` from `count_limit_sort_pushdown_sequoiadb_29792`.`t1` group by `count_limit_sort_pushdown_sequoiadb_29792`.`t1`.`id`
+select SQL_CACHE id from t1 group by id;
+id
+NULL
+1
+2
+4
+5
+8
+Warnings:
+Warning	1681	'SQL_CACHE' is deprecated and will be removed in a future release.
+[Note] SequoiaDB: optimizer pushdown autocommit: 1
+[Note] SequoiaDB: Query message: condition[{}], selector[{}], order_by[{ "id": 1, "documentno": 1, "sffid": 1 }], hint[{ "": "id_doc_sff_idx" }], limit[-1], offset[0], table[count_limit_sort_pushdown_sequoiadb_29792.t1]
+explain select SQL_CACHE documentno from t1 group by documentno limit 2;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	index	doc,id_doc_sff_idx	doc	131	NULL	#	#	Using index
+Warnings:
+Warning	1681	'SQL_CACHE' is deprecated and will be removed in a future release.
+Note	1003	/* select#1 */ select sql_cache `count_limit_sort_pushdown_sequoiadb_29792`.`t1`.`documentno` AS `documentno` from `count_limit_sort_pushdown_sequoiadb_29792`.`t1` group by `count_limit_sort_pushdown_sequoiadb_29792`.`t1`.`documentno` limit 2
+select SQL_CACHE documentno from t1 group by documentno limit 2;
+documentno
+NULL
+abc
+Warnings:
+Warning	1681	'SQL_CACHE' is deprecated and will be removed in a future release.
+[Note] SequoiaDB: optimizer pushdown autocommit: 1
+[Note] SequoiaDB: Query message: condition[{}], selector[{}], order_by[{ "documentno": 1 }], hint[{ "": "doc" }], limit[-1], offset[0], table[count_limit_sort_pushdown_sequoiadb_29792.t1]
+explain select SQL_CACHE id from t1 order by id;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	index	NULL	id_doc_sff_idx	142	NULL	#	#	Using index
+Warnings:
+Warning	1681	'SQL_CACHE' is deprecated and will be removed in a future release.
+Note	1003	/* select#1 */ select sql_cache `count_limit_sort_pushdown_sequoiadb_29792`.`t1`.`id` AS `id` from `count_limit_sort_pushdown_sequoiadb_29792`.`t1` order by `count_limit_sort_pushdown_sequoiadb_29792`.`t1`.`id`
+select SQL_CACHE id from t1 order by id;
+id
+NULL
+NULL
+NULL
+1
+2
+4
+4
+5
+8
+Warnings:
+Warning	1681	'SQL_CACHE' is deprecated and will be removed in a future release.
+[Note] SequoiaDB: optimizer pushdown autocommit: 1
+[Note] SequoiaDB: optimizer selector object: { "id": null }, table: count_limit_sort_pushdown_sequoiadb_29792.t1
+[Note] SequoiaDB: Query message: condition[{}], selector[{ "id": null }], order_by[{ "id": 1, "documentno": 1, "sffid": 1 }], hint[{ "": "id_doc_sff_idx" }], limit[-1], offset[0], table[count_limit_sort_pushdown_sequoiadb_29792.t1]
+explain select SQL_CACHE documentno from t1 order by documentno limit 2;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	index	NULL	doc	131	NULL	#	#	Using index
+Warnings:
+Warning	1681	'SQL_CACHE' is deprecated and will be removed in a future release.
+Note	1003	/* select#1 */ select sql_cache `count_limit_sort_pushdown_sequoiadb_29792`.`t1`.`documentno` AS `documentno` from `count_limit_sort_pushdown_sequoiadb_29792`.`t1` order by `count_limit_sort_pushdown_sequoiadb_29792`.`t1`.`documentno` limit 2
+select SQL_CACHE documentno from t1 order by documentno limit 2;
+documentno
+NULL
+NULL
+Warnings:
+Warning	1681	'SQL_CACHE' is deprecated and will be removed in a future release.
+[Note] SequoiaDB: optimizer pushdown autocommit: 1
+[Note] SequoiaDB: optimizer selector object: { "documentno": null }, table: count_limit_sort_pushdown_sequoiadb_29792.t1
+[Note] SequoiaDB: Query message: condition[{}], selector[{ "documentno": null }], order_by[{ "documentno": 1 }], hint[{ "": "doc" }], limit[2], offset[0], table[count_limit_sort_pushdown_sequoiadb_29792.t1]
+explain select SQL_CACHE id from t1 group by id with rollup limit 10;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	index	id_doc_sff_idx	id_doc_sff_idx	142	NULL	#	#	Using index
+Warnings:
+Warning	1681	'SQL_CACHE' is deprecated and will be removed in a future release.
+Note	1003	/* select#1 */ select sql_cache `count_limit_sort_pushdown_sequoiadb_29792`.`t1`.`id` AS `id` from `count_limit_sort_pushdown_sequoiadb_29792`.`t1` group by `count_limit_sort_pushdown_sequoiadb_29792`.`t1`.`id` with rollup limit 10
+select SQL_CACHE id from t1 group by id with rollup limit 10;
+id
+NULL
+1
+2
+4
+5
+8
+NULL
+Warnings:
+Warning	1681	'SQL_CACHE' is deprecated and will be removed in a future release.
+[Note] SequoiaDB: optimizer pushdown autocommit: 1
+[Note] SequoiaDB: Query message: condition[{}], selector[{}], order_by[{ "id": 1, "documentno": 1, "sffid": 1 }], hint[{ "": "id_doc_sff_idx" }], limit[-1], offset[0], table[count_limit_sort_pushdown_sequoiadb_29792.t1]
+explain select distinct SQL_CACHE id from t1 group by id;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	index	id_doc_sff_idx	id_doc_sff_idx	142	NULL	#	#	Using index
+Warnings:
+Warning	1681	'SQL_CACHE' is deprecated and will be removed in a future release.
+Note	1003	/* select#1 */ select sql_cache `count_limit_sort_pushdown_sequoiadb_29792`.`t1`.`id` AS `id` from `count_limit_sort_pushdown_sequoiadb_29792`.`t1` group by `count_limit_sort_pushdown_sequoiadb_29792`.`t1`.`id`
+select distinct SQL_CACHE id from t1 group by id;
+id
+NULL
+1
+2
+4
+5
+8
+Warnings:
+Warning	1681	'SQL_CACHE' is deprecated and will be removed in a future release.
+[Note] SequoiaDB: optimizer pushdown autocommit: 1
+[Note] SequoiaDB: Query message: condition[{}], selector[{}], order_by[{ "id": 1, "documentno": 1, "sffid": 1 }], hint[{ "": "id_doc_sff_idx" }], limit[-1], offset[0], table[count_limit_sort_pushdown_sequoiadb_29792.t1]
+explain select distinct SQL_CACHE documentno from t1 group by documentno limit 2;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	index	doc,id_doc_sff_idx	doc	131	NULL	#	#	Using index
+Warnings:
+Warning	1681	'SQL_CACHE' is deprecated and will be removed in a future release.
+Note	1003	/* select#1 */ select sql_cache `count_limit_sort_pushdown_sequoiadb_29792`.`t1`.`documentno` AS `documentno` from `count_limit_sort_pushdown_sequoiadb_29792`.`t1` group by `count_limit_sort_pushdown_sequoiadb_29792`.`t1`.`documentno` limit 2
+select distinct SQL_CACHE documentno from t1 group by documentno limit 2;
+documentno
+NULL
+abc
+Warnings:
+Warning	1681	'SQL_CACHE' is deprecated and will be removed in a future release.
+[Note] SequoiaDB: optimizer pushdown autocommit: 1
+[Note] SequoiaDB: Query message: condition[{}], selector[{}], order_by[{ "documentno": 1 }], hint[{ "": "doc" }], limit[-1], offset[0], table[count_limit_sort_pushdown_sequoiadb_29792.t1]
+explain select SQL_NO_CACHE documentno from t1 group by documentno;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	index	doc,id_doc_sff_idx	doc	131	NULL	#	#	Using index
+Warnings:
+Warning	1681	'SQL_NO_CACHE' is deprecated and will be removed in a future release.
+Note	1003	/* select#1 */ select sql_no_cache `count_limit_sort_pushdown_sequoiadb_29792`.`t1`.`documentno` AS `documentno` from `count_limit_sort_pushdown_sequoiadb_29792`.`t1` group by `count_limit_sort_pushdown_sequoiadb_29792`.`t1`.`documentno`
+select SQL_NO_CACHE documentno from t1 group by documentno;
+documentno
+NULL
+abc
+bdc
+cf 
+ef
+Warnings:
+Warning	1681	'SQL_NO_CACHE' is deprecated and will be removed in a future release.
+[Note] SequoiaDB: optimizer pushdown autocommit: 1
+[Note] SequoiaDB: Query message: condition[{}], selector[{}], order_by[{ "documentno": 1 }], hint[{ "": "doc" }], limit[-1], offset[0], table[count_limit_sort_pushdown_sequoiadb_29792.t1]
+explain select SQL_NO_CACHE id from t1 group by id limit 2;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	index	id_doc_sff_idx	id_doc_sff_idx	142	NULL	#	#	Using index
+Warnings:
+Warning	1681	'SQL_NO_CACHE' is deprecated and will be removed in a future release.
+Note	1003	/* select#1 */ select sql_no_cache `count_limit_sort_pushdown_sequoiadb_29792`.`t1`.`id` AS `id` from `count_limit_sort_pushdown_sequoiadb_29792`.`t1` group by `count_limit_sort_pushdown_sequoiadb_29792`.`t1`.`id` limit 2
+select SQL_NO_CACHE id from t1 group by id limit 2;
+id
+NULL
+1
+Warnings:
+Warning	1681	'SQL_NO_CACHE' is deprecated and will be removed in a future release.
+[Note] SequoiaDB: optimizer pushdown autocommit: 1
+[Note] SequoiaDB: Query message: condition[{}], selector[{}], order_by[{ "id": 1, "documentno": 1, "sffid": 1 }], hint[{ "": "id_doc_sff_idx" }], limit[-1], offset[0], table[count_limit_sort_pushdown_sequoiadb_29792.t1]
+explain select SQL_NO_CACHE documentno from t1 order by documentno;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	index	NULL	doc	131	NULL	#	#	Using index
+Warnings:
+Warning	1681	'SQL_NO_CACHE' is deprecated and will be removed in a future release.
+Note	1003	/* select#1 */ select sql_no_cache `count_limit_sort_pushdown_sequoiadb_29792`.`t1`.`documentno` AS `documentno` from `count_limit_sort_pushdown_sequoiadb_29792`.`t1` order by `count_limit_sort_pushdown_sequoiadb_29792`.`t1`.`documentno`
+select SQL_NO_CACHE documentno from t1 order by documentno;
+documentno
+NULL
+NULL
+NULL
+abc
+abc
+bdc
+bdc
+cf 
+ef
+Warnings:
+Warning	1681	'SQL_NO_CACHE' is deprecated and will be removed in a future release.
+[Note] SequoiaDB: optimizer pushdown autocommit: 1
+[Note] SequoiaDB: optimizer selector object: { "documentno": null }, table: count_limit_sort_pushdown_sequoiadb_29792.t1
+[Note] SequoiaDB: Query message: condition[{}], selector[{ "documentno": null }], order_by[{ "documentno": 1 }], hint[{ "": "doc" }], limit[-1], offset[0], table[count_limit_sort_pushdown_sequoiadb_29792.t1]
+explain select SQL_NO_CACHE id from t1 order by id limit 2;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	index	NULL	id_doc_sff_idx	142	NULL	#	#	Using index
+Warnings:
+Warning	1681	'SQL_NO_CACHE' is deprecated and will be removed in a future release.
+Note	1003	/* select#1 */ select sql_no_cache `count_limit_sort_pushdown_sequoiadb_29792`.`t1`.`id` AS `id` from `count_limit_sort_pushdown_sequoiadb_29792`.`t1` order by `count_limit_sort_pushdown_sequoiadb_29792`.`t1`.`id` limit 2
+select SQL_NO_CACHE id from t1 order by id limit 2;
+id
+NULL
+NULL
+Warnings:
+Warning	1681	'SQL_NO_CACHE' is deprecated and will be removed in a future release.
+[Note] SequoiaDB: optimizer pushdown autocommit: 1
+[Note] SequoiaDB: optimizer selector object: { "id": null }, table: count_limit_sort_pushdown_sequoiadb_29792.t1
+[Note] SequoiaDB: Query message: condition[{}], selector[{ "id": null }], order_by[{ "id": 1, "documentno": 1, "sffid": 1 }], hint[{ "": "id_doc_sff_idx" }], limit[2], offset[0], table[count_limit_sort_pushdown_sequoiadb_29792.t1]
+explain select SQL_NO_CACHE documentno from t1 group by documentno with rollup limit 10;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	index	doc,id_doc_sff_idx	doc	131	NULL	#	#	Using index
+Warnings:
+Warning	1681	'SQL_NO_CACHE' is deprecated and will be removed in a future release.
+Note	1003	/* select#1 */ select sql_no_cache `count_limit_sort_pushdown_sequoiadb_29792`.`t1`.`documentno` AS `documentno` from `count_limit_sort_pushdown_sequoiadb_29792`.`t1` group by `count_limit_sort_pushdown_sequoiadb_29792`.`t1`.`documentno` with rollup limit 10
+select SQL_NO_CACHE documentno from t1 group by documentno with rollup limit 10;
+documentno
+NULL
+abc
+bdc
+cf 
+ef
+NULL
+Warnings:
+Warning	1681	'SQL_NO_CACHE' is deprecated and will be removed in a future release.
+[Note] SequoiaDB: optimizer pushdown autocommit: 1
+[Note] SequoiaDB: Query message: condition[{}], selector[{}], order_by[{ "documentno": 1 }], hint[{ "": "doc" }], limit[-1], offset[0], table[count_limit_sort_pushdown_sequoiadb_29792.t1]
+explain select distinct SQL_NO_CACHE documentno from t1 group by documentno;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	index	doc,id_doc_sff_idx	doc	131	NULL	#	#	Using index
+Warnings:
+Warning	1681	'SQL_NO_CACHE' is deprecated and will be removed in a future release.
+Note	1003	/* select#1 */ select sql_no_cache `count_limit_sort_pushdown_sequoiadb_29792`.`t1`.`documentno` AS `documentno` from `count_limit_sort_pushdown_sequoiadb_29792`.`t1` group by `count_limit_sort_pushdown_sequoiadb_29792`.`t1`.`documentno`
+select distinct SQL_NO_CACHE documentno from t1 group by documentno;
+documentno
+NULL
+abc
+bdc
+cf 
+ef
+Warnings:
+Warning	1681	'SQL_NO_CACHE' is deprecated and will be removed in a future release.
+[Note] SequoiaDB: optimizer pushdown autocommit: 1
+[Note] SequoiaDB: Query message: condition[{}], selector[{}], order_by[{ "documentno": 1 }], hint[{ "": "doc" }], limit[-1], offset[0], table[count_limit_sort_pushdown_sequoiadb_29792.t1]
+explain select distinct SQL_NO_CACHE id from t1 group by id limit 2;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	SIMPLE	t1	NULL	index	id_doc_sff_idx	id_doc_sff_idx	142	NULL	#	#	Using index
+Warnings:
+Warning	1681	'SQL_NO_CACHE' is deprecated and will be removed in a future release.
+Note	1003	/* select#1 */ select sql_no_cache `count_limit_sort_pushdown_sequoiadb_29792`.`t1`.`id` AS `id` from `count_limit_sort_pushdown_sequoiadb_29792`.`t1` group by `count_limit_sort_pushdown_sequoiadb_29792`.`t1`.`id` limit 2
+select distinct SQL_NO_CACHE id from t1 group by id limit 2;
+id
+NULL
+1
+Warnings:
+Warning	1681	'SQL_NO_CACHE' is deprecated and will be removed in a future release.
+[Note] SequoiaDB: optimizer pushdown autocommit: 1
+[Note] SequoiaDB: Query message: condition[{}], selector[{}], order_by[{ "id": 1, "documentno": 1, "sffid": 1 }], hint[{ "": "id_doc_sff_idx" }], limit[-1], offset[0], table[count_limit_sort_pushdown_sequoiadb_29792.t1]
+explain (select documentno from t1 group by documentno limit 2) union (select documentno from t1 order by documentno limit 2);
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	PRIMARY	t1	NULL	index	doc,id_doc_sff_idx	doc	131	NULL	#	#	Using index
+2	UNION	t1	NULL	index	NULL	doc	131	NULL	#	#	Using index
+NULL	UNION RESULT	<union1,2>	NULL	ALL	NULL	NULL	NULL	NULL	#	#	Using temporary
+Warnings:
+Note	1003	(/* select#1 */ select `count_limit_sort_pushdown_sequoiadb_29792`.`t1`.`documentno` AS `documentno` from `count_limit_sort_pushdown_sequoiadb_29792`.`t1` group by `count_limit_sort_pushdown_sequoiadb_29792`.`t1`.`documentno` limit 2) union (/* select#2 */ select `count_limit_sort_pushdown_sequoiadb_29792`.`t1`.`documentno` AS `documentno` from `count_limit_sort_pushdown_sequoiadb_29792`.`t1` order by `count_limit_sort_pushdown_sequoiadb_29792`.`t1`.`documentno` limit 2)
+(select documentno from t1 group by documentno limit 2) union (select documentno from t1 order by documentno limit 2);
+documentno
+NULL
+abc
+[Note] SequoiaDB: Query message: condition[{}], selector[{}], order_by[{ "documentno": 1 }], hint[{ "": "doc" }], limit[-1], offset[0], table[count_limit_sort_pushdown_sequoiadb_29792.t1]
+[Note] SequoiaDB: optimizer selector object: { "documentno": null }, table: count_limit_sort_pushdown_sequoiadb_29792.t1
+[Note] SequoiaDB: Query message: condition[{}], selector[{ "documentno": null }], order_by[{ "documentno": 1 }], hint[{ "": "doc" }], limit[-1], offset[0], table[count_limit_sort_pushdown_sequoiadb_29792.t1]
+explain select *,(select documentno from t1 tt group by documentno limit 1) from t2 where t2.id <(select id from t1 where id=5 order by id desc limit 6);
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	PRIMARY	t2	NULL	range	id_doc_sff_idx	id_doc_sff_idx	5	NULL	#	#	Using where with pushed condition (`count_limit_sort_pushdown_sequoiadb_29792`.`t2`.`id` < (/* select#3 */ select `count_limit_sort_pushdown_sequoiadb_29792`.`t1`.`id` from `count_limit_sort_pushdown_sequoiadb_29792`.`t1` where (`count_limit_sort_pushdown_sequoiadb_29792`.`t1`.`id` = 5) order by `count_limit_sort_pushdown_sequoiadb_29792`.`t1`.`id` desc limit 6)); Using index
+3	SUBQUERY	t1	NULL	ref	id_doc_sff_idx	id_doc_sff_idx	5	const	#	#	Using index
+2	SUBQUERY	tt	NULL	index	doc,id_doc_sff_idx	doc	131	NULL	#	#	Using index
+Warnings:
+Note	1003	/* select#1 */ select `count_limit_sort_pushdown_sequoiadb_29792`.`t2`.`id` AS `id`,`count_limit_sort_pushdown_sequoiadb_29792`.`t2`.`documentno` AS `documentno`,`count_limit_sort_pushdown_sequoiadb_29792`.`t2`.`sffid` AS `sffid`,(/* select#2 */ select `count_limit_sort_pushdown_sequoiadb_29792`.`tt`.`documentno` from `count_limit_sort_pushdown_sequoiadb_29792`.`t1` `tt` group by `count_limit_sort_pushdown_sequoiadb_29792`.`tt`.`documentno` limit 1) AS `(select documentno from t1 tt group by documentno limit 1)` from `count_limit_sort_pushdown_sequoiadb_29792`.`t2` where (`count_limit_sort_pushdown_sequoiadb_29792`.`t2`.`id` < (/* select#3 */ select `count_limit_sort_pushdown_sequoiadb_29792`.`t1`.`id` from `count_limit_sort_pushdown_sequoiadb_29792`.`t1` where (`count_limit_sort_pushdown_sequoiadb_29792`.`t1`.`id` = 5) order by `count_limit_sort_pushdown_sequoiadb_29792`.`t1`.`id` desc limit 6))
+select *,(select documentno from t1 tt group by documentno limit 1) from t2 where t2.id <(select id from t1 where id=5 order by id desc limit 6);
+id	documentno	sffid	(select documentno from t1 tt group by documentno limit 1)
+1	abc	1	NULL
+2	abc	3	NULL
+4	bdc	4	NULL
+4	bdc	4	NULL
+[Note] SequoiaDB: optimizer selector object: { "id": null }, table: count_limit_sort_pushdown_sequoiadb_29792.t1
+[Note] SequoiaDB: Query message: condition[{ "id": { "$et": 5 } }], selector[{ "id": null }], order_by[{ "id": 1, "documentno": 1, "sffid": 1 }], hint[{ "": "id_doc_sff_idx" }], limit[-1], offset[0], table[count_limit_sort_pushdown_sequoiadb_29792.t1]
+[Note] SequoiaDB: optimizer selector object: { "id": null }, table: count_limit_sort_pushdown_sequoiadb_29792.t1
+[Note] SequoiaDB: Query message: condition[{ "id": { "$et": 5 } }], selector[{ "id": null }], order_by[{ "id": 1, "documentno": 1, "sffid": 1 }], hint[{ "": "id_doc_sff_idx" }], limit[-1], offset[0], table[count_limit_sort_pushdown_sequoiadb_29792.t1]
+[Note] SequoiaDB: optimizer selector object: { "id": null, "documentno": null, "sffid": null }, table: count_limit_sort_pushdown_sequoiadb_29792.t2
+[Note] SequoiaDB: Query message: condition[{ "id": { "$lt": 5 } }], selector[{ "id": null, "documentno": null, "sffid": null }], order_by[{ "id": 1, "documentno": 1, "sffid": 1 }], hint[{ "": "id_doc_sff_idx" }], limit[-1], offset[0], table[count_limit_sort_pushdown_sequoiadb_29792.t2]
+[Note] SequoiaDB: Query message: condition[{}], selector[{}], order_by[{ "documentno": 1 }], hint[{ "": "doc" }], limit[-1], offset[0], table[count_limit_sort_pushdown_sequoiadb_29792.t1]
+explain select * from (select documentno from t1 group by documentno limit 10) dt where documentno>="aaa" limit 2,3;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	PRIMARY	<derived2>	NULL	ALL	NULL	NULL	NULL	NULL	#	#	Using where
+2	DERIVED	t1	NULL	index	doc,id_doc_sff_idx	doc	131	NULL	#	#	Using index
+Warnings:
+Note	1003	/* select#1 */ select `dt`.`documentno` AS `documentno` from (/* select#2 */ select `count_limit_sort_pushdown_sequoiadb_29792`.`t1`.`documentno` AS `documentno` from `count_limit_sort_pushdown_sequoiadb_29792`.`t1` group by `count_limit_sort_pushdown_sequoiadb_29792`.`t1`.`documentno` limit 10) `dt` where (`dt`.`documentno` >= 'aaa') limit 2,3
+select * from (select documentno from t1 group by documentno limit 10) dt where documentno>="aaa" limit 2,3;
+documentno
+cf 
+ef
+[Note] SequoiaDB: Query message: condition[{}], selector[{}], order_by[{ "documentno": 1 }], hint[{ "": "doc" }], limit[-1], offset[0], table[count_limit_sort_pushdown_sequoiadb_29792.t1]
+explain select * from (select id from t1 order by id limit 6) dt where id<6 limit 2,2;
+id	select_type	table	partitions	type	possible_keys	key	key_len	ref	rows	filtered	Extra
+1	PRIMARY	<derived2>	NULL	ALL	NULL	NULL	NULL	NULL	#	#	Using where
+2	DERIVED	t1	NULL	index	NULL	id_doc_sff_idx	142	NULL	#	#	Using index
+Warnings:
+Note	1003	/* select#1 */ select `dt`.`id` AS `id` from (/* select#2 */ select `count_limit_sort_pushdown_sequoiadb_29792`.`t1`.`id` AS `id` from `count_limit_sort_pushdown_sequoiadb_29792`.`t1` order by `count_limit_sort_pushdown_sequoiadb_29792`.`t1`.`id` limit 6) `dt` where (`dt`.`id` < 6) limit 2,2
+select * from (select id from t1 order by id limit 6) dt where id<6 limit 2,2;
+id
+4
+[Note] SequoiaDB: optimizer selector object: { "id": null }, table: count_limit_sort_pushdown_sequoiadb_29792.t1
+[Note] SequoiaDB: Query message: condition[{}], selector[{ "id": null }], order_by[{ "id": 1, "documentno": 1, "sffid": 1 }], hint[{ "": "id_doc_sff_idx" }], limit[-1], offset[0], table[count_limit_sort_pushdown_sequoiadb_29792.t1]
+drop database if exists count_limit_sort_pushdown_sequoiadb_29792;

@@ -1,0 +1,86 @@
+# Testcase: seqDB-22808, seqDB-22809
+
+--source include/big_test.inc
+--source include/have_sequoiadb.inc
+
+CREATE DATABASE index_select_sequoiadb_22808_22809;
+use index_select_sequoiadb_22808_22809;
+
+#SEQUOIASQLMAINSTREAM-1054
+#seqDB-22808:带排序执行查询
+#CREATE TABLE t1 (
+#  a INT,
+#  b CHAR(64),
+#  c INT
+#);
+#LOAD DATA INFILE '../../std_data/index_select_sequoiadb_4.dat' INTO TABLE t1 fields terminated by ';';
+#alter table t1 add PRIMARY KEY(a);
+#alter table t1 add index b(b);
+#alter table t1 add index ab(a,b);
+#alter table t1 add index ba(b,a);
+#SHOW CREATE TABLE t1;
+#--replace_column 9 #
+#EXPLAIN SELECT * FROM t1 WHERE c IN (1,2) ORDER BY a;
+#--sorted_result
+#SELECT * FROM t1 WHERE c IN (1,2) ORDER BY a;
+#--source include/query_pushdown_condition_sequoiadb.inc
+#--replace_column 9 #
+#EXPLAIN SELECT * FROM t1 WHERE a IN (108339,2293) ORDER BY c;
+#--sorted_result
+#SELECT * FROM t1 WHERE a IN (108339,2293) ORDER BY c;
+#--source include/query_pushdown_condition_sequoiadb.inc
+#--replace_column 9 #
+#EXPLAIN SELECT * FROM t1 WHERE b IN ('klnopqvwx','ujmklnopq') ORDER BY a;
+#--sorted_result
+#SELECT * FROM t1 WHERE b IN ('klnopqvwx','ujmklnopq') ORDER BY a;
+#--source include/query_pushdown_condition_sequoiadb.inc
+#ANALYZE TABLE t1;
+#--replace_column 9 #
+#EXPLAIN SELECT * FROM t1 WHERE c IN (1,2) ORDER BY a;
+#--sorted_result
+#SELECT * FROM t1 WHERE c IN (1,2) ORDER BY a;
+#--source include/query_pushdown_condition_sequoiadb.inc
+#--replace_column 9 #
+#EXPLAIN SELECT * FROM t1 WHERE a IN (108339,2293) ORDER BY c;
+#--sorted_result
+#SELECT * FROM t1 WHERE a IN (108339,2293) ORDER BY c;
+#--source include/query_pushdown_condition_sequoiadb.inc
+#--replace_column 9 #
+#EXPLAIN SELECT * FROM t1 WHERE b IN ('klnopqvwx','ujmklnopq') ORDER BY a;
+#--sorted_result
+#SELECT * FROM t1 WHERE b IN ('klnopqvwx','ujmklnopq') ORDER BY a;
+#--source include/query_pushdown_condition_sequoiadb.inc
+#DROP TABLE t1;
+
+#seqDB-22809:统计信息缓存更新验证
+CREATE TABLE t1 (
+  a INT,
+  b CHAR(64)
+);
+INSERT INTO t1 VALUES (4, 'b'),(2, 'c'),(1, 'e'),(7,'aaa'),(9,'daa'),(8,'aca'),(12,'aca'),(11,'aca'),(13,'aca'),(15,'ca');
+alter table t1 add PRIMARY KEY(a);
+alter table t1 add index b(b);
+alter table t1 add index ab(a,b);
+alter table t1 add index ba(b,a);
+SHOW CREATE TABLE t1;
+--replace_column 9 #
+EXPLAIN SELECT * FROM t1 WHERE a=1 and b='e';
+--sorted_result
+SELECT * FROM information_schema.statistics WHERE table_name='t1';
+ANALYZE TABLE t1;
+--replace_column 9 #
+EXPLAIN SELECT * FROM t1 WHERE a=1 and b='e';
+--sorted_result
+SELECT * FROM information_schema.statistics WHERE table_name='t1';
+LOAD DATA INFILE '../../std_data/loaddata_5w_sequoiadb.dat' INTO TABLE t1(a,b);
+--sorted_result
+SELECT * FROM information_schema.statistics WHERE table_name='t1';
+ANALYZE TABLE t1;
+--replace_column 9 #
+EXPLAIN SELECT * FROM t1 WHERE a=1 and b='e';
+--sorted_result
+SELECT * FROM information_schema.statistics WHERE table_name='t1';
+DROP TABLE t1;
+
+DROP DATABASE index_select_sequoiadb_22808_22809;
+--source include/uninstall_sequoiadb.inc

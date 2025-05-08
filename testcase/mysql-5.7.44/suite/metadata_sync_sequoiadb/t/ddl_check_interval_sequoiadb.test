@@ -1,0 +1,60 @@
+# Case 32246
+--source include/have_sequoiadb.inc
+--source suite/metadata_sync_sequoiadb/inc/insts_connect_sequoiadb.inc
+
+connection conn1;
+--disable_warnings
+drop database if exists ddl_check_interval_sequoiadb;
+create database ddl_check_interval_sequoiadb;
+drop database ddl_check_interval_sequoiadb;
+create database ddl_check_interval_sequoiadb;
+use ddl_check_interval_sequoiadb;
+--enable_warnings
+
+create table t1(
+  a1 int auto_increment,
+  b1 varchar(12) default null,
+  c1 varchar(12) default null,
+  key idx_a(a1)
+);
+
+--disable_query_log
+let $i = 0;
+while ($i < 100)
+{
+  eval insert into t1(b1, c1) values('b$i', 'c$i');
+  inc $i;
+}
+
+let $i = 1;
+let $j = 2;
+while ($i < 100)
+{
+  eval alter table t1 change b$i b$j varchar(12);
+  eval alter table t1 change c$i c$j varchar(12);
+  inc $i;
+  inc $j;
+} 
+
+alter table t1 add column d1 varchar(12);
+--enable_query_log
+
+show create table t1;
+select count(*) from t1;
+
+connection conn2;
+use ddl_check_interval_sequoiadb;
+
+let $wait_condition = select count(*) = 4 from information_schema.columns where table_schema = 'ddl_check_interval_sequoiadb' and table_name = 't1';
+let $wait_timeout = 60;
+--echo $wait_condition
+--source include/wait_condition.inc
+
+show create table t1;
+select count(*) from t1;
+
+drop database ddl_check_interval_sequoiadb;
+
+--source suite/metadata_sync_sequoiadb/inc/insts_disconnect_sequoiadb.inc
+--source include/uninstall_sequoiadb.inc
+

@@ -1,0 +1,22 @@
+drop database if exists ssl_7937;
+create database ssl_7937;
+drop database ssl_7937;
+create database ssl_7937;
+use ssl_7937;
+drop procedure if exists have_ssl;
+create procedure have_ssl()
+select if(variable_value > '','yes','no') as 'have_ssl'
+  from information_schema.session_status
+where variable_name='ssl_cipher';
+mysql --ssl-ca=cacert.pem -e "call ssl_7937have_ssl()"
+have_ssl
+no
+mysql --ssl -e "call ssl_7937.have_ssl()"
+have_ssl
+no
+mysql --ssl-ca=cacert.pem --ssl-verify-server-cert -e "call ssl_7937.have_ssl()"
+ERROR 2026 (HY000): TLS/SSL error: SSL is required, but the server does not support it
+mysql --ssl --ssl-verify-server-cert -e "call ssl_7937.have_ssl()"
+ERROR 2026 (HY000): TLS/SSL error: SSL is required, but the server does not support it
+drop procedure have_ssl;
+drop database ssl_7937;

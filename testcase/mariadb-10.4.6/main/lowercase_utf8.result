@@ -1,0 +1,11 @@
+CREATE DATABASE test_lowercase_utf8;
+USE test_lowercase_utf8;
+set names utf8;
+create table `Ö` (id int);
+show tables from test_lowercase_utf8 like 'Ö';
+Tables_in_test_lowercase_utf8 (Ö)
+Ö
+show tables from test_lowercase_utf8 like 'ö';
+Tables_in_test_lowercase_utf8 (ö)
+drop table `Ö`;
+DROP DATABASE test_lowercase_utf8;

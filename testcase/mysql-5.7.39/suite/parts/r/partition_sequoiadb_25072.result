@@ -1,0 +1,79 @@
+DROP TABLE if EXISTS partition_sequoiadb_25072_1;
+DROP TABLE if EXISTS partition_sequoiadb_25072_2;
+CREATE TABLE partition_sequoiadb_25072_1 ( 
+id INT NOT NULL, 
+produced_date DATE, 
+name VARCHAR(100), 
+company VARCHAR(100) 
+) 
+PARTITION BY RANGE (YEAR(produced_date)) ( 
+PARTITION p0 VALUES LESS THAN (1990) 
+);
+ALTER TABLE partition_sequoiadb_25072_1 ADD PARTITION(partition p1 VALUES LESS THAN (2000));
+SHOW CREATE TABLE partition_sequoiadb_25072_1;
+Table	Create Table
+partition_sequoiadb_25072_1	CREATE TABLE `partition_sequoiadb_25072_1` (
+  `id` int(11) NOT NULL,
+  `produced_date` date DEFAULT NULL,
+  `name` varchar(100) DEFAULT NULL,
+  `company` varchar(100) DEFAULT NULL
+) ENGINE=SequoiaDB DEFAULT CHARSET=latin1
+/*!50100 PARTITION BY RANGE (YEAR(produced_date))
+(PARTITION p0 VALUES LESS THAN (1990) ENGINE = SequoiaDB,
+ PARTITION p1 VALUES LESS THAN (2000) ENGINE = SequoiaDB) */
+INSERT INTO partition_sequoiadb_25072_1 VALUES(1,'1800-01-01','name1','company1');
+INSERT INTO partition_sequoiadb_25072_1 VALUES(2,'1999-01-01','name2','company2');
+SELECT * FROM partition_sequoiadb_25072_1 ORDER BY id ASC;
+id	produced_date	name	company
+1	1800-01-01	name1	company1
+2	1999-01-01	name2	company2
+ALTER TABLE partition_sequoiadb_25072_1 DROP PARTITION p1;
+SHOW CREATE TABLE partition_sequoiadb_25072_1;
+Table	Create Table
+partition_sequoiadb_25072_1	CREATE TABLE `partition_sequoiadb_25072_1` (
+  `id` int(11) NOT NULL,
+  `produced_date` date DEFAULT NULL,
+  `name` varchar(100) DEFAULT NULL,
+  `company` varchar(100) DEFAULT NULL
+) ENGINE=SequoiaDB DEFAULT CHARSET=latin1
+/*!50100 PARTITION BY RANGE (YEAR(produced_date))
+(PARTITION p0 VALUES LESS THAN (1990) ENGINE = SequoiaDB) */
+INSERT INTO partition_sequoiadb_25072_1 VALUES(3,'1850-01-01','name3','company3');
+SELECT * FROM partition_sequoiadb_25072_1 ORDER BY id ASC;
+id	produced_date	name	company
+1	1800-01-01	name1	company1
+3	1850-01-01	name3	company3
+RENAME TABLE partition_sequoiadb_25072_1 TO partition_sequoiadb_25072_2;
+SHOW CREATE TABLE partition_sequoiadb_25072_2;
+Table	Create Table
+partition_sequoiadb_25072_2	CREATE TABLE `partition_sequoiadb_25072_2` (
+  `id` int(11) NOT NULL,
+  `produced_date` date DEFAULT NULL,
+  `name` varchar(100) DEFAULT NULL,
+  `company` varchar(100) DEFAULT NULL
+) ENGINE=SequoiaDB DEFAULT CHARSET=latin1
+/*!50100 PARTITION BY RANGE (YEAR(produced_date))
+(PARTITION p0 VALUES LESS THAN (1990) ENGINE = SequoiaDB) */
+INSERT INTO partition_sequoiadb_25072_2 VALUES(4,'1900-01-01','name4','company4');
+SELECT * FROM partition_sequoiadb_25072_2 ORDER BY id ASC;
+id	produced_date	name	company
+1	1800-01-01	name1	company1
+3	1850-01-01	name3	company3
+4	1900-01-01	name4	company4
+DROP TABLE partition_sequoiadb_25072_2;
+SELECT table_name from information_schema.tables where table_name='partition_sequoiadb_25072_2';
+table_name
+CREATE TABLE partition_sequoiadb_25072_2 ( 
+id INT NOT NULL, 
+produced_date DATE, 
+name VARCHAR(100), 
+company VARCHAR(100) 
+) 
+PARTITION BY RANGE (YEAR(produced_date)) ( 
+PARTITION p0 VALUES LESS THAN (1990) 
+);
+INSERT INTO partition_sequoiadb_25072_2 VALUES(5,'1950-01-01','name5','company5');
+SELECT * FROM partition_sequoiadb_25072_2;
+id	produced_date	name	company
+5	1950-01-01	name5	company5
+DROP TABLE partition_sequoiadb_25072_2;

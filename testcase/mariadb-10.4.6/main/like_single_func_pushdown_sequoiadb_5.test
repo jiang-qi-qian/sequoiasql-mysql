@@ -1,0 +1,476 @@
+#seqDB-26641
+--source include/have_sequoiadb.inc
+
+--disable_warnings
+drop database if exists like_single_func_pushdown_sequoiadb_5;
+--enable_warnings
+create database like_single_func_pushdown_sequoiadb_5;
+drop database like_single_func_pushdown_sequoiadb_5;
+create database like_single_func_pushdown_sequoiadb_5;
+use like_single_func_pushdown_sequoiadb_5;
+set session sequoiadb_debug_log=on;
+set session sequoiadb_support_mode='';
+
+--disable_warnings
+drop table if exists t1, t2, t3, t4, t5;
+--enable_warnings
+
+create table t1(
+    a varchar(514) charset utf8mb4 collate utf8mb4_bin
+);
+create table t2(
+    a varchar(20) charset utf8mb4 collate utf8mb4_bin
+);
+create table t3(
+    a set('a1','b2','c3') charset utf8mb4 collate utf8mb4_bin
+);
+create table t4(
+    a int
+);
+create table t5(
+    a varchar(20) charset utf8mb4 collate utf8mb4_unicode_ci
+);
+
+#-----------------------------------------------geographic functions------------------------------------------#
+
+#st_buffer
+select st_astext(st_buffer(st_geomfromtext('point(0 0)'),0));
+insert into t1 values(st_astext(st_buffer(st_geomfromtext('point(0 0)'),0)));
+select * from t1 where a like st_astext(st_buffer(st_geomfromtext('point(0 0)'),0)) order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+
+#st_convexhull
+select st_astext(st_convexhull(st_geomfromtext('multipoint(5 0,25 0,15 10,15 25)')));
+insert into t1 values(st_astext(st_convexhull(st_geomfromtext('multipoint(5 0,25 0,15 10,15 25)'))));
+select * from t1 where a like st_astext(st_convexhull(st_geomfromtext('multipoint(5 0,25 0,15 10,15 25)'))) order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+
+#geometrycollection
+select st_numgeometries(st_geomfromtext('geometrycollection(point(1 1),linestring(2 2,3 3))'));
+insert into t1 values(st_numgeometries(st_geomfromtext('geometrycollection(point(1 1),linestring(2 2,3 3))')));
+select * from t1 where a like st_numgeometries(st_geomfromtext('geometrycollection(point(1 1),linestring(2 2,3 3))')) order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+
+#linestring
+select astext(endpoint(geomfromtext('linestring(1 1,2 2,3 3)')));
+insert into t1 values(astext(endpoint(geomfromtext('linestring(1 1,2 2,3 3)'))));
+select * from t1 where a like astext(endpoint(geomfromtext('linestring(1 1,2 2,3 3)'))) order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+
+#multilinestring
+select mlinefromtext('multilinestring((10 48,10 21,10 0))');
+select * from t1 where a like mlinefromtext('multilinestring((10 48,10 21,10 0))') order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+
+#multipoint
+select mlinefromtext('multipoint(1 1,11 11,11 21,21 21)');
+select * from t1 where a like mlinefromtext('multipoint(1 1,11 11,11 21,21 21)') order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+
+#multipolygon
+select mlinefromtext('multipolygon(((28 26,28 0,84 0,84 42,28 26)))');
+select * from t1 where a like mlinefromtext('multipolygon(((28 26,28 0,84 0,84 42,28 26)))') order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+
+#point
+select point(1,2);
+select * from t1 where a like point(1,2) order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+
+#polygon
+select polyfromtext('polygon((10 10,20 10,20 20,10 20,10 10))');
+select * from t1 where a like polyfromtext('polygon((10 10,20 10,20 20,10 20,10 10))') order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+
+#st_intersection
+select st_astext(st_intersection(st_geomfromtext('linestring(1 1,3 3)'),st_geomfromtext('linestring(1 3,3 1)')));
+insert into t1 values(st_astext(st_intersection(st_geomfromtext('linestring(1 1,3 3)'),st_geomfromtext('linestring(1 3,3 1)'))));
+select * from t1 where a like st_astext(st_intersection(st_geomfromtext('linestring(1 1,3 3)'),st_geomfromtext('linestring(1 3,3 1)'))) order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+
+#st_symdifference
+select st_astext(st_symdifference(st_geomfromtext('multipoint(5 0,25 0,15 10,15 25)'),st_geomfromtext('multipoint(1 1,25 0,15 10,15 25)')));
+insert into t1 values(st_astext(st_symdifference(st_geomfromtext('multipoint(5 0,25 0,15 10,15 25)'),st_geomfromtext('multipoint(1 1,25 0,15 10,15 25)'))));
+select * from t1 where a like st_astext(st_symdifference(st_geomfromtext('multipoint(5 0,25 0,15 10,15 25)'),st_geomfromtext('multipoint(1 1,25 0,15 10,15 25)'))) order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+
+#st_union
+select st_astext(st_union(st_geomfromtext('linestring(1 1,3 3)'),st_geomfromtext('linestring(1 3,3 1)')));
+insert into t1 values(st_astext(st_union(st_geomfromtext('linestring(1 1,3 3)'),st_geomfromtext('linestring(1 3,3 1)'))));
+select * from t1 where a like st_astext(st_union(st_geomfromtext('linestring(1 1,3 3)'),st_geomfromtext('linestring(1 3,3 1)'))) order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+
+#st_boundary
+select st_astext(st_boundary(st_geomfromtext('linestring(3 3,0 0,-3 -3)')));
+insert into t1 values(st_astext(st_boundary(st_geomfromtext('linestring(3 3,0 0,-3 -3)'))));
+select * from t1 where a like st_astext(st_boundary(st_geomfromtext('linestring(3 3,0 0,-3 -3)'))) order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+
+#st_dimension
+select st_dimension(geomfromtext('linestring(1 1,2 2)'));
+insert into t1 values(st_dimension(geomfromtext('linestring(1 1,2 2)')));
+select * from t1 where a like st_dimension(geomfromtext('linestring(1 1,2 2)')) order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+
+#st_envelope
+select st_astext(st_envelope(st_geomfromtext('linestring(1 1,2 2)')));
+insert into t1 values(st_astext(st_envelope(st_geomfromtext('linestring(1 1,2 2)'))));
+select * from t1 where a like st_astext(st_envelope(st_geomfromtext('linestring(1 1,2 2)'))) order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+
+#st_geometryn
+select st_astext(st_geometryn(st_geomfromtext('geometrycollection(point(1 1),linestring(2 2,3 3))'),1));
+insert into t1 values(st_astext(st_geometryn(st_geomfromtext('geometrycollection(point(1 1),linestring(2 2,3 3))'),1)));
+select * from t1 where a like st_astext(st_geometryn(st_geomfromtext('geometrycollection(point(1 1),linestring(2 2,3 3))'),1)) order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+
+#geometrytype
+select geometrytype(geomfromtext('point(1 1)'));
+insert into t1 values(geometrytype(geomfromtext('point(1 1)')));
+select * from t1 where a like geometrytype(geomfromtext('point(1 1)')) order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+
+#st_isclosed
+select st_isclosed(st_geomfromtext('linestring(1 1,2 2,3 3,1 1)'));
+insert into t1 values(st_isclosed(st_geomfromtext('linestring(1 1,2 2,3 3,1 1)')));
+select * from t1 where a like st_isclosed(st_geomfromtext('linestring(1 1,2 2,3 3,1 1)')) order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+
+#st_issimple
+select st_issimple(geomfromtext('point(1 2)'));
+insert into t1 values(st_issimple(geomfromtext('point(1 2)')));
+select * from t1 where a like st_issimple(geomfromtext('point(1 2)')) order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+
+#st_numgeometries
+select st_numgeometries(st_geomfromtext('geometrycollection(point(1 1),linestring(2 2,3 3))'));
+insert into t1 values(st_numgeometries(st_geomfromtext('geometrycollection(point(1 1),linestring(2 2,3 3))')));
+select * from t1 where a like st_numgeometries(st_geomfromtext('geometrycollection(point(1 1),linestring(2 2,3 3))')) order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+
+#st_srid
+select st_srid(st_geomfromtext('linestring(1 1,2 2)',101));
+insert into t1 values(st_srid(st_geomfromtext('linestring(1 1,2 2)',101)));
+select * from t1 where a like st_srid(st_geomfromtext('linestring(1 1,2 2)',101)) order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+
+#st_contains
+select st_contains(st_geomfromtext('point(174 149)'),st_geomfromtext('point(174 149)'));
+insert into t1 values(st_contains(st_geomfromtext('point(174 149)'),st_geomfromtext('point(174 149)')));
+select * from t1 where a like st_contains(st_geomfromtext('point(174 149)'),st_geomfromtext('point(174 149)')) order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+
+#st_crosses
+select st_crosses(st_geomfromtext('point(174 149)'),st_geomfromtext('point(174 149)'));
+insert into t1 values(st_crosses(st_geomfromtext('point(174 149)'),st_geomfromtext('point(174 149)')));
+select * from t1 where a like st_crosses(st_geomfromtext('point(174 149)'),st_geomfromtext('point(174 149)')) order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+
+#st_difference
+select st_astext(st_difference(point(1,1),point(2,2)));
+insert into t1 values(st_astext(st_difference(point(1,1),point(2,2))));
+select * from t1 where a like st_astext(st_difference(point(1,1),point(2,2))) order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+
+#st_disjoint
+select st_disjoint(st_geomfromtext('point(174 149)'),st_geomfromtext('point(174 149)'));
+insert into t1 values(st_disjoint(st_geomfromtext('point(174 149)'),st_geomfromtext('point(174 149)')));
+select * from t1 where a like st_disjoint(st_geomfromtext('point(174 149)'),st_geomfromtext('point(174 149)')) order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+
+#st_distance
+select st_distance(point(1,1),point(4,5)),st_distance(point('1','1'),point('1','5'));
+insert into t1 values(st_distance(point(1,1),point(4,5))),(st_distance(point('1','1'),point('1','5')));
+select * from t1 where a like st_distance(point(1,1),point(4,5)) order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t1 where a like st_distance(point('1','1'),point('1','5')) order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t2 where a like st_distance(point((a),1),point(4,5));
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t3 where a like st_distance(point(1,1),point(4,5));
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t4 where a like st_distance(point(1,1),point(4,5));
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t5 where a like st_distance(point(1,1),point(4,5));
+--source include/query_pushdown_condition_sequoiadb.inc
+
+#st_intersects
+select st_intersects(point(1,1),point(2,2));
+insert into t1 values(st_intersects(point(1,1),point(2,2)));
+select * from t1 where a like st_intersects(point(1,1),point(2,2)) order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+
+#st_length
+select st_length(st_geomfromtext('linestring(1 1,2 2,3 3)'));
+insert into t1 values(st_length(st_geomfromtext('linestring(1 1,2 2,3 3)')));
+select * from t1 where a like st_length(st_geomfromtext('linestring(1 1,2 2,3 3)')) order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+
+#st_touches
+select st_touches(point(1,1),point(2,2));
+insert into t1 values(st_touches(point(1,1),point(2,2)));
+select * from t1 where a like st_touches(point(1,1),point(2,2)) order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+
+#st_within
+select st_within(point(1,1),point(2,2));
+insert into t1 values(st_within(point(1,1),point(2,2)));
+select * from t1 where a like st_within(point(1,1),point(2,2)) order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+
+#within
+select within(point(1,1),point(2,2));
+insert into t1 values(within(point(1,1),point(2,2)));
+select * from t1 where a like within(point(1,1),point(2,2)) order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+
+#st_endpoint
+select st_astext(st_endpoint(st_geomfromtext('linestring(1 1,2 2,3 3)')));
+insert into t1 values(st_astext(st_endpoint(st_geomfromtext('linestring(1 1,2 2,3 3)'))));
+select * from t1 where a like st_astext(st_endpoint(st_geomfromtext('linestring(1 1,2 2,3 3)'))) order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+
+#glength
+select glength(geomfromtext('linestring(1 1,2 2,3 3)'));
+insert into t1 values(glength(geomfromtext('linestring(1 1,2 2,3 3)')));
+select * from t1 where a like glength(geomfromtext('linestring(1 1,2 2,3 3)')) order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+
+#st_numpoints
+select st_numpoints(st_geomfromtext('linestring(1 1,2 2,3 3)'));
+insert into t1 values(st_numpoints(st_geomfromtext('linestring(1 1,2 2,3 3)')));
+select * from t1 where a like st_numpoints(st_geomfromtext('linestring(1 1,2 2,3 3)')) order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+
+#st_pointn
+select st_astext(st_pointn(st_geomfromtext('linestring(1 1,2 2,3 3)'),2));
+insert into t1 values(st_astext(st_pointn(st_geomfromtext('linestring(1 1,2 2,3 3)'),2)));
+select * from t1 where a like st_astext(st_pointn(st_geomfromtext('linestring(1 1,2 2,3 3)'),2)) order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+
+#st_startpoint
+select st_astext(st_startpoint(st_geomfromtext('linestring(1 1,2 2,3 3)')));
+insert into t1 values(st_astext(st_startpoint(st_geomfromtext('linestring(1 1,2 2,3 3)'))));
+select * from t1 where a like st_astext(st_startpoint(st_geomfromtext('linestring(1 1,2 2,3 3)'))) order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+
+#mbrcontains
+select mbrcontains(st_geomfromtext('polygon((0 0,0 3,3 3,3 0,0 0))'),st_geomfromtext('point(1 1)'));
+insert into t1 values(mbrcontains(st_geomfromtext('polygon((0 0,0 3,3 3,3 0,0 0))'),st_geomfromtext('point(1 1)')));
+select * from t1 where a like mbrcontains(st_geomfromtext('polygon((0 0,0 3,3 3,3 0,0 0))'),st_geomfromtext('point(1 1)')) order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t2 where a like mbrcontains(null,st_geomfromtext('point(1 1)'));
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t3 where a like mbrcontains(st_geomfromtext('polygon((0 0,0 3,3 3,3 0,0 0))'),st_geomfromtext('point(1 1)'));
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t4 where a like mbrcontains(st_geomfromtext('polygon((0 0,0 3,3 3,3 0,0 0))'),st_geomfromtext('point(1 1)'));
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t5 where a like mbrcontains(st_geomfromtext('polygon((0 0,0 3,3 3,3 0,0 0))'),st_geomfromtext('point(1 1)'));
+--source include/query_pushdown_condition_sequoiadb.inc
+
+#mbrdisjoint
+select mbrdisjoint(geomfromtext('polygon((0 0,0 3,3 3,3 0,0 0))'),geomfromtext('polygon((3 3,3 6,6 6,6 3,3 3))'));
+insert into t1 values(mbrdisjoint(geomfromtext('polygon((0 0,0 3,3 3,3 0,0 0))'),geomfromtext('polygon((3 3,3 6,6 6,6 3,3 3))')));
+select * from t1 where a like mbrdisjoint(geomfromtext('polygon((0 0,0 3,3 3,3 0,0 0))'),geomfromtext('polygon((3 3,3 6,6 6,6 3,3 3))')) order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+
+#mbrequal
+select mbrequal(geomfromtext('polygon((0 0,0 3,3 3,3 0,0 0))'),geomfromtext('polygon((3 3,3 6,6 6,6 3,3 3))'));
+insert into t1 values(mbrequal(geomfromtext('polygon((0 0,0 3,3 3,3 0,0 0))'),geomfromtext('polygon((3 3,3 6,6 6,6 3,3 3))')));
+select * from t1 where a like mbrequal(geomfromtext('polygon((0 0,0 3,3 3,3 0,0 0))'),geomfromtext('polygon((3 3,3 6,6 6,6 3,3 3))')) order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+
+#mbrintersects
+select mbrintersects(geomfromtext('polygon((0 0,0 3,3 3,3 0,0 0))'),geomfromtext('polygon((3 3,3 6,6 6,6 3,3 3))'));
+insert into t1 values(mbrintersects(geomfromtext('polygon((0 0,0 3,3 3,3 0,0 0))'),geomfromtext('polygon((3 3,3 6,6 6,6 3,3 3))')));
+select * from t1 where a like mbrintersects(geomfromtext('polygon((0 0,0 3,3 3,3 0,0 0))'),geomfromtext('polygon((3 3,3 6,6 6,6 3,3 3))')) order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+
+#mbroverlaps
+select mbroverlaps(geomfromtext('polygon((0 0,0 3,3 3,3 0,0 0))'),geomfromtext('polygon((3 3,3 6,6 6,6 3,3 3))'));
+insert into t1 values(mbroverlaps(geomfromtext('polygon((0 0,0 3,3 3,3 0,0 0))'),geomfromtext('polygon((3 3,3 6,6 6,6 3,3 3))')));
+select * from t1 where a like mbroverlaps(geomfromtext('polygon((0 0,0 3,3 3,3 0,0 0))'),geomfromtext('polygon((3 3,3 6,6 6,6 3,3 3))')) order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+
+#mbrtouches
+select mbrtouches(geomfromtext('polygon((0 0,0 3,3 3,3 0,0 0))'),geomfromtext('polygon((3 3,3 6,6 6,6 3,3 3))'));
+insert into t1 values(mbrtouches(geomfromtext('polygon((0 0,0 3,3 3,3 0,0 0))'),geomfromtext('polygon((3 3,3 6,6 6,6 3,3 3))')));
+select * from t1 where a like mbrtouches(geomfromtext('polygon((0 0,0 3,3 3,3 0,0 0))'),geomfromtext('polygon((3 3,3 6,6 6,6 3,3 3))')) order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+
+#mbrwithin
+select mbrwithin(st_geomfromtext('polygon((0 0,0 3,3 3,3 0,0 0))'),st_geomfromtext('point(1 1)'));
+insert into t1 values(mbrwithin(st_geomfromtext('polygon((0 0,0 3,3 3,3 0,0 0))'),st_geomfromtext('point(1 1)')));
+select * from t1 where a like mbrwithin(st_geomfromtext('polygon((0 0,0 3,3 3,3 0,0 0))'),st_geomfromtext('point(1 1)')) order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+
+#st_x
+select st_x(point(56.7,53.34)),st_x(point('4','8'));
+insert into t1 values(st_x(point(56.7,53.34))),(st_x(point('4','8')));
+select * from t1 where a like st_x(point(56.7,53.34)) order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t1 where a like st_x(point('4','8')) order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t2 where a like st_x(point((a),53.34));
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t2 where a like st_x(point(null,53.34));
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t3 where a like st_x(point(56.7,53.34));
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t4 where a like st_x(point(56.7,53.34));
+--source include/query_pushdown_condition_sequoiadb.inc
+select * from t5 where a like st_x(point(56.7,53.34));
+--source include/query_pushdown_condition_sequoiadb.inc
+
+#st_y
+select st_y(point(56.7,53.34));
+insert into t1 values(st_y(point(56.7,53.34)));
+select * from t1 where a like st_y(point(56.7,53.34)) order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+
+#st_area
+select st_area(st_geomfromtext('polygon((0 0,0 3,3 0,0 0),(1 1,1 2,2 1,1 1))'));
+insert into t1 values(st_area(st_geomfromtext('polygon((0 0,0 3,3 0,0 0),(1 1,1 2,2 1,1 1))')));
+select * from t1 where a like st_area(st_geomfromtext('polygon((0 0,0 3,3 0,0 0),(1 1,1 2,2 1,1 1))')) order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+
+#st_centroid
+select st_astext(st_centroid(st_geomfromtext('polygon((0 0,0 3,3 0,0 0),(1 1,1 2,2 1,1 1))')));
+insert into t1 values(st_astext(st_centroid(st_geomfromtext('polygon((0 0,0 3,3 0,0 0),(1 1,1 2,2 1,1 1))'))));
+select * from t1 where a like st_astext(st_centroid(st_geomfromtext('polygon((0 0,0 3,3 0,0 0),(1 1,1 2,2 1,1 1))'))) order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+
+#st_exteriorring
+select st_astext(st_exteriorring(st_geomfromtext('polygon((0 0,0 3,3 0,0 0),(1 1,1 2,2 1,1 1))')));
+insert into t1 values(st_astext(st_exteriorring(st_geomfromtext('polygon((0 0,0 3,3 0,0 0),(1 1,1 2,2 1,1 1))'))));
+select * from t1 where a like st_astext(st_exteriorring(st_geomfromtext('polygon((0 0,0 3,3 0,0 0),(1 1,1 2,2 1,1 1))'))) order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+
+#st_interiorringn
+select st_astext(st_interiorringn(st_geomfromtext('polygon((0 0,0 3,3 0,0 0),(1 1,1 2,2 1,1 1))'),1));
+insert into t1 values(st_astext(st_interiorringn(st_geomfromtext('polygon((0 0,0 3,3 0,0 0),(1 1,1 2,2 1,1 1))'),1)));
+select * from t1 where a like st_astext(st_interiorringn(st_geomfromtext('polygon((0 0,0 3,3 0,0 0),(1 1,1 2,2 1,1 1))'),1)) order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+
+#st_numinteriorrings
+select st_numinteriorrings(st_geomfromtext('polygon((0 0,0 3,3 0,0 0),(1 1,1 2,2 1,1 1))'));
+insert into t1 values(st_numinteriorrings(st_geomfromtext('polygon((0 0,0 3,3 0,0 0),(1 1,1 2,2 1,1 1))')));
+select * from t1 where a like st_numinteriorrings(st_geomfromtext('polygon((0 0,0 3,3 0,0 0),(1 1,1 2,2 1,1 1))')) order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+
+#st_asbinary
+select st_astext(st_geomfromwkb(st_asbinary(st_geomfromtext('polygon((0 0,0 1,1 1,1 0,0 0))'))));
+insert into t1 values(st_astext(st_geomfromwkb(st_asbinary(st_geomfromtext('polygon((0 0,0 1,1 1,1 0,0 0))')))));
+select * from t1 where a like st_astext(st_geomfromwkb(st_asbinary(st_geomfromtext('polygon((0 0,0 1,1 1,1 0,0 0))')))) order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+
+#st_aswkb
+select st_astext(st_geomfromwkb(st_aswkb(st_geomfromtext('polygon((0 0,0 1,1 1,1 0,0 0))'))));
+insert into t1 values(st_astext(st_geomfromwkb(st_aswkb(st_geomfromtext('polygon((0 0,0 1,1 1,1 0,0 0))')))));
+select * from t1 where a like st_astext(st_geomfromwkb(st_aswkb(st_geomfromtext('polygon((0 0,0 1,1 1,1 0,0 0))')))) order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+
+#mlinefromwkb
+select st_astext(mlinefromwkb(st_asbinary(mlinefromtext('multilinestring((10 48,10 21,10 0),(16 0,16 23,16 48))'))));
+insert into t1 values(st_astext(mlinefromwkb(st_asbinary(mlinefromtext('multilinestring((10 48,10 21,10 0),(16 0,16 23,16 48))')))));
+select * from t1 where a like st_astext(mlinefromwkb(st_asbinary(mlinefromtext('multilinestring((10 48,10 21,10 0),(16 0,16 23,16 48))')))) order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+
+#mpointfromwkb
+select st_astext(mpointfromwkb(st_asbinary(mlinefromtext('multipoint(1 1,2 2)'))));
+insert into t1 values(st_astext(mpointfromwkb(st_asbinary(mlinefromtext('multipoint(1 1,2 2)')))));
+select * from t1 where a like st_astext(mpointfromwkb(st_asbinary(mlinefromtext('multipoint(1 1,2 2)')))) order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+
+#mpolyfromwkb
+select st_astext(mpolyfromwkb(st_asbinary(mlinefromtext('multipolygon(((28 26,28 0,84 0,84 42,28 26)))'))));
+insert into t1 values(st_astext(mpolyfromwkb(st_asbinary(mlinefromtext('multipolygon(((28 26,28 0,84 0,84 42,28 26)))')))));
+select * from t1 where a like st_astext(mpolyfromwkb(st_asbinary(mlinefromtext('multipolygon(((28 26,28 0,84 0,84 42,28 26)))')))) order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+
+#st_geomcollfromwkb
+select st_astext(st_geomcollfromwkb(st_asbinary(st_geomfromtext('geometrycollection(polygon((5 5,10 5,10 10,5 5)),point(10 10))'))));
+insert into t1 values(st_astext(st_geomcollfromwkb(st_asbinary(st_geomfromtext('geometrycollection(polygon((5 5,10 5,10 10,5 5)),point(10 10))')))));
+select * from t1 where a like st_astext(st_geomcollfromwkb(st_asbinary(st_geomfromtext('geometrycollection(polygon((5 5,10 5,10 10,5 5)),point(10 10))')))) order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+
+#st_geomfromwkb
+select st_astext(st_geomfromwkb(st_asbinary(st_linefromtext('linestring(0 4,4 6)'))));
+insert into t1 values(st_astext(st_geomfromwkb(st_asbinary(st_linefromtext('linestring(0 4,4 6)')))));
+select * from t1 where a like st_astext(st_geomfromwkb(st_asbinary(st_linefromtext('linestring(0 4,4 6)')))) order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+
+#st_linefromwkb
+select st_astext(st_linefromwkb(st_asbinary(st_linefromtext('linestring(0 4,4 6)'))));
+insert into t1 values(st_astext(st_linefromwkb(st_asbinary(st_linefromtext('linestring(0 4,4 6)')))));
+select * from t1 where a like st_astext(st_linefromwkb(st_asbinary(st_linefromtext('linestring(0 4,4 6)')))) order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+
+#st_pointfromwkb
+select st_astext(st_pointfromwkb(st_asbinary(st_pointfromtext('point(0 4)'))));
+insert into t1 values(st_astext(st_pointfromwkb(st_asbinary(st_pointfromtext('point(0 4)')))));
+select * from t1 where a like st_astext(st_pointfromwkb(st_asbinary(st_pointfromtext('point(0 4)')))) order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+
+#st_polyfromwkb
+select st_astext(st_polyfromwkb(st_asbinary(st_polyfromtext('polygon((1 1,1 5,4 9,6 9,9 3,7 2,1 1))'))));
+insert into t1 values(st_astext(st_polyfromwkb(st_asbinary(st_polyfromtext('polygon((1 1,1 5,4 9,6 9,9 3,7 2,1 1))')))));
+select * from t1 where a like st_astext(st_polyfromwkb(st_asbinary(st_polyfromtext('polygon((1 1,1 5,4 9,6 9,9 3,7 2,1 1))')))) order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+
+#st_astext
+select st_astext(st_geomfromtext('linestring(1 1,4 4,6 6)'));
+insert into t1 values(st_astext(st_geomfromtext('linestring(1 1,4 4,6 6)')));
+select * from t1 where a like st_astext(st_geomfromtext('linestring(1 1,4 4,6 6)')) order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+
+#st_geomcollfromtext
+select st_astext(st_geomcollfromtext("multilinestring((10 10,11 11),(9 9,10 10))"));
+insert into t1 values(st_astext(st_geomcollfromtext("multilinestring((10 10,11 11),(9 9,10 10))")));
+select * from t1 where a like st_astext(st_geomcollfromtext("multilinestring((10 10,11 11),(9 9,10 10))")) order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+
+#st_geomfromtext
+select st_astext(st_geomfromtext("multilinestring((10 10,11 11),(9 9,10 10))"));
+insert into t1 values(st_astext(st_geomfromtext("multilinestring((10 10,11 11),(9 9,10 10))")));
+select * from t1 where a like st_astext(st_geomfromtext("multilinestring((10 10,11 11),(9 9,10 10))")) order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+
+#st_linefromtext
+select st_astext(st_linefromtext("multilinestring((10 10,11 11),(9 9,10 10))"));
+insert into t1 values(st_astext(st_linefromtext("multilinestring((10 10,11 11),(9 9,10 10))")));
+select * from t1 where a like st_astext(st_linefromtext("multilinestring((10 10,11 11),(9 9,10 10))")) order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+
+#mlinefromtext 
+select mlinefromtext('point(2 2)');
+select * from t1 where a like mlinefromtext('point(2 2)') order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+
+#mpointfromtext 
+select mpointfromtext('point(2 2)');
+select * from t1 where a like mpointfromtext('point(2 2)') order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+
+#mpolyfromtext
+select mpolyfromtext('point(2 2)');
+select * from t1 where a like mpolyfromtext('point(2 2)') order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+
+#st_pointfromtext
+select st_pointfromtext('point(10 10)');
+select * from t1 where a like st_pointfromtext('point(10 10)') order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+
+#st_polyfromtext
+select st_polyfromtext('point(10 10)');
+select * from t1 where a like st_polyfromtext('point(10 10)') order by a;
+--source include/query_pushdown_condition_sequoiadb.inc
+
+#-----------------------------------------------geographic functions------------------------------------------#
+
+set session sequoiadb_debug_log=default;
+set session sequoiadb_support_mode=default;
+drop table t1, t2, t3, t4, t5;
+drop database like_single_func_pushdown_sequoiadb_5;
+--source include/uninstall_sequoiadb.inc

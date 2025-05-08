@@ -1,0 +1,89 @@
+drop database if exists metadata_sync_show_parallel;
+create database metadata_sync_show_parallel;
+use metadata_sync_show_parallel;
+show create database metadata_sync_show_parallel;
+Database	Create Database
+metadata_sync_show_parallel	CREATE DATABASE `metadata_sync_show_parallel` /*!40100 DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_bin */
+drop database metadata_sync_show_parallel;
+show create database metadata_sync_show_parallel;
+ERROR 42000: Unknown database 'metadata_sync_show_parallel'
+create database metadata_sync_show_parallel;
+use metadata_sync_show_parallel;
+create table t1(a int);
+show create table metadata_sync_show_parallel.t1;
+Table	Create Table
+t1	CREATE TABLE `t1` (
+  `a` int(11) DEFAULT NULL
+) ENGINE=SequoiaDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin
+drop table t1;
+show create table metadata_sync_show_parallel.t1;
+ERROR 42S02: Table 'metadata_sync_show_parallel.t1' doesn't exist
+CREATE EVENT IF NOT EXISTS e_hourly
+ON SCHEDULE AT CURRENT_TIMESTAMP + INTERVAL 1 HOUR
+DO
+UPDATE myschema.mytable SET mycol = mycol + 1;
+show create event metadata_sync_show_parallel.e_hourly;
+Event	sql_mode	time_zone	Create Event	character_set_client	collation_connection	Database Collation
+e_hourly	STRICT_TRANS_TABLES,ERROR_FOR_DIVISION_BY_ZERO,NO_AUTO_CREATE_USER,NO_ENGINE_SUBSTITUTION	SYSTEM	CREATE DEFINER=`x`@`%` EVENT `e_hourly` ON SCHEDULE AT 'y' ON COMPLETION NOT PRESERVE ENABLE DO UPDATE myschema.mytable SET mycol = mycol + 1	latin1	latin1_swedish_ci	utf8mb4_bin
+drop event e_hourly;
+show create event metadata_sync_show_parallel.e_hourly;
+ERROR HY000: Unknown event 'e_hourly'
+create function hello (s char(20)) returns char(50) deterministic return concat('Hello,' , s , '!');
+show create function metadata_sync_show_parallel.hello;
+Function	sql_mode	Create Function	character_set_client	collation_connection	Database Collation
+hello	STRICT_TRANS_TABLES,ERROR_FOR_DIVISION_BY_ZERO,NO_AUTO_CREATE_USER,NO_ENGINE_SUBSTITUTION	CREATE DEFINER=`sdbadmin`@`%` FUNCTION `hello`(s char(20)) RETURNS char(50) CHARSET utf8mb4 COLLATE utf8mb4_bin
+    DETERMINISTIC
+return concat('Hello,' , s , '!')	latin1	latin1_swedish_ci	utf8mb4_bin
+drop function hello;
+show create function metadata_sync_show_parallel.hello;
+ERROR 42000: FUNCTION hello does not exist
+create table t1 (
+id   char(16) not null default '',
+data int not null
+);
+create procedure p23109() insert into t1 values ("foo", 42);
+show create procedure metadata_sync_show_parallel.p23109;
+Procedure	sql_mode	Create Procedure	character_set_client	collation_connection	Database Collation
+p23109	STRICT_TRANS_TABLES,ERROR_FOR_DIVISION_BY_ZERO,NO_AUTO_CREATE_USER,NO_ENGINE_SUBSTITUTION	CREATE DEFINER=`sdbadmin`@`%` PROCEDURE `p23109`()
+insert into t1 values ("foo", 42)	latin1	latin1_swedish_ci	utf8mb4_bin
+drop procedure p23109;
+show create procedure metadata_sync_show_parallel.p23109;
+ERROR 42000: PROCEDURE p23109 does not exist
+drop table metadata_sync_show_parallel.t1;
+drop trigger if exists t1_bi;
+CREATE TABLE t1(a INT NOT NULL, b INT, c INT);
+CREATE TRIGGER t1_bi BEFORE INSERT ON t1 FOR EACH ROW SET NEW.a = 1;
+show create trigger metadata_sync_show_parallel.t1_bi;
+Trigger	sql_mode	SQL Original Statement	character_set_client	collation_connection	Database Collation	Created
+t1_bi	STRICT_TRANS_TABLES,ERROR_FOR_DIVISION_BY_ZERO,NO_AUTO_CREATE_USER,NO_ENGINE_SUBSTITUTION	CREATE DEFINER=`x`@`%` TRIGGER t1_bi BEFORE INSERT ON t1 FOR EACH ROW SET NEW.a = 1	latin1	latin1_swedish_ci	utf8mb4_bin	x
+drop trigger t1_bi;
+show create trigger metadata_sync_show_parallel.t1_bi;
+ERROR HY000: Trigger does not exist
+drop table metadata_sync_show_parallel.t1;
+create user 'metadata_sync_user_23109'@'%' IDENTIFIED BY 'metadata_sync_user_23109';
+flush privileges;
+show create user metadata_sync_user_23109;
+CREATE USER for metadata_sync_user_23109@%
+CREATE USER 'metadata_sync_user_23109'@'%' IDENTIFIED WITH 'mysql_native_password' AS '*86887E3903D16A1494F5B518A57EF1D38197DAC8' REQUIRE NONE PASSWORD EXPIRE DEFAULT ACCOUNT UNLOCK
+drop user metadata_sync_user_23109;
+flush privileges;
+show create user metadata_sync_user_23109;
+ERROR HY000: Operation SHOW CREATE USER failed for 'metadata_sync_user_23109'@'%'
+create table t1(a int);
+create view v1 as select * from t1;
+show create view metadata_sync_show_parallel.v1;
+View	Create View	character_set_client	collation_connection
+v1	CREATE ALGORITHM=UNDEFINED DEFINER=`sdbadmin`@`%` SQL SECURITY DEFINER VIEW `metadata_sync_show_parallel`.`v1` AS select `metadata_sync_show_parallel`.`t1`.`a` AS `a` from `metadata_sync_show_parallel`.`t1`	latin1	latin1_swedish_ci
+drop view v1;
+show create view metadata_sync_show_parallel.v1;
+ERROR 42S02: Table 'metadata_sync_show_parallel.v1' doesn't exist
+drop table metadata_sync_show_parallel.t1;
+create table t1(a int);
+create index a on t1(a);
+show index from metadata_sync_show_parallel.t1;
+Table	Non_unique	Key_name	Seq_in_index	Column_name	Collation	Cardinality	Sub_part	Packed	Null	Index_type	Comment	Index_comment
+t1	1	a	1	a	A	NULL	NULL	NULL	YES	BTREE		
+drop index a on t1;
+show index from metadata_sync_show_parallel.t1;
+Table	Non_unique	Key_name	Seq_in_index	Column_name	Collation	Cardinality	Sub_part	Packed	Null	Index_type	Comment	Index_comment
+drop database metadata_sync_show_parallel;

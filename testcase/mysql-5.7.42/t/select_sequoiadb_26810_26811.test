@@ -1,0 +1,49 @@
+#case 26810 26811
+ 
+--source include/have_sequoiadb.inc
+
+--disable_warnings
+drop table if exists tb_26810_26811;
+--enable_warnings
+
+create table `tb_26810_26811` ( 
+    `id` bigint(20) not null AUTO_INCREMENT, 
+    `gen_jrn_no` varchar(64) collate utf8mb4_bin not null default '', 
+    `type` varchar(16) collate utf8mb4_bin not null default '', 
+    `msg_group` varchar(64) collate utf8mb4_bin not null default '', 
+    `msg` text collate utf8mb4_bin, 
+    `status` varchar(1) collate utf8mb4_bin not null default '', 
+    `exec_times` int(9) not null default '0', 
+    `app_id` varchar(4) collate utf8mb4_bin not null default '', 
+    `part_no` int(11) not null default '0', 
+    `trace_id` varchar(32) collate utf8mb4_bin not null default '', 
+    `span_id` varchar(32) collate utf8mb4_bin not null default '', 
+    `spl_flag` tinyint(4) not null default '0', 
+    `batch_proc_date` date not null, 
+    `stat_type` varchar(1) collate utf8mb4_bin not null default '0', 
+    `create_ts` datetime(6) not null default current_timestamp(6), 
+    `update_ts` datetime(6) not null default current_timestamp(6) on update current_timestamp(6), 
+    `tag` varchar(64) collate utf8mb4_bin not null default '', 
+    `remark` varchar(120) collate utf8mb4_bin not null default '', 
+    primary key (`id`,`batch_proc_date`), 
+    key `idx_dcbp_scty_msg_1` (`gen_jrn_no`), 
+    key `idx_dcbp_scty_msg_2` (`status`,`type`,`id`,`msg_group`), 
+    key `idx_dcbp_scty_msg_3` (`update_ts`), 
+    key `idx_dcbp_scty_msg_4` (`batch_proc_date`,`status`,`msg_group`) 
+)engine=sequoiadb default charset=utf8mb4 collate=utf8mb4_bin; 
+
+let $num=200;
+--disable_query_log
+--disable_result_log
+while ($num)
+{
+    select msg_group, count(*) cnt from tb_26810_26811 where status != 's' and batch_proc_date = date_format(sysdate(),
+     '%Y%m%d') and (create_ts <= now() - interval 10 minute) and stat_type = '0' group by msg_group;
+     dec $num;
+}
+--enable_query_log
+--enable_result_log
+
+drop table tb_26810_26811;
+
+--source include/uninstall_sequoiadb.inc

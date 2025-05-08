@@ -1,0 +1,2384 @@
+ok
+connect conn1, localhost, root, , information_schema, , $SQL_PATH/database/$PORT_1/mysqld.sock;
+ok
+connect conn2, localhost, root, , information_schema, , $SQL_PATH/database/$PORT_2/mysqld.sock;
+connection conn1;
+drop database if exists sdb_diag_info_dump_2_1;
+drop database if exists sdb_diag_info_dump_2_2;
+create database sdb_diag_info_dump_2_1;
+show create database sdb_diag_info_dump_2_1;
+Database	Create Database
+sdb_diag_info_dump_2_1	CREATE DATABASE `sdb_diag_info_dump_2_1` /*!40100 DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_bin */
+use sdb_diag_info_dump_2_1;
+create function `f1`() returns varchar(10)
+begin
+return concat("test","func1");
+end $
+CREATE PROCEDURE `p1`(in a int)
+begin
+select 1 + 2;
+end $
+show create function f1;
+Function	sql_mode	Create Function	character_set_client	collation_connection	Database Collation
+f1	STRICT_TRANS_TABLES,ERROR_FOR_DIVISION_BY_ZERO,NO_AUTO_CREATE_USER,NO_ENGINE_SUBSTITUTION	CREATE DEFINER=`root`@`localhost` FUNCTION `f1`() RETURNS varchar(10) CHARSET utf8mb4 COLLATE utf8mb4_bin
+begin
+return concat("test","func1");
+end	latin1	latin1_swedish_ci	utf8mb4_bin
+show create procedure p1;
+Procedure	sql_mode	Create Procedure	character_set_client	collation_connection	Database Collation
+p1	STRICT_TRANS_TABLES,ERROR_FOR_DIVISION_BY_ZERO,NO_AUTO_CREATE_USER,NO_ENGINE_SUBSTITUTION	CREATE DEFINER=`root`@`localhost` PROCEDURE `p1`(in a int)
+begin
+select 1 + 2;
+end	latin1	latin1_swedish_ci	utf8mb4_bin
+create database sdb_diag_info_dump_2_2;
+show create database sdb_diag_info_dump_2_2;
+Database	Create Database
+sdb_diag_info_dump_2_2	CREATE DATABASE `sdb_diag_info_dump_2_2` /*!40100 DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_bin */
+use sdb_diag_info_dump_2_2;
+create function `f1`() returns varchar(10)
+begin
+return concat("test","func1");
+end $
+CREATE PROCEDURE `p1`(in a int)
+begin
+select 1 + 2;
+end $
+show create function f1;
+Function	sql_mode	Create Function	character_set_client	collation_connection	Database Collation
+f1	STRICT_TRANS_TABLES,ERROR_FOR_DIVISION_BY_ZERO,NO_AUTO_CREATE_USER,NO_ENGINE_SUBSTITUTION	CREATE DEFINER=`root`@`localhost` FUNCTION `f1`() RETURNS varchar(10) CHARSET utf8mb4 COLLATE utf8mb4_bin
+begin
+return concat("test","func1");
+end	latin1	latin1_swedish_ci	utf8mb4_bin
+show create procedure p1;
+Procedure	sql_mode	Create Procedure	character_set_client	collation_connection	Database Collation
+p1	STRICT_TRANS_TABLES,ERROR_FOR_DIVISION_BY_ZERO,NO_AUTO_CREATE_USER,NO_ENGINE_SUBSTITUTION	CREATE DEFINER=`root`@`localhost` PROCEDURE `p1`(in a int)
+begin
+select 1 + 2;
+end	latin1	latin1_swedish_ci	utf8mb4_bin
+INFO: Connecting to the SQL instance
+INFO: Connecting to the SequoiaDB
+INFO: Getting environment properties
+INFO: Getting routine "sdb_diag_info_dump_2_1.f1" structure information from SQL
+INFO: Getting routine "sdb_diag_info_dump_2_2.p1" structure information from SQL
+OK
+drop database sdb_diag_info_dump_2_1;
+drop database sdb_diag_info_dump_2_2;
+diaginfo/
+diaginfo/routine/
+diaginfo/routine/sdb_diag_info_dump_2_1/
+diaginfo/routine/sdb_diag_info_dump_2_1/f1/
+diaginfo/routine/sdb_diag_info_dump_2_1/f1/function_routine_catalog.sql
+diaginfo/routine/sdb_diag_info_dump_2_2/
+diaginfo/routine/sdb_diag_info_dump_2_2/p1/
+diaginfo/routine/sdb_diag_info_dump_2_2/p1/procedure_routine_catalog.sql
+diaginfo/environment/
+diaginfo/environment/variables.result
+diaginfo/environment/group_list.json
+diaginfo/environment/version.txt
+diaginfo/environment/status.result
+diaginfo/environment/engine.txt
+diaginfo/catalog/
+diaginfo/catalog/sdb_diag_info_dump_2_1/
+diaginfo/catalog/sdb_diag_info_dump_2_1/database_catalog.sql
+diaginfo/catalog/sdb_diag_info_dump_2_2/
+diaginfo/catalog/sdb_diag_info_dump_2_2/database_catalog.sql
+connection conn2;
+drop database if exists sdb_diag_info_dump_2_1;
+drop database if exists sdb_diag_info_dump_2_2;
+set sequoiadb_diag_info_path=DEFAULT;
+CREATE DATABASE `sdb_diag_info_dump_2_1` /*!40100 DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_bin */
+;
+use sdb_diag_info_dump_2_1;
+show create database sdb_diag_info_dump_2_1;
+Database	Create Database
+sdb_diag_info_dump_2_1	CREATE DATABASE `sdb_diag_info_dump_2_1` /*!40100 DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_bin */
+set sql_mode="STRICT_TRANS_TABLES,ERROR_FOR_DIVISION_BY_ZERO,NO_AUTO_CREATE_USER,NO_ENGINE_SUBSTITUTION"$$$
+CREATE DEFINER=`root`@`localhost` FUNCTION `f1`() RETURNS varchar(10) CHARSET utf8mb4 COLLATE utf8mb4_bin
+begin
+return concat("test","func1");
+end
+$$$
+show create function f1;
+Function	sql_mode	Create Function	character_set_client	collation_connection	Database Collation
+f1	STRICT_TRANS_TABLES,ERROR_FOR_DIVISION_BY_ZERO,NO_AUTO_CREATE_USER,NO_ENGINE_SUBSTITUTION	CREATE DEFINER=`root`@`localhost` FUNCTION `f1`() RETURNS varchar(10) CHARSET utf8mb4 COLLATE utf8mb4_bin
+begin
+return concat("test","func1");
+end	latin1	latin1_swedish_ci	utf8mb4_bin
+CREATE DATABASE `sdb_diag_info_dump_2_2` /*!40100 DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_bin */
+;
+use sdb_diag_info_dump_2_2;
+show create database sdb_diag_info_dump_2_2;
+Database	Create Database
+sdb_diag_info_dump_2_2	CREATE DATABASE `sdb_diag_info_dump_2_2` /*!40100 DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_bin */
+set sql_mode="STRICT_TRANS_TABLES,ERROR_FOR_DIVISION_BY_ZERO,NO_AUTO_CREATE_USER,NO_ENGINE_SUBSTITUTION"$$$
+CREATE DEFINER=`root`@`localhost` PROCEDURE `p1`(in a int)
+begin
+select 1 + 2;
+end
+$$$
+show create procedure p1;
+Procedure	sql_mode	Create Procedure	character_set_client	collation_connection	Database Collation
+p1	STRICT_TRANS_TABLES,ERROR_FOR_DIVISION_BY_ZERO,NO_AUTO_CREATE_USER,NO_ENGINE_SUBSTITUTION	CREATE DEFINER=`root`@`localhost` PROCEDURE `p1`(in a int)
+begin
+select 1 + 2;
+end	latin1	latin1_swedish_ci	utf8mb4_bin
+drop database sdb_diag_info_dump_2_1;
+drop database sdb_diag_info_dump_2_2;
+connection conn1;
+drop database if exists sdb_diag_info_dump_2_1;
+drop database if exists sdb_diag_info_dump_2_2;
+create database sdb_diag_info_dump_2_1;
+show create database sdb_diag_info_dump_2_1;
+Database	Create Database
+sdb_diag_info_dump_2_1	CREATE DATABASE `sdb_diag_info_dump_2_1` /*!40100 DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_bin */
+use sdb_diag_info_dump_2_1;
+create function `f1`() returns varchar(10)
+begin
+return concat("test","func1");
+end $
+CREATE PROCEDURE `p1`(in a int)
+begin
+select 1 + 2;
+end $
+show create function f1;
+Function	sql_mode	Create Function	character_set_client	collation_connection	Database Collation
+f1	STRICT_TRANS_TABLES,ERROR_FOR_DIVISION_BY_ZERO,NO_AUTO_CREATE_USER,NO_ENGINE_SUBSTITUTION	CREATE DEFINER=`root`@`localhost` FUNCTION `f1`() RETURNS varchar(10) CHARSET utf8mb4 COLLATE utf8mb4_bin
+begin
+return concat("test","func1");
+end	latin1	latin1_swedish_ci	utf8mb4_bin
+show create procedure p1;
+Procedure	sql_mode	Create Procedure	character_set_client	collation_connection	Database Collation
+p1	STRICT_TRANS_TABLES,ERROR_FOR_DIVISION_BY_ZERO,NO_AUTO_CREATE_USER,NO_ENGINE_SUBSTITUTION	CREATE DEFINER=`root`@`localhost` PROCEDURE `p1`(in a int)
+begin
+select 1 + 2;
+end	latin1	latin1_swedish_ci	utf8mb4_bin
+create database sdb_diag_info_dump_2_2;
+show create database sdb_diag_info_dump_2_2;
+Database	Create Database
+sdb_diag_info_dump_2_2	CREATE DATABASE `sdb_diag_info_dump_2_2` /*!40100 DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_bin */
+use sdb_diag_info_dump_2_2;
+create function `f1`() returns varchar(10)
+begin
+return concat("test","func1");
+end $
+CREATE PROCEDURE `p1`(in a int)
+begin
+select 1 + 2;
+end $
+ERROR: Unknown database of parameters "p1"
+INFO: Connecting to the SQL instance
+INFO: Connecting to the SequoiaDB
+INFO: Getting routine "sdb_diag_info_dump_2_1.p1" structure information from SQL
+INFO: Getting environment properties
+OK
+drop database sdb_diag_info_dump_2_1;
+drop database sdb_diag_info_dump_2_2;
+diaginfo/
+diaginfo/routine/
+diaginfo/routine/sdb_diag_info_dump_2_1/
+diaginfo/routine/sdb_diag_info_dump_2_1/p1/
+diaginfo/routine/sdb_diag_info_dump_2_1/p1/procedure_routine_catalog.sql
+diaginfo/environment/
+diaginfo/environment/variables.result
+diaginfo/environment/group_list.json
+diaginfo/environment/version.txt
+diaginfo/environment/status.result
+diaginfo/environment/engine.txt
+diaginfo/catalog/
+diaginfo/catalog/sdb_diag_info_dump_2_1/
+diaginfo/catalog/sdb_diag_info_dump_2_1/database_catalog.sql
+connection conn2;
+drop database if exists sdb_diag_info_dump_2_1;
+drop database if exists sdb_diag_info_dump_2_2;
+set sequoiadb_diag_info_path=DEFAULT;
+CREATE DATABASE `sdb_diag_info_dump_2_1` /*!40100 DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_bin */
+;
+use sdb_diag_info_dump_2_1;
+show create database sdb_diag_info_dump_2_1;
+Database	Create Database
+sdb_diag_info_dump_2_1	CREATE DATABASE `sdb_diag_info_dump_2_1` /*!40100 DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_bin */
+set sql_mode="STRICT_TRANS_TABLES,ERROR_FOR_DIVISION_BY_ZERO,NO_AUTO_CREATE_USER,NO_ENGINE_SUBSTITUTION"$$$
+CREATE DEFINER=`root`@`localhost` PROCEDURE `p1`(in a int)
+begin
+select 1 + 2;
+end
+$$$
+show create procedure p1;
+Procedure	sql_mode	Create Procedure	character_set_client	collation_connection	Database Collation
+p1	STRICT_TRANS_TABLES,ERROR_FOR_DIVISION_BY_ZERO,NO_AUTO_CREATE_USER,NO_ENGINE_SUBSTITUTION	CREATE DEFINER=`root`@`localhost` PROCEDURE `p1`(in a int)
+begin
+select 1 + 2;
+end	latin1	latin1_swedish_ci	utf8mb4_bin
+drop database sdb_diag_info_dump_2_1;
+connection conn1;
+drop database if exists sdb_diag_info_dump_2_1;
+drop database if exists sdb_diag_info_dump_2_2;
+create database sdb_diag_info_dump_2_1;
+show create database sdb_diag_info_dump_2_1;
+Database	Create Database
+sdb_diag_info_dump_2_1	CREATE DATABASE `sdb_diag_info_dump_2_1` /*!40100 DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_bin */
+use sdb_diag_info_dump_2_1;
+CREATE TABLE `t1` (
+`a` int(11) DEFAULT NULL, 
+`b` varchar(10) COLLATE utf8mb4_bin DEFAULT NULL,
+KEY `a` (`a`)
+) ENGINE=SequoiaDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin;
+insert into t1 values(1,"a"),(2,"b"),(3,"c");
+insert into t1 select * from t1;
+analyze table t1;
+Table	Op	Msg_type	Msg_text
+sdb_diag_info_dump_2_1.t1	analyze	status	OK
+show create table t1;
+Table	Create Table
+t1	CREATE TABLE `t1` (
+  `a` int(11) DEFAULT NULL,
+  `b` varchar(10) COLLATE utf8mb4_bin DEFAULT NULL,
+  KEY `a` (`a`)
+) ENGINE=SequoiaDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin
+CREATE TABLE `t2` (
+`a` int(11) DEFAULT NULL, 
+`b` varchar(10) COLLATE utf8mb4_bin DEFAULT NULL,
+KEY `a` (`a`)
+) ENGINE=SequoiaDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin;
+insert into t2 values(1,"a"),(2,"b"),(3,"c");
+insert into t2 select * from t2;
+analyze table t2;
+Table	Op	Msg_type	Msg_text
+sdb_diag_info_dump_2_1.t2	analyze	status	OK
+show create table t2;
+Table	Create Table
+t2	CREATE TABLE `t2` (
+  `a` int(11) DEFAULT NULL,
+  `b` varchar(10) COLLATE utf8mb4_bin DEFAULT NULL,
+  KEY `a` (`a`)
+) ENGINE=SequoiaDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin
+create database sdb_diag_info_dump_2_2;
+show create database sdb_diag_info_dump_2_2;
+Database	Create Database
+sdb_diag_info_dump_2_2	CREATE DATABASE `sdb_diag_info_dump_2_2` /*!40100 DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_bin */
+use sdb_diag_info_dump_2_2;
+CREATE TABLE `t1` (
+`a` int(11) DEFAULT NULL, 
+`b` varchar(10) COLLATE utf8mb4_bin DEFAULT NULL,
+KEY `a` (`a`)
+) ENGINE=SequoiaDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin;
+insert into t1 values(1,"a"),(2,"b"),(3,"c");
+insert into t1 select * from t1;
+analyze table t1;
+Table	Op	Msg_type	Msg_text
+sdb_diag_info_dump_2_2.t1	analyze	status	OK
+show create table t1;
+Table	Create Table
+t1	CREATE TABLE `t1` (
+  `a` int(11) DEFAULT NULL,
+  `b` varchar(10) COLLATE utf8mb4_bin DEFAULT NULL,
+  KEY `a` (`a`)
+) ENGINE=SequoiaDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin
+CREATE TABLE `t2` (
+`a` int(11) DEFAULT NULL, 
+`b` varchar(10) COLLATE utf8mb4_bin DEFAULT NULL,
+KEY `a` (`a`)
+) ENGINE=SequoiaDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin;
+insert into t2 values(1,"a"),(2,"b"),(3,"c");
+insert into t2 select * from t2;
+analyze table t2;
+Table	Op	Msg_type	Msg_text
+sdb_diag_info_dump_2_2.t2	analyze	status	OK
+show create table t2;
+Table	Create Table
+t2	CREATE TABLE `t2` (
+  `a` int(11) DEFAULT NULL,
+  `b` varchar(10) COLLATE utf8mb4_bin DEFAULT NULL,
+  KEY `a` (`a`)
+) ENGINE=SequoiaDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin
+use sdb_diag_info_dump_2_1;
+create function `f1`() returns varchar(10)
+begin
+return concat("test","func1");
+end $
+CREATE PROCEDURE `p1`(in a int)
+begin
+select 1 + 2;
+end $
+show create function f1;
+Function	sql_mode	Create Function	character_set_client	collation_connection	Database Collation
+f1	STRICT_TRANS_TABLES,ERROR_FOR_DIVISION_BY_ZERO,NO_AUTO_CREATE_USER,NO_ENGINE_SUBSTITUTION	CREATE DEFINER=`root`@`localhost` FUNCTION `f1`() RETURNS varchar(10) CHARSET utf8mb4 COLLATE utf8mb4_bin
+begin
+return concat("test","func1");
+end	latin1	latin1_swedish_ci	utf8mb4_bin
+show create procedure p1;
+Procedure	sql_mode	Create Procedure	character_set_client	collation_connection	Database Collation
+p1	STRICT_TRANS_TABLES,ERROR_FOR_DIVISION_BY_ZERO,NO_AUTO_CREATE_USER,NO_ENGINE_SUBSTITUTION	CREATE DEFINER=`root`@`localhost` PROCEDURE `p1`(in a int)
+begin
+select 1 + 2;
+end	latin1	latin1_swedish_ci	utf8mb4_bin
+use sdb_diag_info_dump_2_2;
+create function `f1`() returns varchar(10)
+begin
+return concat("test","func1");
+end $
+CREATE PROCEDURE `p1`(in a int)
+begin
+select 1 + 2;
+end $
+INFO: Connecting to the SQL instance
+INFO: Connecting to the SequoiaDB
+INFO: Getting environment properties
+INFO: Getting query explain and optimizer trace information
+INFO: Getting routine "sdb_diag_info_dump_2_1.f1" structure information from SQL
+INFO: Getting routine "sdb_diag_info_dump_2_1.p1" structure information from SQL
+INFO: Getting table "sdb_diag_info_dump_2_1.t1" structure and index information from SQL side
+INFO: Getting table "sdb_diag_info_dump_2_1.t1" structure and index information from SequoiaDB side
+INFO: Getting table "sdb_diag_info_dump_2_1.t2" structure and index information from SQL side
+INFO: Getting table "sdb_diag_info_dump_2_1.t2" structure and index information from SequoiaDB side
+OK
+diaginfo/
+diaginfo/routine/
+diaginfo/routine/sdb_diag_info_dump_2_1/
+diaginfo/routine/sdb_diag_info_dump_2_1/f1/
+diaginfo/routine/sdb_diag_info_dump_2_1/f1/function_routine_catalog.sql
+diaginfo/routine/sdb_diag_info_dump_2_1/p1/
+diaginfo/routine/sdb_diag_info_dump_2_1/p1/procedure_routine_catalog.sql
+diaginfo/query/
+diaginfo/query/explain.result
+diaginfo/query/optimizer_trace.json
+diaginfo/environment/
+diaginfo/environment/variables.result
+diaginfo/environment/group_list.json
+diaginfo/environment/version.txt
+diaginfo/environment/status.result
+diaginfo/environment/engine.txt
+diaginfo/catalog/
+diaginfo/catalog/sdb_diag_info_dump_2_1/
+diaginfo/catalog/sdb_diag_info_dump_2_1/t2/
+diaginfo/catalog/sdb_diag_info_dump_2_1/t2/index_statistics/
+diaginfo/catalog/sdb_diag_info_dump_2_1/t2/index_statistics/a.json
+diaginfo/catalog/sdb_diag_info_dump_2_1/t2/table_catalog.json
+diaginfo/catalog/sdb_diag_info_dump_2_1/t2/table_catalog.sql
+diaginfo/catalog/sdb_diag_info_dump_2_1/t2/table_statistics.json
+diaginfo/catalog/sdb_diag_info_dump_2_1/t2/table_statistics.result
+diaginfo/catalog/sdb_diag_info_dump_2_1/t1/
+diaginfo/catalog/sdb_diag_info_dump_2_1/t1/index_statistics/
+diaginfo/catalog/sdb_diag_info_dump_2_1/t1/index_statistics/a.json
+diaginfo/catalog/sdb_diag_info_dump_2_1/t1/table_catalog.json
+diaginfo/catalog/sdb_diag_info_dump_2_1/t1/table_catalog.sql
+diaginfo/catalog/sdb_diag_info_dump_2_1/t1/table_statistics.json
+diaginfo/catalog/sdb_diag_info_dump_2_1/t1/table_statistics.result
+diaginfo/catalog/sdb_diag_info_dump_2_1/database_catalog.sql
+ERROR 1046 (3D000) at line 1: No database selected
+ERROR 1046 (3D000) at line 3: No database selected
+ERROR: Fail to get explain SQL information.
+ERROR: Fail to get optimizer trace information.
+INFO: Connecting to the SQL instance
+INFO: Connecting to the SequoiaDB
+INFO: Getting environment properties
+INFO: Getting query explain and optimizer trace information
+INFO: Getting routine "sdb_diag_info_dump_2_2.f1" structure information from SQL
+INFO: Getting routine "sdb_diag_info_dump_2_2.p1" structure information from SQL
+INFO: Getting table "sdb_diag_info_dump_2_1.t1" structure and index information from SQL side
+INFO: Getting table "sdb_diag_info_dump_2_1.t1" structure and index information from SequoiaDB side
+INFO: Getting table "sdb_diag_info_dump_2_1.t2" structure and index information from SQL side
+INFO: Getting table "sdb_diag_info_dump_2_1.t2" structure and index information from SequoiaDB side
+OK
+diaginfo/
+diaginfo/routine/
+diaginfo/routine/sdb_diag_info_dump_2_2/
+diaginfo/routine/sdb_diag_info_dump_2_2/f1/
+diaginfo/routine/sdb_diag_info_dump_2_2/f1/function_routine_catalog.sql
+diaginfo/routine/sdb_diag_info_dump_2_2/p1/
+diaginfo/routine/sdb_diag_info_dump_2_2/p1/procedure_routine_catalog.sql
+diaginfo/query/
+diaginfo/query/explain.result
+diaginfo/query/optimizer_trace.json
+diaginfo/environment/
+diaginfo/environment/variables.result
+diaginfo/environment/group_list.json
+diaginfo/environment/version.txt
+diaginfo/environment/status.result
+diaginfo/environment/engine.txt
+diaginfo/catalog/
+diaginfo/catalog/sdb_diag_info_dump_2_1/
+diaginfo/catalog/sdb_diag_info_dump_2_1/t2/
+diaginfo/catalog/sdb_diag_info_dump_2_1/t2/index_statistics/
+diaginfo/catalog/sdb_diag_info_dump_2_1/t2/index_statistics/a.json
+diaginfo/catalog/sdb_diag_info_dump_2_1/t2/table_catalog.json
+diaginfo/catalog/sdb_diag_info_dump_2_1/t2/table_catalog.sql
+diaginfo/catalog/sdb_diag_info_dump_2_1/t2/table_statistics.json
+diaginfo/catalog/sdb_diag_info_dump_2_1/t2/table_statistics.result
+diaginfo/catalog/sdb_diag_info_dump_2_1/t1/
+diaginfo/catalog/sdb_diag_info_dump_2_1/t1/index_statistics/
+diaginfo/catalog/sdb_diag_info_dump_2_1/t1/index_statistics/a.json
+diaginfo/catalog/sdb_diag_info_dump_2_1/t1/table_catalog.json
+diaginfo/catalog/sdb_diag_info_dump_2_1/t1/table_catalog.sql
+diaginfo/catalog/sdb_diag_info_dump_2_1/t1/table_statistics.json
+diaginfo/catalog/sdb_diag_info_dump_2_1/t1/table_statistics.result
+diaginfo/catalog/sdb_diag_info_dump_2_1/database_catalog.sql
+diaginfo/catalog/sdb_diag_info_dump_2_2/
+diaginfo/catalog/sdb_diag_info_dump_2_2/database_catalog.sql
+drop database sdb_diag_info_dump_2_1;
+drop database sdb_diag_info_dump_2_2;
+connection conn2;
+drop database if exists sdb_diag_info_dump_2_1;
+drop database if exists sdb_diag_info_dump_2_2;
+set sequoiadb_diag_info_path=DEFAULT;
+CREATE DATABASE `sdb_diag_info_dump_2_1` /*!40100 DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_bin */
+;
+use sdb_diag_info_dump_2_1;
+show create database sdb_diag_info_dump_2_1;
+Database	Create Database
+sdb_diag_info_dump_2_1	CREATE DATABASE `sdb_diag_info_dump_2_1` /*!40100 DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_bin */
+CREATE TABLE `t1` (
+`a` int(11) DEFAULT NULL,
+`b` varchar(10) COLLATE utf8mb4_bin DEFAULT NULL,
+KEY `a` (`a`)
+) ENGINE=SequoiaDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin
+;
+show create table t1;
+Table	Create Table
+t1	CREATE TABLE `t1` (
+  `a` int(11) DEFAULT NULL,
+  `b` varchar(10) COLLATE utf8mb4_bin DEFAULT NULL,
+  KEY `a` (`a`)
+) ENGINE=SequoiaDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin
+CREATE TABLE `t2` (
+`a` int(11) DEFAULT NULL,
+`b` varchar(10) COLLATE utf8mb4_bin DEFAULT NULL,
+KEY `a` (`a`)
+) ENGINE=SequoiaDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin
+;
+show create table t2;
+Table	Create Table
+t2	CREATE TABLE `t2` (
+  `a` int(11) DEFAULT NULL,
+  `b` varchar(10) COLLATE utf8mb4_bin DEFAULT NULL,
+  KEY `a` (`a`)
+) ENGINE=SequoiaDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin
+set sql_mode="STRICT_TRANS_TABLES,ERROR_FOR_DIVISION_BY_ZERO,NO_AUTO_CREATE_USER,NO_ENGINE_SUBSTITUTION"$$$
+CREATE DEFINER=`root`@`localhost` FUNCTION `f1`() RETURNS varchar(10) CHARSET utf8mb4 COLLATE utf8mb4_bin
+begin
+return concat("test","func1");
+end
+$$$
+show create function f1;
+Function	sql_mode	Create Function	character_set_client	collation_connection	Database Collation
+f1	STRICT_TRANS_TABLES,ERROR_FOR_DIVISION_BY_ZERO,NO_AUTO_CREATE_USER,NO_ENGINE_SUBSTITUTION	CREATE DEFINER=`root`@`localhost` FUNCTION `f1`() RETURNS varchar(10) CHARSET utf8mb4 COLLATE utf8mb4_bin
+begin
+return concat("test","func1");
+end	latin1	latin1_swedish_ci	utf8mb4_bin
+set sql_mode="STRICT_TRANS_TABLES,ERROR_FOR_DIVISION_BY_ZERO,NO_AUTO_CREATE_USER,NO_ENGINE_SUBSTITUTION"$$$
+CREATE DEFINER=`root`@`localhost` PROCEDURE `p1`(in a int)
+begin
+select 1 + 2;
+end
+$$$
+show create procedure p1;
+Procedure	sql_mode	Create Procedure	character_set_client	collation_connection	Database Collation
+p1	STRICT_TRANS_TABLES,ERROR_FOR_DIVISION_BY_ZERO,NO_AUTO_CREATE_USER,NO_ENGINE_SUBSTITUTION	CREATE DEFINER=`root`@`localhost` PROCEDURE `p1`(in a int)
+begin
+select 1 + 2;
+end	latin1	latin1_swedish_ci	utf8mb4_bin
+set sequoiadb_diag_info_path=;
+*************************** 1. row ***************************
+           id: 1
+  select_type: SIMPLE
+        table: t1
+         type: range
+possible_keys: a
+          key: a
+      key_len: 5
+          ref: NULL
+         rows: 4
+        Extra: Using where with pushed condition
+flush tables;
+explain select * from t1 where a > 1;
+id	select_type	table	type	possible_keys	key	key_len	ref	rows	Extra
+1	SIMPLE	t1	range	a	a	5	NULL	4	Using where with pushed condition
+drop database sdb_diag_info_dump_2_1;
+set sequoiadb_diag_info_path=DEFAULT;
+CREATE DATABASE `sdb_diag_info_dump_2_1` /*!40100 DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_bin */
+;
+use sdb_diag_info_dump_2_1;
+show create database sdb_diag_info_dump_2_1;
+Database	Create Database
+sdb_diag_info_dump_2_1	CREATE DATABASE `sdb_diag_info_dump_2_1` /*!40100 DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_bin */
+CREATE TABLE `t1` (
+`a` int(11) DEFAULT NULL,
+`b` varchar(10) COLLATE utf8mb4_bin DEFAULT NULL,
+KEY `a` (`a`)
+) ENGINE=SequoiaDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin
+;
+show create table t1;
+Table	Create Table
+t1	CREATE TABLE `t1` (
+  `a` int(11) DEFAULT NULL,
+  `b` varchar(10) COLLATE utf8mb4_bin DEFAULT NULL,
+  KEY `a` (`a`)
+) ENGINE=SequoiaDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin
+CREATE TABLE `t2` (
+`a` int(11) DEFAULT NULL,
+`b` varchar(10) COLLATE utf8mb4_bin DEFAULT NULL,
+KEY `a` (`a`)
+) ENGINE=SequoiaDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin
+;
+show create table t2;
+Table	Create Table
+t2	CREATE TABLE `t2` (
+  `a` int(11) DEFAULT NULL,
+  `b` varchar(10) COLLATE utf8mb4_bin DEFAULT NULL,
+  KEY `a` (`a`)
+) ENGINE=SequoiaDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin
+CREATE DATABASE `sdb_diag_info_dump_2_2` /*!40100 DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_bin */
+;
+use sdb_diag_info_dump_2_2;
+show create database sdb_diag_info_dump_2_2;
+Database	Create Database
+sdb_diag_info_dump_2_2	CREATE DATABASE `sdb_diag_info_dump_2_2` /*!40100 DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_bin */
+set sql_mode="STRICT_TRANS_TABLES,ERROR_FOR_DIVISION_BY_ZERO,NO_AUTO_CREATE_USER,NO_ENGINE_SUBSTITUTION"$$$
+CREATE DEFINER=`root`@`localhost` FUNCTION `f1`() RETURNS varchar(10) CHARSET utf8mb4 COLLATE utf8mb4_bin
+begin
+return concat("test","func1");
+end
+$$$
+show create function f1;
+Function	sql_mode	Create Function	character_set_client	collation_connection	Database Collation
+f1	STRICT_TRANS_TABLES,ERROR_FOR_DIVISION_BY_ZERO,NO_AUTO_CREATE_USER,NO_ENGINE_SUBSTITUTION	CREATE DEFINER=`root`@`localhost` FUNCTION `f1`() RETURNS varchar(10) CHARSET utf8mb4 COLLATE utf8mb4_bin
+begin
+return concat("test","func1");
+end	latin1	latin1_swedish_ci	utf8mb4_bin
+set sql_mode="STRICT_TRANS_TABLES,ERROR_FOR_DIVISION_BY_ZERO,NO_AUTO_CREATE_USER,NO_ENGINE_SUBSTITUTION"$$$
+CREATE DEFINER=`root`@`localhost` PROCEDURE `p1`(in a int)
+begin
+select 1 + 2;
+end
+$$$
+show create procedure p1;
+Procedure	sql_mode	Create Procedure	character_set_client	collation_connection	Database Collation
+p1	STRICT_TRANS_TABLES,ERROR_FOR_DIVISION_BY_ZERO,NO_AUTO_CREATE_USER,NO_ENGINE_SUBSTITUTION	CREATE DEFINER=`root`@`localhost` PROCEDURE `p1`(in a int)
+begin
+select 1 + 2;
+end	latin1	latin1_swedish_ci	utf8mb4_bin
+drop database sdb_diag_info_dump_2_1;
+drop database sdb_diag_info_dump_2_2;
+connection conn1;
+drop database if exists sdb_diag_info_dump_2_1;
+drop database if exists sdb_diag_info_dump_2_2;
+create database sdb_diag_info_dump_2_1;
+show create database sdb_diag_info_dump_2_1;
+Database	Create Database
+sdb_diag_info_dump_2_1	CREATE DATABASE `sdb_diag_info_dump_2_1` /*!40100 DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_bin */
+use sdb_diag_info_dump_2_1;
+CREATE TABLE `t1` (
+`a` int(11) DEFAULT NULL, 
+`b` varchar(10) COLLATE utf8mb4_bin DEFAULT NULL,
+KEY `a` (`a`)
+) ENGINE=SequoiaDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin;
+insert into t1 values(1,"a"),(2,"b"),(3,"c");
+insert into t1 select * from t1;
+analyze table t1;
+Table	Op	Msg_type	Msg_text
+sdb_diag_info_dump_2_1.t1	analyze	status	OK
+show create table t1;
+Table	Create Table
+t1	CREATE TABLE `t1` (
+  `a` int(11) DEFAULT NULL,
+  `b` varchar(10) COLLATE utf8mb4_bin DEFAULT NULL,
+  KEY `a` (`a`)
+) ENGINE=SequoiaDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin
+CREATE TABLE `t2` (
+`a` int(11) DEFAULT NULL, 
+`b` varchar(10) COLLATE utf8mb4_bin DEFAULT NULL,
+KEY `a` (`a`)
+) ENGINE=SequoiaDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin;
+insert into t2 values(1,"a"),(2,"b"),(3,"c");
+insert into t2 select * from t2;
+analyze table t2;
+Table	Op	Msg_type	Msg_text
+sdb_diag_info_dump_2_1.t2	analyze	status	OK
+show create table t2;
+Table	Create Table
+t2	CREATE TABLE `t2` (
+  `a` int(11) DEFAULT NULL,
+  `b` varchar(10) COLLATE utf8mb4_bin DEFAULT NULL,
+  KEY `a` (`a`)
+) ENGINE=SequoiaDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin
+create database sdb_diag_info_dump_2_2;
+show create database sdb_diag_info_dump_2_2;
+Database	Create Database
+sdb_diag_info_dump_2_2	CREATE DATABASE `sdb_diag_info_dump_2_2` /*!40100 DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_bin */
+use sdb_diag_info_dump_2_2;
+CREATE TABLE `t1` (
+`a` int(11) DEFAULT NULL, 
+`b` varchar(10) COLLATE utf8mb4_bin DEFAULT NULL,
+KEY `a` (`a`)
+) ENGINE=SequoiaDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin;
+insert into t1 values(1,"a"),(2,"b"),(3,"c");
+insert into t1 select * from t1;
+analyze table t1;
+Table	Op	Msg_type	Msg_text
+sdb_diag_info_dump_2_2.t1	analyze	status	OK
+show create table t1;
+Table	Create Table
+t1	CREATE TABLE `t1` (
+  `a` int(11) DEFAULT NULL,
+  `b` varchar(10) COLLATE utf8mb4_bin DEFAULT NULL,
+  KEY `a` (`a`)
+) ENGINE=SequoiaDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin
+CREATE TABLE `t2` (
+`a` int(11) DEFAULT NULL, 
+`b` varchar(10) COLLATE utf8mb4_bin DEFAULT NULL,
+KEY `a` (`a`)
+) ENGINE=SequoiaDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin;
+insert into t2 values(1,"a"),(2,"b"),(3,"c");
+insert into t2 select * from t2;
+analyze table t2;
+Table	Op	Msg_type	Msg_text
+sdb_diag_info_dump_2_2.t2	analyze	status	OK
+show create table t2;
+Table	Create Table
+t2	CREATE TABLE `t2` (
+  `a` int(11) DEFAULT NULL,
+  `b` varchar(10) COLLATE utf8mb4_bin DEFAULT NULL,
+  KEY `a` (`a`)
+) ENGINE=SequoiaDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin
+use sdb_diag_info_dump_2_1;
+create function `f1`() returns varchar(10)
+begin
+return concat("test","func1");
+end $
+CREATE PROCEDURE `p1`(in a int)
+begin
+select 1 + 2;
+end $
+show create function f1;
+Function	sql_mode	Create Function	character_set_client	collation_connection	Database Collation
+f1	STRICT_TRANS_TABLES,ERROR_FOR_DIVISION_BY_ZERO,NO_AUTO_CREATE_USER,NO_ENGINE_SUBSTITUTION	CREATE DEFINER=`root`@`localhost` FUNCTION `f1`() RETURNS varchar(10) CHARSET utf8mb4 COLLATE utf8mb4_bin
+begin
+return concat("test","func1");
+end	latin1	latin1_swedish_ci	utf8mb4_bin
+show create procedure p1;
+Procedure	sql_mode	Create Procedure	character_set_client	collation_connection	Database Collation
+p1	STRICT_TRANS_TABLES,ERROR_FOR_DIVISION_BY_ZERO,NO_AUTO_CREATE_USER,NO_ENGINE_SUBSTITUTION	CREATE DEFINER=`root`@`localhost` PROCEDURE `p1`(in a int)
+begin
+select 1 + 2;
+end	latin1	latin1_swedish_ci	utf8mb4_bin
+use sdb_diag_info_dump_2_2;
+create function `f1`() returns varchar(10)
+begin
+return concat("test","func1");
+end $
+CREATE PROCEDURE `p1`(in a int)
+begin
+select 1 + 2;
+end $
+ERROR: Unknown database of parameters "t1 t2"
+INFO: Connecting to the SQL instance
+INFO: Connecting to the SequoiaDB
+INFO: Getting environment properties
+INFO: Getting routine "sdb_diag_info_dump_2_1.f1" structure information from SQL
+INFO: Getting routine "sdb_diag_info_dump_2_1.p1" structure information from SQL
+INFO: Getting table "sdb_diag_info_dump_2_1.t1" structure and index information from SQL side
+INFO: Getting table "sdb_diag_info_dump_2_1.t1" structure and index information from SequoiaDB side
+INFO: Getting table "sdb_diag_info_dump_2_1.t2" structure and index information from SQL side
+INFO: Getting table "sdb_diag_info_dump_2_1.t2" structure and index information from SequoiaDB side
+OK
+diaginfo/
+diaginfo/routine/
+diaginfo/routine/sdb_diag_info_dump_2_1/
+diaginfo/routine/sdb_diag_info_dump_2_1/f1/
+diaginfo/routine/sdb_diag_info_dump_2_1/f1/function_routine_catalog.sql
+diaginfo/routine/sdb_diag_info_dump_2_1/p1/
+diaginfo/routine/sdb_diag_info_dump_2_1/p1/procedure_routine_catalog.sql
+diaginfo/environment/
+diaginfo/environment/variables.result
+diaginfo/environment/group_list.json
+diaginfo/environment/version.txt
+diaginfo/environment/status.result
+diaginfo/environment/engine.txt
+diaginfo/catalog/
+diaginfo/catalog/sdb_diag_info_dump_2_1/
+diaginfo/catalog/sdb_diag_info_dump_2_1/t2/
+diaginfo/catalog/sdb_diag_info_dump_2_1/t2/index_statistics/
+diaginfo/catalog/sdb_diag_info_dump_2_1/t2/index_statistics/a.json
+diaginfo/catalog/sdb_diag_info_dump_2_1/t2/table_catalog.json
+diaginfo/catalog/sdb_diag_info_dump_2_1/t2/table_catalog.sql
+diaginfo/catalog/sdb_diag_info_dump_2_1/t2/table_statistics.json
+diaginfo/catalog/sdb_diag_info_dump_2_1/t2/table_statistics.result
+diaginfo/catalog/sdb_diag_info_dump_2_1/t1/
+diaginfo/catalog/sdb_diag_info_dump_2_1/t1/index_statistics/
+diaginfo/catalog/sdb_diag_info_dump_2_1/t1/index_statistics/a.json
+diaginfo/catalog/sdb_diag_info_dump_2_1/t1/table_catalog.json
+diaginfo/catalog/sdb_diag_info_dump_2_1/t1/table_catalog.sql
+diaginfo/catalog/sdb_diag_info_dump_2_1/t1/table_statistics.json
+diaginfo/catalog/sdb_diag_info_dump_2_1/t1/table_statistics.result
+diaginfo/catalog/sdb_diag_info_dump_2_1/database_catalog.sql
+drop database sdb_diag_info_dump_2_1;
+drop database sdb_diag_info_dump_2_2;
+connection conn2;
+drop database if exists sdb_diag_info_dump_2_1;
+drop database if exists sdb_diag_info_dump_2_2;
+set sequoiadb_diag_info_path=DEFAULT;
+CREATE DATABASE `sdb_diag_info_dump_2_1` /*!40100 DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_bin */
+;
+use sdb_diag_info_dump_2_1;
+show create database sdb_diag_info_dump_2_1;
+Database	Create Database
+sdb_diag_info_dump_2_1	CREATE DATABASE `sdb_diag_info_dump_2_1` /*!40100 DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_bin */
+CREATE TABLE `t1` (
+`a` int(11) DEFAULT NULL,
+`b` varchar(10) COLLATE utf8mb4_bin DEFAULT NULL,
+KEY `a` (`a`)
+) ENGINE=SequoiaDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin
+;
+show create table t1;
+Table	Create Table
+t1	CREATE TABLE `t1` (
+  `a` int(11) DEFAULT NULL,
+  `b` varchar(10) COLLATE utf8mb4_bin DEFAULT NULL,
+  KEY `a` (`a`)
+) ENGINE=SequoiaDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin
+CREATE TABLE `t2` (
+`a` int(11) DEFAULT NULL,
+`b` varchar(10) COLLATE utf8mb4_bin DEFAULT NULL,
+KEY `a` (`a`)
+) ENGINE=SequoiaDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin
+;
+show create table t2;
+Table	Create Table
+t2	CREATE TABLE `t2` (
+  `a` int(11) DEFAULT NULL,
+  `b` varchar(10) COLLATE utf8mb4_bin DEFAULT NULL,
+  KEY `a` (`a`)
+) ENGINE=SequoiaDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin
+set sql_mode="STRICT_TRANS_TABLES,ERROR_FOR_DIVISION_BY_ZERO,NO_AUTO_CREATE_USER,NO_ENGINE_SUBSTITUTION"$$$
+CREATE DEFINER=`root`@`localhost` FUNCTION `f1`() RETURNS varchar(10) CHARSET utf8mb4 COLLATE utf8mb4_bin
+begin
+return concat("test","func1");
+end
+$$$
+show create function f1;
+Function	sql_mode	Create Function	character_set_client	collation_connection	Database Collation
+f1	STRICT_TRANS_TABLES,ERROR_FOR_DIVISION_BY_ZERO,NO_AUTO_CREATE_USER,NO_ENGINE_SUBSTITUTION	CREATE DEFINER=`root`@`localhost` FUNCTION `f1`() RETURNS varchar(10) CHARSET utf8mb4 COLLATE utf8mb4_bin
+begin
+return concat("test","func1");
+end	latin1	latin1_swedish_ci	utf8mb4_bin
+set sql_mode="STRICT_TRANS_TABLES,ERROR_FOR_DIVISION_BY_ZERO,NO_AUTO_CREATE_USER,NO_ENGINE_SUBSTITUTION"$$$
+CREATE DEFINER=`root`@`localhost` PROCEDURE `p1`(in a int)
+begin
+select 1 + 2;
+end
+$$$
+show create procedure p1;
+Procedure	sql_mode	Create Procedure	character_set_client	collation_connection	Database Collation
+p1	STRICT_TRANS_TABLES,ERROR_FOR_DIVISION_BY_ZERO,NO_AUTO_CREATE_USER,NO_ENGINE_SUBSTITUTION	CREATE DEFINER=`root`@`localhost` PROCEDURE `p1`(in a int)
+begin
+select 1 + 2;
+end	latin1	latin1_swedish_ci	utf8mb4_bin
+drop database sdb_diag_info_dump_2_1;
+connection conn1;
+drop database if exists sdb_diag_info_dump_2_1;
+drop database if exists sdb_diag_info_dump_2_2;
+create database sdb_diag_info_dump_2_1;
+show create database sdb_diag_info_dump_2_1;
+Database	Create Database
+sdb_diag_info_dump_2_1	CREATE DATABASE `sdb_diag_info_dump_2_1` /*!40100 DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_bin */
+use sdb_diag_info_dump_2_1;
+CREATE TABLE `t1` (
+`a` int(11) DEFAULT NULL, 
+`b` varchar(10) COLLATE utf8mb4_bin DEFAULT NULL,
+KEY `a` (`a`)
+) ENGINE=SequoiaDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin;
+insert into t1 values(1,"a"),(2,"b"),(3,"c");
+insert into t1 select * from t1;
+analyze table t1;
+Table	Op	Msg_type	Msg_text
+sdb_diag_info_dump_2_1.t1	analyze	status	OK
+show create table t1;
+Table	Create Table
+t1	CREATE TABLE `t1` (
+  `a` int(11) DEFAULT NULL,
+  `b` varchar(10) COLLATE utf8mb4_bin DEFAULT NULL,
+  KEY `a` (`a`)
+) ENGINE=SequoiaDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin
+CREATE TABLE `t2` (
+`a` int(11) DEFAULT NULL, 
+`b` varchar(10) COLLATE utf8mb4_bin DEFAULT NULL,
+KEY `a` (`a`)
+) ENGINE=SequoiaDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin;
+insert into t2 values(1,"a"),(2,"b"),(3,"c");
+insert into t2 select * from t2;
+analyze table t2;
+Table	Op	Msg_type	Msg_text
+sdb_diag_info_dump_2_1.t2	analyze	status	OK
+show create table t2;
+Table	Create Table
+t2	CREATE TABLE `t2` (
+  `a` int(11) DEFAULT NULL,
+  `b` varchar(10) COLLATE utf8mb4_bin DEFAULT NULL,
+  KEY `a` (`a`)
+) ENGINE=SequoiaDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin
+create database sdb_diag_info_dump_2_2;
+show create database sdb_diag_info_dump_2_2;
+Database	Create Database
+sdb_diag_info_dump_2_2	CREATE DATABASE `sdb_diag_info_dump_2_2` /*!40100 DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_bin */
+use sdb_diag_info_dump_2_2;
+CREATE TABLE `t1` (
+`a` int(11) DEFAULT NULL, 
+`b` varchar(10) COLLATE utf8mb4_bin DEFAULT NULL,
+KEY `a` (`a`)
+) ENGINE=SequoiaDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin;
+insert into t1 values(1,"a"),(2,"b"),(3,"c");
+insert into t1 select * from t1;
+analyze table t1;
+Table	Op	Msg_type	Msg_text
+sdb_diag_info_dump_2_2.t1	analyze	status	OK
+show create table t1;
+Table	Create Table
+t1	CREATE TABLE `t1` (
+  `a` int(11) DEFAULT NULL,
+  `b` varchar(10) COLLATE utf8mb4_bin DEFAULT NULL,
+  KEY `a` (`a`)
+) ENGINE=SequoiaDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin
+CREATE TABLE `t2` (
+`a` int(11) DEFAULT NULL, 
+`b` varchar(10) COLLATE utf8mb4_bin DEFAULT NULL,
+KEY `a` (`a`)
+) ENGINE=SequoiaDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin;
+insert into t2 values(1,"a"),(2,"b"),(3,"c");
+insert into t2 select * from t2;
+analyze table t2;
+Table	Op	Msg_type	Msg_text
+sdb_diag_info_dump_2_2.t2	analyze	status	OK
+show create table t2;
+Table	Create Table
+t2	CREATE TABLE `t2` (
+  `a` int(11) DEFAULT NULL,
+  `b` varchar(10) COLLATE utf8mb4_bin DEFAULT NULL,
+  KEY `a` (`a`)
+) ENGINE=SequoiaDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin
+use sdb_diag_info_dump_2_1;
+create function `f1`() returns varchar(10)
+begin
+return concat("test","func1");
+end $
+CREATE PROCEDURE `p1`(in a int)
+begin
+select 1 + 2;
+end $
+show create function f1;
+Function	sql_mode	Create Function	character_set_client	collation_connection	Database Collation
+f1	STRICT_TRANS_TABLES,ERROR_FOR_DIVISION_BY_ZERO,NO_AUTO_CREATE_USER,NO_ENGINE_SUBSTITUTION	CREATE DEFINER=`root`@`localhost` FUNCTION `f1`() RETURNS varchar(10) CHARSET utf8mb4 COLLATE utf8mb4_bin
+begin
+return concat("test","func1");
+end	latin1	latin1_swedish_ci	utf8mb4_bin
+show create procedure p1;
+Procedure	sql_mode	Create Procedure	character_set_client	collation_connection	Database Collation
+p1	STRICT_TRANS_TABLES,ERROR_FOR_DIVISION_BY_ZERO,NO_AUTO_CREATE_USER,NO_ENGINE_SUBSTITUTION	CREATE DEFINER=`root`@`localhost` PROCEDURE `p1`(in a int)
+begin
+select 1 + 2;
+end	latin1	latin1_swedish_ci	utf8mb4_bin
+use sdb_diag_info_dump_2_2;
+create function `f1`() returns varchar(10)
+begin
+return concat("test","func1");
+end $
+CREATE PROCEDURE `p1`(in a int)
+begin
+select 1 + 2;
+end $
+INFO: Connecting to the SQL instance
+INFO: Connecting to the SequoiaDB
+INFO: Getting query explain and optimizer trace information
+INFO: Getting routine "sdb_diag_info_dump_2_1.p1" structure information from SQL
+INFO: Getting table "sdb_diag_info_dump_2_1.t1" structure and index information from SQL side
+INFO: Getting table "sdb_diag_info_dump_2_1.t1" structure and index information from SequoiaDB side
+INFO: Getting environment properties
+OK
+diaginfo/
+diaginfo/routine/
+diaginfo/routine/sdb_diag_info_dump_2_1/
+diaginfo/routine/sdb_diag_info_dump_2_1/p1/
+diaginfo/routine/sdb_diag_info_dump_2_1/p1/procedure_routine_catalog.sql
+diaginfo/query/
+diaginfo/query/explain.result
+diaginfo/query/optimizer_trace.json
+diaginfo/environment/
+diaginfo/environment/variables.result
+diaginfo/environment/group_list.json
+diaginfo/environment/version.txt
+diaginfo/environment/status.result
+diaginfo/environment/engine.txt
+diaginfo/catalog/
+diaginfo/catalog/sdb_diag_info_dump_2_1/
+diaginfo/catalog/sdb_diag_info_dump_2_1/t1/
+diaginfo/catalog/sdb_diag_info_dump_2_1/t1/index_statistics/
+diaginfo/catalog/sdb_diag_info_dump_2_1/t1/index_statistics/a.json
+diaginfo/catalog/sdb_diag_info_dump_2_1/t1/table_catalog.json
+diaginfo/catalog/sdb_diag_info_dump_2_1/t1/table_catalog.sql
+diaginfo/catalog/sdb_diag_info_dump_2_1/t1/table_statistics.json
+diaginfo/catalog/sdb_diag_info_dump_2_1/t1/table_statistics.result
+diaginfo/catalog/sdb_diag_info_dump_2_1/database_catalog.sql
+drop database sdb_diag_info_dump_2_1;
+drop database sdb_diag_info_dump_2_2;
+connection conn2;
+drop database if exists sdb_diag_info_dump_2_1;
+drop database if exists sdb_diag_info_dump_2_2;
+set sequoiadb_diag_info_path=DEFAULT;
+CREATE DATABASE `sdb_diag_info_dump_2_1` /*!40100 DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_bin */
+;
+use sdb_diag_info_dump_2_1;
+show create database sdb_diag_info_dump_2_1;
+Database	Create Database
+sdb_diag_info_dump_2_1	CREATE DATABASE `sdb_diag_info_dump_2_1` /*!40100 DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_bin */
+CREATE TABLE `t1` (
+`a` int(11) DEFAULT NULL,
+`b` varchar(10) COLLATE utf8mb4_bin DEFAULT NULL,
+KEY `a` (`a`)
+) ENGINE=SequoiaDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin
+;
+show create table t1;
+Table	Create Table
+t1	CREATE TABLE `t1` (
+  `a` int(11) DEFAULT NULL,
+  `b` varchar(10) COLLATE utf8mb4_bin DEFAULT NULL,
+  KEY `a` (`a`)
+) ENGINE=SequoiaDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin
+set sql_mode="STRICT_TRANS_TABLES,ERROR_FOR_DIVISION_BY_ZERO,NO_AUTO_CREATE_USER,NO_ENGINE_SUBSTITUTION"$$$
+CREATE DEFINER=`root`@`localhost` PROCEDURE `p1`(in a int)
+begin
+select 1 + 2;
+end
+$$$
+show create procedure p1;
+Procedure	sql_mode	Create Procedure	character_set_client	collation_connection	Database Collation
+p1	STRICT_TRANS_TABLES,ERROR_FOR_DIVISION_BY_ZERO,NO_AUTO_CREATE_USER,NO_ENGINE_SUBSTITUTION	CREATE DEFINER=`root`@`localhost` PROCEDURE `p1`(in a int)
+begin
+select 1 + 2;
+end	latin1	latin1_swedish_ci	utf8mb4_bin
+set sequoiadb_diag_info_path=;
+*************************** 1. row ***************************
+           id: 1
+  select_type: SIMPLE
+        table: t1
+         type: range
+possible_keys: a
+          key: a
+      key_len: 5
+          ref: NULL
+         rows: 4
+        Extra: Using where with pushed condition
+flush tables;
+explain select * from t1 where a > 1;
+id	select_type	table	type	possible_keys	key	key_len	ref	rows	Extra
+1	SIMPLE	t1	range	a	a	5	NULL	4	Using where with pushed condition
+drop database sdb_diag_info_dump_2_1;
+connection conn1;
+drop database if exists sdb_diag_info_dump_2_1;
+create database sdb_diag_info_dump_2_1;
+show create database sdb_diag_info_dump_2_1;
+Database	Create Database
+sdb_diag_info_dump_2_1	CREATE DATABASE `sdb_diag_info_dump_2_1` /*!40100 DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_bin */
+use sdb_diag_info_dump_2_1;
+CREATE TABLE `t1` (
+`a` int(11) DEFAULT NULL, 
+`b` varchar(10) COLLATE utf8mb4_bin DEFAULT NULL,
+KEY `a` (`a`)
+) ENGINE=SequoiaDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin;
+insert into t1 values(1,"a"),(2,"b"),(3,"c");
+insert into t1 select * from t1;
+analyze table t1;
+Table	Op	Msg_type	Msg_text
+sdb_diag_info_dump_2_1.t1	analyze	status	OK
+show create table t1;
+Table	Create Table
+t1	CREATE TABLE `t1` (
+  `a` int(11) DEFAULT NULL,
+  `b` varchar(10) COLLATE utf8mb4_bin DEFAULT NULL,
+  KEY `a` (`a`)
+) ENGINE=SequoiaDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin
+CREATE TABLE `t2` (
+`id` int(11) DEFAULT NULL,
+`a` varchar(10) COLLATE utf8mb4_bin DEFAULT NULL,
+KEY `a` (`a`)
+) ENGINE=SequoiaDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin
+/*!50100 PARTITION BY LIST (`id`)
+(PARTITION id1 VALUES IN (1) ENGINE = SequoiaDB,
+PARTITION id2 VALUES IN (2) ENGINE = SequoiaDB,
+PARTITION id3 VALUES IN (3) ENGINE = SequoiaDB) */;
+DROP PROCEDURE IF EXISTS insert_data;
+Warnings:
+Note	1305	PROCEDURE sdb_diag_info_dump_2_1.insert_data does not exist
+CREATE PROCEDURE insert_data()
+begin
+declare i int DEFAULT 1;
+declare j int DEFAULT 1;
+declare return_str1 varchar(10) DEFAULT '';
+while i <= 3 do
+while j <= 100 do
+set return_str1 = concat(i,j);
+insert into t2 values(i,return_str1);
+set j = j+1;
+set return_str1='';
+end while;
+set j = 1;
+set i = i+1;
+end while;
+end $
+call insert_data();
+analyze table t2;
+Table	Op	Msg_type	Msg_text
+sdb_diag_info_dump_2_1.t2	analyze	status	OK
+show create table t2;
+Table	Create Table
+t2	CREATE TABLE `t2` (
+  `id` int(11) DEFAULT NULL,
+  `a` varchar(10) COLLATE utf8mb4_bin DEFAULT NULL,
+  KEY `a` (`a`)
+) ENGINE=SequoiaDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin
+ PARTITION BY LIST (`id`)
+(PARTITION `id1` VALUES IN (1) ENGINE = SequoiaDB,
+ PARTITION `id2` VALUES IN (2) ENGINE = SequoiaDB,
+ PARTITION `id3` VALUES IN (3) ENGINE = SequoiaDB)
+INFO: Connecting to the SQL instance
+INFO: Connecting to the SequoiaDB
+INFO: Getting environment properties
+INFO: Getting query explain and optimizer trace information
+INFO: Getting routine "sdb_diag_info_dump_2_1.insert_data" structure information from SQL
+INFO: Getting table "sdb_diag_info_dump_2_1.t1" structure and index information from SQL side
+INFO: Getting table "sdb_diag_info_dump_2_1.t1" structure and index information from SequoiaDB side
+INFO: Getting table "sdb_diag_info_dump_2_1.t2" structure and index information from SQL side
+INFO: Getting table "sdb_diag_info_dump_2_1.t2" structure and index information from SequoiaDB side
+INFO: Getting table partition from SequoiaDB
+OK
+diaginfo/
+diaginfo/routine/
+diaginfo/routine/sdb_diag_info_dump_2_1/
+diaginfo/routine/sdb_diag_info_dump_2_1/insert_data/
+diaginfo/routine/sdb_diag_info_dump_2_1/insert_data/procedure_routine_catalog.sql
+diaginfo/query/
+diaginfo/query/explain.result
+diaginfo/query/optimizer_trace.json
+diaginfo/environment/
+diaginfo/environment/variables.result
+diaginfo/environment/group_list.json
+diaginfo/environment/version.txt
+diaginfo/environment/status.result
+diaginfo/environment/engine.txt
+diaginfo/catalog/
+diaginfo/catalog/sdb_diag_info_dump_2_1/
+diaginfo/catalog/sdb_diag_info_dump_2_1/t2/
+diaginfo/catalog/sdb_diag_info_dump_2_1/t2/id2/
+diaginfo/catalog/sdb_diag_info_dump_2_1/t2/id2/index_statistics/
+diaginfo/catalog/sdb_diag_info_dump_2_1/t2/id2/index_statistics/a.json
+diaginfo/catalog/sdb_diag_info_dump_2_1/t2/id2/table_catalog.json
+diaginfo/catalog/sdb_diag_info_dump_2_1/t2/id2/table_statistics.json
+diaginfo/catalog/sdb_diag_info_dump_2_1/t2/index_statistics/
+diaginfo/catalog/sdb_diag_info_dump_2_1/t2/index_statistics/a.json
+diaginfo/catalog/sdb_diag_info_dump_2_1/t2/id3/
+diaginfo/catalog/sdb_diag_info_dump_2_1/t2/id3/index_statistics/
+diaginfo/catalog/sdb_diag_info_dump_2_1/t2/id3/index_statistics/a.json
+diaginfo/catalog/sdb_diag_info_dump_2_1/t2/id3/table_catalog.json
+diaginfo/catalog/sdb_diag_info_dump_2_1/t2/id3/table_statistics.json
+diaginfo/catalog/sdb_diag_info_dump_2_1/t2/table_catalog.json
+diaginfo/catalog/sdb_diag_info_dump_2_1/t2/table_catalog.sql
+diaginfo/catalog/sdb_diag_info_dump_2_1/t2/table_statistics.json
+diaginfo/catalog/sdb_diag_info_dump_2_1/t2/table_statistics.result
+diaginfo/catalog/sdb_diag_info_dump_2_1/t2/id1/
+diaginfo/catalog/sdb_diag_info_dump_2_1/t2/id1/index_statistics/
+diaginfo/catalog/sdb_diag_info_dump_2_1/t2/id1/index_statistics/a.json
+diaginfo/catalog/sdb_diag_info_dump_2_1/t2/id1/table_catalog.json
+diaginfo/catalog/sdb_diag_info_dump_2_1/t2/id1/table_statistics.json
+diaginfo/catalog/sdb_diag_info_dump_2_1/t1/
+diaginfo/catalog/sdb_diag_info_dump_2_1/t1/index_statistics/
+diaginfo/catalog/sdb_diag_info_dump_2_1/t1/index_statistics/a.json
+diaginfo/catalog/sdb_diag_info_dump_2_1/t1/table_catalog.json
+diaginfo/catalog/sdb_diag_info_dump_2_1/t1/table_catalog.sql
+diaginfo/catalog/sdb_diag_info_dump_2_1/t1/table_statistics.json
+diaginfo/catalog/sdb_diag_info_dump_2_1/t1/table_statistics.result
+diaginfo/catalog/sdb_diag_info_dump_2_1/database_catalog.sql
+drop database sdb_diag_info_dump_2_1;
+connection conn2;
+drop database if exists sdb_diag_info_dump_2_1;
+set sequoiadb_diag_info_path=DEFAULT;
+CREATE DATABASE `sdb_diag_info_dump_2_1` /*!40100 DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_bin */
+;
+use sdb_diag_info_dump_2_1;
+show create database sdb_diag_info_dump_2_1;
+Database	Create Database
+sdb_diag_info_dump_2_1	CREATE DATABASE `sdb_diag_info_dump_2_1` /*!40100 DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_bin */
+CREATE TABLE `t1` (
+`a` int(11) DEFAULT NULL,
+`b` varchar(10) COLLATE utf8mb4_bin DEFAULT NULL,
+KEY `a` (`a`)
+) ENGINE=SequoiaDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin
+;
+show create table t1;
+Table	Create Table
+t1	CREATE TABLE `t1` (
+  `a` int(11) DEFAULT NULL,
+  `b` varchar(10) COLLATE utf8mb4_bin DEFAULT NULL,
+  KEY `a` (`a`)
+) ENGINE=SequoiaDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin
+CREATE TABLE `t2` (
+`id` int(11) DEFAULT NULL,
+`a` varchar(10) COLLATE utf8mb4_bin DEFAULT NULL,
+KEY `a` (`a`)
+) ENGINE=SequoiaDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin
+PARTITION BY LIST (`id`)
+(PARTITION `id1` VALUES IN (1) ENGINE = SequoiaDB,
+PARTITION `id2` VALUES IN (2) ENGINE = SequoiaDB,
+PARTITION `id3` VALUES IN (3) ENGINE = SequoiaDB)
+;
+show create table t2;
+Table	Create Table
+t2	CREATE TABLE `t2` (
+  `id` int(11) DEFAULT NULL,
+  `a` varchar(10) COLLATE utf8mb4_bin DEFAULT NULL,
+  KEY `a` (`a`)
+) ENGINE=SequoiaDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin
+ PARTITION BY LIST (`id`)
+(PARTITION `id1` VALUES IN (1) ENGINE = SequoiaDB,
+ PARTITION `id2` VALUES IN (2) ENGINE = SequoiaDB,
+ PARTITION `id3` VALUES IN (3) ENGINE = SequoiaDB)
+set sql_mode="STRICT_TRANS_TABLES,ERROR_FOR_DIVISION_BY_ZERO,NO_AUTO_CREATE_USER,NO_ENGINE_SUBSTITUTION"$$$
+CREATE DEFINER=`root`@`localhost` PROCEDURE `insert_data`()
+begin
+declare i int DEFAULT 1;
+declare j int DEFAULT 1;
+declare return_str1 varchar(10) DEFAULT '';
+while i <= 3 do
+while j <= 100 do
+set return_str1 = concat(i,j);
+insert into t2 values(i,return_str1);
+set j = j+1;
+set return_str1='';
+end while;
+set j = 1;
+set i = i+1;
+end while;
+end
+$$$
+show create procedure insert_data;
+Procedure	sql_mode	Create Procedure	character_set_client	collation_connection	Database Collation
+insert_data	STRICT_TRANS_TABLES,ERROR_FOR_DIVISION_BY_ZERO,NO_AUTO_CREATE_USER,NO_ENGINE_SUBSTITUTION	CREATE DEFINER=`root`@`localhost` PROCEDURE `insert_data`()
+begin
+declare i int DEFAULT 1;
+declare j int DEFAULT 1;
+declare return_str1 varchar(10) DEFAULT '';
+while i <= 3 do
+while j <= 100 do
+set return_str1 = concat(i,j);
+insert into t2 values(i,return_str1);
+set j = j+1;
+set return_str1='';
+end while;
+set j = 1;
+set i = i+1;
+end while;
+end	latin1	latin1_swedish_ci	utf8mb4_bin
+set sequoiadb_diag_info_path=;
+*************************** 1. row ***************************
+           id: 1
+  select_type: SIMPLE
+        table: t2
+         type: ALL
+possible_keys: a
+          key: NULL
+      key_len: NULL
+          ref: NULL
+         rows: 300
+        Extra: Using where
+flush tables;
+explain select * from t2 where a > 1;
+id	select_type	table	type	possible_keys	key	key_len	ref	rows	Extra
+1	SIMPLE	t2	ALL	a	NULL	NULL	NULL	300	Using where
+drop database sdb_diag_info_dump_2_1;
+connection conn1;
+drop database if exists sdb_diag_info_dump_2_1;
+create database sdb_diag_info_dump_2_1;
+show create database sdb_diag_info_dump_2_1;
+Database	Create Database
+sdb_diag_info_dump_2_1	CREATE DATABASE `sdb_diag_info_dump_2_1` /*!40100 DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_bin */
+use sdb_diag_info_dump_2_1;
+CREATE TABLE `t1` (
+`a` int(11) DEFAULT NULL, 
+`b` varchar(10) COLLATE utf8mb4_bin DEFAULT NULL,
+KEY `a` (`a`)
+) ENGINE=SequoiaDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin;
+insert into t1 values(1,"a"),(2,"b"),(3,"c");
+insert into t1 select * from t1;
+analyze table t1;
+Table	Op	Msg_type	Msg_text
+sdb_diag_info_dump_2_1.t1	analyze	status	OK
+show create table t1;
+Table	Create Table
+t1	CREATE TABLE `t1` (
+  `a` int(11) DEFAULT NULL,
+  `b` varchar(10) COLLATE utf8mb4_bin DEFAULT NULL,
+  KEY `a` (`a`)
+) ENGINE=SequoiaDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin
+INFO: Connecting to the SQL instance
+INFO: Connecting to the SequoiaDB
+INFO: Getting query explain and optimizer trace information
+INFO: Getting table "sdb_diag_info_dump_2_1.t1" structure and index information from SQL side
+INFO: Getting table "sdb_diag_info_dump_2_1.t1" structure and index information from SequoiaDB side
+INFO: Getting environment properties
+OK
+diaginfo/
+diaginfo/query/
+diaginfo/query/explain.result
+diaginfo/query/optimizer_trace.json
+diaginfo/environment/
+diaginfo/environment/variables.result
+diaginfo/environment/group_list.json
+diaginfo/environment/version.txt
+diaginfo/environment/status.result
+diaginfo/environment/engine.txt
+diaginfo/catalog/
+diaginfo/catalog/sdb_diag_info_dump_2_1/
+diaginfo/catalog/sdb_diag_info_dump_2_1/t1/
+diaginfo/catalog/sdb_diag_info_dump_2_1/t1/index_statistics/
+diaginfo/catalog/sdb_diag_info_dump_2_1/t1/index_statistics/a.json
+diaginfo/catalog/sdb_diag_info_dump_2_1/t1/table_catalog.json
+diaginfo/catalog/sdb_diag_info_dump_2_1/t1/table_catalog.sql
+diaginfo/catalog/sdb_diag_info_dump_2_1/t1/table_statistics.json
+diaginfo/catalog/sdb_diag_info_dump_2_1/t1/table_statistics.result
+diaginfo/catalog/sdb_diag_info_dump_2_1/database_catalog.sql
+drop database sdb_diag_info_dump_2_1;
+connection conn2;
+drop database if exists sdb_diag_info_dump_2_1;
+set sequoiadb_diag_info_path=DEFAULT;
+CREATE DATABASE `sdb_diag_info_dump_2_1` /*!40100 DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_bin */
+;
+show create database sdb_diag_info_dump_2_1;
+Database	Create Database
+sdb_diag_info_dump_2_1	CREATE DATABASE `sdb_diag_info_dump_2_1` /*!40100 DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_bin */
+use sdb_diag_info_dump_2_1;
+CREATE TABLE `t1` (
+`a` int(11) DEFAULT NULL,
+`b` varchar(10) COLLATE utf8mb4_bin DEFAULT NULL,
+KEY `a` (`a`)
+) ENGINE=SequoiaDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin
+;
+show create table t1;
+Table	Create Table
+t1	CREATE TABLE `t1` (
+  `a` int(11) DEFAULT NULL,
+  `b` varchar(10) COLLATE utf8mb4_bin DEFAULT NULL,
+  KEY `a` (`a`)
+) ENGINE=SequoiaDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin
+set sequoiadb_diag_info_path=;
+*************************** 1. row ***************************
+           id: 1
+  select_type: SIMPLE
+        table: t1
+         type: range
+possible_keys: a
+          key: a
+      key_len: 5
+          ref: NULL
+         rows: 4
+        Extra: Using where with pushed condition
+flush tables;
+explain select * from sdb_diag_info_dump_2_1.t1 where a > 1;
+id	select_type	table	type	possible_keys	key	key_len	ref	rows	Extra
+1	SIMPLE	t1	ALL	a	NULL	NULL	NULL	0	Using where with pushed condition
+Warnings:
+Warning	4294967290	Can not read sdb_diag_info_dump_2_1.t1 table stat diag info file
+Warning	4294967290	Can not read sdb_diag_info_dump_2_1.t1 table stat diag info file
+Warning	4294967290	Can not read sdb_diag_info_dump_2_1.t1 table stat diag info file
+drop database sdb_diag_info_dump_2_1;
+connection conn1;
+drop database if exists sdb_diag_info_dump_2_1;
+create database sdb_diag_info_dump_2_1;
+show create database sdb_diag_info_dump_2_1;
+Database	Create Database
+sdb_diag_info_dump_2_1	CREATE DATABASE `sdb_diag_info_dump_2_1` /*!40100 DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_bin */
+use sdb_diag_info_dump_2_1;
+CREATE TABLE `t1` (
+`a` int(11) DEFAULT NULL, 
+`b` varchar(10) COLLATE utf8mb4_bin DEFAULT NULL,
+KEY `a` (`a`)
+) ENGINE=SequoiaDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin;
+insert into t1 values(1,"a"),(2,"b"),(3,"c");
+insert into t1 select * from t1;
+analyze table t1;
+Table	Op	Msg_type	Msg_text
+sdb_diag_info_dump_2_1.t1	analyze	status	OK
+show create table t1;
+Table	Create Table
+t1	CREATE TABLE `t1` (
+  `a` int(11) DEFAULT NULL,
+  `b` varchar(10) COLLATE utf8mb4_bin DEFAULT NULL,
+  KEY `a` (`a`)
+) ENGINE=SequoiaDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin
+INFO: Connecting to the SQL instance
+INFO: Connecting to the SequoiaDB
+INFO: Getting query explain and optimizer trace information
+INFO: Getting table "sdb_diag_info_dump_2_1.t1" structure and index information from SQL side
+INFO: Getting table "sdb_diag_info_dump_2_1.t1" structure and index information from SequoiaDB side
+INFO: Getting environment properties
+OK
+diaginfo/
+diaginfo/query/
+diaginfo/query/explain.result
+diaginfo/query/optimizer_trace.json
+diaginfo/environment/
+diaginfo/environment/variables.result
+diaginfo/environment/group_list.json
+diaginfo/environment/version.txt
+diaginfo/environment/status.result
+diaginfo/environment/engine.txt
+diaginfo/catalog/
+diaginfo/catalog/sdb_diag_info_dump_2_1/
+diaginfo/catalog/sdb_diag_info_dump_2_1/t1/
+diaginfo/catalog/sdb_diag_info_dump_2_1/t1/index_statistics/
+diaginfo/catalog/sdb_diag_info_dump_2_1/t1/index_statistics/a.json
+diaginfo/catalog/sdb_diag_info_dump_2_1/t1/table_catalog.json
+diaginfo/catalog/sdb_diag_info_dump_2_1/t1/table_catalog.sql
+diaginfo/catalog/sdb_diag_info_dump_2_1/t1/table_statistics.json
+diaginfo/catalog/sdb_diag_info_dump_2_1/t1/table_statistics.result
+diaginfo/catalog/sdb_diag_info_dump_2_1/database_catalog.sql
+drop database sdb_diag_info_dump_2_1;
+connection conn2;
+drop database if exists sdb_diag_info_dump_2_1;
+set sequoiadb_diag_info_path=DEFAULT;
+CREATE DATABASE `sdb_diag_info_dump_2_1` /*!40100 DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_bin */
+;
+show create database sdb_diag_info_dump_2_1;
+Database	Create Database
+sdb_diag_info_dump_2_1	CREATE DATABASE `sdb_diag_info_dump_2_1` /*!40100 DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_bin */
+use sdb_diag_info_dump_2_1;
+set sequoiadb_diag_info_path=;
+*************************** 1. row ***************************
+           id: 1
+  select_type: SIMPLE
+        table: t1
+         type: range
+possible_keys: a
+          key: a
+      key_len: 5
+          ref: NULL
+         rows: 4
+        Extra: Using where with pushed condition
+flush tables;
+explain select * from .t1 where a > 1;
+ERROR 42S02: Table 'sdb_diag_info_dump_2_1.t1' doesn't exist
+drop database sdb_diag_info_dump_2_1;
+connection conn1;
+delete from mysql.user where user='test_1';
+flush privileges;
+create user 'test_1'@'localhost' identified by 'test';
+grant all privileges on *.* to test_1@'localhost' identified by 'test';
+flush privileges;
+connection conn1;
+drop database if exists sdb_diag_info_dump_2_1;
+create database sdb_diag_info_dump_2_1;
+show create database sdb_diag_info_dump_2_1;
+Database	Create Database
+sdb_diag_info_dump_2_1	CREATE DATABASE `sdb_diag_info_dump_2_1` /*!40100 DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_bin */
+use sdb_diag_info_dump_2_1;
+CREATE TABLE `t1` (
+`a` int(11) DEFAULT NULL, 
+`b` varchar(10) COLLATE utf8mb4_bin DEFAULT NULL,
+KEY `a` (`a`)
+) ENGINE=SequoiaDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin;
+insert into t1 values(1,"a"),(2,"b"),(3,"c");
+insert into t1 select * from t1;
+analyze table t1;
+Table	Op	Msg_type	Msg_text
+sdb_diag_info_dump_2_1.t1	analyze	status	OK
+INFO: Connecting to the SQL instance
+INFO: Connecting to the SequoiaDB
+INFO: Getting query explain and optimizer trace information
+INFO: Getting environment properties
+OK
+diaginfo/
+diaginfo/query/
+diaginfo/query/explain.result
+diaginfo/query/optimizer_trace.json
+diaginfo/environment/
+diaginfo/environment/variables.result
+diaginfo/environment/group_list.json
+diaginfo/environment/version.txt
+diaginfo/environment/status.result
+diaginfo/environment/engine.txt
+*************************** 1. row ***************************
+           id: 1
+  select_type: SIMPLE
+        table: t1
+         type: range
+possible_keys: a
+          key: a
+      key_len: 5
+          ref: NULL
+         rows: 4
+        Extra: Using where with pushed condition
+INFO: Connecting to the SQL instance
+INFO: Connecting to the SequoiaDB
+INFO: Getting query explain and optimizer trace information
+INFO: Getting environment properties
+OK
+diaginfo/
+diaginfo/query/
+diaginfo/query/explain.result
+diaginfo/query/optimizer_trace.json
+diaginfo/environment/
+diaginfo/environment/variables.result
+diaginfo/environment/group_list.json
+diaginfo/environment/version.txt
+diaginfo/environment/status.result
+diaginfo/environment/engine.txt
+*************************** 1. row ***************************
+           id: 1
+  select_type: SIMPLE
+        table: t1
+         type: range
+possible_keys: a
+          key: a
+      key_len: 5
+          ref: NULL
+         rows: 4
+        Extra: Using where with pushed condition
+INFO: Connecting to the SQL instance
+ERROR: Fail to connect the instance
+drop database sdb_diag_info_dump_2_1;
+connection conn1;
+drop database if exists sdb_diag_info_dump_2_1;
+create database sdb_diag_info_dump_2_1;
+show create database sdb_diag_info_dump_2_1;
+Database	Create Database
+sdb_diag_info_dump_2_1	CREATE DATABASE `sdb_diag_info_dump_2_1` /*!40100 DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_bin */
+use sdb_diag_info_dump_2_1;
+CREATE TABLE `t1` (
+`a` int(11) DEFAULT NULL, 
+`b` varchar(10) COLLATE utf8mb4_bin DEFAULT NULL,
+KEY `a` (`a`)
+) ENGINE=SequoiaDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin;
+insert into t1 values(1,"a"),(2,"b"),(3,"c");
+insert into t1 select * from t1;
+analyze table t1;
+Table	Op	Msg_type	Msg_text
+sdb_diag_info_dump_2_1.t1	analyze	status	OK
+INFO: Connecting to the SQL instance
+ERROR: Fail to connect the instance
+INFO: Connecting to the SQL instance
+ERROR: Fail to connect the instance
+INFO: Connecting to the SQL instance
+ERROR: Fail to connect the instance
+INFO: Connecting to the SQL instance
+ERROR: Fail to connect the instance
+drop database sdb_diag_info_dump_2_1;
+connection conn1;
+drop database if exists sdb_diag_info_dump_2_1;
+create database sdb_diag_info_dump_2_1;
+show create database sdb_diag_info_dump_2_1;
+Database	Create Database
+sdb_diag_info_dump_2_1	CREATE DATABASE `sdb_diag_info_dump_2_1` /*!40100 DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_bin */
+use sdb_diag_info_dump_2_1;
+CREATE TABLE `t1` (
+`a` int(11) DEFAULT NULL, 
+`b` varchar(10) COLLATE utf8mb4_bin DEFAULT NULL,
+KEY `a` (`a`)
+) ENGINE=SequoiaDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin;
+insert into t1 values(1,"a"),(2,"b"),(3,"c");
+insert into t1 select * from t1;
+analyze table t1;
+Table	Op	Msg_type	Msg_text
+sdb_diag_info_dump_2_1.t1	analyze	status	OK
+ERROR: User is empty
+INFO: Connecting to the SQL instance
+INFO: Connecting to the SequoiaDB
+INFO: Getting query explain and optimizer trace information
+ERROR: Fail to get explain SQL information.
+ERROR 1142 (42000) at line 1: SELECT command denied to user ''@'localhost' for table 't1'
+ERROR: Fail to get optimizer trace information.
+ERROR 1142 (42000) at line 3: SELECT command denied to user ''@'localhost' for table 't1'
+INFO: Getting environment properties
+OK
+INFO: Connecting to the SQL instance
+INFO: Connecting to the SequoiaDB
+INFO: Getting query explain and optimizer trace information
+ERROR: Fail to get explain SQL information.
+ERROR 1142 (42000) at line 1: SELECT command denied to user ''@'localhost' for table 't1'
+ERROR: Fail to get optimizer trace information.
+ERROR 1142 (42000) at line 3: SELECT command denied to user ''@'localhost' for table 't1'
+INFO: Getting environment properties
+OK
+INFO: Connecting to the SQL instance
+INFO: Connecting to the SequoiaDB
+INFO: Getting query explain and optimizer trace information
+ERROR: Fail to get explain SQL information.
+ERROR 1142 (42000) at line 1: SELECT command denied to user ''@'localhost' for table 't1'
+ERROR: Fail to get optimizer trace information.
+ERROR 1142 (42000) at line 3: SELECT command denied to user ''@'localhost' for table 't1'
+INFO: Getting environment properties
+OK
+ERROR: User is empty
+INFO: Connecting to the SQL instance
+INFO: Connecting to the SequoiaDB
+INFO: Getting query explain and optimizer trace information
+ERROR: Fail to get explain SQL information.
+ERROR 1142 (42000) at line 1: SELECT command denied to user ''@'localhost' for table 't1'
+ERROR: Fail to get optimizer trace information.
+ERROR 1142 (42000) at line 3: SELECT command denied to user ''@'localhost' for table 't1'
+INFO: Getting environment properties
+OK
+drop database sdb_diag_info_dump_2_1;
+connection conn1;
+drop database if exists sdb_diag_info_dump_2_1;
+create database sdb_diag_info_dump_2_1;
+show create database sdb_diag_info_dump_2_1;
+Database	Create Database
+sdb_diag_info_dump_2_1	CREATE DATABASE `sdb_diag_info_dump_2_1` /*!40100 DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_bin */
+use sdb_diag_info_dump_2_1;
+CREATE TABLE `t1` (
+`a` int(11) DEFAULT NULL, 
+`b` varchar(10) COLLATE utf8mb4_bin DEFAULT NULL,
+KEY `a` (`a`)
+) ENGINE=SequoiaDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin;
+insert into t1 values(1,"a"),(2,"b"),(3,"c");
+insert into t1 select * from t1;
+analyze table t1;
+Table	Op	Msg_type	Msg_text
+sdb_diag_info_dump_2_1.t1	analyze	status	OK
+grant all privileges on *.* to test_1@'localhost' identified by 'test';
+flush privileges;
+INFO: Connecting to the SQL instance
+INFO: Connecting to the SequoiaDB
+INFO: Getting query explain and optimizer trace information
+INFO: Getting environment properties
+OK
+diaginfo/
+diaginfo/query/
+diaginfo/query/explain.result
+diaginfo/query/optimizer_trace.json
+diaginfo/environment/
+diaginfo/environment/variables.result
+diaginfo/environment/group_list.json
+diaginfo/environment/version.txt
+diaginfo/environment/status.result
+diaginfo/environment/engine.txt
+grant all privileges on *.* to test_1@'localhost' identified by '中文';
+flush privileges;
+INFO: Connecting to the SQL instance
+INFO: Connecting to the SequoiaDB
+INFO: Getting query explain and optimizer trace information
+INFO: Getting environment properties
+OK
+diaginfo/
+diaginfo/query/
+diaginfo/query/explain.result
+diaginfo/query/optimizer_trace.json
+diaginfo/environment/
+diaginfo/environment/variables.result
+diaginfo/environment/group_list.json
+diaginfo/environment/version.txt
+diaginfo/environment/status.result
+diaginfo/environment/engine.txt
+grant all privileges on *.* to test_1@'localhost' identified by '@^#* _';
+flush privileges;
+INFO: Connecting to the SQL instance
+INFO: Connecting to the SequoiaDB
+INFO: Getting query explain and optimizer trace information
+INFO: Getting environment properties
+OK
+diaginfo/
+diaginfo/query/
+diaginfo/query/explain.result
+diaginfo/query/optimizer_trace.json
+diaginfo/environment/
+diaginfo/environment/variables.result
+diaginfo/environment/group_list.json
+diaginfo/environment/version.txt
+diaginfo/environment/status.result
+diaginfo/environment/engine.txt
+grant all privileges on *.* to test_1@'localhost' identified by '@^#*_';
+flush privileges;
+INFO: Connecting to the SQL instance
+INFO: Connecting to the SequoiaDB
+INFO: Getting query explain and optimizer trace information
+INFO: Getting environment properties
+OK
+diaginfo/
+diaginfo/query/
+diaginfo/query/explain.result
+diaginfo/query/optimizer_trace.json
+diaginfo/environment/
+diaginfo/environment/variables.result
+diaginfo/environment/group_list.json
+diaginfo/environment/version.txt
+diaginfo/environment/status.result
+diaginfo/environment/engine.txt
+INFO: Connecting to the SQL instance
+INFO: Connecting to the SequoiaDB
+INFO: Getting query explain and optimizer trace information
+INFO: Getting environment properties
+OK
+diaginfo/
+diaginfo/query/
+diaginfo/query/explain.result
+diaginfo/query/optimizer_trace.json
+diaginfo/environment/
+diaginfo/environment/variables.result
+diaginfo/environment/group_list.json
+diaginfo/environment/version.txt
+diaginfo/environment/status.result
+diaginfo/environment/engine.txt
+INFO: Connecting to the SQL instance
+ERROR: Fail to connect the instance
+INFO: Connecting to the SQL instance
+ERROR: Fail to connect the instance
+grant all privileges on *.* to test_1@'localhost' identified by 'test';
+flush privileges;
+drop database sdb_diag_info_dump_2_1;
+connection conn1;
+drop database if exists sdb_diag_info_dump_2_1;
+create database sdb_diag_info_dump_2_1;
+show create database sdb_diag_info_dump_2_1;
+Database	Create Database
+sdb_diag_info_dump_2_1	CREATE DATABASE `sdb_diag_info_dump_2_1` /*!40100 DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_bin */
+use sdb_diag_info_dump_2_1;
+CREATE TABLE `t1` (
+`a` int(11) DEFAULT NULL, 
+`b` varchar(10) COLLATE utf8mb4_bin DEFAULT NULL,
+KEY `a` (`a`)
+) ENGINE=SequoiaDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin;
+insert into t1 values(1,"a"),(2,"b"),(3,"c");
+insert into t1 select * from t1;
+analyze table t1;
+Table	Op	Msg_type	Msg_text
+sdb_diag_info_dump_2_1.t1	analyze	status	OK
+INFO: Connecting to the SQL instance
+ERROR: Fail to connect the instance
+INFO: Connecting to the SQL instance
+ERROR: Fail to connect the instance
+INFO: Connecting to the SQL instance
+ERROR: Fail to connect the instance
+drop database sdb_diag_info_dump_2_1;
+connection conn1;
+drop database if exists sdb_diag_info_dump_2_1;
+create database sdb_diag_info_dump_2_1;
+show create database sdb_diag_info_dump_2_1;
+Database	Create Database
+sdb_diag_info_dump_2_1	CREATE DATABASE `sdb_diag_info_dump_2_1` /*!40100 DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_bin */
+use sdb_diag_info_dump_2_1;
+CREATE TABLE `t1` (
+`a` int(11) DEFAULT NULL, 
+`b` varchar(10) COLLATE utf8mb4_bin DEFAULT NULL,
+KEY `a` (`a`)
+) ENGINE=SequoiaDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin;
+insert into t1 values(1,"a"),(2,"b"),(3,"c");
+insert into t1 select * from t1;
+analyze table t1;
+Table	Op	Msg_type	Msg_text
+sdb_diag_info_dump_2_1.t1	analyze	status	OK
+INFO: Connecting to the SQL instance
+INFO: Connecting to the SequoiaDB
+ERROR: Instance "error" does not exist
+ERROR: Fail to get SequoiaDB shell
+ERROR: Information on the SequoiaDB side will not be collected
+INFO: Getting query explain and optimizer trace information
+INFO: Getting table "sdb_diag_info_dump_2_1.t1" structure and index information from SQL side
+INFO: Getting environment properties
+OK
+diaginfo/
+diaginfo/query/
+diaginfo/query/explain.result
+diaginfo/query/optimizer_trace.json
+diaginfo/environment/
+diaginfo/environment/variables.result
+diaginfo/environment/status.result
+diaginfo/environment/engine.txt
+diaginfo/catalog/
+diaginfo/catalog/sdb_diag_info_dump_2_1/
+diaginfo/catalog/sdb_diag_info_dump_2_1/t1/
+diaginfo/catalog/sdb_diag_info_dump_2_1/t1/table_catalog.sql
+diaginfo/catalog/sdb_diag_info_dump_2_1/t1/table_statistics.result
+diaginfo/catalog/sdb_diag_info_dump_2_1/database_catalog.sql
+ERROR: Instance is empty
+ERROR: Instance is empty
+drop database sdb_diag_info_dump_2_1;
+connection conn1;
+drop database if exists sdb_diag_info_dump_2_1;
+create database sdb_diag_info_dump_2_1;
+show create database sdb_diag_info_dump_2_1;
+Database	Create Database
+sdb_diag_info_dump_2_1	CREATE DATABASE `sdb_diag_info_dump_2_1` /*!40100 DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_bin */
+use sdb_diag_info_dump_2_1;
+CREATE TABLE `t1` (
+`a` int(11) DEFAULT NULL, 
+`b` varchar(10) COLLATE utf8mb4_bin DEFAULT NULL,
+KEY `a` (`a`)
+) ENGINE=SequoiaDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin;
+insert into t1 values(1,"a"),(2,"b"),(3,"c");
+insert into t1 select * from t1;
+analyze table t1;
+Table	Op	Msg_type	Msg_text
+sdb_diag_info_dump_2_1.t1	analyze	status	OK
+INFO: Connecting to the SQL instance
+INFO: Connecting to the SequoiaDB
+INFO: Getting query explain and optimizer trace information
+INFO: Getting table "sdb_diag_info_dump_2_1.t1" structure and index information from SQL side
+INFO: Getting table "sdb_diag_info_dump_2_1.t1" structure and index information from SequoiaDB side
+INFO: Getting environment properties
+OK
+diaginfo/
+diaginfo/query/
+diaginfo/query/explain.result
+diaginfo/query/optimizer_trace.json
+diaginfo/environment/
+diaginfo/environment/variables.result
+diaginfo/environment/group_list.json
+diaginfo/environment/version.txt
+diaginfo/environment/status.result
+diaginfo/environment/engine.txt
+diaginfo/catalog/
+diaginfo/catalog/sdb_diag_info_dump_2_1/
+diaginfo/catalog/sdb_diag_info_dump_2_1/t1/
+diaginfo/catalog/sdb_diag_info_dump_2_1/t1/index_statistics/
+diaginfo/catalog/sdb_diag_info_dump_2_1/t1/index_statistics/a.json
+diaginfo/catalog/sdb_diag_info_dump_2_1/t1/table_catalog.json
+diaginfo/catalog/sdb_diag_info_dump_2_1/t1/table_catalog.sql
+diaginfo/catalog/sdb_diag_info_dump_2_1/t1/table_statistics.json
+diaginfo/catalog/sdb_diag_info_dump_2_1/t1/table_statistics.result
+diaginfo/catalog/sdb_diag_info_dump_2_1/database_catalog.sql
+ERROR: Output path is empty
+ERROR: Output path is empty
+drop database sdb_diag_info_dump_2_1;
+connection conn1;
+drop database if exists sdb_diag_info_dump_2_1;
+create database sdb_diag_info_dump_2_1;
+show create database sdb_diag_info_dump_2_1;
+Database	Create Database
+sdb_diag_info_dump_2_1	CREATE DATABASE `sdb_diag_info_dump_2_1` /*!40100 DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_bin */
+use sdb_diag_info_dump_2_1;
+CREATE TABLE `t1` (
+`a` int(11) DEFAULT NULL, 
+`b` varchar(10) COLLATE utf8mb4_bin DEFAULT NULL,
+KEY `a` (`a`)
+) ENGINE=SequoiaDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin;
+insert into t1 values(1,"a"),(2,"b"),(3,"c");
+insert into t1 select * from t1;
+analyze table t1;
+Table	Op	Msg_type	Msg_text
+sdb_diag_info_dump_2_1.t1	analyze	status	OK
+INFO: Connecting to the SQL instance
+INFO: Connecting to the SequoiaDB
+INFO: Getting query explain and optimizer trace information
+INFO: Getting table "sdb_diag_info_dump_2_1.t1" structure and index information from SQL side
+INFO: Getting table "sdb_diag_info_dump_2_1.t1" structure and index information from SequoiaDB side
+INFO: Getting environment properties
+OK
+diaginfo/
+diaginfo/query/
+diaginfo/query/explain.result
+diaginfo/query/optimizer_trace.json
+diaginfo/environment/
+diaginfo/environment/variables.result
+diaginfo/environment/group_list.json
+diaginfo/environment/version.txt
+diaginfo/environment/status.result
+diaginfo/environment/engine.txt
+diaginfo/catalog/
+diaginfo/catalog/sdb_diag_info_dump_2_1/
+diaginfo/catalog/sdb_diag_info_dump_2_1/t1/
+diaginfo/catalog/sdb_diag_info_dump_2_1/t1/index_statistics/
+diaginfo/catalog/sdb_diag_info_dump_2_1/t1/index_statistics/a.json
+diaginfo/catalog/sdb_diag_info_dump_2_1/t1/table_catalog.json
+diaginfo/catalog/sdb_diag_info_dump_2_1/t1/table_catalog.sql
+diaginfo/catalog/sdb_diag_info_dump_2_1/t1/table_statistics.json
+diaginfo/catalog/sdb_diag_info_dump_2_1/t1/table_statistics.result
+diaginfo/catalog/sdb_diag_info_dump_2_1/database_catalog.sql
+INFO: Connecting to the SQL instance
+INFO: Connecting to the SequoiaDB
+INFO: Getting query explain and optimizer trace information
+INFO: Getting table "sdb_diag_info_dump_2_1.t1" structure and index information from SQL side
+INFO: Getting table "sdb_diag_info_dump_2_1.t1" structure and index information from SequoiaDB side
+INFO: Getting environment properties
+OK
+diaginfo/
+diaginfo/query/
+diaginfo/query/explain.result
+diaginfo/query/optimizer_trace.json
+diaginfo/environment/
+diaginfo/environment/variables.result
+diaginfo/environment/group_list.json
+diaginfo/environment/version.txt
+diaginfo/environment/status.result
+diaginfo/environment/engine.txt
+diaginfo/catalog/
+diaginfo/catalog/sdb_diag_info_dump_2_1/
+diaginfo/catalog/sdb_diag_info_dump_2_1/t1/
+diaginfo/catalog/sdb_diag_info_dump_2_1/t1/index_statistics/
+diaginfo/catalog/sdb_diag_info_dump_2_1/t1/index_statistics/a.json
+diaginfo/catalog/sdb_diag_info_dump_2_1/t1/table_catalog.json
+diaginfo/catalog/sdb_diag_info_dump_2_1/t1/table_catalog.sql
+diaginfo/catalog/sdb_diag_info_dump_2_1/t1/table_statistics.json
+diaginfo/catalog/sdb_diag_info_dump_2_1/t1/table_statistics.result
+diaginfo/catalog/sdb_diag_info_dump_2_1/database_catalog.sql
+INFO: Connecting to the SQL instance
+ERROR: Fail to connect the instance
+INFO: Connecting to the SQL instance
+ERROR: Fail to connect the instance
+INFO: Connecting to the SQL instance
+ERROR: Fail to connect the instance
+drop database sdb_diag_info_dump_2_1;
+connection conn1;
+drop database if exists sdb_diag_info_dump_2_1;
+create database sdb_diag_info_dump_2_1;
+show create database sdb_diag_info_dump_2_1;
+Database	Create Database
+sdb_diag_info_dump_2_1	CREATE DATABASE `sdb_diag_info_dump_2_1` /*!40100 DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_bin */
+use sdb_diag_info_dump_2_1;
+CREATE TABLE `t1` (
+`a` int(11) DEFAULT NULL, 
+`b` varchar(10) COLLATE utf8mb4_bin DEFAULT NULL,
+KEY `a` (`a`)
+) ENGINE=SequoiaDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin;
+insert into t1 values(1,"a"),(2,"b"),(3,"c");
+insert into t1 select * from t1;
+analyze table t1;
+Table	Op	Msg_type	Msg_text
+sdb_diag_info_dump_2_1.t1	analyze	status	OK
+INFO: Connecting to the SQL instance
+INFO: Connecting to the SequoiaDB
+INFO: Getting query explain and optimizer trace information
+INFO: Getting environment properties
+OK
+diaginfo/
+diaginfo/query/
+diaginfo/query/explain.result
+diaginfo/query/optimizer_trace.json
+diaginfo/environment/
+diaginfo/environment/variables.result
+diaginfo/environment/group_list.json
+diaginfo/environment/version.txt
+diaginfo/environment/status.result
+diaginfo/environment/engine.txt
+diaginfo/catalog/
+diaginfo/catalog/sdb_diag_info_dump_2_1/
+diaginfo/catalog/sdb_diag_info_dump_2_1/database_catalog.sql
+INFO: Connecting to the SQL instance
+INFO: Connecting to the SequoiaDB
+INFO: Getting query explain and optimizer trace information
+ERROR: Fail to get explain SQL information.
+ERROR 1049 (42000): Unknown database 'unknown'
+ERROR: Fail to get optimizer trace information.
+ERROR 1049 (42000): Unknown database 'unknown'
+ERROR: Fail to get create database "unknown".
+ERROR 1049 (42000) at line 1: Unknown database 'unknown'
+INFO: Getting environment properties
+OK
+diaginfo/
+diaginfo/query/
+diaginfo/query/explain.result
+diaginfo/query/optimizer_trace.json
+diaginfo/environment/
+diaginfo/environment/variables.result
+diaginfo/environment/group_list.json
+diaginfo/environment/version.txt
+diaginfo/environment/status.result
+diaginfo/environment/engine.txt
+diaginfo/catalog/
+diaginfo/catalog/unknown/
+diaginfo/catalog/unknown/database_catalog.sql
+show create database \`unknown\`\G
+ERROR 1049 (42000) at line 1: Unknown database 'unknown'
+drop database sdb_diag_info_dump_2_1;
+connection conn1;
+drop database if exists sdb_diag_info_dump_2_1;
+create database sdb_diag_info_dump_2_1;
+show create database sdb_diag_info_dump_2_1;
+Database	Create Database
+sdb_diag_info_dump_2_1	CREATE DATABASE `sdb_diag_info_dump_2_1` /*!40100 DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_bin */
+use sdb_diag_info_dump_2_1;
+CREATE TABLE `t1` (
+`a` int(11) DEFAULT NULL, 
+`b` varchar(10) COLLATE utf8mb4_bin DEFAULT NULL,
+KEY `a` (`a`)
+) ENGINE=SequoiaDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin;
+insert into t1 values(1,"a"),(2,"b"),(3,"c");
+insert into t1 select * from t1;
+analyze table t1;
+Table	Op	Msg_type	Msg_text
+sdb_diag_info_dump_2_1.t1	analyze	status	OK
+create view v1 as select * from t1;
+INFO: Connecting to the SQL instance
+INFO: Connecting to the SequoiaDB
+INFO: Getting environment properties
+INFO: Getting query explain and optimizer trace information
+INFO: Getting table "sdb_diag_info_dump_2_1.t1" structure and index information from SQL side
+INFO: Getting table "sdb_diag_info_dump_2_1.t1" structure and index information from SequoiaDB side
+INFO: Getting table "sdb_diag_info_dump_2_1.v1" structure and index information from SQL side
+OK
+diaginfo/
+diaginfo/query/
+diaginfo/query/explain.result
+diaginfo/query/optimizer_trace.json
+diaginfo/environment/
+diaginfo/environment/variables.result
+diaginfo/environment/group_list.json
+diaginfo/environment/version.txt
+diaginfo/environment/status.result
+diaginfo/environment/engine.txt
+diaginfo/catalog/
+diaginfo/catalog/sdb_diag_info_dump_2_1/
+diaginfo/catalog/sdb_diag_info_dump_2_1/t1/
+diaginfo/catalog/sdb_diag_info_dump_2_1/t1/index_statistics/
+diaginfo/catalog/sdb_diag_info_dump_2_1/t1/index_statistics/a.json
+diaginfo/catalog/sdb_diag_info_dump_2_1/t1/table_catalog.json
+diaginfo/catalog/sdb_diag_info_dump_2_1/t1/table_catalog.sql
+diaginfo/catalog/sdb_diag_info_dump_2_1/t1/table_statistics.json
+diaginfo/catalog/sdb_diag_info_dump_2_1/t1/table_statistics.result
+diaginfo/catalog/sdb_diag_info_dump_2_1/v1/
+diaginfo/catalog/sdb_diag_info_dump_2_1/v1/table_catalog.sql
+diaginfo/catalog/sdb_diag_info_dump_2_1/v1/table_statistics.result
+diaginfo/catalog/sdb_diag_info_dump_2_1/database_catalog.sql
+Collection does not exist
+Collection does not exist
+Collection does not exist
+Collection does not exist
+ERROR 1146 (42S02) at line 1: Table 'sdb_diag_info_dump_2_1.t2' doesn't exist
+ERROR 1146 (42S02) at line 1: Table 'sdb_diag_info_dump_2_1.v2' doesn't exist
+ERROR: Fail to get "sdb_diag_info_dump_2_1.t2" index list from SequoiaDB
+ERROR: Fail to get "sdb_diag_info_dump_2_1.v2" index list from SequoiaDB
+ERROR: Fail to get create table "sdb_diag_info_dump_2_1.t2" detail from SequoiaDB.
+ERROR: Fail to get create table "sdb_diag_info_dump_2_1.t2".
+ERROR: Fail to get create table "sdb_diag_info_dump_2_1.v2" detail from SequoiaDB.
+ERROR: Fail to get create table "sdb_diag_info_dump_2_1.v2".
+ERROR: Fail to get table "sdb_diag_info_dump_2_1.t2" statistics, this table does not exist
+ERROR: Fail to get table "sdb_diag_info_dump_2_1.v2" statistics, this table does not exist
+INFO: Connecting to the SQL instance
+INFO: Connecting to the SequoiaDB
+INFO: Getting environment properties
+INFO: Getting table "sdb_diag_info_dump_2_1.t2" structure and index information from SQL side
+INFO: Getting table "sdb_diag_info_dump_2_1.t2" structure and index information from SequoiaDB side
+INFO: Getting table "sdb_diag_info_dump_2_1.v2" structure and index information from SQL side
+INFO: Getting table "sdb_diag_info_dump_2_1.v2" structure and index information from SequoiaDB side
+OK
+shell:1 uncaught exception: -23
+shell:1 uncaught exception: -23
+shell:1 uncaught exception: -23
+shell:1 uncaught exception: -23
+diaginfo/
+diaginfo/environment/
+diaginfo/environment/variables.result
+diaginfo/environment/group_list.json
+diaginfo/environment/version.txt
+diaginfo/environment/status.result
+diaginfo/environment/engine.txt
+diaginfo/catalog/
+diaginfo/catalog/sdb_diag_info_dump_2_1/
+diaginfo/catalog/sdb_diag_info_dump_2_1/t2/
+diaginfo/catalog/sdb_diag_info_dump_2_1/t2/table_catalog.json
+diaginfo/catalog/sdb_diag_info_dump_2_1/t2/table_catalog.sql
+diaginfo/catalog/sdb_diag_info_dump_2_1/t2/table_statistics.json
+diaginfo/catalog/sdb_diag_info_dump_2_1/t2/table_statistics.result
+diaginfo/catalog/sdb_diag_info_dump_2_1/database_catalog.sql
+diaginfo/catalog/sdb_diag_info_dump_2_1/v2/
+diaginfo/catalog/sdb_diag_info_dump_2_1/v2/table_catalog.json
+diaginfo/catalog/sdb_diag_info_dump_2_1/v2/table_catalog.sql
+diaginfo/catalog/sdb_diag_info_dump_2_1/v2/table_statistics.json
+diaginfo/catalog/sdb_diag_info_dump_2_1/v2/table_statistics.result
+show create table \`sdb_diag_info_dump_2_1\`.\`t2\`\G
+ERROR 1146 (42S02) at line 1: Table 'sdb_diag_info_dump_2_1.t2' doesn't exist
+show create table \`sdb_diag_info_dump_2_1\`.\`v2\`\G
+ERROR 1146 (42S02) at line 1: Table 'sdb_diag_info_dump_2_1.v2' doesn't exist
+drop database sdb_diag_info_dump_2_1;
+connection conn1;
+drop database if exists sdb_diag_info_dump_2_1;
+create database sdb_diag_info_dump_2_1;
+show create database sdb_diag_info_dump_2_1;
+Database	Create Database
+sdb_diag_info_dump_2_1	CREATE DATABASE `sdb_diag_info_dump_2_1` /*!40100 DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_bin */
+use sdb_diag_info_dump_2_1;
+create function `f1`() returns varchar(10)
+begin
+return concat("test","func1");
+end $
+CREATE PROCEDURE `f1`(in a int)
+begin
+select 1 + 2;
+end $
+ERROR: Fail to get information of routine "p1", this routine does not exist in the database "sdb_diag_info_dump_2_1"
+INFO: Connecting to the SQL instance
+INFO: Connecting to the SequoiaDB
+INFO: Getting environment properties
+INFO: Getting routine "sdb_diag_info_dump_2_1.f1" structure information from SQL
+INFO: Getting routine "sdb_diag_info_dump_2_1.p1" structure information from SQL
+OK
+diaginfo/
+diaginfo/routine/
+diaginfo/routine/sdb_diag_info_dump_2_1/
+diaginfo/routine/sdb_diag_info_dump_2_1/f1/
+diaginfo/routine/sdb_diag_info_dump_2_1/f1/function_routine_catalog.sql
+diaginfo/routine/sdb_diag_info_dump_2_1/f1/procedure_routine_catalog.sql
+diaginfo/routine/sdb_diag_info_dump_2_1/p1/
+diaginfo/environment/
+diaginfo/environment/variables.result
+diaginfo/environment/group_list.json
+diaginfo/environment/version.txt
+diaginfo/environment/status.result
+diaginfo/environment/engine.txt
+diaginfo/catalog/
+diaginfo/catalog/sdb_diag_info_dump_2_1/
+diaginfo/catalog/sdb_diag_info_dump_2_1/database_catalog.sql
+ERROR: Fail to get information of routine "f2", this routine does not exist in the database "sdb_diag_info_dump_2_1"
+ERROR: Fail to get information of routine "p2", this routine does not exist in the database "sdb_diag_info_dump_2_1"
+INFO: Connecting to the SQL instance
+INFO: Connecting to the SequoiaDB
+INFO: Getting environment properties
+INFO: Getting routine "sdb_diag_info_dump_2_1.f2" structure information from SQL
+INFO: Getting routine "sdb_diag_info_dump_2_1.p2" structure information from SQL
+OK
+diaginfo/
+diaginfo/routine/
+diaginfo/routine/sdb_diag_info_dump_2_1/
+diaginfo/routine/sdb_diag_info_dump_2_1/p2/
+diaginfo/routine/sdb_diag_info_dump_2_1/f2/
+diaginfo/environment/
+diaginfo/environment/variables.result
+diaginfo/environment/group_list.json
+diaginfo/environment/version.txt
+diaginfo/environment/status.result
+diaginfo/environment/engine.txt
+diaginfo/catalog/
+diaginfo/catalog/sdb_diag_info_dump_2_1/
+diaginfo/catalog/sdb_diag_info_dump_2_1/database_catalog.sql
+drop database sdb_diag_info_dump_2_1;
+connection conn1;
+drop database if exists sdb_diag_info_dump_2_1;
+create database sdb_diag_info_dump_2_1;
+show create database sdb_diag_info_dump_2_1;
+Database	Create Database
+sdb_diag_info_dump_2_1	CREATE DATABASE `sdb_diag_info_dump_2_1` /*!40100 DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_bin */
+use sdb_diag_info_dump_2_1;
+CREATE TABLE `t1` (
+`a` int(11) DEFAULT NULL, 
+`b` varchar(10) COLLATE utf8mb4_bin DEFAULT NULL,
+KEY `a` (`a`)
+) ENGINE=SequoiaDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin;
+insert into t1 values(1,"a"),(2,"b"),(3,"c");
+insert into t1 select * from t1;
+analyze table t1;
+Table	Op	Msg_type	Msg_text
+sdb_diag_info_dump_2_1.t1	analyze	status	OK
+INFO: Connecting to the SQL instance
+INFO: Connecting to the SequoiaDB
+INFO: Getting query explain and optimizer trace information
+INFO: Getting environment properties
+OK
+diaginfo/
+diaginfo/query/
+diaginfo/query/explain.result
+diaginfo/query/optimizer_trace.json
+diaginfo/environment/
+diaginfo/environment/variables.result
+diaginfo/environment/group_list.json
+diaginfo/environment/version.txt
+diaginfo/environment/status.result
+diaginfo/environment/engine.txt
+INFO: Connecting to the SQL instance
+INFO: Connecting to the SequoiaDB
+INFO: Getting query explain and optimizer trace information
+ERROR: There are multiple queries in QUERY
+INFO: Connecting to the SQL instance
+INFO: Connecting to the SequoiaDB
+INFO: Getting query explain and optimizer trace information
+ERROR: Fail to get explain SQL information.
+ERROR 1064 (42000) at line 1: You have an error in your SQL syntax; check the manual that corresponds to your MariaDB server version for the right syntax to use near '' at line 1
+ERROR: Fail to get optimizer trace information.
+ERROR 1064 (42000) at line 3: You have an error in your SQL syntax; check the manual that corresponds to your MariaDB server version for the right syntax to use near '' at line 1
+INFO: Getting environment properties
+OK
+drop database sdb_diag_info_dump_2_1;
+connection conn1;
+drop database if exists sdb_diag_info_dump_2_1;
+create database sdb_diag_info_dump_2_1;
+show create database sdb_diag_info_dump_2_1;
+Database	Create Database
+sdb_diag_info_dump_2_1	CREATE DATABASE `sdb_diag_info_dump_2_1` /*!40100 DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_bin */
+use sdb_diag_info_dump_2_1;
+CREATE TABLE `t1` (
+`a` int(11) DEFAULT NULL, 
+`b` varchar(10) COLLATE utf8mb4_bin DEFAULT NULL,
+KEY `a` (`a`)
+) ENGINE=SequoiaDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin;
+insert into t1 values(1,"a"),(2,"b"),(3,"c");
+insert into t1 select * from t1;
+analyze table t1;
+Table	Op	Msg_type	Msg_text
+sdb_diag_info_dump_2_1.t1	analyze	status	OK
+CREATE TABLE `t2` (
+`a` int(11) DEFAULT NULL, 
+`b` varchar(10) COLLATE utf8mb4_bin DEFAULT NULL,
+KEY `a` (`a`)
+) ENGINE=SequoiaDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin;
+insert into t2 values(1,"a"),(2,"b"),(3,"c");
+insert into t2 select * from t2;
+analyze table t2;
+Table	Op	Msg_type	Msg_text
+sdb_diag_info_dump_2_1.t2	analyze	status	OK
+INFO: Connecting to the SQL instance
+INFO: Connecting to the SequoiaDB
+INFO: Getting table "sdb_diag_info_dump_2_1.t1" structure and index information from SQL side
+INFO: Getting table "sdb_diag_info_dump_2_1.t2" structure and index information from SQL side
+INFO: Getting table "sdb_diag_info_dump_2_1.t1" structure and index information from SequoiaDB side
+INFO: Getting table "sdb_diag_info_dump_2_1.t2" structure and index information from SequoiaDB side
+INFO: Getting environment properties
+OK
+diaginfo/
+diaginfo/environment/
+diaginfo/environment/variables.result
+diaginfo/environment/group_list.json
+diaginfo/environment/version.txt
+diaginfo/environment/status.result
+diaginfo/environment/engine.txt
+diaginfo/catalog/
+diaginfo/catalog/sdb_diag_info_dump_2_1/
+diaginfo/catalog/sdb_diag_info_dump_2_1/t2/
+diaginfo/catalog/sdb_diag_info_dump_2_1/t2/index_statistics/
+diaginfo/catalog/sdb_diag_info_dump_2_1/t2/index_statistics/a.json
+diaginfo/catalog/sdb_diag_info_dump_2_1/t2/table_catalog.json
+diaginfo/catalog/sdb_diag_info_dump_2_1/t2/table_catalog.sql
+diaginfo/catalog/sdb_diag_info_dump_2_1/t2/table_statistics.json
+diaginfo/catalog/sdb_diag_info_dump_2_1/t2/table_statistics.result
+diaginfo/catalog/sdb_diag_info_dump_2_1/t1/
+diaginfo/catalog/sdb_diag_info_dump_2_1/t1/index_statistics/
+diaginfo/catalog/sdb_diag_info_dump_2_1/t1/index_statistics/a.json
+diaginfo/catalog/sdb_diag_info_dump_2_1/t1/table_catalog.json
+diaginfo/catalog/sdb_diag_info_dump_2_1/t1/table_catalog.sql
+diaginfo/catalog/sdb_diag_info_dump_2_1/t1/table_statistics.json
+diaginfo/catalog/sdb_diag_info_dump_2_1/t1/table_statistics.result
+diaginfo/catalog/sdb_diag_info_dump_2_1/database_catalog.sql
+drop database sdb_diag_info_dump_2_1;
+sdb_diag_info_dump is a diagnosis information collection tool for SequoiaSQL-MySQL server.
+
+Usage:
+  sdb_diag_info_dump <-h HOST> <-P PORT> <-u USER> <-i INSTANCE> <-o OUTPUTPATH> [-p [PASSWORD]] [-D DATABASE] [-t TABLES] [-R ROUTINES] [-q QUERY] [-F SEPARATOR]
+  sdb_diag_info_dump <-S SOCKETFILE> <-u USER> <-i INSTANCE> <-o OUTPUTPATH> [-p [PASSWORD]] [-D DATABASE] [-T TABLES] [-R ROUTINES] [-q QUERY] [-F SEPARATOR]
+
+Options:
+  -h, --host <HOST>                       MySQL host address
+  -P, --port <PORT>                       port number to listen on
+  -S, --socket <SOCKETFILE>               location of the pid file
+  -u, --user <USER>                       user of administrator for login in MySQL
+  -p, --password <PASSWORD>               a password for user, default: empty password
+  -i, --instance <INSTANCE>               instance of login
+  -F, --field-separator <FS>              specify a field separator for TABLES and ROUTINES, default: ,
+  -D, --database <DATABASE>               database name
+  -t, --tables <TABLES>                   tables name array like "db1.t1, db2.t2"
+  -R, --routines <routines>               routines name array like "db1.f1, db1.p1"
+  -q, --query <QUERY>                     query statements that will be got explain and optimizer trace
+  -o, --output <OUTPUTPATH>               output files path
+connection conn1;
+drop database if exists sdb_diag_info_dump_2_1;
+create database sdb_diag_info_dump_2_1;
+show create database sdb_diag_info_dump_2_1;
+Database	Create Database
+sdb_diag_info_dump_2_1	CREATE DATABASE `sdb_diag_info_dump_2_1` /*!40100 DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_bin */
+use sdb_diag_info_dump_2_1;
+CREATE TABLE `t1` ( 
+`id` int(11) DEFAULT NULL, 
+`a` varchar(10) COLLATE utf8mb4_bin DEFAULT NULL,
+`b` varchar(10) COLLATE utf8mb4_bin DEFAULT NULL,
+`c` varchar(10) COLLATE utf8mb4_bin DEFAULT NULL, 
+KEY `a` (`a`),
+KEY `idbc` (`id`,`b`,`c`)
+) ENGINE=SequoiaDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin;
+DROP PROCEDURE IF EXISTS insert_data;
+CREATE PROCEDURE insert_data()
+begin
+declare i int DEFAULT 1;
+declare j int DEFAULT 1;
+declare k int DEFAULT 1;
+declare return_str1 varchar(10) DEFAULT '';
+declare return_str2 varchar(10) DEFAULT '';
+declare return_str3 varchar(10) DEFAULT '';
+while i <= 3 do
+while j <= 100 do
+set return_str1 = concat(i,j);
+set return_str2 = concat(j,k);
+set return_str3 = concat(k,i);
+insert into t1 values(i,return_str1,return_str2,return_str3);
+set j = j+1;
+set k = k+2;
+set return_str1='';
+set return_str2='';
+set return_str3='';
+end while;
+set j = 1;
+set i = i+1;
+end while;
+end $
+call insert_data();
+analyze table t1;
+Table	Op	Msg_type	Msg_text
+sdb_diag_info_dump_2_1.t1	analyze	status	OK
+show create table t1;
+Table	Create Table
+t1	CREATE TABLE `t1` (
+  `id` int(11) DEFAULT NULL,
+  `a` varchar(10) COLLATE utf8mb4_bin DEFAULT NULL,
+  `b` varchar(10) COLLATE utf8mb4_bin DEFAULT NULL,
+  `c` varchar(10) COLLATE utf8mb4_bin DEFAULT NULL,
+  KEY `a` (`a`),
+  KEY `idbc` (`id`,`b`,`c`)
+) ENGINE=SequoiaDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin
+INFO: Connecting to the SQL instance
+INFO: Connecting to the SequoiaDB
+INFO: Getting query explain and optimizer trace information
+INFO: Getting table "sdb_diag_info_dump_2_1.t1" structure and index information from SQL side
+INFO: Getting table "sdb_diag_info_dump_2_1.t1" structure and index information from SequoiaDB side
+INFO: Getting environment properties
+OK
+diaginfo/
+diaginfo/query/
+diaginfo/query/explain.result
+diaginfo/query/optimizer_trace.json
+diaginfo/environment/
+diaginfo/environment/variables.result
+diaginfo/environment/group_list.json
+diaginfo/environment/version.txt
+diaginfo/environment/status.result
+diaginfo/environment/engine.txt
+diaginfo/catalog/
+diaginfo/catalog/sdb_diag_info_dump_2_1/
+diaginfo/catalog/sdb_diag_info_dump_2_1/t1/
+diaginfo/catalog/sdb_diag_info_dump_2_1/t1/index_statistics/
+diaginfo/catalog/sdb_diag_info_dump_2_1/t1/index_statistics/a.json
+diaginfo/catalog/sdb_diag_info_dump_2_1/t1/index_statistics/idbc.json
+diaginfo/catalog/sdb_diag_info_dump_2_1/t1/table_catalog.json
+diaginfo/catalog/sdb_diag_info_dump_2_1/t1/table_catalog.sql
+diaginfo/catalog/sdb_diag_info_dump_2_1/t1/table_statistics.json
+diaginfo/catalog/sdb_diag_info_dump_2_1/t1/table_statistics.result
+diaginfo/catalog/sdb_diag_info_dump_2_1/database_catalog.sql
+drop database sdb_diag_info_dump_2_1;
+connection conn2;
+drop database if exists sdb_diag_info_dump_2_1;
+set sequoiadb_diag_info_path=DEFAULT;
+CREATE DATABASE `sdb_diag_info_dump_2_1` /*!40100 DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_bin */
+;
+use sdb_diag_info_dump_2_1;
+show create database sdb_diag_info_dump_2_1;
+Database	Create Database
+sdb_diag_info_dump_2_1	CREATE DATABASE `sdb_diag_info_dump_2_1` /*!40100 DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_bin */
+CREATE TABLE `t1` (
+`id` int(11) DEFAULT NULL,
+`a` varchar(10) COLLATE utf8mb4_bin DEFAULT NULL,
+`b` varchar(10) COLLATE utf8mb4_bin DEFAULT NULL,
+`c` varchar(10) COLLATE utf8mb4_bin DEFAULT NULL,
+KEY `a` (`a`),
+KEY `idbc` (`id`,`b`,`c`)
+) ENGINE=SequoiaDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin
+;
+show create table t1;
+Table	Create Table
+t1	CREATE TABLE `t1` (
+  `id` int(11) DEFAULT NULL,
+  `a` varchar(10) COLLATE utf8mb4_bin DEFAULT NULL,
+  `b` varchar(10) COLLATE utf8mb4_bin DEFAULT NULL,
+  `c` varchar(10) COLLATE utf8mb4_bin DEFAULT NULL,
+  KEY `a` (`a`),
+  KEY `idbc` (`id`,`b`,`c`)
+) ENGINE=SequoiaDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin
+flush tables;
+explain select id,b,c from sdb_diag_info_dump_2_1.t1 where (id in (1,2,3) or id > 30) and (b like "10%" or c is NULL) order by b limit 10;
+id	select_type	table	type	possible_keys	key	key_len	ref	rows	Extra
+1	SIMPLE	t1	index	idbc	idbc	91	NULL	0	Using where with pushed condition; Using index
+set global sequoiadb_diag_info_path=;
+connect conn3, localhost, root, , information_schema, , $SQL_PATH/database/$PORT_2/mysqld.sock;
+connection conn3;
+*************************** 1. row ***************************
+           id: 1
+  select_type: SIMPLE
+        table: t1
+         type: index
+possible_keys: idbc
+          key: idbc
+      key_len: 91
+          ref: NULL
+         rows: 300
+        Extra: Using where with pushed condition; Using index
+flush tables;
+explain select id,b,c from sdb_diag_info_dump_2_1.t1 where (id in (1,2,3) or id > 30) and (b like "10%" or c is NULL) order by b limit 10;
+id	select_type	table	type	possible_keys	key	key_len	ref	rows	Extra
+1	SIMPLE	t1	index	idbc	idbc	91	NULL	300	Using where with pushed condition; Using index
+set global sequoiadb_diag_info_path=DEFAULT;
+disconnect conn3;
+connection conn2;
+set session sequoiadb_diag_info_path=;
+*************************** 1. row ***************************
+           id: 1
+  select_type: SIMPLE
+        table: t1
+         type: index
+possible_keys: idbc
+          key: idbc
+      key_len: 91
+          ref: NULL
+         rows: 300
+        Extra: Using where with pushed condition; Using index
+flush tables;
+explain select id,b,c from sdb_diag_info_dump_2_1.t1 where (id in (1,2,3) or id > 30) and (b like "10%" or c is NULL) order by b limit 10;
+id	select_type	table	type	possible_keys	key	key_len	ref	rows	Extra
+1	SIMPLE	t1	index	idbc	idbc	91	NULL	300	Using where with pushed condition; Using index
+set sequoiadb_diag_info_path=;
+flush tables;
+explain select id,b,c from sdb_diag_info_dump_2_1.t1 where (id in (1,2,3) or id > 30) and (b like "10%" or c is NULL) order by b limit 10;
+id	select_type	table	type	possible_keys	key	key_len	ref	rows	Extra
+1	SIMPLE	t1	index	idbc	idbc	91	NULL	0	Using where with pushed condition; Using index
+set sequoiadb_diag_info_path=;
+flush tables;
+explain select id,b,c from sdb_diag_info_dump_2_1.t1 where (id in (1,2,3) or id > 30) and (b like "10%" or c is NULL) order by b limit 10;
+id	select_type	table	type	possible_keys	key	key_len	ref	rows	Extra
+1	SIMPLE	t1	index	idbc	idbc	91	NULL	0	Using where with pushed condition; Using index
+Warnings:
+Warning	122	Can not read sdb_diag_info_dump_2_1.t1 table stat diag info file
+Warning	122	Can not read sdb_diag_info_dump_2_1.t1 table stat diag info file
+Warning	122	Can not read sdb_diag_info_dump_2_1.t1 table stat diag info file
+Warning	2	Can not read sdb_diag_info_dump_2_1.t1 index a stat diag info file
+set sequoiadb_diag_info_path=;
+*************************** 1. row ***************************
+           id: 1
+  select_type: SIMPLE
+        table: t1
+         type: index
+possible_keys: idbc
+          key: idbc
+      key_len: 91
+          ref: NULL
+         rows: 300
+        Extra: Using where with pushed condition; Using index
+flush tables;
+explain select id,b,c from sdb_diag_info_dump_2_1.t1 where (id in (1,2,3) or id > 30) and (b like "10%" or c is NULL) order by b limit 10;
+id	select_type	table	type	possible_keys	key	key_len	ref	rows	Extra
+1	SIMPLE	t1	index	idbc	idbc	91	NULL	300	Using where with pushed condition; Using index
+set sequoiadb_diag_info_path=;
+flush tables;
+explain select id,b,c from sdb_diag_info_dump_2_1.t1 where (id in (1,2,3) or id > 30) and (b like "10%" or c is NULL) order by b limit 10;
+id	select_type	table	type	possible_keys	key	key_len	ref	rows	Extra
+1	SIMPLE	t1	index	idbc	idbc	91	NULL	0	Using where with pushed condition; Using index
+Warnings:
+Warning	122	Can not read sdb_diag_info_dump_2_1.t1 table stat diag info file
+Warning	122	Can not read sdb_diag_info_dump_2_1.t1 table stat diag info file
+Warning	122	Can not read sdb_diag_info_dump_2_1.t1 table stat diag info file
+Warning	2	Can not read sdb_diag_info_dump_2_1.t1 index a stat diag info file
+set sequoiadb_diag_info_path=;
+flush tables;
+explain select id,b,c from sdb_diag_info_dump_2_1.t1 where (id in (1,2,3) or id > 30) and (b like "10%" or c is NULL) order by b limit 10;
+id	select_type	table	type	possible_keys	key	key_len	ref	rows	Extra
+1	SIMPLE	t1	index	idbc	idbc	91	NULL	0	Using where with pushed condition; Using index
+Warnings:
+Warning	122	Can not read sdb_diag_info_dump_2_1.t1 table stat diag info file
+Warning	122	Can not read sdb_diag_info_dump_2_1.t1 table stat diag info file
+Warning	122	Can not read sdb_diag_info_dump_2_1.t1 table stat diag info file
+Warning	2	Can not read sdb_diag_info_dump_2_1.t1 index a stat diag info file
+drop database sdb_diag_info_dump_2_1;
+delete from mysql.user where user='test_1';
+disconnect conn1;
+disconnect conn2;
+Deleting an instance will delete the data directory
+ok
+Deleting an instance will delete the data directory
+ok

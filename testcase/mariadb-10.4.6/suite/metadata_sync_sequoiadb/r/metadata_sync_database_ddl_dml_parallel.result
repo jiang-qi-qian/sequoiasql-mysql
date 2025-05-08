@@ -1,0 +1,59 @@
+connection conn1;
+drop database if exists metadata_sync_database_ddl_dml_parallel;
+create database metadata_sync_database_ddl_dml_parallel;
+connection conn2;
+use metadata_sync_database_ddl_dml_parallel;
+connection conn1;
+use metadata_sync_database_ddl_dml_parallel;
+create table t1(a int);
+connection conn2;
+select * from t1;
+a
+connection conn1;
+drop database metadata_sync_database_ddl_dml_parallel;
+connection conn2;
+insert into t1 values(1);
+ERROR 42S02: Table 'metadata_sync_database_ddl_dml_parallel.t1' doesn't exist
+connection conn1;
+create database metadata_sync_database_ddl_dml_parallel;
+use metadata_sync_database_ddl_dml_parallel;
+create table t1(a int auto_increment primary key,b int ,c int);
+insert into t1(b,c) values(1,1),(2,2),(3,3);
+create view v1 as select * from t1;
+drop database metadata_sync_database_ddl_dml_parallel;
+connection conn2;
+select * from metadata_sync_database_ddl_dml_parallel.v1;
+ERROR 42S02: Table 'metadata_sync_database_ddl_dml_parallel.v1' doesn't exist
+connection conn1;
+create database metadata_sync_database_ddl_dml_parallel;
+use metadata_sync_database_ddl_dml_parallel;
+create table t1(id int,cname char(10));
+create function myselect() returns int 
+begin
+declare c int;
+insert into t1 values(1,'python'),(2,'java');
+select id from t1 where cname ='python' into c;
+delete from t1 where cname = 'python';
+select id from t1 where cname ='python' into c;
+return c;
+end//
+Warnings:
+Warning	1287	'<select expression> INTO <destination>;' is deprecated and will be removed in a future release. Please use 'SELECT <select list> INTO <destination> FROM...' instead
+Warning	1287	'<select expression> INTO <destination>;' is deprecated and will be removed in a future release. Please use 'SELECT <select list> INTO <destination> FROM...' instead
+drop database metadata_sync_database_ddl_dml_parallel;
+connection conn2;
+select metadata_sync_database_ddl_dml_parallel.myselect();
+ERROR 42000: FUNCTION metadata_sync_database_ddl_dml_parallel.myselect does not exist
+connection conn1;
+create database metadata_sync_database_ddl_dml_parallel;
+use metadata_sync_database_ddl_dml_parallel;
+create table t1 (
+id   char(16) not null default '',
+data int not null
+);
+create procedure metadata_sync_ddl_dml_parallel()
+insert into t1 values ("foo", 42);
+drop database metadata_sync_database_ddl_dml_parallel;
+connection conn2;
+call metadata_sync_database_ddl_dml_parallel.metadata_sync_ddl_dml_parallel();
+ERROR 42000: PROCEDURE metadata_sync_database_ddl_dml_parallel.metadata_sync_ddl_dml_parallel does not exist

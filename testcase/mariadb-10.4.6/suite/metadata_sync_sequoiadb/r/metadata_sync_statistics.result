@@ -1,0 +1,58 @@
+connection conn1;
+CREATE DATABASE metasync_db27792;
+USE metasync_db27792;
+CREATE TABLE `cmp_datacontent_7466meta` (
+`KEY` varchar(32) COLLATE utf8mb4_bin NOT NULL,
+`PID` varchar(32) COLLATE utf8mb4_bin NOT NULL,
+`RESOURCEGID` varchar(32) COLLATE utf8mb4_bin DEFAULT NULL,
+`VERSION` decimal(65,30) DEFAULT NULL,
+`NAME` varchar(200) COLLATE utf8mb4_bin DEFAULT NULL,
+`SUFFIX` varchar(50) COLLATE utf8mb4_bin DEFAULT NULL,
+`FORMAT` varchar(8) COLLATE utf8mb4_bin DEFAULT NULL,
+`RSTYPE` varchar(8) COLLATE utf8mb4_bin DEFAULT NULL,
+`CHILDNODE` varchar(18)COLLATE utf8mb4_bin DEFAULT NULL,
+`SEQNO` decimal(65,30) DEFAULT NULL,
+`LENGTH` decimal(65,30) DEFAULT NULL,
+`DIGEST` varchar(5) COLLATE utf8mb4_bin DEFAULT NULL,
+`CREATETIME` varchar(20) COLLATE utf8mb4_bin DEFAULT NULL,
+`CREATOR` varchar(20) COLLATE utf8mb4_bin DEFAULT NULL,
+`STATUS` varchar(2) COLLATE utf8mb4_bin DEFAULT NULL,
+`ISACTIVE` varchar(2) COLLATE utf8mb4_bin DEFAULT NULL,
+`OTHERS` text COLLATE utf8mb4_bin DEFAULT NULL,
+PRIMARY KEY(`KEY`),
+KEY `IDX_DCMETA_7466_QUERY` (`RESOURCEGID`)
+)ENGINE=SequoiaDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin;
+explain select * from cmp_datacontent_7466meta where RESOURCEGID="r";
+id	select_type	table	type	possible_keys	key	key_len	ref	rows	Extra
+1	SIMPLE	cmp_datacontent_7466meta	ref	IDX_DCMETA_7466_QUERY	IDX_DCMETA_7466_QUERY	131	const	1	Using where with pushed condition
+connection conn2;
+USE metasync_db27792;
+explain select * from cmp_datacontent_7466meta where RESOURCEGID="r";
+id	select_type	table	type	possible_keys	key	key_len	ref	rows	Extra
+1	SIMPLE	cmp_datacontent_7466meta	ref	IDX_DCMETA_7466_QUERY	IDX_DCMETA_7466_QUERY	131	const	1	Using where with pushed condition
+connection conn1;
+USE metasync_db27792;
+insert into cmp_datacontent_7466meta values ("k","p","r",1.1,"n","s","f","r","c",1.2,1.3,"d","c","c","s","i","o");
+explain select * from cmp_datacontent_7466meta where RESOURCEGID="r";
+id	select_type	table	type	possible_keys	key	key_len	ref	rows	Extra
+1	SIMPLE	cmp_datacontent_7466meta	ref	IDX_DCMETA_7466_QUERY	IDX_DCMETA_7466_QUERY	131	const	1	Using where with pushed condition
+connection conn2;
+USE metasync_db27792;
+explain select * from cmp_datacontent_7466meta where RESOURCEGID="r";
+id	select_type	table	type	possible_keys	key	key_len	ref	rows	Extra
+1	SIMPLE	cmp_datacontent_7466meta	ref	IDX_DCMETA_7466_QUERY	IDX_DCMETA_7466_QUERY	131	const	1	Using where with pushed condition
+select * from cmp_datacontent_7466meta where RESOURCEGID="r";
+KEY	PID	RESOURCEGID	VERSION	NAME	SUFFIX	FORMAT	RSTYPE	CHILDNODE	SEQNO	LENGTH	DIGEST	CREATETIME	CREATOR	STATUS	ISACTIVE	OTHERS
+k	p	r	1.100000000000000000000000000000	n	s	f	r	c	1.200000000000000000000000000000	1.300000000000000000000000000000	d	c	c	s	i	o
+select * from cmp_datacontent_7466meta;
+KEY	PID	RESOURCEGID	VERSION	NAME	SUFFIX	FORMAT	RSTYPE	CHILDNODE	SEQNO	LENGTH	DIGEST	CREATETIME	CREATOR	STATUS	ISACTIVE	OTHERS
+k	p	r	1.100000000000000000000000000000	n	s	f	r	c	1.200000000000000000000000000000	1.300000000000000000000000000000	d	c	c	s	i	o
+connection conn1;
+USE metasync_db27792;
+select * from cmp_datacontent_7466meta where RESOURCEGID="r";
+KEY	PID	RESOURCEGID	VERSION	NAME	SUFFIX	FORMAT	RSTYPE	CHILDNODE	SEQNO	LENGTH	DIGEST	CREATETIME	CREATOR	STATUS	ISACTIVE	OTHERS
+k	p	r	1.100000000000000000000000000000	n	s	f	r	c	1.200000000000000000000000000000	1.300000000000000000000000000000	d	c	c	s	i	o
+select * from cmp_datacontent_7466meta;
+KEY	PID	RESOURCEGID	VERSION	NAME	SUFFIX	FORMAT	RSTYPE	CHILDNODE	SEQNO	LENGTH	DIGEST	CREATETIME	CREATOR	STATUS	ISACTIVE	OTHERS
+k	p	r	1.100000000000000000000000000000	n	s	f	r	c	1.200000000000000000000000000000	1.300000000000000000000000000000	d	c	c	s	i	o
+DROP DATABASE metasync_db27792;

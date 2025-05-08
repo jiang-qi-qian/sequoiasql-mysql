@@ -1,0 +1,174 @@
+connection conn1;
+DROP DATABASE IF EXISTS metasync_event;
+connection conn2;
+SHOW CREATE DATABASE metasync_event;
+ERROR 42000: Unknown database 'metasync_event'
+connection conn1;
+CREATE DATABASE metasync_event;
+USE metasync_event;
+CREATE EVENT IF NOT EXISTS e_hourly
+ON SCHEDULE AT CURRENT_TIMESTAMP + INTERVAL 1 HOUR
+DO
+UPDATE myschema.mytable SET mycol = mycol + 1;
+Warnings:
+Warning	1105	Event scheduler is switched off, use SET GLOBAL event_scheduler=ON to enable it.
+CREATE DEFINER='sdbadmin'@'%' EVENT e_daily
+ON SCHEDULE
+EVERY 1 DAY
+ON COMPLETION NOT PRESERVE
+ENABLE
+COMMENT 'Clears out sessions table each hour.'
+    DO
+DELETE FROM site_activity.sessions;
+CREATE EVENT e_yearly
+ON SCHEDULE
+EVERY 1 YEAR
+STARTS '2020-02-02 20:00:02' + INTERVAL 1 YEAR
+ENDS '2035-12-31 23:59:59' + INTERVAL 13 MONTH
+COMMENT 'Saves total number of sessions then clears the table each day'
+    DO
+BEGIN
+INSERT INTO site_activity.totals (time, total)
+SELECT CURRENT_TIMESTAMP, COUNT(*)
+FROM site_activity.sessions;
+DELETE FROM site_activity.sessions;
+END |
+Warnings:
+Warning	1105	Event scheduler is switched off, use SET GLOBAL event_scheduler=ON to enable it.
+CREATE EVENT e_call_myproc
+ON SCHEDULE
+AT CURRENT_TIMESTAMP + INTERVAL 1 DAY
+DO CALL myproc(5, 27);
+Warnings:
+Warning	1105	Event scheduler is switched off, use SET GLOBAL event_scheduler=ON to enable it.
+CREATE OR REPLACE EVENT e_call_myproc
+ON SCHEDULE
+AT CURRENT_TIMESTAMP + INTERVAL 2 WEEK
+DO CALL myproc(100, 200);
+Warnings:
+Warning	1105	Event scheduler is switched off, use SET GLOBAL event_scheduler=ON to enable it.
+SHOW CREATE EVENT e_hourly;
+Event	sql_mode	time_zone	Create Event	character_set_client	collation_connection	Database Collation
+e_hourly	STRICT_TRANS_TABLES,ERROR_FOR_DIVISION_BY_ZERO,NO_AUTO_CREATE_USER,NO_ENGINE_SUBSTITUTION	SYSTEM	CREATE DEFINER=`x`@`%` EVENT `e_hourly` ON SCHEDULE AT 'y' ON COMPLETION NOT PRESERVE ENABLE DO UPDATE myschema.mytable SET mycol = mycol + 1	latin1	latin1_swedish_ci	utf8mb4_bin
+SHOW CREATE EVENT e_daily;
+Event	sql_mode	time_zone	Create Event	character_set_client	collation_connection	Database Collation
+e_daily	STRICT_TRANS_TABLES,ERROR_FOR_DIVISION_BY_ZERO,NO_AUTO_CREATE_USER,NO_ENGINE_SUBSTITUTION	SYSTEM	CREATE DEFINER=`sdbadmin`@`%` EVENT `e_daily` ON SCHEDULE EVERY 1 DAY STARTS 'y' DO DELETE FROM site_activity.sessions	latin1	latin1_swedish_ci	utf8mb4_bin
+SHOW CREATE EVENT e_yearly;
+Event	sql_mode	time_zone	Create Event	character_set_client	collation_connection	Database Collation
+e_yearly	STRICT_TRANS_TABLES,ERROR_FOR_DIVISION_BY_ZERO,NO_AUTO_CREATE_USER,NO_ENGINE_SUBSTITUTION	SYSTEM	CREATE DEFINER=`x`@`%` EVENT `e_yearly` ON SCHEDULE EVERY 1 YEAR STARTS 'y' DO BEGIN
+INSERT INTO site_activity.totals (time, total)
+SELECT CURRENT_TIMESTAMP, COUNT(*)
+FROM site_activity.sessions;
+DELETE FROM site_activity.sessions;
+END	latin1	latin1_swedish_ci	utf8mb4_bin
+SHOW CREATE EVENT e_call_myproc;
+Event	sql_mode	time_zone	Create Event	character_set_client	collation_connection	Database Collation
+e_call_myproc	STRICT_TRANS_TABLES,ERROR_FOR_DIVISION_BY_ZERO,NO_AUTO_CREATE_USER,NO_ENGINE_SUBSTITUTION	SYSTEM	CREATE DEFINER=`x`@`%` EVENT `e_call_myproc` ON SCHEDULE AT 'y' ON COMPLETION NOT PRESERVE ENABLE DO CALL myproc(100, 200)	latin1	latin1_swedish_ci	utf8mb4_bin
+connection conn2;
+USE metasync_event;
+SHOW CREATE EVENT e_hourly;
+Event	sql_mode	time_zone	Create Event	character_set_client	collation_connection	Database Collation
+e_hourly	STRICT_TRANS_TABLES,ERROR_FOR_DIVISION_BY_ZERO,NO_AUTO_CREATE_USER,NO_ENGINE_SUBSTITUTION	SYSTEM	CREATE DEFINER=`x`@`%` EVENT `e_hourly` ON SCHEDULE AT 'y' ON COMPLETION NOT PRESERVE ENABLE DO UPDATE myschema.mytable SET mycol = mycol + 1	latin1	latin1_swedish_ci	utf8mb4_bin
+SHOW CREATE EVENT e_daily;
+Event	sql_mode	time_zone	Create Event	character_set_client	collation_connection	Database Collation
+e_daily	STRICT_TRANS_TABLES,ERROR_FOR_DIVISION_BY_ZERO,NO_AUTO_CREATE_USER,NO_ENGINE_SUBSTITUTION	SYSTEM	CREATE DEFINER=`sdbadmin`@`%` EVENT `e_daily` ON SCHEDULE EVERY 1 DAY STARTS 'y' DO DELETE FROM site_activity.sessions	latin1	latin1_swedish_ci	utf8mb4_bin
+SHOW CREATE EVENT e_yearly;
+Event	sql_mode	time_zone	Create Event	character_set_client	collation_connection	Database Collation
+e_yearly	STRICT_TRANS_TABLES,ERROR_FOR_DIVISION_BY_ZERO,NO_AUTO_CREATE_USER,NO_ENGINE_SUBSTITUTION	SYSTEM	CREATE DEFINER=`x`@`%` EVENT `e_yearly` ON SCHEDULE EVERY 1 YEAR STARTS 'y' DO BEGIN
+INSERT INTO site_activity.totals (time, total)
+SELECT CURRENT_TIMESTAMP, COUNT(*)
+FROM site_activity.sessions;
+DELETE FROM site_activity.sessions;
+END	latin1	latin1_swedish_ci	utf8mb4_bin
+SHOW CREATE EVENT e_call_myproc;
+Event	sql_mode	time_zone	Create Event	character_set_client	collation_connection	Database Collation
+e_call_myproc	STRICT_TRANS_TABLES,ERROR_FOR_DIVISION_BY_ZERO,NO_AUTO_CREATE_USER,NO_ENGINE_SUBSTITUTION	SYSTEM	CREATE DEFINER=`x`@`%` EVENT `e_call_myproc` ON SCHEDULE AT 'y' ON COMPLETION NOT PRESERVE ENABLE DO CALL myproc(100, 200)	latin1	latin1_swedish_ci	utf8mb4_bin
+ALTER EVENT e_hourly
+ON SCHEDULE
+EVERY 12 HOUR
+STARTS CURRENT_TIMESTAMP + INTERVAL 4 HOUR
+COMMENT 'New comment. ';
+ALTER DEFINER='root'@'localhost' EVENT e_daily
+ON SCHEDULE
+EVERY 1 SECOND
+ON COMPLETION NOT PRESERVE
+RENAME TO e_daily_new
+DISABLE
+COMMENT 'Alter Event e_daily.'
+    DO DROP DATABASE testdb;
+ALTER EVENT e_yearly
+ON SCHEDULE
+AT CURRENT_TIMESTAMP + INTERVAL 1 MONTH
+COMMENT 'Alter Event e_yearly.'
+   DO
+BEGIN
+INSERT INTO site_activity.totals VALUES (time, total);
+SELECT CURRENT_TIMESTAMP, COUNT(*) FROM site_activity.sessions;
+DELETE FROM site_activity.sessions;
+CREATE VIEW site_activity.view AS SELECT * FROM site_activity.sessions;
+CALL myproc(5, 27);
+SELECT user,host FROM mysql.user;
+END |
+SHOW CREATE EVENT e_hourly;
+Event	sql_mode	time_zone	Create Event	character_set_client	collation_connection	Database Collation
+e_hourly	STRICT_TRANS_TABLES,ERROR_FOR_DIVISION_BY_ZERO,NO_AUTO_CREATE_USER,NO_ENGINE_SUBSTITUTION	SYSTEM	CREATE DEFINER=`x`@`%` EVENT `e_hourly` ON SCHEDULE EVERY 12 HOUR STARTS 'y' DO UPDATE myschema.mytable SET mycol = mycol + 1	latin1	latin1_swedish_ci	utf8mb4_bin
+SHOW CREATE EVENT e_daily;
+ERROR HY000: Unknown event 'e_daily'
+SHOW CREATE EVENT e_daily_new;
+Event	sql_mode	time_zone	Create Event	character_set_client	collation_connection	Database Collation
+e_daily_new	STRICT_TRANS_TABLES,ERROR_FOR_DIVISION_BY_ZERO,NO_AUTO_CREATE_USER,NO_ENGINE_SUBSTITUTION	SYSTEM	CREATE DEFINER=`root`@`localhost` EVENT `e_daily_new` ON SCHEDULE EVERY 1 SECOND STARTS 'y' DO DROP DATABASE testdb	latin1	latin1_swedish_ci	utf8mb4_bin
+SHOW CREATE EVENT e_yearly;
+Event	sql_mode	time_zone	Create Event	character_set_client	collation_connection	Database Collation
+e_yearly	STRICT_TRANS_TABLES,ERROR_FOR_DIVISION_BY_ZERO,NO_AUTO_CREATE_USER,NO_ENGINE_SUBSTITUTION	SYSTEM	CREATE DEFINER=`x`@`%` EVENT `e_yearly` ON SCHEDULE AT 'y' DO BEGIN
+INSERT INTO site_activity.totals VALUES (time, total);
+SELECT CURRENT_TIMESTAMP, COUNT(*) FROM site_activity.sessions;
+DELETE FROM site_activity.sessions;
+CREATE VIEW site_activity.view AS SELECT * FROM site_activity.sessions;
+CALL myproc(5, 27);
+SELECT user,host FROM mysql.user;
+END	latin1	latin1_swedish_ci	utf8mb4_bin
+SHOW CREATE EVENT e_call_myproc;
+Event	sql_mode	time_zone	Create Event	character_set_client	collation_connection	Database Collation
+e_call_myproc	STRICT_TRANS_TABLES,ERROR_FOR_DIVISION_BY_ZERO,NO_AUTO_CREATE_USER,NO_ENGINE_SUBSTITUTION	SYSTEM	CREATE DEFINER=`x`@`%` EVENT `e_call_myproc` ON SCHEDULE AT 'y' ON COMPLETION NOT PRESERVE ENABLE DO CALL myproc(100, 200)	latin1	latin1_swedish_ci	utf8mb4_bin
+connection conn1;
+SHOW CREATE EVENT e_hourly;
+Event	sql_mode	time_zone	Create Event	character_set_client	collation_connection	Database Collation
+e_hourly	STRICT_TRANS_TABLES,ERROR_FOR_DIVISION_BY_ZERO,NO_AUTO_CREATE_USER,NO_ENGINE_SUBSTITUTION	SYSTEM	CREATE DEFINER=`x`@`%` EVENT `e_hourly` ON SCHEDULE EVERY 12 HOUR STARTS 'y' DO UPDATE myschema.mytable SET mycol = mycol + 1	latin1	latin1_swedish_ci	utf8mb4_bin
+SHOW CREATE EVENT e_daily;
+ERROR HY000: Unknown event 'e_daily'
+SHOW CREATE EVENT e_daily_new;
+Event	sql_mode	time_zone	Create Event	character_set_client	collation_connection	Database Collation
+e_daily_new	STRICT_TRANS_TABLES,ERROR_FOR_DIVISION_BY_ZERO,NO_AUTO_CREATE_USER,NO_ENGINE_SUBSTITUTION	SYSTEM	CREATE DEFINER=`root`@`localhost` EVENT `e_daily_new` ON SCHEDULE EVERY 1 SECOND STARTS 'y' DO DROP DATABASE testdb	latin1	latin1_swedish_ci	utf8mb4_bin
+SHOW CREATE EVENT e_yearly;
+Event	sql_mode	time_zone	Create Event	character_set_client	collation_connection	Database Collation
+e_yearly	STRICT_TRANS_TABLES,ERROR_FOR_DIVISION_BY_ZERO,NO_AUTO_CREATE_USER,NO_ENGINE_SUBSTITUTION	SYSTEM	CREATE DEFINER=`x`@`%` EVENT `e_yearly` ON SCHEDULE AT 'y' DO BEGIN
+INSERT INTO site_activity.totals VALUES (time, total);
+SELECT CURRENT_TIMESTAMP, COUNT(*) FROM site_activity.sessions;
+DELETE FROM site_activity.sessions;
+CREATE VIEW site_activity.view AS SELECT * FROM site_activity.sessions;
+CALL myproc(5, 27);
+SELECT user,host FROM mysql.user;
+END	latin1	latin1_swedish_ci	utf8mb4_bin
+SHOW CREATE EVENT e_call_myproc;
+Event	sql_mode	time_zone	Create Event	character_set_client	collation_connection	Database Collation
+e_call_myproc	STRICT_TRANS_TABLES,ERROR_FOR_DIVISION_BY_ZERO,NO_AUTO_CREATE_USER,NO_ENGINE_SUBSTITUTION	SYSTEM	CREATE DEFINER=`x`@`%` EVENT `e_call_myproc` ON SCHEDULE AT 'y' ON COMPLETION NOT PRESERVE ENABLE DO CALL myproc(100, 200)	latin1	latin1_swedish_ci	utf8mb4_bin
+DROP EVENT IF EXISTS e_hourly;
+DROP EVENT e_daily_new;
+DROP EVENT e_yearly;
+DROP EVENT e_call_myproc;
+DROP EVENT IF EXISTS e_call_myproc;
+Warnings:
+Note	1305	Event e_call_myproc does not exist
+connection conn2;
+SHOW CREATE EVENT e_hourly;
+ERROR HY000: Unknown event 'e_hourly'
+SHOW CREATE EVENT e_daily_new;
+ERROR HY000: Unknown event 'e_daily_new'
+SHOW CREATE EVENT e_yearly;
+ERROR HY000: Unknown event 'e_yearly'
+SHOW CREATE EVENT e_call_myproc;
+ERROR HY000: Unknown event 'e_call_myproc'
+DROP DATABASE metasync_event;
+connection conn1;
+SHOW CREATE DATABASE metasync_event;
+ERROR 42000: Unknown database 'metasync_event'

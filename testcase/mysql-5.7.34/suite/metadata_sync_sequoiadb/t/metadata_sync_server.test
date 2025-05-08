@@ -1,0 +1,55 @@
+#Case 22541 
+
+--source include/have_sequoiadb.inc
+--source suite/metadata_sync_sequoiadb/inc/insts_connect_sequoiadb.inc
+
+# connect to conn1, clear servers in the beginning
+connection conn1;
+--disable_warnings
+DROP SERVER IF EXISTS metasync_s1;
+DROP SERVER IF EXISTS metasync_s2;
+--enable_warnings
+
+# connect to conn2, check servers are cleaned in the beginning
+connection conn2;
+--sleep 5
+SELECT * FROM mysql.servers;
+
+# seqDB-22541
+# begin testing
+# create event
+connection conn1;
+CREATE SERVER metasync_s1 
+FOREIGN DATA WRAPPER mysql 
+OPTIONS ( USER 'Remote', HOST '127.0.0.1', DATABASE 'test', SOCKET '/tmp/mysqld.sock', OWNER 'root', PORT 3308 );
+CREATE SERVER metasync_s2
+FOREIGN DATA WRAPPER ssql
+OPTIONS ( USER 'Official', HOST '127.0.0.2' );
+
+# check metadatas after create
+#Bug #SEQUOIASQLMAINSTREAM-933
+connection conn2;
+--sleep 5
+SELECT * FROM mysql.servers;
+
+# alter server
+ALTER SERVER metasync_s1 OPTIONS (USER 'Origin', SOCKET '/root/mysqld.sock');
+
+# check metadatas after alter
+#Bug #SEQUOIASQLMAINSTREAM-933
+connection conn1;
+--sleep 5
+SELECT * FROM mysql.servers;
+
+# drop server 
+DROP SERVER metasync_s1;
+DROP SERVER IF EXISTS metasync_s2;
+
+# check metadatas after drop
+#Bug #SEQUOIASQLMAINSTREAM-933
+connection conn2;
+--sleep 5
+SELECT * FROM mysql.servers;
+
+--source include/uninstall_sequoiadb.inc
+--source suite/metadata_sync_sequoiadb/inc/insts_disconnect_sequoiadb.inc

@@ -1,0 +1,74 @@
+connection conn1;
+set session server_ha_wait_sync_timeout = 10;
+connection conn2;
+set session server_ha_wait_sync_timeout = 10;
+connection conn1;
+DROP ROLE IF EXISTS metaSync_mix_role1;
+DROP ROLE IF EXISTS metaSync_mix_role2;
+DROP USER IF EXISTS 'metaSync_mix_ruser1'@'localhost';
+DROP USER IF EXISTS 'metaSync_mix_ruser2'@'localhost';
+FLUSH PRIVILEGES;
+connection conn2;
+SHOW GRANTS FOR 'metaSync_mix_ruser1'@'localhost';
+ERROR 42000: There is no such grant defined for user 'metaSync_mix_ruser1' on host 'localhost'
+SHOW GRANTS FOR 'metaSync_mix_ruser2'@'localhost';
+ERROR 42000: There is no such grant defined for user 'metaSync_mix_ruser2' on host 'localhost'
+connection conn1;
+set server_ha_wait_sync_timeout = 10;
+CREATE ROLE metaSync_mix_role1;
+CREATE ROLE metaSync_mix_role2;
+CREATE USER 'metaSync_mix_ruser1'@'localhost';
+CREATE USER 'metaSync_mix_ruser2'@'localhost';
+GRANT CREATE, SELECT ON *.* TO metaSync_mix_role1;
+GRANT INSERT, UPDATE, DELETE ON *.* TO metaSync_mix_role2;
+GRANT metaSync_mix_role1 TO 'metaSync_mix_ruser1'@'localhost';
+GRANT metaSync_mix_role2 TO 'metaSync_mix_ruser2'@'localhost';
+FLUSH PRIVILEGES;
+connection conn2;
+set server_ha_wait_sync_timeout = 10;
+SHOW GRANTS FOR 'metaSync_mix_ruser1'@'localhost';
+Grants for metaSync_mix_ruser1@localhost
+GRANT metaSync_mix_role1 TO 'metaSync_mix_ruser1'@'localhost'
+GRANT USAGE ON *.* TO 'metaSync_mix_ruser1'@'localhost'
+SHOW GRANTS FOR 'metaSync_mix_ruser2'@'localhost';
+Grants for metaSync_mix_ruser2@localhost
+GRANT metaSync_mix_role2 TO 'metaSync_mix_ruser2'@'localhost'
+GRANT USAGE ON *.* TO 'metaSync_mix_ruser2'@'localhost'
+SELECT * FROM mysql.roles_mapping WHERE Role='metaSync_mix_role1' AND user LIKE 'metaSync_mix_ruser%';
+Host	User	Role	Admin_option
+localhost	metaSync_mix_ruser1	metaSync_mix_role1	N
+SELECT * FROM mysql.roles_mapping WHERE Role='metaSync_mix_role2' AND user LIKE 'metaSync_mix_ruser%';
+Host	User	Role	Admin_option
+localhost	metaSync_mix_ruser2	metaSync_mix_role2	N
+DROP ROLE metaSync_mix_role1;
+DROP ROLE metaSync_mix_role2;
+FLUSH PRIVILEGES;
+connection conn1;
+SHOW GRANTS FOR 'metaSync_mix_ruser1'@'localhost';
+Grants for metaSync_mix_ruser1@localhost
+GRANT USAGE ON *.* TO 'metaSync_mix_ruser1'@'localhost'
+SHOW GRANTS FOR 'metaSync_mix_ruser2'@'localhost';
+Grants for metaSync_mix_ruser2@localhost
+GRANT USAGE ON *.* TO 'metaSync_mix_ruser2'@'localhost'
+SELECT * FROM mysql.roles_mapping WHERE Role = 'metaSync_mix_role1';
+Host	User	Role	Admin_option
+SELECT * FROM mysql.roles_mapping WHERE Role = 'metaSync_mix_role2';
+Host	User	Role	Admin_option
+DROP USER 'metaSync_mix_ruser1'@'localhost';
+DROP USER 'metaSync_mix_ruser2'@'localhost';
+FLUSH PRIVILEGES;
+set server_ha_wait_sync_timeout = 0;
+connection conn2;
+SHOW GRANTS FOR 'metaSync_mix_ruser1'@'localhost';
+ERROR 42000: There is no such grant defined for user 'metaSync_mix_ruser1' on host 'localhost'
+SHOW GRANTS FOR 'metaSync_mix_ruser2'@'localhost';
+ERROR 42000: There is no such grant defined for user 'metaSync_mix_ruser2' on host 'localhost'
+SELECT user, host FROM mysql.user WHERE user = 'metaSync_mix_ruser1';
+User	Host
+SELECT user, host FROM mysql.user WHERE user = 'metaSync_mix_ruser2';
+User	Host
+set server_ha_wait_sync_timeout = 0;
+connection conn1;
+set session server_ha_wait_sync_timeout = default;
+connection conn2;
+set session server_ha_wait_sync_timeout = default;
